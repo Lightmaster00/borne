@@ -1,0 +1,368 @@
+//! Core local HTTP API, version 1.
+//!
+//! Listens on 127.0.0.1 (random port); every route is prefixed with a random token
+//! handed to the UI by the supervisor. JSON bodies and responses.
+//! Events (gamepads, pairing, sync, downloads) go through the WebSocket.
+//!
+//! System
+//!   GET    /api/v1/hello                         versions (negotiation)
+//!   GET    /api/v1/status                        server, active profile, pairing, sync, disk space
+//!   GET    /api/v1/diagnostics                   session, GPU, VRAM, VA-API, memory
+//!   POST   /api/v1/server        {url}           sets the RomM server (checked before saving)
+//! Profiles
+//!   GET    /api/v1/profiles
+//!   POST   /api/v1/profiles      {name}
+//!   PUT    /api/v1/profiles/<id> {name}
+//!   DELETE /api/v1/profiles/<id>
+//!   POST   /api/v1/profiles/<id>/activate
+//!   POST   /api/v1/profiles/<id>/pair            starts RomM pairing
+//!   GET    /api/v1/pairing  ·  DELETE /api/v1/pairing  ·  GET /api/v1/pairing/qr.svg
+//! Library
+//!   POST   /api/v1/sync                          syncs the catalog
+//!   GET    /api/v1/platforms
+//!   GET    /api/v1/library?platform=&q=&local=1
+//!   GET    /api/v1/games/<rom_id>
+//!   POST   /api/v1/games/<rom_id>/download
+//!   DELETE /api/v1/games/<rom_id>/local          deletes the local copy (never on RomM)
+//!   GET    /api/v1/downloads  ·  DELETE /api/v1/downloads/<id>
+//! Misc
+//!   GET    /api/v1/themes  ·  POST /api/v1/report  ·  GET /file?path=…
+//!   POST   /api/v1/debug/pad?action=…            automated tests (BORNE_DEBUG_INPUT=1)
+
+use crate::state::Shared;
+use crate::{catalog, diag, downloads, pairing, romm, secrets, themes};
+use serde_json::{json, Value};
+use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
+use std::path::{Path, PathBuf};
+use tiny_http::{Header, Method, Request, Response, Server, StatusCode};
+
+pub const API_VERSION: u32 = 1;
+
+fn header(k: &str, v: &str) -> Header {
+    Header::from_bytes(k.as_bytes(), v.as_bytes()).expect("valid header")
+}
+
+fn reply(req: Request, status: u16, body: Value) {
+    let r = Response::from_string(body.to_string())
+        .with_status_code(StatusCode(status))
+        .with_header(header("Content-Type", "application/json; charset=utf-8"))
+        .with_header(header("Cache-Control", "no-store"));
+    let _ = req.respond(r);
+}
+
+fn ok(req: Request, body: Value) {
+    reply(req, 200, body)
+}
+
+fn err(req: Request, status: u16, message: &str) {
+    reply(req, status, json!({ "error": message }))
+}
+
+fn percent_decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            if let Ok(v) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
+                out.push(v);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(if b[i] == b'+' { b' ' } else { b[i] });
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn query(q: &str, key: &str) -> Option<String> {
+    q.split('&').find_map(|kv| kv.strip_prefix(key).and_then(|r| r.strip_prefix('=')).map(percent_decode))
+}
+
+fn body_json(req: &mut Request) -> Value {
+    let mut s = String::new();
+    let _ = req.as_reader().take(1024 * 1024).read_to_string(&mut s);
+    serde_json::from_str(&s).unwrap_or(Value::Null)
+}
+
+fn mime(path: &Path) -> &'static str {
+    match path.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()).as_deref() {
+        Some("mp4") | Some("m4v") => "video/mp4",
+        Some("webm") => "video/webm",
+        Some("mkv") => "video/x-matroska",
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("png") => "image/png",
+        Some("webp") => "image/webp",
+        Some("svg") => "image/svg+xml",
+        _ => "application/octet-stream",
+    }
+}
+
+fn parse_range(v: &str, size: u64) -> Option<(u64, u64)> {
+    let spec = v.strip_prefix("bytes=")?.split(',').next()?.trim();
+    let (a, b) = spec.split_once('-')?;
+    let (start, end) = if a.is_empty() {
+        let n: u64 = b.parse().ok()?;
+        (size.saturating_sub(n), size - 1)
+    } else {
+        let s: u64 = a.parse().ok()?;
+        let e = if b.is_empty() { size - 1 } else { b.parse::<u64>().ok()?.min(size - 1) };
+        (s, e)
+    };
+    (start <= end && start < size).then_some((start, end))
+}
+
+fn serve_file(req: Request, raw: &str, roots: &[PathBuf]) {
+    let Ok(path) = PathBuf::from(raw).canonicalize() else {
+        let _ = req.respond(Response::empty(StatusCode(404)));
+        return;
+    };
+    if !roots.iter().any(|r| path.starts_with(r)) {
+        let _ = req.respond(Response::empty(StatusCode(403)));
+        return;
+    }
+    let Ok(mut file) = File::open(&path) else {
+        let _ = req.respond(Response::empty(StatusCode(404)));
+        return;
+    };
+    let size = file.metadata().map(|m| m.len()).unwrap_or(0);
+    let range = req.headers().iter().find(|h| h.field.equiv("Range")).and_then(|h| parse_range(h.value.as_str(), size));
+    let mut headers = vec![header("Content-Type", mime(&path)), header("Accept-Ranges", "bytes")];
+    match range {
+        Some((start, end)) => {
+            let len = end - start + 1;
+            if file.seek(SeekFrom::Start(start)).is_err() {
+                let _ = req.respond(Response::empty(StatusCode(416)));
+                return;
+            }
+            headers.push(header("Content-Range", &format!("bytes {start}-{end}/{size}")));
+            let _ = req.respond(Response::new(StatusCode(206), headers, file.take(len), Some(len as usize), None));
+        }
+        None => {
+            let _ = req.respond(Response::new(StatusCode(200), headers, file, Some(size as usize), None));
+        }
+    }
+}
+
+fn new_profile_id() -> String {
+    use rand::Rng;
+    let mut rng = rand::rng();
+    (0..12).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect()
+}
+
+fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
+    let url = req.url().to_string();
+    let Some(rest) = url.strip_prefix(&format!("/{token}/")) else {
+        let _ = req.respond(Response::empty(StatusCode(404)));
+        return;
+    };
+    let (route, q) = rest.split_once('?').unwrap_or((rest, ""));
+    let route = route.to_string();
+    let q = q.to_string();
+    let parts: Vec<&str> = route.split('/').collect();
+    let method = req.method().clone();
+
+    match (&method, parts.as_slice()) {
+        // ---------- system ----------
+        (Method::Get, ["api", "v1", "hello"]) => {
+            ok(req, json!({ "api": API_VERSION, "core": env!("CARGO_PKG_VERSION") }))
+        }
+        (Method::Get, ["api", "v1", "status"]) => ok(req, app.status()),
+        (Method::Get, ["api", "v1", "diagnostics"]) => ok(req, json!(diag::diagnostics())),
+        (Method::Get, ["api", "v1", "pads"]) => {
+            let s = app.pads.lock().unwrap().clone();
+            ok(req, json!(s))
+        }
+        (Method::Post, ["api", "v1", "server"]) => {
+            let body = body_json(&mut req);
+            let url = match romm::normalize_url(body["url"].as_str().unwrap_or("")) {
+                Ok(u) => u,
+                Err(e) => return err(req, 400, &e),
+            };
+            match romm::Client::new(&url, None).heartbeat() {
+                Ok(version) => {
+                    if app.server_url().as_deref() != Some(url.as_str()) {
+                        // Tokens belong to one server: switching servers requires pairing again.
+                        for p in app.db.profiles() {
+                            secrets::delete(&app.paths, &p.id);
+                            app.db.set_unpaired(&p.id);
+                        }
+                        app.db.set_setting("romm_url", &url);
+                        app.db.log("server", &format!("RomM server set: {url} (version {version})"));
+                    }
+                    app.set_online(true);
+                    ok(req, json!({ "url": url, "version": version }))
+                }
+                Err(e) => err(req, 502, &e.to_string()),
+            }
+        }
+
+        // ---------- profiles ----------
+        (Method::Get, ["api", "v1", "profiles"]) => ok(req, json!(app.db.profiles())),
+        (Method::Post, ["api", "v1", "profiles"]) => {
+            let body = body_json(&mut req);
+            let name = body["name"].as_str().unwrap_or("").trim().to_string();
+            if name.is_empty() || name.chars().count() > 40 {
+                return err(req, 400, "invalid profile name (1 to 40 characters)");
+            }
+            let id = new_profile_id();
+            match app.db.add_profile(&id, &name) {
+                Ok(()) => {
+                    let _ = std::fs::create_dir_all(app.paths.profiles().join(&id));
+                    app.emit(json!({ "type": "profiles", "profiles": app.db.profiles() }));
+                    ok(req, json!(app.db.profile(&id)))
+                }
+                Err(e) => err(req, 500, &e.to_string()),
+            }
+        }
+        (Method::Put, ["api", "v1", "profiles", id]) => {
+            let body = body_json(&mut req);
+            let name = body["name"].as_str().unwrap_or("").trim();
+            if name.is_empty() || name.chars().count() > 40 {
+                return err(req, 400, "invalid profile name");
+            }
+            if app.db.rename_profile(id, name) {
+                app.emit(json!({ "type": "profiles", "profiles": app.db.profiles() }));
+                ok(req, json!(app.db.profile(id)))
+            } else {
+                err(req, 404, "unknown profile")
+            }
+        }
+        (Method::Delete, ["api", "v1", "profiles", id]) => {
+            // The profile's saves (profiles/<id> directory) are kept on disk.
+            secrets::delete(&app.paths, id);
+            if app.db.delete_profile(id) {
+                if app.db.setting("active_profile").as_deref() == Some(*id) {
+                    app.db.delete_setting("active_profile");
+                }
+                app.emit(json!({ "type": "profiles", "profiles": app.db.profiles() }));
+                ok(req, json!({ "deleted": id }))
+            } else {
+                err(req, 404, "unknown profile")
+            }
+        }
+        (Method::Post, ["api", "v1", "profiles", id, "activate"]) => match app.db.profile(id) {
+            Some(p) => {
+                app.db.set_setting("active_profile", &p.id);
+                app.db.touch_profile(&p.id);
+                app.emit(json!({ "type": "profiles", "profiles": app.db.profiles() }));
+                if p.paired {
+                    catalog::start_sync(app);
+                }
+                ok(req, json!(p))
+            }
+            None => err(req, 404, "unknown profile"),
+        },
+        (Method::Post, ["api", "v1", "profiles", id, "pair"]) => match pairing::start(app, id) {
+            Ok(state) => ok(req, json!(state)),
+            Err(e) => err(req, 502, &e),
+        },
+        (Method::Get, ["api", "v1", "pairing"]) => ok(req, json!(*app.pairing.lock().unwrap())),
+        (Method::Delete, ["api", "v1", "pairing"]) => {
+            pairing::cancel(app);
+            ok(req, json!({ "cancelled": true }))
+        }
+        (Method::Get, ["api", "v1", "pairing", "qr.svg"]) => {
+            let url = app.pairing.lock().unwrap().as_ref().map(|p| p.verification_url.clone());
+            match url.and_then(|u| pairing::qr_svg(&u)) {
+                Some(svg) => {
+                    let r = Response::from_string(svg)
+                        .with_header(header("Content-Type", "image/svg+xml"))
+                        .with_header(header("Cache-Control", "no-store"));
+                    let _ = req.respond(r);
+                }
+                None => err(req, 404, "no pairing in progress"),
+            }
+        }
+
+        // ---------- library ----------
+        (Method::Post, ["api", "v1", "sync"]) => {
+            if app.client().is_none() {
+                return err(req, 409, "no paired profile");
+            }
+            catalog::start_sync(app);
+            ok(req, json!(*app.sync.lock().unwrap()))
+        }
+        (Method::Get, ["api", "v1", "platforms"]) => ok(req, json!(app.db.platforms())),
+        (Method::Get, ["api", "v1", "library"]) => {
+            let platform = query(&q, "platform");
+            let search = query(&q, "q");
+            let local = query(&q, "local").as_deref() == Some("1");
+            ok(req, json!(app.db.games(platform.as_deref(), search.as_deref(), local)))
+        }
+        (Method::Get, ["api", "v1", "games", id]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => ok(req, json!(g)),
+            None => err(req, 404, "unknown game"),
+        },
+        (Method::Post, ["api", "v1", "games", id, "download"]) => match id.parse::<i64>() {
+            Ok(rom_id) => match downloads::enqueue(app, rom_id) {
+                Ok(dl) => ok(req, json!({ "download_id": dl })),
+                Err(e) => err(req, 409, &e),
+            },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Delete, ["api", "v1", "games", id, "local"]) => match id.parse::<i64>() {
+            Ok(rom_id) => match downloads::delete_local(app, rom_id) {
+                Ok(()) => ok(req, json!({ "deleted": rom_id })),
+                Err(e) => err(req, 409, &e),
+            },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Get, ["api", "v1", "downloads"]) => ok(req, json!(app.db.downloads())),
+        (Method::Delete, ["api", "v1", "downloads", id]) => match id.parse::<i64>() {
+            Ok(dl) if downloads::cancel(app, dl) => ok(req, json!({ "cancelled": dl })),
+            _ => err(req, 404, "unknown or finished download"),
+        },
+
+        // ---------- misc ----------
+        (Method::Get, ["api", "v1", "themes"]) => {
+            ok(req, json!(themes::all_themes(&app.ui_themes, &app.paths.themes())))
+        }
+        (Method::Post, ["api", "v1", "report"]) => {
+            let mut body = String::new();
+            let _ = req.as_reader().take(4 * 1024 * 1024).read_to_string(&mut body);
+            let path = app.paths.reports().join(format!("bench-{}.json", crate::db::now()));
+            match std::fs::write(&path, body) {
+                Ok(()) => ok(req, json!({ "path": path })),
+                Err(e) => err(req, 500, &e.to_string()),
+            }
+        }
+        (Method::Post, ["api", "v1", "debug", "pad"]) if app.debug_input => {
+            const OK: [&str; 12] = ["up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "lb", "rb"];
+            match query(&q, "action") {
+                Some(a) if OK.contains(&a.as_str()) => {
+                    app.emit(json!({ "type": "pad", "action": a, "pad": "test", "repeat": false }));
+                    ok(req, json!({ "ok": true }))
+                }
+                _ => err(req, 400, "unknown action"),
+            }
+        }
+        (Method::Get, ["file"]) => match query(&q, "path") {
+            Some(p) => serve_file(req, &p, roots),
+            None => {
+                let _ = req.respond(Response::empty(StatusCode(400)));
+            }
+        },
+        _ => err(req, 404, "unknown route"),
+    }
+}
+
+/// Starts the server and returns its port.
+pub fn start(app: Shared, token: String) -> std::io::Result<u16> {
+    let server = Server::http("127.0.0.1:0").map_err(|e| std::io::Error::other(e.to_string()))?;
+    let port = server.server_addr().to_ip().map(|a| a.port()).unwrap_or(0);
+    let roots: Vec<PathBuf> = [app.paths.covers(), app.paths.themes(), app.resources.clone(), app.ui_themes.clone()]
+        .into_iter()
+        .filter_map(|r| r.canonicalize().ok())
+        .collect();
+    let server = std::sync::Arc::new(server);
+    std::thread::Builder::new().name("borne-http".into()).spawn(move || {
+        for req in server.incoming_requests() {
+            let (app, token, roots) = (app.clone(), token.clone(), roots.clone());
+            std::thread::spawn(move || handle(req, &app, &token, &roots));
+        }
+    })?;
+    Ok(port)
+}

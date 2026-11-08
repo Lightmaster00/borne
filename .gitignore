@@ -1,0 +1,10 @@
+core/target/
+build/
+out/
+qt/
+qt-*/
+qt-wheels/
+*.tar.gz
+__pycache__/
+build-macos/
+out-macos/

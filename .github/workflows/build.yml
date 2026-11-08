@@ -1,0 +1,78 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: Linux x86_64
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ qt6-base-dev qt6-declarative-dev qt6-l10n-tools libudev-dev libxcb-cursor0 libgl-dev libpulse0
+      - name: Core tests
+        run: cargo test --release --manifest-path core/Cargo.toml
+      - name: Qt 6.8 to bundle (PySide6 wheels)
+        run: |
+          pip download --no-deps -d qt-wheels "pyside6-essentials==6.8.3" "pyside6-addons==6.8.3"
+          mkdir -p qt-ess qt-add qt
+          python3 -m zipfile -e qt-wheels/PySide6_Essentials-*.whl qt-ess
+          python3 -m zipfile -e qt-wheels/PySide6_Addons-*.whl qt-add
+          cp -a qt-ess/PySide6/Qt/. qt/ && cp -a qt-add/PySide6/Qt/. qt/
+      - name: QML syntax
+        run: scripts/check-qml.sh qt-ess/PySide6
+      - name: Translations up to date and complete
+        run: |
+          chmod +x qt-ess/PySide6/lupdate
+          LD_LIBRARY_PATH="$PWD/qt-ess/PySide6/Qt/lib" scripts/i18n/update.sh "$PWD/qt-ess/PySide6/lupdate"
+          git diff --exit-code -- ui/i18n || { echo "ui/i18n is stale: run scripts/i18n/update.sh and commit"; exit 1; }
+      - name: Package
+        run: |
+          LRELEASE=/usr/lib/qt6/bin/lrelease scripts/package.sh "$PWD/qt" "$PWD/out/Borne"
+          tar czf Borne-linux-x86_64.tar.gz -C out Borne
+      - name: Startup test
+        run: scripts/smoke-test.sh out/Borne/bin/borne
+      - name: Startup test (French)
+        run: BORNE_LANG=fr scripts/smoke-test.sh out/Borne/bin/borne
+      - uses: actions/upload-artifact@v4
+        with:
+          name: borne-linux-x86_64
+          path: Borne-linux-x86_64.tar.gz
+
+  macos:
+    name: macOS Apple Silicon
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Official Qt 6.9 (works with the macOS 26 SDK)
+        timeout-minutes: 20
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.9.3"
+          modules: "qtmultimedia qtwebsockets"
+          cache: true
+      - name: Core tests
+        run: cargo test --release --manifest-path core/Cargo.toml
+      - name: Borne.app
+        run: scripts/package-macos.sh "$PWD/out-macos"
+      - name: Startup test
+        run: scripts/smoke-test.sh "$PWD/out-macos/Borne.app/Contents/MacOS/borne"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: borne-macos-arm64
+          path: out-macos/Borne-macos-*.zip

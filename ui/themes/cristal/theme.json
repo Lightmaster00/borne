@@ -1,0 +1,2 @@
+{ "schema": 1, "api": 1, "id": "cristal", "name": "Cristal", "author": "Borne", "version": "1.0.0",
+  "layout": "list", "options": { "trailerDelayMs": 1200, "trailerVolume": 0, "backgroundBlur": false } }

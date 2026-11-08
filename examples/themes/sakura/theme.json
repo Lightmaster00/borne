@@ -1,0 +1,2 @@
+{ "schema": 1, "api": 1, "id": "sakura", "name": "Sakura (user example)", "author": "Light", "version": "1.0.0",
+  "layout": "grid", "options": { "trailerDelayMs": 1200, "trailerVolume": 0, "backgroundBlur": false } }
