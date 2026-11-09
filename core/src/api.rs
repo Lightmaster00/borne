@@ -28,14 +28,19 @@
 //!   DELETE /api/v1/games/<rom_id>/link           removes it from the virtual mount
 //!   POST   /api/v1/games/<rom_id>/prefs  {version?, emu_language?}   active profile's choices
 //!   GET    /api/v1/settings                      install mode, virtual mount state
-//!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?}
+//!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
+//! Updates
+//!   GET    /api/v1/update                        current build, channel, state of the update
+//!   POST   /api/v1/update/check                  looks for a newer build (event "update")
+//!   POST   /api/v1/update/download               downloads and verifies it
+//!   POST   /api/v1/update/apply                  installs it; Borne restarts when the UI quits
 //!   GET    /api/v1/downloads  ·  DELETE /api/v1/downloads/<id>
 //! Misc
 //!   GET    /api/v1/themes  ·  POST /api/v1/report  ·  GET /file?path=…
 //!   POST   /api/v1/debug/pad?action=…            automated tests (BORNE_DEBUG_INPUT=1)
 
 use crate::state::Shared;
-use crate::{catalog, diag, downloads, library, pairing, romm, secrets, stream, themes};
+use crate::{catalog, diag, downloads, library, pairing, romm, secrets, stream, themes, update};
 use serde_json::{json, Value};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -157,7 +162,7 @@ fn install_mode(app: &Shared) -> String {
 }
 
 fn settings(app: &Shared) -> Value {
-    json!({ "install_mode": install_mode(app), "stream": stream::status(app) })
+    json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -188,7 +193,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
     match (&method, parts.as_slice()) {
         // ---------- system ----------
         (Method::Get, ["api", "v1", "hello"]) => {
-            ok(req, json!({ "api": API_VERSION, "core": env!("CARGO_PKG_VERSION") }))
+            ok(req, json!({ "api": API_VERSION, "core": update::VERSION, "build": update::build() }))
         }
         (Method::Get, ["api", "v1", "status"]) => ok(req, app.status()),
         (Method::Get, ["api", "v1", "diagnostics"]) => ok(req, json!(diag::diagnostics())),
@@ -381,6 +386,19 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "settings"]) => ok(req, settings(app)),
+        (Method::Get, ["api", "v1", "update"]) => ok(req, update::status(app)),
+        (Method::Post, ["api", "v1", "update", "check"]) => {
+            update::check(app);
+            ok(req, update::status(app))
+        }
+        (Method::Post, ["api", "v1", "update", "download"]) => match update::download(app) {
+            Ok(()) => ok(req, update::status(app)),
+            Err(e) => err(req, 409, &e),
+        },
+        (Method::Post, ["api", "v1", "update", "apply"]) => match update::apply(app) {
+            Ok(()) => ok(req, json!({ "restart": true })),
+            Err(e) => err(req, 409, &e),
+        },
         (Method::Post, ["api", "v1", "settings"]) => {
             let body = body_json(&mut req);
             if let Some(m) = body["install_mode"].as_str() {
@@ -388,6 +406,15 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     return err(req, 400, "install_mode: download or stream");
                 }
                 app.db.set_setting("install_mode", m);
+            }
+            if let Some(c) = body["update_channel"].as_str() {
+                if !["stable", "dev"].contains(&c) {
+                    return err(req, 400, "update_channel: stable or dev");
+                }
+                app.db.set_setting("update_channel", c);
+            }
+            if let Some(a) = body["update_auto"].as_bool() {
+                app.db.set_setting("update_auto", if a { "1" } else { "0" });
             }
             if let Some(mb) = body["stream_cache_mb"].as_u64() {
                 if !(1024..=1_048_576).contains(&mb) {

@@ -28,6 +28,7 @@ Version 1.4 — November 2026
 | 1.2 | Theme system and media handling (posters, ES-DE-style background trailers). |
 | 1.3 | Dedicated Qt 6 / QML UI, separate from the Rust core (two processes linked by a local HTTP + WebSocket API). ES-DE dropped. Tauri + Nuxt, Electron and a custom native engine rejected (see 5.2). QML themes with guardrails; plugin section. |
 | 1.4 | Project renamed **Borne**. Specification moved to English. Stage plan aligned with the repository. UI translated (English source, French). |
+| 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
 | 1.5 | Game page before any download; versions of a game grouped, with per-profile version and emulator language; "play from the network" through the Borne virtual mount (FUSE, only chosen games, read from RomM); mouse control; console-inspired themes (home row, tile dashboard, bright home, cabinet carousel) with UI sounds. |
 
 ## 1. Executive summary
@@ -518,6 +519,17 @@ never deletes the game on the server.
 - Safe extraction and estimated disk space (Switch games often exceed 15 GB).
 - Duplicate prevention and detection of orphaned local files.
 - Explicit manual cleanup; any future automatic deletion will be opt-in.
+
+### 11.4 Updating Borne
+
+- Settings → Updates shows the installed version and build, the channel (Stable: releases tagged `vX.Y.Z`;
+  Development: the `dev` pre-release rebuilt on every change of `main`) and automatic checks (startup, then
+  every 6 hours; never an automatic install).
+- CI publishes, per release, the Linux and macOS archives, `SHA256SUMS` and `latest.json` (version, build
+  number, notes, URL / size / SHA-256 per platform). Builds are ordered by their CI build number.
+- Installing: download, SHA-256 check, extraction next to the installed package, then on confirmation an
+  atomic swap of the package folder (the previous one kept as `.borne-previous`, restored if the swap fails)
+  and a restart on the new core. Locally built, Flatpak and read-only installs report why they cannot update.
 
 ## 12. Security, integrity and data protection
 

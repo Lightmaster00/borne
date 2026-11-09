@@ -478,30 +478,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Games: play from the network</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Games: download to this device</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Nothing is copied; only the games you pick are mounted, read from RomM on demand</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Games are copied to this device and work offline</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Interface sounds: on</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Interface sounds: off</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Trailers: on</source>
         <translation type="unfinished" />
     </message>
@@ -961,6 +937,14 @@
         <source>Borne core unreachable</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Installing the update: Borne restarts…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Version %1 is available: Settings → Updates.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1110,6 +1094,197 @@
     </message>
     <message>
         <source>Confirm</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <source>%1 GB</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 MB</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download version %1 · %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading… %1%</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Restart and install</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Checking…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Check for updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Development</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>What a game page offers first. Both stay available on every game page.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download to this device</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Plays offline, even if the server is off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fastest loading</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nothing to wait for once installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Uses disk space for every game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wait for the download before playing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Play from the network</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Uses almost no disk space (bounded cache)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Play almost right away</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Only the games you pick are mounted, with your RomM rights</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Needs the network and the RomM server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Loading depends on the network: wired or 5 GHz Wi-Fi for large games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Linux only</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Unavailable here: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Network cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Space kept on this device for games played from the network; the oldest blocks are removed first.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installed: version %1 (build %2)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Automatic updates are not available for this copy: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Channel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stable: published versions. Development: every change, as soon as it is built (may contain bugs).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Check automatically</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>At startup and every 6 hours. Nothing is installed without your go-ahead.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne is up to date.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Update failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Version %1 (build %2): %3</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Interface sounds</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Short sounds when moving and choosing; each theme has its own.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trailers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video behind the selected game, muted, after a short pause.</source>
         <translation type="unfinished" />
     </message>
 </context>

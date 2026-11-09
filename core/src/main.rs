@@ -26,6 +26,7 @@ mod secrets;
 mod state;
 mod stream;
 mod themes;
+mod update;
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -112,6 +113,7 @@ fn main() {
     }
     downloads::spawn_worker(app.clone());
     stream::start(&app);
+    update::start(&app);
     if app.client().is_some() {
         catalog::start_sync(&app);
     }
@@ -127,7 +129,11 @@ fn main() {
 
     if no_ui {
         loop {
-            std::thread::sleep(Duration::from_secs(3600));
+            std::thread::sleep(Duration::from_millis(500));
+            if update::RESTART.load(std::sync::atomic::Ordering::SeqCst) {
+                stream::stop();
+                update::exec_new_core();
+            }
         }
     }
 
@@ -146,6 +152,9 @@ fn main() {
         match status {
             Ok(s) if s.success() => {
                 stream::stop();
+                if update::RESTART.load(std::sync::atomic::Ordering::SeqCst) {
+                    update::exec_new_core();
+                }
                 break;
             }
             Ok(s) => {

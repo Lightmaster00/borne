@@ -3,8 +3,14 @@ name: build
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+
+# Build identity, compiled into the core and used by in-app updates:
+#   tag vX.Y.Z -> version X.Y.Z (stable channel); otherwise <Cargo version>-dev.<run> (dev channel).
+env:
+  BORNE_BUILD: ${{ github.run_number }}
 
 jobs:
   linux:
@@ -12,6 +18,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Build identity
+        shell: bash
+        run: |
+          base=$(grep -m1 '^version' core/Cargo.toml | cut -d'"' -f2)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF_NAME#v}"; else v="$base-dev.$GITHUB_RUN_NUMBER"; fi
+          echo "BORNE_VERSION=$v" >> "$GITHUB_ENV"
+          echo "BORNE_COMMIT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with:
@@ -44,6 +57,8 @@ jobs:
         run: scripts/smoke-test.sh out/Borne/bin/borne
       - name: Startup test (French)
         run: BORNE_LANG=fr scripts/smoke-test.sh out/Borne/bin/borne
+      - name: In-app update test
+        run: tests/update_test.sh out/Borne
       - uses: actions/upload-artifact@v4
         with:
           name: borne-linux-x86_64
@@ -55,6 +70,13 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - name: Build identity
+        shell: bash
+        run: |
+          base=$(grep -m1 '^version' core/Cargo.toml | cut -d'"' -f2)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF_NAME#v}"; else v="$base-dev.$GITHUB_RUN_NUMBER"; fi
+          echo "BORNE_VERSION=$v" >> "$GITHUB_ENV"
+          echo "BORNE_COMMIT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with:
@@ -76,3 +98,73 @@ jobs:
         with:
           name: borne-macos-arm64
           path: out-macos/Borne-macos-*.zip
+
+  # Publishes the builds for in-app updates:
+  #   push on main -> pre-release "dev" (replaced each time); tag vX.Y.Z -> release vX.Y.Z (stable).
+  publish:
+    name: Publish
+    if: github.event_name == 'push'
+    needs: [linux, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build identity
+        shell: bash
+        run: |
+          base=$(grep -m1 '^version' core/Cargo.toml | cut -d'"' -f2)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF_NAME#v}"; else v="$base-dev.$GITHUB_RUN_NUMBER"; fi
+          echo "BORNE_VERSION=$v" >> "$GITHUB_ENV"
+          echo "BORNE_COMMIT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Release notes and update manifest
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="$GITHUB_REF_NAME"; CHANNEL=stable
+            PREV=$(git describe --tags --abbrev=0 --match 'v*' "$TAG^" 2>/dev/null || true)
+            git log --format='- %s' ${PREV:+$PREV..}"$TAG" > notes.md
+          else
+            TAG=dev; CHANNEL=dev
+            git log -1 --format='%s' > notes.md
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "CHANNEL=$CHANNEL" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import hashlib, json, os
+          tag, repo = os.environ["TAG"], os.environ["GITHUB_REPOSITORY"]
+          url = f"https://github.com/{repo}/releases/download/{tag}/"
+          assets = {}
+          for key, name in (("linux-x86_64", "Borne-linux-x86_64.tar.gz"), ("macos-aarch64", "Borne-macos-arm64.zip")):
+              data = open(f"dist/{name}", "rb").read()
+              assets[key] = {"url": url + name, "sha256": hashlib.sha256(data).hexdigest(), "size": len(data)}
+          manifest = {"version": os.environ["BORNE_VERSION"], "build": int(os.environ["BORNE_BUILD"]),
+                      "channel": os.environ["CHANNEL"], "commit": os.environ["BORNE_COMMIT"],
+                      "date": __import__("datetime").date.today().isoformat(),
+                      "notes": open("notes.md").read().strip(), "assets": assets}
+          json.dump(manifest, open("dist/latest.json", "w"), indent=1)
+          with open("dist/SHA256SUMS", "w") as f:
+              for a in assets.values():
+                  f.write(f"{a['sha256']}  {a['url'].rsplit('/', 1)[1]}\n")
+          PY
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if [ "$CHANNEL" = dev ]; then
+            gh release view dev >/dev/null 2>&1 || gh release create dev --prerelease --target "$GITHUB_SHA" \
+              --title "Borne (development build)" --notes "Rebuilt on every change of main."
+            # Move the dev tag to this commit, then replace the files.
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/dev" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+            gh release edit dev --notes "Build $BORNE_BUILD ($BORNE_VERSION, $BORNE_COMMIT): $(cat notes.md)"
+            gh release upload dev dist/* --clobber
+          else
+            gh release create "$TAG" --title "Borne $BORNE_VERSION" --notes-file notes.md dist/*
+          fi

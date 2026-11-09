@@ -280,24 +280,50 @@ Window {
     }
     function loadSettings() { api("GET", "/api/v1/settings", null, function (r) { if (r) settings = r }) }
     function settingsMenu() {
-        const net = settings.install_mode === "stream"
-        menu.open(qsTr("Settings"), "", [
-            { id: "install", label: net ? qsTr("Games: play from the network") : qsTr("Games: download to this device"),
-              detail: net ? qsTr("Nothing is copied; only the games you pick are mounted, read from RomM on demand")
-                          : qsTr("Games are copied to this device and work offline") },
-            { id: "sounds", label: prefs.sounds ? qsTr("Interface sounds: on") : qsTr("Interface sounds: off") },
-            { id: "trailers", label: win.trailers ? qsTr("Trailers: on") : qsTr("Trailers: off") },
-            { id: "close", label: qsTr("Close") }
-        ], function (c) {
-            if (c === "install") {
-                if (!net && !settings.stream.available) { toasts.show(qsTr("Playing from the network is unavailable here: %1").arg(settings.stream.error || ""), "error"); return }
-                api("POST", "/api/v1/settings", { install_mode: net ? "download" : "stream" }, function (r, err) {
-                    if (err) toasts.show(err, "error"); else settings = r
-                    settingsMenu()
-                })
-            } else if (c === "sounds") { prefs.sounds = !prefs.sounds; settingsMenu() }
-            else if (c === "trailers") { win.trailers = !win.trailers; settingsMenu() }
-        })
+        loadSettings()
+        settingsPage.reset()
+        overlay = "settings"
+    }
+    function settingsAction(id, payload) {
+        const post = function (body) {
+            api("POST", "/api/v1/settings", body, function (r, err) { if (err) toasts.show(err, "error"); else settings = r })
+        }
+        if (id === "back") { sfx.play("back"); overlay = ""; return }
+        sfx.play("accept")
+        if (id === "install") {
+            if (payload === "stream" && !settings.stream.available) {
+                toasts.show(qsTr("Playing from the network is unavailable here: %1").arg(settings.stream.error || ""), "error")
+                return
+            }
+            post({ install_mode: payload })
+        }
+        else if (id === "cache") post({ stream_cache_mb: payload })
+        else if (id === "channel") post({ update_channel: payload })
+        else if (id === "auto") post({ update_auto: payload })
+        else if (id === "sounds") prefs.sounds = payload
+        else if (id === "trailers") win.trailers = payload
+        else if (id === "update-check") api("POST", "/api/v1/update/check", {}, function () { loadSettings() })
+        else if (id === "update-download") api("POST", "/api/v1/update/download", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        else if (id === "update-apply") {
+            api("POST", "/api/v1/update/apply", {}, function (r, err) {
+                if (err) { toasts.show(err, "error"); return }
+                toasts.show(qsTr("Installing the update: Borne restarts…"), "info")
+                quitForUpdate.start()
+            })
+        }
+    }
+    // The core restarts on the new version once the UI has quit.
+    Timer { id: quitForUpdate; interval: 800; onTriggered: Qt.quit() }
+    function onUpdateEvent(u) {
+        if (settings && settings.update) {
+            const s = Object.assign({}, settings)
+            s.update = Object.assign({}, s.update, { update: u })
+            settings = s
+        }
+        if (u.state === "available" && u.available && prefs.notifiedBuild !== u.available.build) {
+            prefs.notifiedBuild = u.available.build
+            toasts.show(qsTr("Version %1 is available: Settings → Updates.").arg(u.available.version), "info")
+        }
     }
     function mainMenu() {
         const inLib = screen === "library"
@@ -469,6 +495,7 @@ Window {
         if (overlay === "theme") return themePicker.handle(a)
         if (overlay === "diag") return diag.handle(a)
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
+        if (overlay === "settings") { if (a !== "a" && a !== "b") sfx.play("move"); return settingsPage.handle(a) }
         if (overlay === "game") { if (a !== "a" && a !== "b") sfx.play("move"); return gamePage.handle(a) }
         if (screen === "server") return setup.handle(a)
         if (screen === "profiles") return picker.handle(a)
@@ -522,6 +549,7 @@ Window {
             else if (m.type === "pad") win.dispatch(m.action, "pad")
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
+            else if (m.type === "update") win.onUpdateEvent(m.update)
             else if (m.type === "sync") {
                 if (win.status) { const s = win.status; s.sync = m.sync; win.status = s; win.statusChanged() }
                 if (!m.sync.running && m.sync.error) toasts.show(qsTr("Sync: %1").arg(m.sync.error), "error")
@@ -617,7 +645,7 @@ Window {
     Loader {
         id: bgLoader
         anchors.fill: parent
-        active: win.screen === "library" && win.ready && win.layoutId !== "list" && !win.gameMode && win.overlay !== "game"
+        active: win.screen === "library" && win.ready && win.layoutId !== "list" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
         sourceComponent: TrailerStage {
             game: win.focusedGame
             theme: win.theme
@@ -632,7 +660,7 @@ Window {
     Item {
         id: topbar
         width: parent.width; height: 72
-        visible: win.screen === "library" && !win.gameMode && win.overlay !== "game"
+        visible: win.screen === "library" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
         Text {
             x: 64; anchors.verticalCenter: parent.verticalCenter
             text: "Borne"; color: theme.fg
@@ -741,7 +769,7 @@ Window {
         id: libraryLoader
         anchors { top: topbar.bottom; left: parent.left; right: parent.right; bottom: info.top }
         active: win.screen === "library" && win.ready && !win.gameMode
-        visible: win.overlay !== "game"
+        visible: win.overlay !== "game" && win.overlay !== "settings"
         sourceComponent: win.layoutId === "list" ? listComp : win.layoutId === "shelf" ? shelfComp : win.layoutId === "carousel" ? carouselComp : gridComp
     }
     // Mouse wheel and trackpad: move the selection like the gamepad would.
@@ -798,7 +826,7 @@ Window {
     // Round shortcuts under the home row (themes with quickBar, shelf layout).
     Row {
         id: quickBar
-        visible: theme.quickBar && win.layoutId === "shelf" && win.screen === "library" && win.overlay !== "game" && !win.gameMode
+        visible: theme.quickBar && win.layoutId === "shelf" && win.screen === "library" && win.overlay !== "game" && win.overlay !== "settings" && !win.gameMode
         anchors { horizontalCenter: parent.horizontalCenter; bottom: hints.top; bottomMargin: 18 }
         spacing: 26
         Repeater {
@@ -848,7 +876,7 @@ Window {
         id: info
         anchors { left: parent.left; right: parent.right; bottom: hints.top }
         height: win.layoutId === "grid" ? 96 : 0
-        visible: win.screen === "library" && win.layoutId === "grid" && !win.gameMode && win.focusedGame !== null && win.overlay !== "game"
+        visible: win.screen === "library" && win.layoutId === "grid" && !win.gameMode && win.focusedGame !== null && win.overlay !== "game" && win.overlay !== "settings"
         Column {
             x: 64; y: 8
             Text {
@@ -871,7 +899,7 @@ Window {
         height: 56
         theme: win.theme
         pointerActive: win.pointerActive
-        visible: win.screen === "library" && !win.gameMode && win.overlay !== "game"
+        visible: win.screen === "library" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
         hints: {
             const g = win.focusedGame
             const h = []
@@ -1038,6 +1066,19 @@ Window {
         paused: menu.visible || !visible
         options: win.opts
         onAction: (id, payload) => win.pageAction(id, payload)
+    }
+
+    SettingsPage {
+        id: settingsPage
+        anchors.fill: parent
+        z: 25
+        visible: win.overlay === "settings"
+        theme: win.theme
+        settings: win.settings
+        sounds: prefs.sounds
+        trailers: win.trailers
+        pointerActive: win.pointerActive
+        onAction: (id, payload) => win.settingsAction(id, payload)
     }
 
     // UI sounds (theme.soundSet), short and quiet; off in the settings.
@@ -1375,6 +1416,7 @@ Window {
         property string theme: ""
         property string layout: ""
         property bool sounds: true
+        property int notifiedBuild: 0
     }
     onLayoutIdChanged: if (ready && !bench.running) prefs.layout = layoutId
 

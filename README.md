@@ -39,6 +39,8 @@ Since then:
   virtual mount (`~/.local/share/borne/mount`). Only the games you pick appear there; their files
   are read from RomM on demand with the profile's token, through a bounded cache. No NFS export,
   no root. Settings → Games chooses what A does by default (download or network).
+- **Settings**: how games are installed (download or network, with what each brings), network cache
+  size, updates, interface sounds and trailers.
 - **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
   gamepad is used. The wheel scrolls the library.
 - **Console themes**: Horizon (cinematic home row), Mosaic (tile dashboard), Lumen (bright home with
@@ -56,6 +58,16 @@ Launching games arrives with stage 3.
    the pairing from RomM (QR code or the code shown).
 
 Data lives in `~/Library/Application Support/borne`.
+
+## Updates
+
+Settings → Updates: Borne checks GitHub for a newer build, downloads it, verifies its SHA-256 and
+installs it on "Restart and install" (the previous version is kept next to it as `.borne-previous`).
+Two channels: **Stable** (releases published with a `vX.Y.Z` tag) and **Development** (the `dev`
+pre-release, rebuilt by CI on every change of `main`). Automatic checks run at startup and every
+6 hours; nothing is installed without confirmation. Copies built locally do not update themselves.
+
+To publish a stable version: `git tag v0.2.0 && git push origin v0.2.0` (CI builds and publishes it).
 
 ## Architecture
 

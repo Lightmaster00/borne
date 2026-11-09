@@ -20,6 +20,7 @@ gilrs = "0.11"
 dirs = "6"
 rand = "0.9"
 sha1_smol = "1"
+sha2 = "0.10"
 zip = { version = "4", default-features = false, features = ["deflate"] }
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 libc = "0.2"

@@ -129,7 +129,9 @@ Item {
     }
     onActionsChanged: setCol(0, Math.min(col[0], Math.max(0, actions.length - 1)))
     // Keep the focused row on screen when the gamepad moves (the page can be taller than the screen).
+    property bool fromMouse: false
     onRowChanged: {
+        if (fromMouse) return
         const name = rows[row]
         const target = name === "actions" ? 0 : name === "versions" ? versionsBlock.y - 24 : languageBlock.y - 24
         scrollAnim.to = Math.max(0, Math.min(body.contentHeight - body.height, target))
@@ -294,7 +296,7 @@ Item {
                         disabled: !!modelData.disabled
                         focused: page.rows[page.row] === "actions" && page.col[0] === index
                         pointerActive: page.pointerActive
-                        onClicked: { page.row = 0; page.setCol(0, index); page.activate("actions", index) }
+                        onClicked: { page.fromMouse = true; page.row = 0; page.fromMouse = false; page.setCol(0, index); page.activate("actions", index) }
                     }
                 }
             }
@@ -331,7 +333,7 @@ Item {
                             badge: modelData.local_state === "local" || modelData.linked
                             focused: page.rows[page.row] === "versions" && page.col[1] === index
                             pointerActive: page.pointerActive
-                            onClicked: { page.row = page.rows.indexOf("versions"); page.setCol(1, index); page.activate("versions", index) }
+                            onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("versions"); page.fromMouse = false; page.setCol(1, index); page.activate("versions", index) }
                         }
                     }
                 }
@@ -365,7 +367,7 @@ Item {
                             selected: modelData.id === page.emuLanguage
                             focused: page.rows[page.row] === "language" && page.col[2] === index
                             pointerActive: page.pointerActive
-                            onClicked: { page.row = page.rows.indexOf("language"); page.setCol(2, index); page.activate("language", index) }
+                            onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("language"); page.fromMouse = false; page.setCol(2, index); page.activate("language", index) }
                         }
                     }
                 }

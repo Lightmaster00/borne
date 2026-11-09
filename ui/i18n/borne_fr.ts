@@ -874,30 +874,6 @@
         <translation>Paramètres</translation>
     </message>
     <message>
-        <source>Games: play from the network</source>
-        <translation>Jeux : jouer depuis le réseau</translation>
-    </message>
-    <message>
-        <source>Games: download to this device</source>
-        <translation>Jeux : télécharger sur cet appareil</translation>
-    </message>
-    <message>
-        <source>Nothing is copied; only the games you pick are mounted, read from RomM on demand</source>
-        <translation>Rien n'est copié : seuls les jeux choisis sont montés, lus depuis RomM à la demande</translation>
-    </message>
-    <message>
-        <source>Games are copied to this device and work offline</source>
-        <translation>Les jeux sont copiés sur cet appareil et fonctionnent hors ligne</translation>
-    </message>
-    <message>
-        <source>Interface sounds: on</source>
-        <translation>Sons de l'interface : activés</translation>
-    </message>
-    <message>
-        <source>Interface sounds: off</source>
-        <translation>Sons de l'interface : désactivés</translation>
-    </message>
-    <message>
         <source>Playing from the network is unavailable here: %1</source>
         <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
     </message>
@@ -960,6 +936,14 @@
     <message>
         <source>Keep</source>
         <translation>Garder</translation>
+    </message>
+    <message>
+        <source>Installing the update: Borne restarts…</source>
+        <translation>Installation de la mise à jour : Borne redémarre…</translation>
+    </message>
+    <message>
+        <source>Version %1 is available: Settings → Updates.</source>
+        <translation>La version %1 est disponible : Paramètres → Mises à jour.</translation>
     </message>
 </context>
 <context>
@@ -1111,6 +1095,197 @@
     <message>
         <source>Confirm</source>
         <translation>Valider</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <source>%1 GB</source>
+        <translation>%1 Go</translation>
+    </message>
+    <message>
+        <source>%1 MB</source>
+        <translation>%1 Mo</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 Ko</translation>
+    </message>
+    <message>
+        <source>Download version %1 · %2</source>
+        <translation>Télécharger la version %1 · %2</translation>
+    </message>
+    <message>
+        <source>Downloading… %1%</source>
+        <translation>Téléchargement… %1 %</translation>
+    </message>
+    <message>
+        <source>Restart and install</source>
+        <translation>Redémarrer et installer</translation>
+    </message>
+    <message>
+        <source>Checking…</source>
+        <translation>Recherche…</translation>
+    </message>
+    <message>
+        <source>Check for updates</source>
+        <translation>Rechercher une mise à jour</translation>
+    </message>
+    <message>
+        <source>Stable</source>
+        <translation>Stable</translation>
+    </message>
+    <message>
+        <source>Development</source>
+        <translation>Développement</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Oui</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Non</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Retour</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
+    </message>
+    <message>
+        <source>Games</source>
+        <translation>Jeux</translation>
+    </message>
+    <message>
+        <source>What a game page offers first. Both stay available on every game page.</source>
+        <translation>Ce que la page d'un jeu propose en premier. Les deux restent disponibles sur chaque page de jeu.</translation>
+    </message>
+    <message>
+        <source>Download to this device</source>
+        <translation>Télécharger sur cet appareil</translation>
+    </message>
+    <message>
+        <source>Plays offline, even if the server is off</source>
+        <translation>Fonctionne hors ligne, même serveur éteint</translation>
+    </message>
+    <message>
+        <source>Fastest loading</source>
+        <translation>Chargements les plus rapides</translation>
+    </message>
+    <message>
+        <source>Nothing to wait for once installed</source>
+        <translation>Plus rien à attendre une fois installé</translation>
+    </message>
+    <message>
+        <source>Uses disk space for every game</source>
+        <translation>Prend de la place pour chaque jeu</translation>
+    </message>
+    <message>
+        <source>Wait for the download before playing</source>
+        <translation>Il faut attendre le téléchargement avant de jouer</translation>
+    </message>
+    <message>
+        <source>Play from the network</source>
+        <translation>Jouer depuis le réseau</translation>
+    </message>
+    <message>
+        <source>Uses almost no disk space (bounded cache)</source>
+        <translation>Presque aucune place sur le disque (cache limité)</translation>
+    </message>
+    <message>
+        <source>Play almost right away</source>
+        <translation>On joue presque tout de suite</translation>
+    </message>
+    <message>
+        <source>Only the games you pick are mounted, with your RomM rights</source>
+        <translation>Seuls les jeux choisis sont montés, avec tes droits RomM</translation>
+    </message>
+    <message>
+        <source>Needs the network and the RomM server</source>
+        <translation>Nécessite le réseau et le serveur RomM</translation>
+    </message>
+    <message>
+        <source>Loading depends on the network: wired or 5 GHz Wi-Fi for large games</source>
+        <translation>Chargements dépendants du réseau : câble ou Wi-Fi 5 GHz pour les gros jeux</translation>
+    </message>
+    <message>
+        <source>Linux only</source>
+        <translation>Linux uniquement</translation>
+    </message>
+    <message>
+        <source>Unavailable here: %1</source>
+        <translation>Indisponible ici : %1</translation>
+    </message>
+    <message>
+        <source>Network cache</source>
+        <translation>Cache réseau</translation>
+    </message>
+    <message>
+        <source>Space kept on this device for games played from the network; the oldest blocks are removed first.</source>
+        <translation>Place réservée sur cet appareil aux jeux joués depuis le réseau ; les données les plus anciennes partent en premier.</translation>
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation>Mises à jour</translation>
+    </message>
+    <message>
+        <source>Installed: version %1 (build %2)</source>
+        <translation>Installée : version %1 (build %2)</translation>
+    </message>
+    <message>
+        <source>Automatic updates are not available for this copy: %1</source>
+        <translation>Les mises à jour automatiques ne sont pas disponibles pour cette copie : %1</translation>
+    </message>
+    <message>
+        <source>Channel</source>
+        <translation>Canal</translation>
+    </message>
+    <message>
+        <source>Stable: published versions. Development: every change, as soon as it is built (may contain bugs).</source>
+        <translation>Stable : les versions publiées. Développement : chaque modification dès qu'elle est construite (peut contenir des bugs).</translation>
+    </message>
+    <message>
+        <source>Check automatically</source>
+        <translation>Vérifier automatiquement</translation>
+    </message>
+    <message>
+        <source>At startup and every 6 hours. Nothing is installed without your go-ahead.</source>
+        <translation>Au démarrage puis toutes les 6 heures. Rien n'est installé sans ton accord.</translation>
+    </message>
+    <message>
+        <source>Borne is up to date.</source>
+        <translation>Borne est à jour.</translation>
+    </message>
+    <message>
+        <source>Update failed: %1</source>
+        <translation>Échec de la mise à jour : %1</translation>
+    </message>
+    <message>
+        <source>Version %1 (build %2): %3</source>
+        <translation>Version %1 (build %2) : %3</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>Interface</translation>
+    </message>
+    <message>
+        <source>Interface sounds</source>
+        <translation>Sons de l'interface</translation>
+    </message>
+    <message>
+        <source>Short sounds when moving and choosing; each theme has its own.</source>
+        <translation>Sons courts pour se déplacer et choisir ; chaque thème a les siens.</translation>
+    </message>
+    <message>
+        <source>Trailers</source>
+        <translation>Trailers</translation>
+    </message>
+    <message>
+        <source>Video behind the selected game, muted, after a short pause.</source>
+        <translation>Vidéo derrière le jeu sélectionné, sans le son, après une courte pause.</translation>
     </message>
 </context>
 <context>
