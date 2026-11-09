@@ -260,6 +260,13 @@ try:
     devices = romm("GET", "/api/devices")
     check(any(d.get("client") == "borne" for d in devices), "Borne device registered in RomM")
 
+    print("Game facts")
+    rid = call(api, "GET", "/api/v1/library")[1][0]["rom_id"]
+    s, f = call(api, "GET", f"/api/v1/games/{rid}/facts?lang=fr")
+    check(s == 200 and f["facts"]["status"] in ("loading", "ok", "none") and "screenshots" in f, "game facts answer (fetched in the background)")
+    s, _ = call(api, "GET", f"/api/v1/games/{rid}/screenshots/9")
+    check(s == 400, "screenshot index out of range refused")
+
     print("Diagnostics")
     s, rep = call(api, "POST", "/api/v1/diagnostic-report")
     check(s == 200 and rep["paths"], "diagnostic report exported")

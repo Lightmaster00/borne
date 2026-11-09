@@ -1,6 +1,7 @@
-// Library: the selected game large on the left (over the living background), and one row of
-// games at the bottom; the focused game stays at the start of the row. ListView is virtualized:
-// only the visible tiles exist, even with thousands of games.
+// Library ("showcase"): the selected game large on the left, over its living background, and a
+// grid of large covers on the right, two rows on screen. An index of letters on the edge shows
+// where you are in the alphabet; LT / RT jump to the previous / next letter. GridView is
+// virtualized: only visible covers exist, even with thousands of games.
 import QtQuick
 
 Item {
@@ -12,9 +13,14 @@ Item {
     property string sectionTitle: ""
     property string emptyText: qsTr("No games here.")
     property bool pointerActive: false
+    property var letters: []          // letters present, in order
+    property string currentLetter: ""
 
     signal picked(int index)
     signal action(string id)
+    signal jumpTo(string letter)
+
+    readonly property int columns: 4
 
     function fmtSize(b) {
         return b >= 1073741824 ? qsTr("%1 GB").arg(Number(b / 1073741824).toLocaleString(Qt.locale(), "f", 1))
@@ -32,33 +38,32 @@ Item {
         else if (g.local_state === "missing") c.push({ text: qsTr("Files missing"), bad: true })
         else c.push({ text: qsTr("On RomM · %1").arg(fmtSize(g.fs_size)) })
         if (g.version_count > 1) c.push({ text: qsTr("%n version(s)", "", g.version_count) })
-        if (g.players) c.push({ text: /^\d+$/.test(g.players) ? qsTr("%n player(s)", "", Number(g.players)) : qsTr("%1 players").arg(g.players) })
+        if (g.genres) c.push({ text: g.genres.split(",")[0] })
         return c
     }
 
     // ---------- the selected game ----------
     Column {
-        x: 96; y: 162
-        width: 980
+        x: 96; y: 200
+        width: 640
         spacing: 22
         visible: root.game !== null
         Text {
             width: parent.width
-            text: root.game ? [root.game.platform_name, root.game.year > 0 ? root.game.year : "", root.game.genres.split(",")[0]].filter(x => x).join(" · ").toUpperCase() : ""
+            text: root.game ? [root.game.platform_name, root.game.year > 0 ? root.game.year : ""].filter(x => x).join(" · ").toUpperCase() : ""
             elide: Text.ElideRight
             color: theme.accent
             font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold; letterSpacing: 3 }
         }
         Text {
             width: parent.width
-            height: 104
             text: root.game ? root.game.name : ""
-            fontSizeMode: Text.HorizontalFit
-            minimumPixelSize: 56
+            wrapMode: Text.WordWrap
+            maximumLineCount: 3
             elide: Text.ElideRight
-            verticalAlignment: Text.AlignVCenter
+            lineHeight: 0.98
             color: theme.fg
-            font { family: theme.displayFont; pixelSize: 104; weight: Font.ExtraBold; letterSpacing: -3 }
+            font { family: theme.displayFont; pixelSize: root.game && root.game.name.length > 22 ? 60 : 76; weight: Font.ExtraBold; letterSpacing: -2 }
         }
         Flow {
             width: parent.width
@@ -94,73 +99,89 @@ Item {
             }
         }
         Text {
-            width: 700
+            width: parent.width
             text: root.game && root.game.summary ? root.game.summary : ""
             visible: text !== ""
             wrapMode: Text.WordWrap
-            maximumLineCount: 3
+            maximumLineCount: 4
             elide: Text.ElideRight
             lineHeight: 1.45
             color: theme.fgSoft
-            font { family: theme.fontFamily; pixelSize: 21 }
+            font { family: theme.fontFamily; pixelSize: 20 }
         }
         Row {
             spacing: 14
-            topPadding: 8
+            topPadding: 6
             PageButton { theme: root.theme; key: "A"; text: qsTr("Open"); primary: true; pointerActive: root.pointerActive; onClicked: root.action("a") }
             PageButton { theme: root.theme; key: "X"; text: qsTr("Play"); pointerActive: root.pointerActive; onClicked: root.action("x") }
         }
     }
 
-    // ---------- the row ----------
-    Row {
-        x: 96; y: 666
-        spacing: 14
-        Text {
-            text: root.sectionTitle
-            color: theme.fg
-            font { family: theme.fontFamily; pixelSize: 17; weight: Font.DemiBold; letterSpacing: 1 }
-        }
-        Text {
-            text: root.games && root.games.count ? qsTr("%1 of %2").arg(root.currentIndex + 1).arg(root.games.count) : ""
-            color: theme.fgFaint
-            font { family: theme.fontFamily; pixelSize: 16 }
-        }
-    }
-    ListView {
-        id: row
-        x: 96; y: 700
-        width: parent.width - 96
-        height: theme.tileFocusH + 24
-        orientation: ListView.Horizontal
-        spacing: theme.tileGap
+    // ---------- the covers ----------
+    GridView {
+        id: grid
+        x: 800; y: 130
+        width: root.columns * cellWidth
+        height: 2 * cellHeight + 60
+        clip: false
         interactive: false
         model: root.games
         currentIndex: root.currentIndex
-        cacheBuffer: 400
+        cellWidth: 266
+        cellHeight: 394
+        topMargin: 30
+        cacheBuffer: cellHeight
         reuseItems: true
         highlight: Item {}
         highlightFollowsCurrentItem: true
-        highlightRangeMode: ListView.StrictlyEnforceRange
-        preferredHighlightBegin: 0
-        preferredHighlightEnd: theme.tileFocusW
+        highlightRangeMode: GridView.StrictlyEnforceRange
+        preferredHighlightBegin: topMargin
+        preferredHighlightEnd: topMargin + cellHeight
         highlightMoveDuration: theme.scrollMs
-        highlightResizeDuration: 0
-        delegate: GameCard {
-            id: tile
+        delegate: Item {
+            id: cell
             required property var model
             required property int index
-            theme: root.theme
-            game: model
-            focused: index === row.currentIndex
-            hovered: mouse.containsMouse
-            fade: Math.max(0.3, Math.min(1, (row.width - 260 - (x - row.contentX)) / 420))
-            MouseArea {
-                id: mouse
-                anchors.fill: parent
-                hoverEnabled: root.pointerActive
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.picked(tile.index)
+            width: grid.cellWidth
+            height: grid.cellHeight
+            z: index === grid.currentIndex ? 2 : 1
+            // Rows leaving the top or bottom of the screen fade out instead of being cut.
+            readonly property real rowTop: y - grid.contentY
+            opacity: rowTop < -40 || rowTop > 2 * grid.cellHeight - 20 ? 0 : 1
+            Behavior on opacity { NumberAnimation { duration: theme.scrollMs } }
+            GameCard {
+                id: tile
+                theme: root.theme
+                game: cell.model
+                focused: cell.index === grid.currentIndex
+                hovered: mouse.containsMouse
+                MouseArea {
+                    id: mouse
+                    anchors.fill: parent
+                    hoverEnabled: root.pointerActive
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.picked(cell.index)
+                }
+            }
+        }
+    }
+
+    // ---------- letters ----------
+    Column {
+        anchors { right: parent.right; rightMargin: 26; verticalCenter: grid.verticalCenter }
+        spacing: 2
+        visible: root.letters.length > 1
+        Repeater {
+            model: root.letters
+            Text {
+                required property string modelData
+                readonly property bool cur: modelData === root.currentLetter
+                width: 28
+                horizontalAlignment: Text.AlignHCenter
+                text: modelData
+                color: cur ? theme.accent : theme.fgFaint
+                font { family: theme.fontFamily; pixelSize: cur ? 17 : 13; weight: cur ? Font.Bold : Font.DemiBold }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.jumpTo(parent.modelData) }
             }
         }
     }

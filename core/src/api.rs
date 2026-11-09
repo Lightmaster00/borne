@@ -22,6 +22,9 @@
 //!   GET    /api/v1/platforms
 //!   GET    /api/v1/library?platform=&q=&local=1&lang=fr   one entry per game, versions grouped
 //!   GET    /api/v1/games/<rom_id>?lang=fr        game page: shown version, all versions, choices
+//!   GET    /api/v1/games/<rom_id>/facts?lang=fr  credits, introduction, anecdotes (Wikidata,
+//!                                                Wikipedia), studios, series, screenshots (RomM)
+//!   GET    /api/v1/games/<rom_id>/screenshots/<n>  a screenshot, fetched from RomM and cached
 //!   POST   /api/v1/games/<rom_id>/download
 //!   DELETE /api/v1/games/<rom_id>/local          deletes the local copy (never on RomM)
 //!   POST   /api/v1/games/<rom_id>/link           exposes the game in the virtual mount (no download)
@@ -41,7 +44,7 @@
 //!   POST   /api/v1/debug/pad?action=…            automated tests (BORNE_DEBUG_INPUT=1)
 
 use crate::state::Shared;
-use crate::{catalog, diag, downloads, library, pairing, romm, secrets, stream, update};
+use crate::{catalog, diag, downloads, facts, library, pairing, romm, secrets, stream, update};
 use serde_json::{json, Value};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -217,6 +220,36 @@ fn choose_version(app: &Shared, rom_id: i64) {
         app.db
             .set_game_pref(&p.id, &g.group_key, Some(Some(rom_id)), None);
     }
+}
+
+/// A game's n-th screenshot: from the cache, or fetched from RomM (with the profile's token).
+fn screenshot(app: &Shared, rom_id: i64, n: usize) -> Result<PathBuf, String> {
+    let dir = app.paths.screenshots();
+    let path = dir.join(format!("{rom_id}-{n}.img"));
+    if path.is_file() {
+        return Ok(path);
+    }
+    let extra: Value = app
+        .db
+        .game_extra(rom_id)
+        .and_then(|e| serde_json::from_str(&e).ok())
+        .ok_or("no screenshots")?;
+    let remote = extra["screenshots"][n]
+        .as_str()
+        .ok_or("no such screenshot")?;
+    let client = app.client().ok_or("offline")?;
+    let bytes = client
+        .fetch_bytes(remote, 20 * 1024 * 1024)
+        .map_err(|e| e.to_string())?;
+    if !catalog::looks_like_image(&bytes) {
+        return Err("not an image".into());
+    }
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let tmp = path.with_extension("tmp");
+    std::fs::write(&tmp, &bytes)
+        .and_then(|_| std::fs::rename(&tmp, &path))
+        .map_err(|e| e.to_string())?;
+    Ok(path)
 }
 
 fn new_profile_id() -> String {
@@ -411,6 +444,41 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 None => err(req, 404, "unknown game"),
             }
         }
+        (Method::Get, ["api", "v1", "games", id, "facts"]) => {
+            match id.parse::<i64>().ok().filter(|i| app.db.game(*i).is_some()) {
+                Some(rom_id) => {
+                    let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
+                    let extra: Value = app
+                        .db
+                        .game_extra(rom_id)
+                        .and_then(|e| serde_json::from_str(&e).ok())
+                        .unwrap_or(Value::Null);
+                    let shots = extra["screenshots"]
+                        .as_array()
+                        .map(|a| a.len())
+                        .unwrap_or(0);
+                    ok(
+                        req,
+                        json!({
+                            "facts": facts::get(app, rom_id, &lang),
+                            "companies": extra["companies"],
+                            "franchises": extra["franchises"],
+                            "screenshots": shots,
+                        }),
+                    )
+                }
+                None => err(req, 404, "unknown game"),
+            }
+        }
+        (Method::Get, ["api", "v1", "games", id, "screenshots", n]) => {
+            match (id.parse::<i64>(), n.parse::<usize>()) {
+                (Ok(rom_id), Ok(n)) if n < 8 => match screenshot(app, rom_id, n) {
+                    Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+                    Err(e) => err(req, 404, &e),
+                },
+                _ => err(req, 400, "invalid identifier"),
+            }
+        }
         (Method::Post, ["api", "v1", "games", id, "prefs"]) => {
             let body = body_json(&mut req);
             let (Some(g), Some(p)) = (
@@ -548,8 +616,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             }
         }
         (Method::Post, ["api", "v1", "debug", "pad"]) if app.debug_input => {
-            const OK: [&str; 12] = [
+            const OK: [&str; 14] = [
                 "up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "lb", "rb",
+                "lt", "rt",
             ];
             match query(&q, "action") {
                 Some(a) if OK.contains(&a.as_str()) => {
@@ -574,10 +643,14 @@ pub fn start(app: Shared, token: String) -> std::io::Result<u16> {
     let server = Server::http("127.0.0.1:0").map_err(|e| std::io::Error::other(e.to_string()))?;
     let port = server.server_addr().to_ip().map(|a| a.port()).unwrap_or(0);
     // Only covers and bundled resources are served: nothing else from the disk.
-    let roots: Vec<PathBuf> = [app.paths.covers(), app.resources.clone()]
-        .into_iter()
-        .filter_map(|r| r.canonicalize().ok())
-        .collect();
+    let roots: Vec<PathBuf> = [
+        app.paths.covers(),
+        app.paths.screenshots(),
+        app.resources.clone(),
+    ]
+    .into_iter()
+    .filter_map(|r| r.canonicalize().ok())
+    .collect();
     let server = std::sync::Arc::new(server);
     std::thread::Builder::new()
         .name("borne-http".into())

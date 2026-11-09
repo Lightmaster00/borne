@@ -44,8 +44,13 @@ Since then:
 - **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
   gamepad is used. The wheel scrolls the library.
 - **One look, "Halo"**: the selected game's art fills the screen, blurred and slowly drifting, and its
-  trailer fades in after a pause; games sit in one row at the bottom; panels are glass; the accent color
-  is taken from each game's cover. Designed at 1920×1080 and scaled to any window.
+  trailer fades in after a pause; the selected game is shown large beside a showcase of large covers, with
+  a letter index to jump through the alphabet; panels are glass; the accent color is taken from each
+  game's cover.
+- **Game page**: the trailer plays across the top; below, the choices, an introduction, the credits
+  (developer, publisher, director, producer, composer, series) and anecdotes from Wikidata and Wikipedia
+  (in the UI language when the article exists), and RomM's screenshots. Only the game's name and year
+  are sent to Wikimedia; answers are cached for 30 days. Designed at 1920×1080 and scaled to any window.
 - **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
   writes a shareable text report (versions, settings, server version, recent downloads, log; no
   passwords or tokens) to the data folder and to Downloads.
@@ -99,7 +104,8 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | B | Escape | Back |
 | X | X | Play |
 | Y | Y or T | Game or profile options |
-| Left / right | Arrows | Previous / next game (up / down: ten at a time) |
+| D-pad | Arrows | Move through the covers |
+| LT / RT | Z / C, Home / End | Previous / next letter |
 | LB / RB | Page Up / Page Down, Q / E | Previous / next system |
 | Start | M or F1 | Settings |
 | Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |

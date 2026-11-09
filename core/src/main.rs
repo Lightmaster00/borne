@@ -17,6 +17,7 @@ mod db;
 mod diag;
 mod downloads;
 mod events;
+mod facts;
 mod library;
 mod logfile;
 mod pad;

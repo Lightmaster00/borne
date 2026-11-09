@@ -93,6 +93,11 @@ CREATE TABLE IF NOT EXISTS linked_files (
     file_name TEXT NOT NULL,
     size INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS facts (
+    key TEXT PRIMARY KEY,
+    json TEXT NOT NULL,
+    fetched_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS oplog (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts INTEGER NOT NULL,
@@ -113,6 +118,7 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         ("languages", "TEXT"),
         ("revision", "TEXT"),
         ("group_key", "TEXT NOT NULL DEFAULT ''"),
+        ("extra", "TEXT"),
     ] {
         if !cols.iter().any(|c| c == col) {
             conn.execute_batch(&format!("ALTER TABLE games ADD COLUMN {col} {def}"))?;
@@ -281,6 +287,8 @@ pub struct GameUpsert {
     pub cover_remote: Option<String>,
     pub video_remote: Option<String>,
     pub updated_at: Option<String>,
+    /// Metadata only the game page needs (JSON): studios, series, screenshots, release dates…
+    pub extra: Option<String>,
 }
 
 impl Db {
@@ -461,19 +469,20 @@ impl Db {
             tx.execute(
                 "INSERT INTO games(rom_id, platform_id, platform_slug, platform_name, name, sort_key, fs_name, fs_size, multi_file,
                     summary, year, genres, regions, players, sha1, cover_remote, video_remote, updated_at, seen_sync,
-                    languages, revision, group_key)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
+                    languages, revision, group_key, extra)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
                  ON CONFLICT(rom_id) DO UPDATE SET platform_id = excluded.platform_id, platform_slug = excluded.platform_slug,
                     platform_name = excluded.platform_name, name = excluded.name, sort_key = excluded.sort_key,
                     fs_name = excluded.fs_name, fs_size = excluded.fs_size, multi_file = excluded.multi_file,
                     summary = excluded.summary, year = excluded.year, genres = excluded.genres, regions = excluded.regions,
                     players = excluded.players, sha1 = excluded.sha1, cover_remote = excluded.cover_remote,
                     video_remote = excluded.video_remote, updated_at = excluded.updated_at, seen_sync = excluded.seen_sync,
-                    languages = excluded.languages, revision = excluded.revision, group_key = excluded.group_key",
+                    languages = excluded.languages, revision = excluded.revision, group_key = excluded.group_key,
+                    extra = excluded.extra",
                 params![
                     g.rom_id, g.platform_id, g.platform_slug, g.platform_name, g.name, g.sort_key, g.fs_name, g.fs_size,
                     g.multi_file as i64, g.summary, g.year, g.genres, g.regions, g.players, g.sha1, g.cover_remote,
-                    g.video_remote, g.updated_at, sync_id, g.languages, g.revision, g.group_key
+                    g.video_remote, g.updated_at, sync_id, g.languages, g.revision, g.group_key, g.extra
                 ],
             )
             .unwrap();
@@ -491,6 +500,38 @@ impl Db {
         }
         tx.commit().unwrap();
         covers
+    }
+
+    pub fn game_extra(&self, rom_id: i64) -> Option<String> {
+        self.c()
+            .query_row("SELECT extra FROM games WHERE rom_id = ?1", [rom_id], |r| {
+                r.get(0)
+            })
+            .optional()
+            .ok()
+            .flatten()
+            .flatten()
+    }
+
+    /// Game facts fetched from Wikipedia / Wikidata, cached by key (game + language).
+    pub fn facts(&self, key: &str) -> Option<(String, i64)> {
+        self.c()
+            .query_row(
+                "SELECT json, fetched_at FROM facts WHERE key = ?1",
+                [key],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()
+            .ok()
+            .flatten()
+    }
+
+    pub fn set_facts(&self, key: &str, json: &str) {
+        let _ = self.c().execute(
+            "INSERT INTO facts(key, json, fetched_at) VALUES (?1, ?2, ?3)
+             ON CONFLICT(key) DO UPDATE SET json = excluded.json, fetched_at = excluded.fetched_at",
+            params![key, json, now()],
+        );
     }
 
     /// Removes games that disappeared from RomM from the catalog (unless installed locally).
@@ -800,6 +841,7 @@ mod tests {
 
     fn sample(id: i64, name: &str) -> GameUpsert {
         GameUpsert {
+            extra: None,
             rom_id: id,
             platform_id: 1,
             platform_slug: "nes".into(),

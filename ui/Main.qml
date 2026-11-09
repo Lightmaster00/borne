@@ -46,6 +46,8 @@ Window {
     property var pairingProfile: null
     property int qrRevision: 0
     property var indexByRom: ({})
+    property var letters: []             // first letters present in the list, in order
+    property var letterStart: ({})       // letter -> index of its first game
     property string coreVersion: ""
     property var reportPaths: []
     property double clock: Date.now()
@@ -144,6 +146,10 @@ Window {
             const idx = {}
             rows.forEach((r, i) => idx[r.rom_id] = i)
             indexByRom = idx
+            const starts = {}, order = []
+            rows.forEach((r, i) => { const l = letterOf(r.name); if (starts[l] === undefined) { starts[l] = i; order.push(l) } })
+            letterStart = starts
+            letters = order
             if (keep >= 0 && idx[keep] !== undefined) focusIndex = idx[keep]
             else if (resetFocus || focusIndex >= rows.length) focusIndex = 0
             loadMs = Date.now() - t0
@@ -201,7 +207,15 @@ Window {
             const first = page === null || overlay !== "game"
             page = d
             pageGame = toRow(d.game)
-            if (first) { gamePage.reset(); overlay = "game"; sfx.play("accept") }
+            if (first) { pageFacts = null; gamePage.reset(); overlay = "game"; sfx.play("accept") }
+            loadFacts(romId)
+        })
+    }
+    // Credits, anecdotes and screenshots: fetched by the core in the background on first view.
+    property var pageFacts: null
+    function loadFacts(romId) {
+        api("GET", "/api/v1/games/" + romId + "/facts?lang=" + uiLang, null, function (f) {
+            if (f && page && page.versions.some(v => v.rom_id === romId)) pageFacts = f
         })
     }
     function reloadGame() { if (page && overlay === "game") openGame(page.game.rom_id) }
@@ -210,6 +224,7 @@ Window {
         overlay = ""
         page = null
         pageGame = null
+        pageFacts = null
         libReload.restart()
     }
     function link(g) {
@@ -429,11 +444,27 @@ Window {
         let i = focusIndex
         if (a === "left") i -= 1
         else if (a === "right") i += 1
-        else if (a === "up") i -= 10      // jump through long rows
-        else if (a === "down") i += 10
+        else if (a === "up") { if (i - libraryView.columns >= 0) i -= libraryView.columns }
+        else if (a === "down") {
+            const cols = libraryView.columns
+            if (Math.floor(i / cols) < Math.floor((n - 1) / cols)) i = Math.min(n - 1, i + cols)
+        }
         i = Math.max(0, Math.min(n - 1, i))
         if (i !== focusIndex) sfx.play("move")
         focusIndex = i
+    }
+    function letterOf(name) {
+        const c = (name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase()
+        return c >= "A" && c <= "Z" ? c : "#"
+    }
+    function jumpLetter(d) {
+        if (!focusedGame || letters.length < 2) return
+        const k = letters.indexOf(letterOf(focusedGame.name))
+        const next = letters[Math.max(0, Math.min(letters.length - 1, k + d))]
+        if (next !== undefined && letterStart[next] !== undefined && letterStart[next] !== focusIndex) {
+            focusIndex = letterStart[next]
+            sfx.play("move")
+        }
     }
     function setSystem(d) {
         systemIndex = (systemIndex + d + systems.length) % systems.length
@@ -466,6 +497,8 @@ Window {
         else if (a === "b") { /* root: nothing to close */ }
         else if (a === "lb") setSystem(-1)
         else if (a === "rb") setSystem(1)
+        else if (a === "lt") jumpLetter(-1)
+        else if (a === "rt") jumpLetter(1)
         else move(a)
     }
 
@@ -500,6 +533,7 @@ Window {
             else if (m.type === "pad") win.dispatch(m.action, "pad")
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
+            else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
             else if (m.type === "sync") {
                 if (win.status) { const s = win.status; s.sync = m.sync; win.status = s; win.statusChanged() }
@@ -663,10 +697,10 @@ Window {
             theme: win.theme
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.focusedGame
-            trailers: win.trailers && win.screen === "library" && (win.overlay === "" || win.overlay === "game")
+            trailers: win.trailers && win.screen === "library" && win.overlay === ""
             paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible
             scrims: win.overlay === ""
-            dim: win.overlay === "settings" || win.overlay === "diag" ? 0.5 : win.overlay === "game" ? 0.45 : 0
+            dim: win.overlay === "settings" || win.overlay === "diag" ? 0.5 : win.overlay === "game" ? 0.55 : 0
         }
         Palette {
             id: palette
@@ -694,6 +728,7 @@ Window {
             map[Qt.Key_Escape] = "b"; map[Qt.Key_Backspace] = "b"
             map[Qt.Key_X] = "x"; map[Qt.Key_T] = "y"; map[Qt.Key_Y] = "y"; map[Qt.Key_F1] = "start"; map[Qt.Key_M] = "start"; map[Qt.Key_F2] = "select"
             map[Qt.Key_PageUp] = "lb"; map[Qt.Key_Q] = "lb"; map[Qt.Key_PageDown] = "rb"; map[Qt.Key_E] = "rb"
+            map[Qt.Key_Z] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
             const a = map[e.key]
             if (a) { e.accepted = true; dispatch(a, "keyboard") }
         }
@@ -826,8 +861,11 @@ Window {
         sectionTitle: win.systems[win.systemIndex] ? win.systems[win.systemIndex].name : ""
         emptyText: win.emptyLibraryText
         pointerActive: win.pointerActive
+        letters: win.letters
+        currentLetter: win.focusedGame ? win.letterOf(win.focusedGame.name) : ""
         onPicked: (i) => win.pick(i)
         onAction: (a) => win.dispatch(a, "mouse")
+        onJumpTo: (l) => { if (win.letterStart[l] !== undefined) win.focusIndex = win.letterStart[l] }
     }
     // Mouse wheel and trackpad: move the selection like the gamepad would.
     WheelHandler {
@@ -839,7 +877,7 @@ Window {
             acc += (e.angleDelta.y !== 0 ? e.angleDelta.y : -e.angleDelta.x)
             while (Math.abs(acc) >= 120) {
                 const back = acc > 0
-                win.move(back ? "left" : "right")
+                win.move(back ? "up" : "down")
                 acc += back ? -120 : 120
             }
         }
@@ -863,6 +901,7 @@ Window {
                 if (g) h.push(["X", qsTr("Play"), "x"])
                 if (g) h.push(["Y", qsTr("Options"), "y"])
                 h.push(["LB RB", qsTr("Systems"), "rb"])
+                if (win.letters.length > 1) h.push(["LT RT", qsTr("Letters"), "rt"])
                 h.push(["Start", qsTr("Settings"), "start"])
                 h.push(["Select", qsTr("Menu"), "select"])
                 return h
@@ -1030,7 +1069,9 @@ Window {
         streamError: win.page && win.page.stream.error ? win.page.stream.error : ""
         pointerActive: win.pointerActive
         trailers: win.trailers
-        paused: menu.visible || !visible
+        paused: menu.visible || downloadsPanel.visible || !visible
+        facts: win.pageFacts
+        shotBase: win.pageGame ? win.apiBase + "/api/v1/games/" + win.pageGame.rom_id + "/screenshots/" : ""
         onAction: (id, payload) => win.pageAction(id, payload)
     }
 

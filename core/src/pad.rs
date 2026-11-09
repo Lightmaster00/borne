@@ -45,12 +45,17 @@ fn map_button(b: Button) -> Option<&'static str> {
         Button::Select => "select",
         Button::LeftTrigger => "lb",
         Button::RightTrigger => "rb",
+        Button::LeftTrigger2 => "lt",
+        Button::RightTrigger2 => "rt",
         _ => return None,
     })
 }
 
 fn repeatable(action: &str) -> bool {
-    matches!(action, "up" | "down" | "left" | "right" | "lb" | "rb")
+    matches!(
+        action,
+        "up" | "down" | "left" | "right" | "lb" | "rb" | "lt" | "rt"
+    )
 }
 
 /// `emit` receives each event serialized as JSON (relayed to WebSocket clients).

@@ -138,17 +138,17 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.92) }
-            GradientStop { position: 0.42; color: Qt.rgba(0.024, 0.027, 0.04, 0.55) }
-            GradientStop { position: 0.72; color: Qt.rgba(0.024, 0.027, 0.04, 0.0) }
+            GradientStop { position: 0.36; color: Qt.rgba(0.024, 0.027, 0.04, 0.62) }
+            GradientStop { position: 0.62; color: Qt.rgba(0.024, 0.027, 0.04, 0.3) }
+            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.35) }
         }
     }
     Rectangle {
         visible: amb.scrims
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.45; color: Qt.rgba(0.024, 0.027, 0.04, 0.0) }
-            GradientStop { position: 0.70; color: Qt.rgba(0.024, 0.027, 0.04, 0.70) }
-            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.96) }
+            GradientStop { position: 0.80; color: Qt.rgba(0.024, 0.027, 0.04, 0.0) }
+            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.75) }
         }
     }
     Rectangle {

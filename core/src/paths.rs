@@ -39,6 +39,10 @@ impl Paths {
     pub fn covers(&self) -> PathBuf {
         self.root.join("media").join("covers")
     }
+    /// Game screenshots, fetched from RomM when a game page shows them.
+    pub fn screenshots(&self) -> PathBuf {
+        self.root.join("media").join("screenshots")
+    }
     pub fn secrets(&self) -> PathBuf {
         self.root.join("secrets")
     }
@@ -62,6 +66,7 @@ impl Paths {
             self.root.clone(),
             self.library(),
             self.covers(),
+            self.screenshots(),
             self.profiles(),
             self.reports(),
             self.stream_cache(),

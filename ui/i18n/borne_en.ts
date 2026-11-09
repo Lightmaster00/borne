@@ -245,10 +245,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No summary in RomM for this game.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Back to the library</source>
         <translation type="unfinished" />
     </message>
@@ -273,7 +269,87 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Choices are saved for this profile</source>
+        <source>Mute the trailer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trailer sound</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Publisher</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Studios</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Director</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Producer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Designer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Composer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Series</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Released</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Players</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trailer in a moment</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No summary for this game yet.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Looking up the credits…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sources: RomM, Wikidata, Wikipedia</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Did you know?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From the game's Wikipedia article</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Screenshots</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More about the game</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -327,24 +403,12 @@
         <source>%n version(s)</source>
         <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
     </message>
-    <message numerus="yes">
-        <source>%n player(s)</source>
-        <translation><numerusform>%n player</numerusform><numerusform>%n players</numerusform></translation>
-    </message>
-    <message>
-        <source>%1 players</source>
-        <translation type="unfinished" />
-    </message>
     <message>
         <source>Open</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Play</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1 of %2</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -870,6 +934,10 @@
     <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
         <translation><numerusform>Safe mode: trailers and sounds off (the UI crashed once)</numerusform><numerusform>Safe mode: trailers and sounds off (the UI crashed %n times)</numerusform></translation>
+    </message>
+    <message>
+        <source>Letters</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

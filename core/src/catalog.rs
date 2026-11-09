@@ -108,6 +108,37 @@ pub fn map_rom(v: &Value) -> Option<GameUpsert> {
         cover_remote: non_empty(&v["path_cover_large"]).or_else(|| non_empty(&v["url_cover"])),
         video_remote: non_empty(&v["path_video"]),
         updated_at: non_empty(&v["updated_at"]),
+        extra: Some(extra_of(v).to_string()),
+    })
+}
+
+/// What the game page shows beyond the library row: studios, series, screenshots, ids.
+pub fn extra_of(v: &Value) -> Value {
+    let strings = |x: &Value| -> Vec<String> {
+        x.as_array()
+            .map(|a| {
+                a.iter()
+                    .filter_map(|s| {
+                        s.as_str()
+                            .map(str::trim)
+                            .filter(|s| !s.is_empty())
+                            .map(String::from)
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let shots: Vec<String> = strings(&v["merged_screenshots"])
+        .into_iter()
+        .take(8)
+        .collect();
+    serde_json::json!({
+        "companies": strings(&v["metadatum"]["companies"]),
+        "franchises": strings(&v["metadatum"]["franchises"]),
+        "collections": strings(&v["metadatum"]["collections"]),
+        "screenshots": shots,
+        "igdb_id": v["igdb_id"].as_i64(),
+        "release": v["metadatum"]["first_release_date"].as_i64(),
     })
 }
 
@@ -288,7 +319,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
     app.emit(serde_json::json!({ "type": "library" }));
 }
 
-fn looks_like_image(b: &[u8]) -> bool {
+pub fn looks_like_image(b: &[u8]) -> bool {
     b.starts_with(&[0x89, b'P', b'N', b'G'])
         || b.starts_with(&[0xFF, 0xD8, 0xFF])
         || (b.len() > 12 && &b[0..4] == b"RIFF" && &b[8..12] == b"WEBP")

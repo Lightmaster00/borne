@@ -225,8 +225,12 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
 - Living background: the selected game's art, blurred (computed at 480×270 and scaled), drifting a few
   pixels over 20 s and cross-fading in 600 ms when the focus moves; the trailer fades in after 2.5 s.
   Scrims on the left and at the bottom keep text readable whatever the art.
-- Library: the selected game large on the left (platform, title, states, summary, Open / Play), one row of
-  games at the bottom with the focused game at its start (white ring, halo in the game's color).
+- Library ("showcase"): the selected game large on the left (platform, title, states, summary, Open / Play),
+  a grid of large covers on the right (two rows on screen, white ring and halo on the focused one), and a
+  letter index; LT / RT jump between letters. The catalog rarely changes, so there is no "featured" slot.
+- Game page: the trailer across the top (muted, sound on request), then the choices and an introduction,
+  the credits and anecdotes (Wikidata, Wikipedia in the UI language, cached 30 days; only the name and
+  year are sent), and the screenshots from RomM (fetched through the core with the profile's token).
 - Accent: the cover's dominant hue, lifted to a light tone, colors the eyebrow text, the systems underline,
   halos and the language marks. Panels are glass (translucent white, fine edge).
 - Type: Archivo (Expanded for display). The scene is laid out at 1920×1080 and scaled to the window.

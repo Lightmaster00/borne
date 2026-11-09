@@ -245,10 +245,6 @@
         <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
     </message>
     <message>
-        <source>No summary in RomM for this game.</source>
-        <translation>Pas de résumé dans RomM pour ce jeu.</translation>
-    </message>
-    <message>
         <source>Back to the library</source>
         <translation>Retour à la bibliothèque</translation>
     </message>
@@ -273,8 +269,88 @@
         <translation>Sélectionner</translation>
     </message>
     <message>
-        <source>Choices are saved for this profile</source>
-        <translation>Les choix sont enregistrés pour ce profil</translation>
+        <source>Mute the trailer</source>
+        <translation>Couper le son</translation>
+    </message>
+    <message>
+        <source>Trailer sound</source>
+        <translation>Son de la bande-annonce</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation>Développeur</translation>
+    </message>
+    <message>
+        <source>Publisher</source>
+        <translation>Éditeur</translation>
+    </message>
+    <message>
+        <source>Studios</source>
+        <translation>Studios</translation>
+    </message>
+    <message>
+        <source>Director</source>
+        <translation>Réalisateur</translation>
+    </message>
+    <message>
+        <source>Producer</source>
+        <translation>Producteur</translation>
+    </message>
+    <message>
+        <source>Designer</source>
+        <translation>Game designer</translation>
+    </message>
+    <message>
+        <source>Composer</source>
+        <translation>Compositeur</translation>
+    </message>
+    <message>
+        <source>Series</source>
+        <translation>Série</translation>
+    </message>
+    <message>
+        <source>Released</source>
+        <translation>Sortie</translation>
+    </message>
+    <message>
+        <source>Players</source>
+        <translation>Joueurs</translation>
+    </message>
+    <message>
+        <source>Trailer in a moment</source>
+        <translation>Bande-annonce dans un instant</translation>
+    </message>
+    <message>
+        <source>No summary for this game yet.</source>
+        <translation>Pas encore de résumé pour ce jeu.</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>Crédits</translation>
+    </message>
+    <message>
+        <source>Looking up the credits…</source>
+        <translation>Recherche des crédits…</translation>
+    </message>
+    <message>
+        <source>Sources: RomM, Wikidata, Wikipedia</source>
+        <translation>Sources : RomM, Wikidata, Wikipédia</translation>
+    </message>
+    <message>
+        <source>Did you know?</source>
+        <translation>Le saviez-vous ?</translation>
+    </message>
+    <message>
+        <source>From the game's Wikipedia article</source>
+        <translation>D'après l'article Wikipédia du jeu</translation>
+    </message>
+    <message>
+        <source>Screenshots</source>
+        <translation>Captures d'écran</translation>
+    </message>
+    <message>
+        <source>More about the game</source>
+        <translation>Plus sur le jeu</translation>
     </message>
 </context>
 <context>
@@ -327,14 +403,6 @@
         <source>%n version(s)</source>
         <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
     </message>
-    <message numerus="yes">
-        <source>%n player(s)</source>
-        <translation><numerusform>%n joueur</numerusform><numerusform>%n joueurs</numerusform></translation>
-    </message>
-    <message>
-        <source>%1 players</source>
-        <translation>%1 joueurs</translation>
-    </message>
     <message>
         <source>Open</source>
         <translation>Ouvrir</translation>
@@ -342,10 +410,6 @@
     <message>
         <source>Play</source>
         <translation>Jouer</translation>
-    </message>
-    <message>
-        <source>%1 of %2</source>
-        <translation>%1 sur %2</translation>
     </message>
 </context>
 <context>
@@ -870,6 +934,10 @@
     <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
         <translation><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform></translation>
+    </message>
+    <message>
+        <source>Letters</source>
+        <translation>Lettres</translation>
     </message>
 </context>
 <context>
