@@ -1,3 +1,2 @@
 module Borne.Theme
-ThemeBase 1.0 ThemeBase.qml
-CardStatus 1.0 CardStatus.qml
+Theme 1.0 Theme.qml

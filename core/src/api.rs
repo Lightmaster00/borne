@@ -36,12 +36,12 @@
 //!   POST   /api/v1/update/apply                  installs it; Borne restarts when the UI quits
 //!   GET    /api/v1/downloads  ·  DELETE /api/v1/downloads/<id>
 //! Misc
-//!   GET    /api/v1/themes  ·  POST /api/v1/report  ·  GET /file?path=…
+//!   POST   /api/v1/report  ·  GET /file?path=…
 //!   POST   /api/v1/diagnostic-report             writes a shareable report (logs, no secrets)
 //!   POST   /api/v1/debug/pad?action=…            automated tests (BORNE_DEBUG_INPUT=1)
 
 use crate::state::Shared;
-use crate::{catalog, diag, downloads, library, pairing, romm, secrets, stream, themes, update};
+use crate::{catalog, diag, downloads, library, pairing, romm, secrets, stream, update};
 use serde_json::{json, Value};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -528,10 +528,6 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         },
 
         // ---------- misc ----------
-        (Method::Get, ["api", "v1", "themes"]) => ok(
-            req,
-            json!(themes::all_themes(&app.ui_themes, &app.paths.themes())),
-        ),
         (Method::Post, ["api", "v1", "diagnostic-report"]) => match diag::export_report(app) {
             Ok(paths) => ok(req, json!({ "paths": paths })),
             Err(e) => err(req, 500, &e),
@@ -577,15 +573,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
 pub fn start(app: Shared, token: String) -> std::io::Result<u16> {
     let server = Server::http("127.0.0.1:0").map_err(|e| std::io::Error::other(e.to_string()))?;
     let port = server.server_addr().to_ip().map(|a| a.port()).unwrap_or(0);
-    let roots: Vec<PathBuf> = [
-        app.paths.covers(),
-        app.paths.themes(),
-        app.resources.clone(),
-        app.ui_themes.clone(),
-    ]
-    .into_iter()
-    .filter_map(|r| r.canonicalize().ok())
-    .collect();
+    // Only covers and bundled resources are served: nothing else from the disk.
+    let roots: Vec<PathBuf> = [app.paths.covers(), app.resources.clone()]
+        .into_iter()
+        .filter_map(|r| r.canonicalize().ok())
+        .collect();
     let server = std::sync::Arc::new(server);
     std::thread::Builder::new()
         .name("borne-http".into())

@@ -67,3 +67,7 @@ curl -u light:borne-dev -X POST http://127.0.0.1:8080/api/tasks/scan -H 'Content
 ```bash
 python3 tests/integration_romm.py core/target/release/borne http://127.0.0.1:8080 light borne-dev guest borne-dev
 ```
+
+With `BORNE_IT_ROMM_LIBRARY=<RomM library>/roms` set, the test also changes one byte of a game on the
+server's disk (same size, so RomM's stored SHA-1 no longer matches what it serves), checks that Borne
+downloads it twice, keeps it and explains it in its log, then restores the byte.

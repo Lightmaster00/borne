@@ -15,7 +15,7 @@ Rectangle {
 
     visible: false
     anchors.fill: parent
-    color: Qt.rgba(0, 0, 0, 0.6)
+    color: Qt.rgba(0.024, 0.027, 0.04, 0.6)
 
     function open(t, sub, list, cb) {
         title = t
@@ -51,23 +51,28 @@ Rectangle {
 
     Rectangle {
         anchors.centerIn: parent
-        width: Math.min(560, parent.width - 80)
-        height: col.height + 56
-        radius: theme.radius + 4
+        width: Math.min(760, parent.width - 80)
+        height: col.height + 72
+        radius: 28
         color: theme.panel
         border.color: theme.panelBorder
         MouseArea { anchors.fill: parent }   // clicks on the panel itself do not close it
         Column {
             id: col
-            x: 28; y: 28; width: parent.width - 56; spacing: 14
-            Text { width: parent.width; text: menu.title; elide: Text.ElideRight; color: theme.fg; font { family: theme.displayFont; pixelSize: 24; bold: true } }
-            Text { visible: menu.subtitle !== ""; width: parent.width; text: menu.subtitle; wrapMode: Text.WordWrap; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 14 } }
+            x: 36; y: 36; width: parent.width - 72; spacing: 18
+            Text { width: parent.width; text: menu.title; elide: Text.ElideRight; color: theme.fg; font { family: theme.displayFont; pixelSize: 34; weight: Font.ExtraBold } }
+            Text { visible: menu.subtitle !== ""; width: parent.width; text: menu.subtitle; wrapMode: Text.WordWrap; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 18 } }
             Menu {
                 width: parent.width; theme: menu.theme; currentIndex: menu.index; items: menu.items
                 pointerActive: menu.pointerActive
                 onClicked: (i) => { menu.index = i; menu.handle("a") }
             }
-            Text { text: qsTr("A  Choose      B  Back"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 13 } }
+            HintBar {
+                theme: menu.theme
+                pointerActive: menu.pointerActive
+                hints: [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"]]
+                onTriggered: (a) => menu.handle(a)
+            }
         }
     }
 }

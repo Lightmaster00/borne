@@ -1,4 +1,5 @@
-// Selectable chip (game versions, languages): selected = current choice, focused = gamepad cursor.
+// Selectable chip (game versions, languages): chosen = filled light, otherwise outlined.
+// Focus: ember ring outside the chip.
 import QtQuick
 
 Rectangle {
@@ -8,49 +9,52 @@ Rectangle {
     property string detail: ""
     property bool selected: false
     property bool focused: false
-    property bool badge: false          // e.g. this version is installed
+    property bool badge: false          // e.g. this version is on this device
     property bool compact: false
     property bool pointerActive: false
     signal clicked()
 
-    width: Math.max(col.implicitWidth + 32 + (badge ? 18 : 0), compact ? 64 : 120)
-    height: compact ? 40 : 58
-    radius: compact ? 20 : theme.buttonRadius
-    color: selected ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)
-         : mouse.containsMouse ? Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.14)
-         : Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.07)
-    border { width: selected ? 2 : 1; color: selected ? theme.accent : Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.14) }
+    width: content.implicitWidth + 44
+    height: 52
+    radius: 26
+    color: selected ? theme.fg : mouse.containsMouse ? theme.glassRaised : Qt.rgba(1, 1, 1, 0.05)
+    border { width: selected ? 0 : 1; color: theme.glassEdge }
     Behavior on color { ColorAnimation { duration: 150 } }
+    Accessible.role: Accessible.RadioButton
+    Accessible.name: text + (detail ? " " + detail : "")
+    Accessible.checked: selected
 
-    Column {
-        id: col
-        anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
-        spacing: 2
+    Row {
+        id: content
+        anchors.centerIn: parent
+        spacing: 10
         Text {
+            anchors.verticalCenter: parent.verticalCenter
             text: chip.text
-            color: theme.fg
-            font { family: theme.fontFamily; pixelSize: chip.compact ? 14 : 15; weight: chip.selected ? Font.DemiBold : Font.Normal }
+            color: chip.selected ? theme.bg : theme.fg
+            font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
         }
         Text {
             visible: chip.detail !== ""
+            anchors.verticalCenter: parent.verticalCenter
             text: chip.detail
-            color: theme.fgMuted
-            font { family: theme.fontFamily; pixelSize: 12; letterSpacing: 0.5 }
+            color: chip.selected ? "#4A4F5C" : theme.fgFaint
+            font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium }
+        }
+        Rectangle {
+            visible: chip.badge
+            anchors.verticalCenter: parent.verticalCenter
+            width: 10; height: 10; radius: 5
+            color: chip.selected ? theme.bg : theme.accent
         }
     }
     Rectangle {
-        visible: chip.badge
-        anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-        width: 8; height: 8; radius: 4
-        color: theme.ok
-    }
-    Rectangle {
-        anchors { fill: parent; margins: -5 }
-        radius: chip.radius + 5
+        anchors { fill: parent; margins: -(theme.ringGap + theme.ringWidth) }
+        radius: height / 2
         color: "transparent"
-        border { width: 3; color: theme.focusRing }
+        border { width: theme.ringWidth; color: chip.selected ? theme.accent : theme.focusRing }
         opacity: chip.focused ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }
     MouseArea {
         id: mouse

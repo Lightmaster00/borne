@@ -1,46 +1,75 @@
-// Button for page actions: filled when primary, outlined otherwise. Focus ring for the gamepad,
-// hover and press states for the mouse.
+// Action button. Primary: white with dark text and the game's halo when focused.
+// Others: glass. Focus: a ring 5 px outside (accent around the white button, white otherwise).
 import QtQuick
+import QtQuick.Effects
 
-Rectangle {
+Item {
     id: btn
     property QtObject theme
     property string text: ""
+    property string key: ""            // controller button shown at the start
     property bool primary: false
     property bool disabled: false
     property bool focused: false
     property bool pointerActive: false
     signal clicked()
 
-    implicitWidth: label.implicitWidth + 44
-    implicitHeight: 52
+    implicitWidth: row.implicitWidth + (key !== "" ? 40 : 56)
+    implicitHeight: 60
     width: implicitWidth
     height: implicitHeight
-    radius: theme.buttonRadius
     opacity: disabled ? 0.45 : 1
     scale: mouse.pressed && !disabled ? 0.97 : 1
-    color: primary ? theme.accent
-         : mouse.containsMouse && !disabled ? Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.16)
-         : Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.08)
-    border { width: primary ? 0 : 1; color: Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.18) }
-    Behavior on color { ColorAnimation { duration: 150 } }
     Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuart } }
+    Accessible.role: Accessible.Button
+    Accessible.name: text
 
-    Text {
-        id: label
-        anchors.centerIn: parent
-        text: btn.text
-        color: btn.primary ? theme.accentFg : theme.fg
-        font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
+    Rectangle { id: haloSource; anchors.fill: face; radius: face.radius; color: theme.halo; visible: false }
+    MultiEffect {
+        anchors.fill: haloSource
+        source: haloSource
+        visible: btn.focused && btn.primary
+        autoPaddingEnabled: true
+        blurEnabled: true; blur: 1.0; blurMax: 48
     }
-    // Focus ring, outside the button so it reads on every background.
     Rectangle {
-        anchors { fill: parent; margins: -5 }
-        radius: btn.radius + 5
+        id: face
+        anchors.fill: parent
+        radius: height / 2
+        color: btn.primary ? theme.fg : mouse.containsMouse && !btn.disabled ? theme.glassRaised : theme.glass
+        border { width: btn.primary ? 0 : 1; color: theme.glassEdge }
+        Behavior on color { ColorAnimation { duration: 150 } }
+    }
+    Row {
+        id: row
+        anchors { left: parent.left; leftMargin: btn.key !== "" ? 10 : 28; verticalCenter: parent.verticalCenter }
+        spacing: 12
+        Rectangle {
+            visible: btn.key !== ""
+            anchors.verticalCenter: parent.verticalCenter
+            width: 40; height: 40; radius: 20
+            color: btn.primary ? theme.bg : theme.glassRaised
+            Text {
+                anchors.centerIn: parent
+                text: btn.key
+                color: theme.fg
+                font { family: theme.fontFamily; pixelSize: 16; weight: Font.Bold }
+            }
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: btn.text
+            color: btn.primary ? theme.bg : theme.fg
+            font { family: theme.fontFamily; pixelSize: btn.primary ? 20 : 18; weight: btn.primary ? Font.Bold : Font.DemiBold }
+        }
+    }
+    Rectangle {
+        anchors { fill: parent; margins: -(theme.ringGap + theme.ringWidth) }
+        radius: height / 2
         color: "transparent"
-        border { width: 3; color: theme.focusRing }
+        border { width: theme.ringWidth; color: btn.primary ? theme.accent : theme.focusRing }
         opacity: btn.focused ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }
     MouseArea {
         id: mouse

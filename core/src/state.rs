@@ -39,7 +39,6 @@ pub struct App {
     pub hub: Broadcaster,
     pub pads: SharedPadState,
     pub resources: PathBuf,
-    pub ui_themes: PathBuf,
     pub pairing: Mutex<Option<PairingState>>,
     /// Bumped on every new pairing: an older polling thread stops by itself.
     pub pairing_gen: AtomicU64,

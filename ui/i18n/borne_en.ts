@@ -3,112 +3,11 @@
 <context>
     <name>ActionMenu</name>
     <message>
-        <source>A  Choose      B  Back</source>
-        <translation type="unfinished" />
-    </message>
-</context>
-<context>
-    <name>CardStatus</name>
-    <message>
-        <source>Queued</source>
+        <source>Choose</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Verifying</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Extracting</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1%</source>
-        <translation type="unfinished" />
-    </message>
-</context>
-<context>
-    <name>CarouselView</name>
-    <message>
-        <source>No games here.</source>
-        <translation type="unfinished" />
-    </message>
-</context>
-<context>
-    <name>DetailView</name>
-    <message>
-        <source>%1 GB</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1 MB</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1 KB</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Waiting to download</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Downloading… %1%</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Verifying files…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Extracting…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Download failed: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Installed on this device</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Played from the network</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Local files not found</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>On RomM · %1 to download</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>A  Open      Y  Options</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>System</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Year</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Genre</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Players</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Region</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No summary in RomM for this game.</source>
+        <source>Back</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -346,19 +245,106 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Version</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Used at launch by emulators that let the console language be set (Switch, GameCube, PS2…). Automatic follows Borne's language.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No summary in RomM for this game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>VERSION</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>GAME LANGUAGE</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>— passed to the emulator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Select</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choices are saved for this profile</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LibraryView</name>
+    <message>
+        <source>No games here.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 GB</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 MB</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading %1%</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download failed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mounted</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Files missing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On RomM · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n version(s)</source>
+        <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n player(s)</source>
+        <translation><numerusform>%n player</numerusform><numerusform>%n players</numerusform></translation>
+    </message>
+    <message>
+        <source>%1 players</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 of %2</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -478,14 +464,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Trailers: on</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Trailers: off</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Playing from the network is unavailable here: %1</source>
         <translation type="unfinished" />
     </message>
@@ -503,18 +481,6 @@
     </message>
     <message>
         <source>Downloads</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Theme</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Switch to the theme's view</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Switch to the list view</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -630,39 +596,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Downloading…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Installed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>From the network</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1 to download</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Open</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Options</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Theme view</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>List view</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>System</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -697,52 +635,8 @@
         <source>Borne core unreachable — reconnecting…</source>
         <translation type="unfinished" />
     </message>
-    <message numerus="yes">
-        <source>Safe mode: default theme (the UI crashed %n time(s))</source>
-        <translation><numerusform>Safe mode: default theme (the UI crashed once)</numerusform><numerusform>Safe mode: default theme (the UI crashed %n times)</numerusform></translation>
-    </message>
     <message>
         <source>Game mode (test) — B to go back</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>built-in</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>user</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>grid view</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>list view</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>home row</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>carousel</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>custom posters</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Applied in %1 ms (NFR-19 target: &lt; 1000 ms)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Ignored themes</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Keep</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -945,6 +839,38 @@
         <source>Version %1 is available: Settings → Updates.</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Writing the diagnostic report…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Report saved: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The library could not be synced: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Offline</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Systems</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>Synced at %1 · %n game(s)</source>
+        <translation><numerusform>Synced at %1 · %n game</numerusform><numerusform>Synced at %1 · %n games</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
+        <translation><numerusform>Safe mode: trailers and sounds off (the UI crashed once)</numerusform><numerusform>Safe mode: trailers and sounds off (the UI crashed %n times)</numerusform></translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -968,27 +894,7 @@
 <context>
     <name>PairingScreen</name>
     <message>
-        <source>Pair “%1”</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Scan the QR code with your phone, or open this address and sign in to RomM with this profile's account:</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Code to confirm</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Connecting to RomM…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Waiting for approval… (the code expires in %1 min %2 s)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Profile paired ✓</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1015,11 +921,40 @@
         <source>Retry</source>
         <translation type="unfinished" />
     </message>
-</context>
-<context>
-    <name>PosterGrid</name>
     <message>
-        <source>No games here.</source>
+        <source>Server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pair this device</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Approve “%1” from RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Scan the QR code with your phone, or open the address below and sign in with this profile's RomM account, then confirm the code.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pairing code %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Waiting for approval · the code renews in %1:%2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Profile paired</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No place to enter the code in RomM? Pairing by code needs a recent RomM: update the server, then try again.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1112,23 +1047,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Download version %1 · %2</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Downloading… %1%</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Restart and install</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Checking…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Check for updates</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1160,58 +1083,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>What a game page offers first. Both stay available on every game page.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Download to this device</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Plays offline, even if the server is off</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fastest loading</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Nothing to wait for once installed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Uses disk space for every game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Wait for the download before playing</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Play from the network</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Uses almost no disk space (bounded cache)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Play almost right away</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Only the games you pick are mounted, with your RomM rights</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Needs the network and the RomM server</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Loading depends on the network: wired or 5 GHz Wi-Fi for large games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Linux only</source>
         <translation type="unfinished" />
     </message>
@@ -1220,39 +1091,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Network cache</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Space kept on this device for games played from the network; the oldest blocks are removed first.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Updates</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Installed: version %1 (build %2)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Automatic updates are not available for this copy: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Channel</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Stable: published versions. Development: every change, as soon as it is built (may contain bugs).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Check automatically</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>At startup and every 6 hours. Nothing is installed without your go-ahead.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1264,10 +1107,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Version %1 (build %2): %3</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Interface</source>
         <translation type="unfinished" />
     </message>
@@ -1276,22 +1115,231 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Short sounds when moving and choosing; each theme has its own.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Trailers</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Video behind the selected game, muted, after a short pause.</source>
+        <source>Updates are handled outside Borne here: %1</source>
         <translation type="unfinished" />
     </message>
-</context>
-<context>
-    <name>ShelfView</name>
     <message>
-        <source>No games here.</source>
+        <source>Version %1 is available.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading the update… %1%</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloaded and verified. Borne restarts to install it.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Please wait…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Check now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install, cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sounds, trailers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM, profiles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Help</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Diagnostic report</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mount cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Space kept for recently played mounted games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Update channel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stable gets tested releases; Development gets every build</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Every 6 hours, never while you play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Short, quiet sounds when moving and choosing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Play the selected game's trailer, muted, after two seconds</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sync now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>offline</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>not configured</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Switch profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saved: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saves the log and settings, without passwords or tokens, to share when something goes wrong</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Export the report</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Diagnostics and measurements</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Graphics session, memory, smoothness benchmark</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit Borne</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Syncing %1 of %2…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Last sync failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Synced at %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How games are installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose once; you can switch at any time. Games already on this device stay where they are.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Current</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The whole game is copied to this device before you play.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Plays offline, even if the server is down</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fastest loading, no network during play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Uses disk space for every installed game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mount</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne reads the game from RomM while you play. Only games you pick are exposed.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Starts in seconds, even for large games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Keeps the disk free; a small cache speeds up replays</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Needs the server reachable during play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change value</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -1,12 +1,14 @@
-// A choice explained: title, what it brings (+), what it costs (−). Selected = current setting.
+// A choice explained: radio mark, title, a sentence, and what it brings or costs.
+// Selected = the current setting (filled radio); focused = ember ring outside the card.
 import QtQuick
 
 Rectangle {
     id: card
     property QtObject theme
     property string title: ""
-    property var pros: []
-    property var cons: []
+    property string badge: ""
+    property string summary: ""
+    property var points: []
     property string note: ""
     property bool selected: false
     property bool focused: false
@@ -14,68 +16,92 @@ Rectangle {
     property bool pointerActive: false
     signal clicked()
 
-    height: col.height + 40
-    radius: theme.buttonRadius + 4
-    color: selected ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.14)
-         : mouse.containsMouse && !disabled ? Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.09)
-         : Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.05)
-    border { width: selected ? 2 : 1; color: selected ? theme.accent : Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.12) }
+    height: col.height + 64
+    radius: 20
+    color: selected ? Qt.rgba(1, 1, 1, 0.1) : mouse.containsMouse && !disabled ? theme.glass : Qt.rgba(1, 1, 1, 0.03)
+    border { width: 1; color: selected ? Qt.rgba(1, 1, 1, 0.22) : theme.glassEdge }
     opacity: disabled ? 0.6 : 1
     Behavior on color { ColorAnimation { duration: 150 } }
+    Accessible.role: Accessible.RadioButton
+    Accessible.name: title + ". " + summary
+    Accessible.checked: selected
 
     Column {
         id: col
-        x: 22; y: 20
-        width: parent.width - 44
-        spacing: 8
-        Row {
-            spacing: 10
-            // Radio mark
+        x: 32; y: 32
+        width: parent.width - 64
+        spacing: 18
+        Item {
+            width: parent.width; height: 32
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 20; height: 20; radius: 10
+                width: 28; height: 28; radius: 14
                 color: "transparent"
-                border { width: 2; color: card.selected ? theme.accent : theme.fgMuted }
-                Rectangle { anchors.centerIn: parent; width: 10; height: 10; radius: 5; color: theme.accent; visible: card.selected }
+                border { width: card.selected ? 8 : 2.5; color: card.selected ? theme.accent : theme.fgFaint }
             }
-            Text { text: card.title; color: theme.fg; font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold } }
-        }
-        Item { width: 1; height: 2 }
-        Repeater {
-            model: card.pros
-            Row {
-                required property var modelData
-                spacing: 10
-                Text { text: "+"; color: theme.ok; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold } }
-                Text { width: col.width - 24; text: modelData; wrapMode: Text.WordWrap; color: theme.fg; font { family: theme.fontFamily; pixelSize: 14 } }
+            Text {
+                x: 42; anchors.verticalCenter: parent.verticalCenter
+                text: card.title
+                color: theme.fg
+                font { family: theme.fontFamily; pixelSize: 26; weight: Font.Bold }
+            }
+            Rectangle {
+                visible: card.badge !== ""
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                width: bl.implicitWidth + 24; height: 30; radius: 15
+                color: card.selected ? theme.accentSoft : theme.glass
+                Text {
+                    id: bl
+                    anchors.centerIn: parent
+                    text: card.badge
+                    color: card.selected ? theme.accent : theme.fgMuted
+                    font { family: theme.fontFamily; pixelSize: 14; weight: Font.DemiBold }
+                }
             }
         }
-        Repeater {
-            model: card.cons
-            Row {
-                required property var modelData
-                spacing: 10
-                Text { text: "−"; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold } }
-                Text { width: col.width - 24; text: modelData; wrapMode: Text.WordWrap; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 14 } }
+        Text {
+            width: parent.width
+            text: card.summary
+            wrapMode: Text.WordWrap
+            lineHeight: 1.4
+            color: theme.fgSoft
+            font { family: theme.fontFamily; pixelSize: 18 }
+        }
+        Column {
+            width: parent.width
+            spacing: 6
+            Repeater {
+                model: card.points
+                Row {
+                    required property string modelData
+                    spacing: 12
+                    Rectangle { y: 10; width: 6; height: 6; radius: 3; color: theme.fgFaint }
+                    Text {
+                        width: col.width - 18
+                        text: modelData
+                        wrapMode: Text.WordWrap
+                        color: theme.fgMuted
+                        font { family: theme.fontFamily; pixelSize: 17 }
+                    }
+                }
             }
         }
         Text {
             visible: card.note !== ""
             width: parent.width
-            topPadding: 4
             text: card.note
             wrapMode: Text.WordWrap
-            color: theme.bad
-            font { family: theme.fontFamily; pixelSize: 13 }
+            color: theme.fgFaint
+            font { family: theme.fontFamily; pixelSize: 15 }
         }
     }
     Rectangle {
-        anchors { fill: parent; margins: -5 }
-        radius: card.radius + 5
+        anchors { fill: parent; margins: -(theme.ringGap + theme.ringWidth) }
+        radius: card.radius + theme.ringGap + theme.ringWidth
         color: "transparent"
-        border { width: 3; color: theme.focusRing }
+        border { width: theme.ringWidth; color: theme.focusRing }
         opacity: card.focused ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }
     MouseArea {
         id: mouse

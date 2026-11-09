@@ -4,7 +4,7 @@
     python3 scripts/assets/make_sounds.py ui/sounds
 
 One folder per sound set, each with move.wav, accept.wav and back.wav (mono, 44.1 kHz, 16-bit).
-Themes pick a set by name (ThemeBase.soundSet).
+The look picks a set by name (Theme.soundSet).
 """
 import math, os, struct, sys, wave
 
@@ -38,30 +38,11 @@ def concat(*parts):
     return [x for p in parts for x in p]
 
 SETS = {
-    # Light and quick, for a bright home screen.
+    # Light and quick: the sounds of the Halo look.
     "soft": {
         "move": tone([1760], 35, "sine", attack=1, decay=18, volume=0.22),
         "accept": concat(tone([1320], 45, "sine", decay=30, volume=0.25), tone([1760], 70, "sine", decay=50, volume=0.25)),
         "back": concat(tone([1320], 45, "sine", decay=30, volume=0.22), tone([990], 70, "sine", decay=50, volume=0.22)),
-    },
-    # Low and airy, for a cinematic dark home.
-    "deep": {
-        "move": tone([440, 660], 60, "sine", attack=6, decay=40, volume=0.18),
-        "accept": tone([330, 495, 660], 260, "sine", attack=20, decay=200, volume=0.22, glide=0.05),
-        "back": tone([495, 330], 180, "sine", attack=10, decay=140, volume=0.2, glide=-0.08),
-    },
-    # Crisp tick for tile grids.
-    "tick": {
-        "move": tone([2400], 18, "triangle", attack=1, decay=8, volume=0.25),
-        "accept": concat(tone([880], 40, "triangle", decay=25, volume=0.25), tone([1320], 90, "triangle", decay=60, volume=0.25)),
-        "back": tone([660], 90, "triangle", decay=60, volume=0.22, glide=-0.15),
-    },
-    # 8-bit blips for the arcade cabinet.
-    "chip": {
-        "move": tone([988], 30, "square", attack=1, decay=25, volume=0.12),
-        "accept": concat(tone([784], 50, "square", decay=50, volume=0.12), tone([1175], 50, "square", decay=50, volume=0.12),
-                         tone([1568], 110, "square", decay=90, volume=0.12)),
-        "back": concat(tone([784], 50, "square", decay=50, volume=0.12), tone([523], 110, "square", decay=90, volume=0.12)),
     },
 }
 

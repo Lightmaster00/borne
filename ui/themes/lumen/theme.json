@@ -1,2 +1,0 @@
-{ "schema": 1, "api": 1, "id": "lumen", "name": "Lumen", "author": "Borne", "version": "1.0.0",
-  "layout": "shelf", "options": { "trailerDelayMs": 2000, "trailerVolume": 0, "backgroundBlur": false } }

@@ -1,5 +1,18 @@
 {
- "%n player(s)": ["%n player", "%n players"],
- "%n version(s)": ["%n version", "%n versions"],
- "Safe mode: default theme (the UI crashed %n time(s))": ["Safe mode: default theme (the UI crashed once)", "Safe mode: default theme (the UI crashed %n times)"]
+ "%n player(s)": [
+  "%n player",
+  "%n players"
+ ],
+ "%n version(s)": [
+  "%n version",
+  "%n versions"
+ ],
+ "Safe mode: trailers and sounds off (the UI crashed %n time(s))": [
+  "Safe mode: trailers and sounds off (the UI crashed once)",
+  "Safe mode: trailers and sounds off (the UI crashed %n times)"
+ ],
+ "Synced at %1 · %n game(s)": [
+  "Synced at %1 · %n game",
+  "Synced at %1 · %n games"
+ ]
 }

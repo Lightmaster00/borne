@@ -8,7 +8,7 @@ Column {
     property QtObject theme
     property bool pointerActive: false
     signal clicked(int index)
-    spacing: 2
+    spacing: 4
 
     Repeater {
         model: menu.items
@@ -18,30 +18,29 @@ Column {
             required property int index
             readonly property bool cur: index === menu.currentIndex
             width: menu.width
-            height: col.height + 20
-            radius: 8
-            color: cur ? theme.accent : mouse.containsMouse && !modelData.disabled ? Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.08) : "transparent"
+            height: col.height + 28
+            radius: 14
+            color: cur ? theme.fg : mouse.containsMouse && !modelData.disabled ? theme.glass : "transparent"
             opacity: modelData.disabled ? 0.45 : 1
             Behavior on color { ColorAnimation { duration: 120 } }
             Column {
                 id: col
-                x: 14; y: 10
-                width: parent.width - 28
+                x: 20; y: 14
+                width: parent.width - 40
                 Text {
                     width: parent.width
                     text: row.modelData.label
                     elide: Text.ElideRight
-                    color: row.cur ? theme.accentFg : theme.fg
-                    font { family: theme.fontFamily; pixelSize: 16; weight: row.cur ? Font.Medium : Font.Normal }
+                    color: row.cur ? theme.bg : theme.fg
+                    font { family: theme.fontFamily; pixelSize: 20; weight: row.cur ? Font.DemiBold : Font.Normal }
                 }
                 Text {
                     visible: !!row.modelData.detail
                     width: parent.width
                     text: row.modelData.detail || ""
                     wrapMode: Text.WordWrap
-                    color: row.cur ? theme.accentFg : theme.fgMuted
-                    opacity: 0.85
-                    font { family: theme.fontFamily; pixelSize: 12 }
+                    color: row.cur ? "#4A4F5C" : theme.fgMuted
+                    font { family: theme.fontFamily; pixelSize: 15 }
                 }
             }
             MouseArea {

@@ -1,5 +1,6 @@
 // Button hints at the bottom of a screen. With the mouse, each hint is a button that does
-// what the gamepad button would. hints: [[key, label, action], …]
+// what the gamepad button would. hints: [[key, label, action], …]; the first key is the
+// confirm button, drawn light.
 import QtQuick
 
 Row {
@@ -8,29 +9,45 @@ Row {
     property var hints: []
     property bool pointerActive: false
     signal triggered(string action)
-    spacing: 8
+    spacing: 12
 
     Repeater {
         model: bar.hints
         Rectangle {
             id: hint
             required property var modelData
+            required property int index
+            readonly property bool round: modelData[0].length === 1
             anchors.verticalCenter: parent.verticalCenter
-            width: row.implicitWidth + 20
-            height: 36
-            radius: 18
-            color: mouse.containsMouse ? Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.12) : "transparent"
+            width: row.implicitWidth + 24
+            height: 40
+            radius: 20
+            color: mouse.containsMouse ? bar.theme.glass : "transparent"
             Behavior on color { ColorAnimation { duration: 120 } }
             Row {
                 id: row
                 anchors.centerIn: parent
-                spacing: 7
+                spacing: 10
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(22, key.implicitWidth + 12); height: 22; radius: 11; color: theme.fg
-                    Text { id: key; anchors.centerIn: parent; text: hint.modelData[0]; color: theme.bg; font { family: theme.fontFamily; pixelSize: 11; weight: Font.Bold } }
+                    width: hint.round ? 28 : key.implicitWidth + 18
+                    height: 28
+                    radius: hint.round ? 14 : 8
+                    color: hint.modelData[0] === "A" ? bar.theme.fg : bar.theme.glassRaised
+                    Text {
+                        id: key
+                        anchors.centerIn: parent
+                        text: hint.modelData[0]
+                        color: hint.modelData[0] === "A" ? bar.theme.bg : bar.theme.fg
+                        font { family: bar.theme.fontFamily; pixelSize: 14; weight: Font.Bold }
+                    }
                 }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: hint.modelData[1]; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 14 } }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: hint.modelData[1]
+                    color: bar.theme.fgMuted
+                    font { family: bar.theme.fontFamily; pixelSize: 16 }
+                }
             }
             MouseArea {
                 id: mouse

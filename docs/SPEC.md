@@ -1,6 +1,6 @@
 # Borne — Functional and technical specification
 
-Version 1.4 — November 2026
+Version 1.7 — November 2026
 
 > This document describes the intended product. It is not proof of emulator compatibility, a legal
 > review of licenses, or a promise that Borne works on every Linux machine.
@@ -11,7 +11,7 @@ Version 1.4 — November 2026
 |---|---|
 | Platforms | Linux — any distribution meeting the documented dependencies; ChimeraOS is the reference platform. macOS builds exist for development and testing. |
 | Local core | Rust |
-| UI | Dedicated Qt 6 / QML application, separate process, client of the core's local API; QML themes and UI extensions; background trailers |
+| UI | Dedicated Qt 6 / QML application, separate process, client of the core's local API; one built-in look with a living background and trailers |
 | Library backend | RomM, latest stable release — accounts, games, metadata, Device Sync |
 | Profiles | Several people, several devices: RomM accounts bound to local profiles usable offline |
 | V1 scope | NES, Mega Drive, GameCube, PS2 and Nintendo Switch (reference game: Zelda Tears of the Kingdom) |
@@ -29,6 +29,7 @@ Version 1.4 — November 2026
 | 1.3 | Dedicated Qt 6 / QML UI, separate from the Rust core (two processes linked by a local HTTP + WebSocket API). ES-DE dropped. Tauri + Nuxt, Electron and a custom native engine rejected (see 5.2). QML themes with guardrails; plugin section. |
 | 1.4 | Project renamed **Borne**. Specification moved to English. Stage plan aligned with the repository. UI translated (English source, French). |
 | 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
+| 1.7 | One built-in look, "Halo" (living background from the selected game's art, one row of games, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
 | 1.5 | Game page before any download; versions of a game grouped, with per-profile version and emulator language; "play from the network" through the Borne virtual mount (FUSE, only chosen games, read from RomM); mouse control; console-inspired themes (home row, tile dashboard, bright home, cabinet carousel) with UI sounds. |
 
 ## 1. Executive summary
@@ -216,22 +217,20 @@ application, client of the Rust core's local API. ES-DE is not used, neither as 
 - Game mode: during a session the UI hides its window, releases video and textures and stops rendering, leaving VRAM to the emulator (critical for the Switch with 8 GB).
 - Automatic UI restart by the core or by Steam after a crash.
 
-### 5.4 Themes
+### 5.4 Look
 
-A theme is a hot-loaded folder. Since a QML theme is code, it is framed:
+Since v1.7 Borne has one look, "Halo", instead of interchangeable themes: several themes spread the
+effort thin, and a user QML theme is code that runs with the UI's rights.
 
-| Item | Role |
-|---|---|
-| theme.json | Name, author, version, targeted theme API version, default layout, exposed options (trailer delay and volume, blur). |
-| Theme.qml | Required: style properties (colors, fonts, sizes, radii, animation durations), inheriting `ThemeBase`. |
-| Optional components | Card.qml (grid poster), Detail.qml (game page), Background.qml (scene behind the grid). Missing: default components. |
-| assets/ | Fonts, images, UI sounds. |
-
-- Versioned theme API: themes only see data exposed by Borne (selected game, state, media), never the network or the filesystem.
-- Isolated loading: a theme that fails to load or raises errors is disabled and replaced by the default theme, with the reason shown.
-- Safe mode: repeated UI crashes start Borne on the default theme.
-- Community themes are installed knowingly (warning: a theme is code); built-in themes are the reference.
-- Provided layouts: poster grid and detailed view; live theme switching from the gamepad with preview.
+- Living background: the selected game's art, blurred (computed at 480×270 and scaled), drifting a few
+  pixels over 20 s and cross-fading in 600 ms when the focus moves; the trailer fades in after 2.5 s.
+  Scrims on the left and at the bottom keep text readable whatever the art.
+- Library: the selected game large on the left (platform, title, states, summary, Open / Play), one row of
+  games at the bottom with the focused game at its start (white ring, halo in the game's color).
+- Accent: the cover's dominant hue, lifted to a light tone, colors the eyebrow text, the systems underline,
+  halos and the language marks. Panels are glass (translucent white, fine edge).
+- Type: Archivo (Expanded for display). The scene is laid out at 1920×1080 and scaled to the window.
+- Safe mode: repeated UI crashes restart Borne with trailers and sounds off.
 
 ### 5.4.1 Game page and input
 
@@ -241,9 +240,7 @@ A theme is a hot-loaded folder. Since a QML theme is code, it is framed:
 - Everything works with the gamepad (focus rings, row/column navigation) and with the mouse (hover and press
   states, clickable hints, back button, wheel scrolling). The pointer shows when the mouse moves and hides
   after a few seconds or as soon as a gamepad or the keyboard is used.
-- Built-in themes: Nocturne (poster grid), Cristal (light list), Horizon (cinematic home row), Mosaic (tile
-  dashboard), Lumen (bright home row with round shortcuts), Arcade (cabinet carousel). Layouts available to
-  themes: `grid`, `list`, `shelf`, `carousel`. Original synthesized UI sound sets; bundled OFL fonts.
+- Original synthesized UI sounds; bundled OFL font.
 
 ### 5.5 Media and trailers
 
@@ -626,7 +623,7 @@ return a task identifier and publish progress events. The same API is used by th
 | NFR-16 | The UI holds 60 fps while browsing a 2,000-game library on the reference hardware, under gamescope. |
 | NFR-17 | An emulator exit or crash always returns to the Borne UI, without keyboard intervention. |
 | NFR-18 | A 720p H.264 trailer is decoded by the GPU on the reference hardware without dropping navigation below 60 fps. |
-| NFR-19 | A theme change applies in under a second without restarting; an invalid theme never blocks the UI. |
+| NFR-19 | The background and accent follow the focus within 600 ms without dropping frames. |
 
 ### 15.1 Acceptance test scenarios
 

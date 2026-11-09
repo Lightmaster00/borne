@@ -1,2 +1,0 @@
-{ "schema": 1, "api": 1, "id": "mosaic", "name": "Mosaic", "author": "Borne", "version": "1.0.0",
-  "layout": "grid", "options": { "trailerDelayMs": 1500, "trailerVolume": 0, "backgroundBlur": true } }

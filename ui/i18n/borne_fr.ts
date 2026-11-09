@@ -3,113 +3,12 @@
 <context>
     <name>ActionMenu</name>
     <message>
-        <source>A  Choose      B  Back</source>
-        <translation>A  Choisir      B  Retour</translation>
-    </message>
-</context>
-<context>
-    <name>CardStatus</name>
-    <message>
-        <source>Queued</source>
-        <translation>En attente</translation>
+        <source>Choose</source>
+        <translation>Choisir</translation>
     </message>
     <message>
-        <source>Verifying</source>
-        <translation>Vérification</translation>
-    </message>
-    <message>
-        <source>Extracting</source>
-        <translation>Extraction</translation>
-    </message>
-    <message>
-        <source>%1%</source>
-        <translation>%1 %</translation>
-    </message>
-</context>
-<context>
-    <name>CarouselView</name>
-    <message>
-        <source>No games here.</source>
-        <translation>Aucun jeu ici.</translation>
-    </message>
-</context>
-<context>
-    <name>DetailView</name>
-    <message>
-        <source>%1 GB</source>
-        <translation>%1 Go</translation>
-    </message>
-    <message>
-        <source>%1 MB</source>
-        <translation>%1 Mo</translation>
-    </message>
-    <message>
-        <source>%1 KB</source>
-        <translation>%1 Ko</translation>
-    </message>
-    <message>
-        <source>Waiting to download</source>
-        <translation>En attente de téléchargement</translation>
-    </message>
-    <message>
-        <source>Downloading… %1%</source>
-        <translation>Téléchargement… %1 %</translation>
-    </message>
-    <message>
-        <source>Verifying files…</source>
-        <translation>Vérification des fichiers…</translation>
-    </message>
-    <message>
-        <source>Extracting…</source>
-        <translation>Extraction…</translation>
-    </message>
-    <message>
-        <source>Download failed: %1</source>
-        <translation>Échec du téléchargement : %1</translation>
-    </message>
-    <message>
-        <source>Installed on this device</source>
-        <translation>Installé sur cet appareil</translation>
-    </message>
-    <message>
-        <source>Local files not found</source>
-        <translation>Fichiers locaux introuvables</translation>
-    </message>
-    <message>
-        <source>On RomM · %1 to download</source>
-        <translation>Sur RomM · %1 à télécharger</translation>
-    </message>
-    <message>
-        <source>System</source>
-        <translation>Système</translation>
-    </message>
-    <message>
-        <source>Year</source>
-        <translation>Année</translation>
-    </message>
-    <message>
-        <source>Genre</source>
-        <translation>Genre</translation>
-    </message>
-    <message>
-        <source>Players</source>
-        <translation>Joueurs</translation>
-    </message>
-    <message>
-        <source>Region</source>
-        <translation>Région</translation>
-    </message>
-    <message>
-        <source>No summary in RomM for this game.</source>
-        <translation>Pas de résumé dans RomM pour ce jeu.</translation>
-    </message>
-    <message>
-        <source>Played from the network</source>
-        <translation>Joué depuis le réseau</translation>
-    </message>
-    <message>
-        <source>A  Open      Y  Options</source>
-        <translation>A  Ouvrir      Y  Options</translation>
+        <source>Back</source>
+        <translation>Retour</translation>
     </message>
 </context>
 <context>
@@ -346,20 +245,107 @@
         <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
     </message>
     <message>
-        <source>Version</source>
-        <translation>Version</translation>
-    </message>
-    <message>
-        <source>Game language</source>
-        <translation>Langue du jeu</translation>
-    </message>
-    <message>
-        <source>Used at launch by emulators that let the console language be set (Switch, GameCube, PS2…). Automatic follows Borne's language.</source>
-        <translation>Utilisée au lancement par les émulateurs qui permettent de régler la langue de la console (Switch, GameCube, PS2…). Automatique suit la langue de Borne.</translation>
-    </message>
-    <message>
         <source>No summary in RomM for this game.</source>
         <translation>Pas de résumé dans RomM pour ce jeu.</translation>
+    </message>
+    <message>
+        <source>Back to the library</source>
+        <translation>Retour à la bibliothèque</translation>
+    </message>
+    <message>
+        <source>Library</source>
+        <translation>Bibliothèque</translation>
+    </message>
+    <message>
+        <source>VERSION</source>
+        <translation>VERSION</translation>
+    </message>
+    <message>
+        <source>GAME LANGUAGE</source>
+        <translation>LANGUE DU JEU</translation>
+    </message>
+    <message>
+        <source>— passed to the emulator</source>
+        <translation>— transmise à l'émulateur</translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation>Sélectionner</translation>
+    </message>
+    <message>
+        <source>Choices are saved for this profile</source>
+        <translation>Les choix sont enregistrés pour ce profil</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryView</name>
+    <message>
+        <source>No games here.</source>
+        <translation>Aucun jeu ici.</translation>
+    </message>
+    <message>
+        <source>%1 GB</source>
+        <translation>%1 Go</translation>
+    </message>
+    <message>
+        <source>%1 MB</source>
+        <translation>%1 Mo</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 Ko</translation>
+    </message>
+    <message>
+        <source>Downloading %1%</source>
+        <translation>Téléchargement %1 %</translation>
+    </message>
+    <message>
+        <source>Downloading</source>
+        <translation>Téléchargement</translation>
+    </message>
+    <message>
+        <source>Download failed</source>
+        <translation>Échec du téléchargement</translation>
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation>Installé</translation>
+    </message>
+    <message>
+        <source>Mounted</source>
+        <translation>Monté</translation>
+    </message>
+    <message>
+        <source>Files missing</source>
+        <translation>Fichiers manquants</translation>
+    </message>
+    <message>
+        <source>On RomM · %1</source>
+        <translation>Sur RomM · %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n version(s)</source>
+        <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n player(s)</source>
+        <translation><numerusform>%n joueur</numerusform><numerusform>%n joueurs</numerusform></translation>
+    </message>
+    <message>
+        <source>%1 players</source>
+        <translation>%1 joueurs</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Jouer</translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 sur %2</translation>
     </message>
 </context>
 <context>
@@ -367,10 +353,6 @@
     <message>
         <source>All games</source>
         <translation>Tous les jeux</translation>
-    </message>
-    <message>
-        <source>Installed</source>
-        <translation>Installé</translation>
     </message>
     <message>
         <source>core unreachable</source>
@@ -472,10 +454,6 @@
     <message>
         <source>Downloads</source>
         <translation>Téléchargements</translation>
-    </message>
-    <message>
-        <source>Theme</source>
-        <translation>Thème</translation>
     </message>
     <message>
         <source>Switch profile</source>
@@ -586,16 +564,8 @@
         <translation>Aucun jeu ici.</translation>
     </message>
     <message>
-        <source>%1 to download</source>
-        <translation>%1 à télécharger</translation>
-    </message>
-    <message>
         <source>Options</source>
         <translation>Options</translation>
-    </message>
-    <message>
-        <source>System</source>
-        <translation>Système</translation>
     </message>
     <message>
         <source>Connected to RomM (%1).</source>
@@ -617,37 +587,9 @@
         <source>Borne core unreachable — reconnecting…</source>
         <translation>Cœur Borne injoignable — reconnexion…</translation>
     </message>
-    <message numerus="yes">
-        <source>Safe mode: default theme (the UI crashed %n time(s))</source>
-        <translation><numerusform>Mode sans échec : thème par défaut (l'interface a planté %n fois)</numerusform><numerusform>Mode sans échec : thème par défaut (l'interface a planté %n fois)</numerusform></translation>
-    </message>
     <message>
         <source>Game mode (test) — B to go back</source>
         <translation>Mode jeu (test) — B pour revenir</translation>
-    </message>
-    <message>
-        <source>built-in</source>
-        <translation>intégré</translation>
-    </message>
-    <message>
-        <source>user</source>
-        <translation>utilisateur</translation>
-    </message>
-    <message>
-        <source>grid view</source>
-        <translation>vue grille</translation>
-    </message>
-    <message>
-        <source>custom posters</source>
-        <translation>affiches personnalisées</translation>
-    </message>
-    <message>
-        <source>Applied in %1 ms (NFR-19 target: &lt; 1000 ms)</source>
-        <translation>Appliqué en %1 ms (objectif NFR-19 : &lt; 1000 ms)</translation>
-    </message>
-    <message>
-        <source>Ignored themes</source>
-        <translation>Thèmes ignorés</translation>
     </message>
     <message>
         <source>Benchmark running…</source>
@@ -668,14 +610,6 @@
     <message>
         <source>Export the last report</source>
         <translation>Exporter le dernier rapport</translation>
-    </message>
-    <message>
-        <source>Trailers: on</source>
-        <translation>Trailers : activés</translation>
-    </message>
-    <message>
-        <source>Trailers: off</source>
-        <translation>Trailers : désactivés</translation>
     </message>
     <message>
         <source>Toggle full screen</source>
@@ -878,36 +812,12 @@
         <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
     </message>
     <message>
-        <source>Switch to the theme's view</source>
-        <translation>Revenir à la vue du thème</translation>
-    </message>
-    <message>
-        <source>Switch to the list view</source>
-        <translation>Passer en vue liste</translation>
-    </message>
-    <message>
         <source>No game installed yet. Open a game in “All games” to download it or play it from the network.</source>
         <translation>Aucun jeu installé pour l'instant. Ouvre un jeu dans « Tous les jeux » pour le télécharger ou y jouer depuis le réseau.</translation>
     </message>
     <message>
-        <source>Downloading…</source>
-        <translation>Téléchargement…</translation>
-    </message>
-    <message>
-        <source>From the network</source>
-        <translation>Depuis le réseau</translation>
-    </message>
-    <message>
         <source>Open</source>
         <translation>Ouvrir</translation>
-    </message>
-    <message>
-        <source>Theme view</source>
-        <translation>Vue du thème</translation>
-    </message>
-    <message>
-        <source>List view</source>
-        <translation>Vue liste</translation>
     </message>
     <message>
         <source>Key</source>
@@ -922,28 +832,44 @@
         <translation>Valider</translation>
     </message>
     <message>
-        <source>list view</source>
-        <translation>vue liste</translation>
-    </message>
-    <message>
-        <source>home row</source>
-        <translation>rangée d'accueil</translation>
-    </message>
-    <message>
-        <source>carousel</source>
-        <translation>carrousel</translation>
-    </message>
-    <message>
-        <source>Keep</source>
-        <translation>Garder</translation>
-    </message>
-    <message>
         <source>Installing the update: Borne restarts…</source>
         <translation>Installation de la mise à jour : Borne redémarre…</translation>
     </message>
     <message>
         <source>Version %1 is available: Settings → Updates.</source>
         <translation>La version %1 est disponible : Paramètres → Mises à jour.</translation>
+    </message>
+    <message>
+        <source>Writing the diagnostic report…</source>
+        <translation>Écriture du rapport de diagnostic…</translation>
+    </message>
+    <message>
+        <source>Report saved: %1</source>
+        <translation>Rapport enregistré : %1</translation>
+    </message>
+    <message>
+        <source>The library could not be synced: %1</source>
+        <translation>La bibliothèque n'a pas pu être synchronisée : %1</translation>
+    </message>
+    <message>
+        <source>Offline</source>
+        <translation>Hors ligne</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Jouer</translation>
+    </message>
+    <message>
+        <source>Systems</source>
+        <translation>Systèmes</translation>
+    </message>
+    <message numerus="yes">
+        <source>Synced at %1 · %n game(s)</source>
+        <translation><numerusform>Synchronisé à %1 · %n jeu</numerusform><numerusform>Synchronisé à %1 · %n jeux</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
+        <translation><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform></translation>
     </message>
 </context>
 <context>
@@ -968,24 +894,8 @@
 <context>
     <name>PairingScreen</name>
     <message>
-        <source>Scan the QR code with your phone, or open this address and sign in to RomM with this profile's account:</source>
-        <translation>Scanne le QR code avec ton téléphone, ou ouvre cette adresse et connecte-toi à RomM avec le compte de ce profil :</translation>
-    </message>
-    <message>
-        <source>Code to confirm</source>
-        <translation>Code à confirmer</translation>
-    </message>
-    <message>
         <source>Connecting to RomM…</source>
         <translation>Connexion à RomM…</translation>
-    </message>
-    <message>
-        <source>Waiting for approval… (the code expires in %1 min %2 s)</source>
-        <translation>En attente d'approbation… (le code expire dans %1 min %2 s)</translation>
-    </message>
-    <message>
-        <source>Profile paired ✓</source>
-        <translation>Profil appairé ✓</translation>
     </message>
     <message>
         <source>Pairing refused in RomM. A to start again.</source>
@@ -1004,10 +914,6 @@
         <translation>inconnu</translation>
     </message>
     <message>
-        <source>Pair “%1”</source>
-        <translation>Appairer « %1 »</translation>
-    </message>
-    <message>
         <source>Cancel</source>
         <translation>Annuler</translation>
     </message>
@@ -1015,12 +921,41 @@
         <source>Retry</source>
         <translation>Réessayer</translation>
     </message>
-</context>
-<context>
-    <name>PosterGrid</name>
     <message>
-        <source>No games here.</source>
-        <translation>Aucun jeu ici.</translation>
+        <source>Server</source>
+        <translation>Serveur</translation>
+    </message>
+    <message>
+        <source>Pair this device</source>
+        <translation>Appairer cet appareil</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Approve “%1” from RomM</source>
+        <translation>Approuvez « %1 » depuis RomM</translation>
+    </message>
+    <message>
+        <source>Scan the QR code with your phone, or open the address below and sign in with this profile's RomM account, then confirm the code.</source>
+        <translation>Scannez le QR code avec votre téléphone, ou ouvrez l'adresse ci-dessous et connectez-vous avec le compte RomM de ce profil, puis confirmez le code.</translation>
+    </message>
+    <message>
+        <source>Pairing code %1</source>
+        <translation>Code d'appairage %1</translation>
+    </message>
+    <message>
+        <source>Waiting for approval · the code renews in %1:%2</source>
+        <translation>En attente d'approbation · le code se renouvelle dans %1:%2</translation>
+    </message>
+    <message>
+        <source>Profile paired</source>
+        <translation>Profil appairé</translation>
+    </message>
+    <message>
+        <source>No place to enter the code in RomM? Pairing by code needs a recent RomM: update the server, then try again.</source>
+        <translation>Pas d'endroit où saisir le code dans RomM ? L'appairage par code demande un RomM récent : mettez le serveur à jour, puis réessayez.</translation>
     </message>
 </context>
 <context>
@@ -1112,24 +1047,12 @@
         <translation>%1 Ko</translation>
     </message>
     <message>
-        <source>Download version %1 · %2</source>
-        <translation>Télécharger la version %1 · %2</translation>
-    </message>
-    <message>
-        <source>Downloading… %1%</source>
-        <translation>Téléchargement… %1 %</translation>
-    </message>
-    <message>
         <source>Restart and install</source>
         <translation>Redémarrer et installer</translation>
     </message>
     <message>
         <source>Checking…</source>
         <translation>Recherche…</translation>
-    </message>
-    <message>
-        <source>Check for updates</source>
-        <translation>Rechercher une mise à jour</translation>
     </message>
     <message>
         <source>Stable</source>
@@ -1160,58 +1083,6 @@
         <translation>Jeux</translation>
     </message>
     <message>
-        <source>What a game page offers first. Both stay available on every game page.</source>
-        <translation>Ce que la page d'un jeu propose en premier. Les deux restent disponibles sur chaque page de jeu.</translation>
-    </message>
-    <message>
-        <source>Download to this device</source>
-        <translation>Télécharger sur cet appareil</translation>
-    </message>
-    <message>
-        <source>Plays offline, even if the server is off</source>
-        <translation>Fonctionne hors ligne, même serveur éteint</translation>
-    </message>
-    <message>
-        <source>Fastest loading</source>
-        <translation>Chargements les plus rapides</translation>
-    </message>
-    <message>
-        <source>Nothing to wait for once installed</source>
-        <translation>Plus rien à attendre une fois installé</translation>
-    </message>
-    <message>
-        <source>Uses disk space for every game</source>
-        <translation>Prend de la place pour chaque jeu</translation>
-    </message>
-    <message>
-        <source>Wait for the download before playing</source>
-        <translation>Il faut attendre le téléchargement avant de jouer</translation>
-    </message>
-    <message>
-        <source>Play from the network</source>
-        <translation>Jouer depuis le réseau</translation>
-    </message>
-    <message>
-        <source>Uses almost no disk space (bounded cache)</source>
-        <translation>Presque aucune place sur le disque (cache limité)</translation>
-    </message>
-    <message>
-        <source>Play almost right away</source>
-        <translation>On joue presque tout de suite</translation>
-    </message>
-    <message>
-        <source>Only the games you pick are mounted, with your RomM rights</source>
-        <translation>Seuls les jeux choisis sont montés, avec tes droits RomM</translation>
-    </message>
-    <message>
-        <source>Needs the network and the RomM server</source>
-        <translation>Nécessite le réseau et le serveur RomM</translation>
-    </message>
-    <message>
-        <source>Loading depends on the network: wired or 5 GHz Wi-Fi for large games</source>
-        <translation>Chargements dépendants du réseau : câble ou Wi-Fi 5 GHz pour les gros jeux</translation>
-    </message>
-    <message>
         <source>Linux only</source>
         <translation>Linux uniquement</translation>
     </message>
@@ -1220,40 +1091,12 @@
         <translation>Indisponible ici : %1</translation>
     </message>
     <message>
-        <source>Network cache</source>
-        <translation>Cache réseau</translation>
-    </message>
-    <message>
-        <source>Space kept on this device for games played from the network; the oldest blocks are removed first.</source>
-        <translation>Place réservée sur cet appareil aux jeux joués depuis le réseau ; les données les plus anciennes partent en premier.</translation>
-    </message>
-    <message>
         <source>Updates</source>
         <translation>Mises à jour</translation>
     </message>
     <message>
-        <source>Installed: version %1 (build %2)</source>
-        <translation>Installée : version %1 (build %2)</translation>
-    </message>
-    <message>
-        <source>Automatic updates are not available for this copy: %1</source>
-        <translation>Les mises à jour automatiques ne sont pas disponibles pour cette copie : %1</translation>
-    </message>
-    <message>
-        <source>Channel</source>
-        <translation>Canal</translation>
-    </message>
-    <message>
-        <source>Stable: published versions. Development: every change, as soon as it is built (may contain bugs).</source>
-        <translation>Stable : les versions publiées. Développement : chaque modification dès qu'elle est construite (peut contenir des bugs).</translation>
-    </message>
-    <message>
         <source>Check automatically</source>
         <translation>Vérifier automatiquement</translation>
-    </message>
-    <message>
-        <source>At startup and every 6 hours. Nothing is installed without your go-ahead.</source>
-        <translation>Au démarrage puis toutes les 6 heures. Rien n'est installé sans ton accord.</translation>
     </message>
     <message>
         <source>Borne is up to date.</source>
@@ -1264,10 +1107,6 @@
         <translation>Échec de la mise à jour : %1</translation>
     </message>
     <message>
-        <source>Version %1 (build %2): %3</source>
-        <translation>Version %1 (build %2) : %3</translation>
-    </message>
-    <message>
         <source>Interface</source>
         <translation>Interface</translation>
     </message>
@@ -1276,23 +1115,232 @@
         <translation>Sons de l'interface</translation>
     </message>
     <message>
-        <source>Short sounds when moving and choosing; each theme has its own.</source>
-        <translation>Sons courts pour se déplacer et choisir ; chaque thème a les siens.</translation>
-    </message>
-    <message>
         <source>Trailers</source>
         <translation>Trailers</translation>
     </message>
     <message>
-        <source>Video behind the selected game, muted, after a short pause.</source>
-        <translation>Vidéo derrière le jeu sélectionné, sans le son, après une courte pause.</translation>
+        <source>Updates are handled outside Borne here: %1</source>
+        <translation>Ici, les mises à jour se font hors de Borne : %1</translation>
     </message>
-</context>
-<context>
-    <name>ShelfView</name>
     <message>
-        <source>No games here.</source>
-        <translation>Aucun jeu ici.</translation>
+        <source>Version %1 is available.</source>
+        <translation>La version %1 est disponible.</translation>
+    </message>
+    <message>
+        <source>Downloading the update… %1%</source>
+        <translation>Téléchargement de la mise à jour… %1 %</translation>
+    </message>
+    <message>
+        <source>Downloaded and verified. Borne restarts to install it.</source>
+        <translation>Téléchargée et vérifiée. Borne redémarre pour l'installer.</translation>
+    </message>
+    <message>
+        <source>Download · %1</source>
+        <translation>Télécharger · %1</translation>
+    </message>
+    <message>
+        <source>Please wait…</source>
+        <translation>Patientez…</translation>
+    </message>
+    <message>
+        <source>Check now</source>
+        <translation>Vérifier maintenant</translation>
+    </message>
+    <message>
+        <source>Install, cache</source>
+        <translation>Installation, cache</translation>
+    </message>
+    <message>
+        <source>Sounds, trailers</source>
+        <translation>Sons, bandes-annonces</translation>
+    </message>
+    <message>
+        <source>Server</source>
+        <translation>Serveur</translation>
+    </message>
+    <message>
+        <source>RomM, profiles</source>
+        <translation>RomM, profils</translation>
+    </message>
+    <message>
+        <source>Help</source>
+        <translation>Aide</translation>
+    </message>
+    <message>
+        <source>Diagnostic report</source>
+        <translation>Rapport de diagnostic</translation>
+    </message>
+    <message>
+        <source>Mount cache</source>
+        <translation>Cache du montage</translation>
+    </message>
+    <message>
+        <source>Space kept for recently played mounted games</source>
+        <translation>Espace gardé pour les jeux montés joués récemment</translation>
+    </message>
+    <message>
+        <source>Update channel</source>
+        <translation>Canal de mise à jour</translation>
+    </message>
+    <message>
+        <source>Stable gets tested releases; Development gets every build</source>
+        <translation>Stable reçoit les versions testées ; Développement reçoit chaque build</translation>
+    </message>
+    <message>
+        <source>Every 6 hours, never while you play</source>
+        <translation>Toutes les 6 heures, jamais pendant une partie</translation>
+    </message>
+    <message>
+        <source>Borne %1</source>
+        <translation>Borne %1</translation>
+    </message>
+    <message>
+        <source>Short, quiet sounds when moving and choosing</source>
+        <translation>Sons courts et discrets en navigant et en validant</translation>
+    </message>
+    <message>
+        <source>Play the selected game's trailer, muted, after two seconds</source>
+        <translation>Lit la bande-annonce du jeu sélectionné, sans le son, après deux secondes</translation>
+    </message>
+    <message>
+        <source>Library</source>
+        <translation>Bibliothèque</translation>
+    </message>
+    <message>
+        <source>Sync now</source>
+        <translation>Synchroniser</translation>
+    </message>
+    <message>
+        <source>RomM server</source>
+        <translation>Serveur RomM</translation>
+    </message>
+    <message>
+        <source>offline</source>
+        <translation>hors ligne</translation>
+    </message>
+    <message>
+        <source>not configured</source>
+        <translation>non configuré</translation>
+    </message>
+    <message>
+        <source>Change server</source>
+        <translation>Changer de serveur</translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation>Profil</translation>
+    </message>
+    <message>
+        <source>Switch profile</source>
+        <translation>Changer de profil</translation>
+    </message>
+    <message>
+        <source>Saved: %1</source>
+        <translation>Enregistré : %1</translation>
+    </message>
+    <message>
+        <source>Saves the log and settings, without passwords or tokens, to share when something goes wrong</source>
+        <translation>Enregistre le journal et les réglages, sans mot de passe ni jeton, à partager en cas de problème</translation>
+    </message>
+    <message>
+        <source>Export the report</source>
+        <translation>Exporter le rapport</translation>
+    </message>
+    <message>
+        <source>Diagnostics and measurements</source>
+        <translation>Diagnostic et mesures</translation>
+    </message>
+    <message>
+        <source>Graphics session, memory, smoothness benchmark</source>
+        <translation>Session graphique, mémoire, mesure de fluidité</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <source>Quit Borne</source>
+        <translation>Quitter Borne</translation>
+    </message>
+    <message>
+        <source>Quit</source>
+        <translation>Quitter</translation>
+    </message>
+    <message>
+        <source>Syncing %1 of %2…</source>
+        <translation>Synchronisation %1 sur %2…</translation>
+    </message>
+    <message>
+        <source>Last sync failed: %1</source>
+        <translation>Échec de la dernière synchro : %1</translation>
+    </message>
+    <message>
+        <source>Synced at %1</source>
+        <translation>Synchronisé à %1</translation>
+    </message>
+    <message>
+        <source>Back to the library</source>
+        <translation>Retour à la bibliothèque</translation>
+    </message>
+    <message>
+        <source>How games are installed</source>
+        <translation>Comment les jeux sont installés</translation>
+    </message>
+    <message>
+        <source>Choose once; you can switch at any time. Games already on this device stay where they are.</source>
+        <translation>Choisissez une fois ; vous pouvez changer à tout moment. Les jeux déjà sur cet appareil restent en place.</translation>
+    </message>
+    <message>
+        <source>Download</source>
+        <translation>Télécharger</translation>
+    </message>
+    <message>
+        <source>Current</source>
+        <translation>Actuel</translation>
+    </message>
+    <message>
+        <source>The whole game is copied to this device before you play.</source>
+        <translation>Le jeu entier est copié sur cet appareil avant de jouer.</translation>
+    </message>
+    <message>
+        <source>Plays offline, even if the server is down</source>
+        <translation>Fonctionne hors ligne, même si le serveur est éteint</translation>
+    </message>
+    <message>
+        <source>Fastest loading, no network during play</source>
+        <translation>Chargement le plus rapide, aucun réseau en jeu</translation>
+    </message>
+    <message>
+        <source>Uses disk space for every installed game</source>
+        <translation>Prend de la place pour chaque jeu installé</translation>
+    </message>
+    <message>
+        <source>Mount</source>
+        <translation>Monter</translation>
+    </message>
+    <message>
+        <source>Borne reads the game from RomM while you play. Only games you pick are exposed.</source>
+        <translation>Borne lit le jeu depuis RomM pendant que vous jouez. Seuls les jeux choisis sont exposés.</translation>
+    </message>
+    <message>
+        <source>Starts in seconds, even for large games</source>
+        <translation>Démarre en quelques secondes, même pour les gros jeux</translation>
+    </message>
+    <message>
+        <source>Keeps the disk free; a small cache speeds up replays</source>
+        <translation>Garde le disque libre ; un petit cache accélère les relances</translation>
+    </message>
+    <message>
+        <source>Needs the server reachable during play</source>
+        <translation>Le serveur doit rester joignable pendant le jeu</translation>
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation>Choisir</translation>
+    </message>
+    <message>
+        <source>Change value</source>
+        <translation>Changer la valeur</translation>
     </message>
 </context>
 </TS>

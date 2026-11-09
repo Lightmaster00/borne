@@ -16,11 +16,13 @@ Item {
     function typeText(t) { if (!busy) kb.typeText(t) }
     function backspace() { if (!busy) kb.backspace() }
 
+    Rectangle { anchors.fill: parent; color: theme.bg }
     Column {
         anchors.centerIn: parent
+        scale: 1.4
         spacing: 22
         width: kb.implicitWidth
-        Text { text: qsTr("RomM server"); color: theme.fg; font { family: theme.displayFont; pixelSize: 34; bold: true } }
+        Text { text: qsTr("RomM server"); color: theme.fg; font { family: theme.displayFont; pixelSize: 34; weight: Font.ExtraBold } }
         Text {
             width: parent.width
             wrapMode: Text.WordWrap

@@ -6,7 +6,6 @@
 //!     media/covers/     cached covers
 //!     secrets/          RomM tokens (0600), never in the database
 //!     profiles/<id>/    per-profile saves and states (stage 2)
-//!     themes/           user themes
 //!     mount/            Borne virtual mount: linked games read from RomM on demand (Linux)
 //!     cache/stream/     blocks of linked games already read (bounded)
 //!
@@ -46,9 +45,6 @@ impl Paths {
     pub fn profiles(&self) -> PathBuf {
         self.root.join("profiles")
     }
-    pub fn themes(&self) -> PathBuf {
-        self.root.join("themes")
-    }
     /// Borne virtual mount: linked games, read from RomM on demand.
     pub fn mount(&self) -> PathBuf {
         self.root.join("mount")
@@ -67,7 +63,6 @@ impl Paths {
             self.library(),
             self.covers(),
             self.profiles(),
-            self.themes(),
             self.reports(),
             self.stream_cache(),
         ] {

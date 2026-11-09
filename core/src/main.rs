@@ -26,7 +26,6 @@ mod romm;
 mod secrets;
 mod state;
 mod stream;
-mod themes;
 mod update;
 
 use std::path::PathBuf;
@@ -36,11 +35,10 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 /// Locations inside the package.
-///   Linux: <package>/bin/{borne,borne-ui}, <package>/ui, <package>/resources
-///   macOS: Borne.app/Contents/MacOS/{borne,borne-ui}, Contents/Resources/{ui,resources}
+///   Linux: <package>/bin/{borne,borne-ui}, <package>/resources
+///   macOS: Borne.app/Contents/MacOS/{borne,borne-ui}, Contents/Resources/resources
 struct Layout {
     ui_bin: PathBuf,
-    ui_dir: PathBuf,
     resources: PathBuf,
 }
 
@@ -54,7 +52,6 @@ fn layout() -> Layout {
         let res = exe_dir.parent().unwrap_or(&exe_dir).join("Resources");
         return Layout {
             ui_bin: exe_dir.join("borne-ui"),
-            ui_dir: res.join("ui"),
             resources: res.join("resources"),
         };
     }
@@ -64,7 +61,6 @@ fn layout() -> Layout {
         .unwrap_or_else(|| exe_dir.clone());
     Layout {
         ui_bin: root.join("bin").join("borne-ui"),
-        ui_dir: root.join("ui"),
         resources: root.join("resources"),
     }
 }
@@ -118,7 +114,6 @@ fn main() {
         hub: events::Broadcaster::default(),
         pads: Arc::new(Mutex::new(pad::PadState::default())),
         resources: layout.resources.clone(),
-        ui_themes: layout.ui_dir.join("themes"),
         pairing: Mutex::new(None),
         pairing_gen: AtomicU64::new(0),
         sync: Mutex::new(state::SyncState::default()),

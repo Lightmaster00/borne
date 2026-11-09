@@ -28,7 +28,7 @@ Specification: [`docs/SPEC.md`](docs/SPEC.md).
   (including archive contents), safe zip extraction, atomic install, live progress on the poster,
   cancellation, local deletion that never touches RomM.
 - **UI**: grid and detailed view, systems bar, main menu, game menu, downloads panel, notifications,
-  QML themes (Nocturne, Arcade, Cristal + user themes), English and French.
+  English and French.
 
 Since then:
 
@@ -43,8 +43,12 @@ Since then:
   size, updates, interface sounds and trailers.
 - **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
   gamepad is used. The wheel scrolls the library.
-- **Console themes**: Horizon (cinematic home row), Mosaic (tile dashboard), Lumen (bright home with
-  round shortcuts), Arcade (cabinet carousel), plus Nocturne and Cristal, each with its own UI sounds.
+- **One look, "Halo"**: the selected game's art fills the screen, blurred and slowly drifting, and its
+  trailer fades in after a pause; games sit in one row at the bottom; panels are glass; the accent color
+  is taken from each game's cover. Designed at 1920×1080 and scaled to any window.
+- **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
+  writes a shareable text report (versions, settings, server version, recent downloads, log; no
+  passwords or tokens) to the data folder and to Downloads.
 
 Launching games arrives with stage 3.
 
@@ -82,7 +86,7 @@ borne (script)  →  bin/borne        Rust core: local HTTP + WebSocket API, Rom
 The UI talks to the core only through the local API (`core/src/api.rs` documents every route):
 a UI crash interrupts neither downloads nor sync, and the core restarts the UI.
 
-Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets/`, `profiles/`, `themes/`,
+Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets/`, `profiles/`, `logs/`,
 `mount/` and `cache/stream/` for games played from the network). The virtual mount needs FUSE
 (`fusermount3`, present on ChimeraOS and SteamOS).
 
@@ -93,11 +97,12 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | D-pad / stick | Arrows | Navigate |
 | A | Enter | Open the game page / choose |
 | B | Escape | Back |
+| X | X | Play |
 | Y | Y or T | Game or profile options |
-| X | X | Grid ↔ detailed view |
+| Left / right | Arrows | Previous / next game (up / down: ten at a time) |
 | LB / RB | Page Up / Page Down, Q / E | Previous / next system |
-| Start | M or F1 | Menu (sync, downloads, theme, profile, server, diagnostics) |
-| Select | F2 | Performance overlay |
+| Start | M or F1 | Settings |
+| Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |
 
 In text fields, type directly on the keyboard; Enter confirms. With the mouse: click a game to open
 it, click the hints at the bottom of the screen as buttons, right-click a profile for its options.
@@ -134,17 +139,13 @@ End-to-end tests against a real RomM: see [`scripts/romm-dev/`](scripts/romm-dev
 Useful variables: `BORNE_DATA_DIR` (data directory), `BORNE_LANG` (UI language), `BORNE_DEBUG_INPUT=1`
 (gamepad action injection for automated tests), `BORNE_DEBUG_DL_KBPS` (download rate limit for tests).
 
-## Themes
+## Look
 
-A theme is a folder in `~/.local/share/borne/themes/<id>/`: `theme.json` (with its `layout`: `grid`,
-`list`, `shelf` or `carousel`), `Theme.qml` (inherits `ThemeBase` from the `Borne.Theme` module:
-colors, fonts, tile sizes, home row, UI sounds…), and optionally `Card.qml` (custom poster or tile,
-with the `CardStatus` state badge). Examples in [`examples/themes/`](examples/themes/) and the
-built-in themes in [`ui/themes/`](ui/themes/). Bundled fonts: Inter, Poppins, Bebas Neue, Press Start 2P
-(SIL Open Font License, see `ui/fonts/licenses`); UI sounds are synthesized by
-`scripts/assets/make_sounds.py`.
-An invalid theme is set aside with the reason shown; after two UI crashes, Borne restarts
-in safe mode with the default theme.
+Borne has a single look, "Halo", defined in `ui/imports/Borne/Theme/Theme.qml` (colors, type, sizes,
+motion) and drawn by the components in `ui/components/`. User QML themes were removed: a QML theme is
+code, and one well-made look serves better than several half-finished ones. Bundled font: Archivo (SIL
+Open Font License, see `ui/fonts/licenses`); UI sounds are synthesized by `scripts/assets/make_sounds.py`.
+After two UI crashes, Borne restarts in safe mode, with trailers and sounds off.
 
 ## License
 

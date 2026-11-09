@@ -5,7 +5,7 @@
 // Gamepad: up/down between rows (actions, versions, language), left/right inside a row,
 // A to activate, B to go back. Mouse: everything is clickable; the back button is top left.
 import QtQuick
-import Borne.Theme
+import QtQuick.Effects
 
 Item {
     id: page
@@ -20,7 +20,6 @@ Item {
     property bool pointerActive: false
     property bool trailers: true
     property bool paused: false
-    property var options: ({ trailerDelayMs: 1500, trailerVolume: 0, backgroundBlur: false })
 
     signal action(string id, var payload)
 
@@ -128,61 +127,30 @@ Item {
         else if (a === "b") page.action("back", null)
     }
     onActionsChanged: setCol(0, Math.min(col[0], Math.max(0, actions.length - 1)))
-    // Keep the focused row on screen when the gamepad moves (the page can be taller than the screen).
+    readonly property real progress: game && game.dl_total > 0 ? Math.min(1, game.dl_received / game.dl_total) : 0
     property bool fromMouse: false
-    onRowChanged: {
-        if (fromMouse) return
-        const name = rows[row]
-        const target = name === "actions" ? 0 : name === "versions" ? versionsBlock.y - 24 : languageBlock.y - 24
-        scrollAnim.to = Math.max(0, Math.min(body.contentHeight - body.height, target))
-        scrollAnim.restart()
-    }
-    NumberAnimation { id: scrollAnim; target: body; property: "contentY"; duration: 200; easing.type: Easing.OutQuart }
-
-    // ---------- background ----------
-    TrailerStage {
-        anchors.fill: parent
-        game: page.game
-        theme: page.theme
-        delayMs: page.options.trailerDelayMs
-        volume: page.options.trailerVolume
-        blur: true
-        backdropOpacity: 0.55
-        video: true
-        active: page.trailers
-        paused: page.paused
-    }
-    Rectangle {
-        anchors.fill: parent
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: Qt.rgba(theme.bg.r, theme.bg.g, theme.bg.b, 0.97) }
-            GradientStop { position: 0.55; color: Qt.rgba(theme.bg.r, theme.bg.g, theme.bg.b, theme.heroDim) }
-            GradientStop { position: 1; color: Qt.rgba(theme.bg.r, theme.bg.g, theme.bg.b, theme.heroDim * 0.5) }
-        }
-    }
 
     // Swallow clicks so the library underneath never receives them.
-    MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: (w) => w.accepted = !body.interactive }
+    MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: (w) => w.accepted = true }
 
     // ---------- back ----------
     Rectangle {
-        id: back
-        x: 48; y: 28
-        width: backRow.implicitWidth + 28; height: 40
-        radius: 20
-        color: backMouse.containsMouse ? Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.16) : Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.08)
-        Behavior on color { ColorAnimation { duration: 150 } }
+        x: 96; y: 44
+        width: backRow.implicitWidth + 24; height: 44
+        radius: 22
+        color: backMouse.containsMouse ? theme.glassRaised : theme.glass
+        border { width: 1; color: theme.glassEdge }
+        Accessible.role: Accessible.Button
+        Accessible.name: qsTr("Back to the library")
         Row {
             id: backRow
-            anchors.centerIn: parent
+            anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
             spacing: 10
             Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 22; height: 22; radius: 11; color: theme.fg
-                Text { anchors.centerIn: parent; text: "B"; color: theme.bg; font { family: theme.fontFamily; pixelSize: 11; weight: Font.Bold } }
+                width: 32; height: 32; radius: 16; color: theme.glassRaised
+                Text { anchors.centerIn: parent; text: "B"; color: theme.fg; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold } }
             }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Back"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium } }
+            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Library"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
         }
         MouseArea {
             id: backMouse
@@ -193,195 +161,222 @@ Item {
         }
     }
 
-    // ---------- cover ----------
-    Item {
-        id: coverBox
-        anchors { right: parent.right; rightMargin: 72; top: parent.top; topMargin: 96 }
-        width: Math.round(Math.min(parent.width * 0.24, (parent.height - 200) * 0.72))
-        height: Math.round(width / 0.72)
-        Rectangle {
+    // ---------- cover, with the game's halo ----------
+    Rectangle { id: haloSource; anchors.fill: cover; radius: cover.radius; color: theme.halo; visible: false }
+    MultiEffect {
+        anchors.fill: haloSource
+        source: haloSource
+        autoPaddingEnabled: true
+        blurEnabled: true; blur: 1.0; blurMax: 64
+        opacity: 0.8
+    }
+    Rectangle {
+        id: cover
+        x: 96; y: 150
+        width: 380; height: 570
+        radius: 22
+        color: theme.tone(page.game ? page.game.hue : 0)
+        layer.enabled: coverImg.status === Image.Ready
+        layer.effect: MultiEffect { maskEnabled: true; maskSource: coverMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
+        Text {
+            visible: coverImg.status !== Image.Ready
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 28 }
+            text: page.game ? page.game.name : ""
+            wrapMode: Text.WordWrap
+            color: theme.fg
+            font { family: theme.displayFont; pixelSize: 44; weight: Font.ExtraBold }
+        }
+        Image {
+            id: coverImg
             anchors.fill: parent
-            radius: theme.cardRadius
-            clip: true
-            gradient: Gradient {
-                GradientStop { position: 0; color: Qt.hsla(((page.game ? page.game.hue : 200) % 360) / 360, 0.55, 0.42, 1) }
-                GradientStop { position: 1; color: Qt.hsla(((page.game ? page.game.hue + 30 : 230) % 360) / 360, 0.6, 0.14, 1) }
+            source: page.game ? page.game.cover : ""
+            asynchronous: true
+            fillMode: Image.PreserveAspectCrop
+            sourceSize: Qt.size(570, 855)
+        }
+    }
+    Item {
+        id: coverMask
+        anchors.fill: cover
+        layer.enabled: true
+        visible: false
+        Rectangle { anchors.fill: parent; radius: cover.radius; color: "black" }
+    }
+    Rectangle {
+        anchors.fill: cover
+        radius: cover.radius
+        color: "transparent"
+        border { width: 1; color: Qt.rgba(1, 1, 1, 0.18) }
+    }
+
+    // ---------- title, actions, choices ----------
+    Column {
+        id: info
+        x: cover.x + cover.width + 72; y: 160
+        width: parent.width - x - 96
+        spacing: 26
+
+        Text {
+            width: parent.width
+            text: page.game ? [page.game.platform_name, page.game.year > 0 ? page.game.year : "", page.game.genres,
+                               page.game.players ? (/^\d+$/.test(page.game.players) ? qsTr("%n player(s)", "", Number(page.game.players)) : qsTr("%1 players").arg(page.game.players)) : ""].filter(x => x).join(" · ").toUpperCase() : ""
+            elide: Text.ElideRight
+            color: theme.accent
+            font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold; letterSpacing: 3 }
+        }
+        Text {
+            width: parent.width
+            height: 88
+            text: page.game ? page.game.name : ""
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: 48
+            elide: Text.ElideRight
+            verticalAlignment: Text.AlignVCenter
+            color: theme.fg
+            font { family: theme.displayFont; pixelSize: 88; weight: Font.ExtraBold; letterSpacing: -2.5 }
+        }
+
+        Row {
+            spacing: 14
+            Repeater {
+                model: page.actions
+                PageButton {
+                    required property var modelData
+                    required property int index
+                    implicitHeight: 64
+                    theme: page.theme
+                    text: modelData.label
+                    key: modelData.primary ? "A" : ""
+                    primary: !!modelData.primary
+                    disabled: !!modelData.disabled
+                    focused: page.rows[page.row] === "actions" && page.col[0] === index
+                    pointerActive: page.pointerActive
+                    onClicked: { page.fromMouse = true; page.row = 0; page.fromMouse = false; page.setCol(0, index); page.activate("actions", index) }
+                }
             }
-            Image {
-                anchors.fill: parent
-                source: page.game ? page.game.cover : ""
-                asynchronous: true
-                fillMode: Image.PreserveAspectCrop
-                sourceSize: Qt.size(coverBox.width * 1.5, coverBox.height * 1.5)
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                leftPadding: 10
+                spacing: 8
+                Text {
+                    text: page.stateText()
+                    width: Math.min(implicitWidth, 520)
+                    elide: Text.ElideRight
+                    color: page.game && page.game.dl_state === "failed" ? theme.bad : theme.fgMuted
+                    font { family: theme.fontFamily; pixelSize: 16 }
+                }
+                Rectangle {
+                    visible: page.busy
+                    width: 300; height: 4; radius: 2
+                    color: Qt.rgba(1, 1, 1, 0.2)
+                    Rectangle {
+                        height: parent.height; radius: 2; color: theme.fg
+                        width: parent.width * page.progress
+                        Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
+                    }
+                }
             }
-            CardStatus { anchors.fill: parent; game: page.game; theme: page.theme }
+        }
+        Text {
+            visible: !page.streamAvailable && page.streamError !== "" && page.actions.some(a => a.id === "link")
+            width: parent.width
+            text: qsTr("Playing from the network is unavailable here: %1").arg(page.streamError)
+            wrapMode: Text.WordWrap
+            color: theme.fgFaint
+            font { family: theme.fontFamily; pixelSize: 15 }
+        }
+
+        // Choices, on glass.
+        Rectangle {
+            width: parent.width
+            height: choices.height + 52
+            radius: 24
+            color: Qt.rgba(1, 1, 1, 0.06)
+            border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
+            Column {
+                id: choices
+                x: 28; y: 26
+                width: parent.width - 56
+                spacing: 22
+                Column {
+                    visible: page.versions.length > 1
+                    width: parent.width
+                    spacing: 12
+                    Text { text: qsTr("VERSION"); color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 14; weight: Font.DemiBold; letterSpacing: 2 } }
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        Repeater {
+                            model: page.versions
+                            Chip {
+                                required property var modelData
+                                required property int index
+                                theme: page.theme
+                                text: page.versionTitle(modelData)
+                                detail: page.versionDetail(modelData)
+                                selected: page.game !== null && modelData.rom_id === page.game.rom_id
+                                badge: modelData.local_state === "local" || modelData.linked
+                                focused: page.rows[page.row] === "versions" && page.col[1] === index
+                                pointerActive: page.pointerActive
+                                onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("versions"); page.fromMouse = false; page.setCol(1, index); page.activate("versions", index) }
+                            }
+                        }
+                    }
+                }
+                Column {
+                    width: parent.width
+                    spacing: 12
+                    Text {
+                        textFormat: Text.StyledText
+                        text: qsTr("GAME LANGUAGE") + "<font color='#99F4F6FA'>  " + qsTr("— passed to the emulator") + "</font>"
+                        color: theme.fgFaint
+                        font { family: theme.fontFamily; pixelSize: 14; weight: Font.DemiBold; letterSpacing: 2 }
+                    }
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+                        Repeater {
+                            model: page.languages
+                            Chip {
+                                required property var modelData
+                                required property int index
+                                theme: page.theme
+                                text: modelData.label
+                                selected: modelData.id === page.emuLanguage
+                                focused: page.rows[page.row] === "language" && page.col[2] === index
+                                pointerActive: page.pointerActive
+                                onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("language"); page.fromMouse = false; page.setCol(2, index); page.activate("language", index) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Text {
+            width: Math.min(parent.width, 980)
+            text: page.game && page.game.summary ? page.game.summary : qsTr("No summary in RomM for this game.")
+            wrapMode: Text.WordWrap
+            maximumLineCount: 4
+            elide: Text.ElideRight
+            lineHeight: 1.5
+            color: theme.fgSoft
+            font { family: theme.fontFamily; pixelSize: 20 }
         }
     }
 
-    // ---------- details ----------
-    Flickable {
-        id: body
-        anchors { left: parent.left; leftMargin: 72; right: coverBox.left; rightMargin: 56; top: parent.top; topMargin: 96; bottom: parent.bottom; bottomMargin: 32 }
-        contentHeight: content.height
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        interactive: page.pointerActive && contentHeight > height
-
-        Column {
-            id: content
-            width: body.width
-            spacing: 0
-
-            Text {
-                text: page.game ? [page.game.platform_name, page.game.year > 0 ? page.game.year : ""].filter(x => x).join("  ·  ") : ""
-                color: theme.fgMuted
-                font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium }
-            }
-            Item { width: 1; height: 8 }
-            Text {
-                width: parent.width
-                text: page.game ? (theme.uppercaseTitles ? page.game.name.toUpperCase() : page.game.name) : ""
-                wrapMode: Text.WordWrap
-                maximumLineCount: 2
-                elide: Text.ElideRight
-                color: theme.fg
-                lineHeight: 1.05
-                font { family: theme.displayFont; pixelSize: Math.round(theme.titleSize * 1.6); weight: Font.Bold }
-            }
-            Item { width: 1; height: 10 }
-            Text {
-                width: parent.width
-                visible: text !== ""
-                text: page.game ? [page.game.genres, page.game.players ? (/^\d+$/.test(page.game.players) ? qsTr("%n player(s)", "", Number(page.game.players)) : qsTr("%1 players").arg(page.game.players)) : ""].filter(x => x).join("  ·  ") : ""
-                elide: Text.ElideRight
-                color: theme.fgMuted
-                font { family: theme.fontFamily; pixelSize: 15 }
-            }
-            Item { width: 1; height: 22 }
-
-            // State + progress
-            Text {
-                width: parent.width
-                text: page.stateText()
-                wrapMode: Text.WordWrap
-                color: page.game && page.game.dl_state === "failed" ? theme.bad
-                     : page.game && (page.game.local_state === "local" || page.game.linked) ? theme.ok : theme.fg
-                font { family: theme.fontFamily; pixelSize: 15; weight: Font.DemiBold }
-            }
-            Item { width: 1; height: page.busy ? 10 : 0 }
-            Rectangle {
-                visible: page.busy
-                width: Math.min(parent.width, 520); height: 6; radius: 3
-                color: Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.15)
-                Rectangle {
-                    height: parent.height; radius: 3; color: theme.accent
-                    width: parent.width * (page.game && page.game.dl_total > 0 ? Math.min(1, page.game.dl_received / page.game.dl_total) : 0)
-                    Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
-                }
-            }
-            Item { width: 1; height: 18 }
-
-            // Actions
-            Row {
-                id: actionsRow
-                spacing: 14
-                Repeater {
-                    model: page.actions
-                    PageButton {
-                        required property var modelData
-                        required property int index
-                        theme: page.theme
-                        text: modelData.label
-                        primary: !!modelData.primary
-                        disabled: !!modelData.disabled
-                        focused: page.rows[page.row] === "actions" && page.col[0] === index
-                        pointerActive: page.pointerActive
-                        onClicked: { page.fromMouse = true; page.row = 0; page.fromMouse = false; page.setCol(0, index); page.activate("actions", index) }
-                    }
-                }
-            }
-            Text {
-                visible: !page.streamAvailable && page.streamError !== "" && page.actions.some(a => a.id === "link")
-                width: parent.width
-                topPadding: 10
-                text: qsTr("Playing from the network is unavailable here: %1").arg(page.streamError)
-                wrapMode: Text.WordWrap
-                color: theme.fgMuted
-                font { family: theme.fontFamily; pixelSize: 13 }
-            }
-            Item { width: 1; height: 30 }
-
-            // Versions
-            Column {
-                id: versionsBlock
-                visible: page.versions.length > 1
-                width: parent.width
-                spacing: 10
-                Text { text: qsTr("Version"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.DemiBold } }
-                Flow {
-                    width: parent.width
-                    spacing: 10
-                    Repeater {
-                        model: page.versions
-                        Chip {
-                            required property var modelData
-                            required property int index
-                            theme: page.theme
-                            text: page.versionTitle(modelData)
-                            detail: page.versionDetail(modelData)
-                            selected: page.game !== null && modelData.rom_id === page.game.rom_id
-                            badge: modelData.local_state === "local" || modelData.linked
-                            focused: page.rows[page.row] === "versions" && page.col[1] === index
-                            pointerActive: page.pointerActive
-                            onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("versions"); page.fromMouse = false; page.setCol(1, index); page.activate("versions", index) }
-                        }
-                    }
-                }
-                Item { width: 1; height: 20 }
-            }
-
-            // Emulator language
-            Column {
-                id: languageBlock
-                width: parent.width
-                spacing: 10
-                Text { text: qsTr("Game language"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.DemiBold } }
-                Text {
-                    width: parent.width
-                    text: qsTr("Used at launch by emulators that let the console language be set (Switch, GameCube, PS2…). Automatic follows Borne's language.")
-                    wrapMode: Text.WordWrap
-                    color: theme.fgMuted
-                    font { family: theme.fontFamily; pixelSize: 13 }
-                }
-                Flow {
-                    width: parent.width
-                    spacing: 8
-                    Repeater {
-                        model: page.languages
-                        Chip {
-                            required property var modelData
-                            required property int index
-                            theme: page.theme
-                            compact: true
-                            text: modelData.label
-                            selected: modelData.id === page.emuLanguage
-                            focused: page.rows[page.row] === "language" && page.col[2] === index
-                            pointerActive: page.pointerActive
-                            onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("language"); page.fromMouse = false; page.setCol(2, index); page.activate("language", index) }
-                        }
-                    }
-                }
-            }
-            Item { width: 1; height: 30 }
-
-            Text {
-                width: Math.min(parent.width, 760)
-                text: page.game && page.game.summary ? page.game.summary : qsTr("No summary in RomM for this game.")
-                wrapMode: Text.WordWrap
-                lineHeight: 1.35
-                color: theme.fgMuted
-                font { family: theme.fontFamily; pixelSize: 15 }
-            }
-        }
+    // ---------- hints ----------
+    HintBar {
+        x: 84; anchors { bottom: parent.bottom; bottomMargin: 24 }
+        theme: page.theme
+        pointerActive: page.pointerActive
+        hints: [["A", qsTr("Select"), "a"], ["B", qsTr("Back"), "b"]]
+        onTriggered: (a) => page.handle(a)
+    }
+    Text {
+        anchors { right: parent.right; rightMargin: 96; bottom: parent.bottom; bottomMargin: 34 }
+        text: page.fmtSize(page.game ? page.game.fs_size : 0) + "  ·  " + qsTr("Choices are saved for this profile")
+        color: theme.fgFaint
+        font { family: theme.fontFamily; pixelSize: 15 }
     }
 }

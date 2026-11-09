@@ -24,7 +24,7 @@ done
 fail() { echo "FAILED: $1"; echo "--- log ---"; cat "$LOG"; kill "$PID" 2>/dev/null; exit 1; }
 [ -n "$API" ] || fail "the core did not start"
 curl -sf "$API/api/v1/hello" | grep -q '"api":1' || fail "the API does not answer"
-curl -sf "$API/api/v1/themes" | grep -q nocturne || fail "built-in themes not found"
+curl -sf "$API/api/v1/settings" | grep -q install_mode || fail "settings unavailable"
 
 sleep 6   # let the UI start and load its views
 kill -0 "$PID" 2>/dev/null || fail "the core stopped"

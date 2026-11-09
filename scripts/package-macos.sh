@@ -8,7 +8,7 @@
 # Resulting layout:
 #   Borne.app/Contents/MacOS/borne        core (main executable, launches and supervises the UI)
 #   Borne.app/Contents/MacOS/borne-ui     QML UI
-#   Borne.app/Contents/Resources/ui       views, themes, Borne.Theme module, translations
+#   Borne.app/Contents/Resources/ui       views, Borne.Theme module, translations
 #   Borne.app/Contents/Frameworks, PlugIns, Resources/qml   Qt (macdeployqt)
 set -euo pipefail
 OUT="$1"
@@ -26,7 +26,7 @@ cp -R "$HERE/build-macos/Borne.app" "$APP"
 
 UI="$APP/Contents/Resources/ui"
 mkdir -p "$UI/i18n" "$APP/Contents/Resources/resources"
-cp -R "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/themes" "$HERE/ui/fonts" "$HERE/ui/sounds" "$UI/"
+cp -R "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fonts" "$HERE/ui/sounds" "$UI/"
 for ts in "$HERE"/ui/i18n/*.ts; do "$QT_PREFIX/bin/lrelease" -silent "$ts" -qm "$UI/i18n/$(basename "${ts%.ts}").qm"; done
 cp -R "$HERE/resources/." "$APP/Contents/Resources/resources/" 2>/dev/null || true
 cp -R "$HERE/examples" "$APP/Contents/Resources/examples" 2>/dev/null || true
