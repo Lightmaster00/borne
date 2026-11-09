@@ -20,17 +20,22 @@
 //! Library
 //!   POST   /api/v1/sync                          syncs the catalog
 //!   GET    /api/v1/platforms
-//!   GET    /api/v1/library?platform=&q=&local=1
-//!   GET    /api/v1/games/<rom_id>
+//!   GET    /api/v1/library?platform=&q=&local=1&lang=fr   one entry per game, versions grouped
+//!   GET    /api/v1/games/<rom_id>?lang=fr        game page: shown version, all versions, choices
 //!   POST   /api/v1/games/<rom_id>/download
 //!   DELETE /api/v1/games/<rom_id>/local          deletes the local copy (never on RomM)
+//!   POST   /api/v1/games/<rom_id>/link           exposes the game in the virtual mount (no download)
+//!   DELETE /api/v1/games/<rom_id>/link           removes it from the virtual mount
+//!   POST   /api/v1/games/<rom_id>/prefs  {version?, emu_language?}   active profile's choices
+//!   GET    /api/v1/settings                      install mode, virtual mount state
+//!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?}
 //!   GET    /api/v1/downloads  ·  DELETE /api/v1/downloads/<id>
 //! Misc
 //!   GET    /api/v1/themes  ·  POST /api/v1/report  ·  GET /file?path=…
 //!   POST   /api/v1/debug/pad?action=…            automated tests (BORNE_DEBUG_INPUT=1)
 
 use crate::state::Shared;
-use crate::{catalog, diag, downloads, pairing, romm, secrets, themes};
+use crate::{catalog, diag, downloads, library, pairing, romm, secrets, stream, themes};
 use serde_json::{json, Value};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -143,6 +148,22 @@ fn serve_file(req: Request, raw: &str, roots: &[PathBuf]) {
         None => {
             let _ = req.respond(Response::new(StatusCode(200), headers, file, Some(size as usize), None));
         }
+    }
+}
+
+/// "download" (copy to disk) or "stream" (Borne virtual mount): what A does on a game page.
+fn install_mode(app: &Shared) -> String {
+    app.db.setting("install_mode").unwrap_or_else(|| "download".into())
+}
+
+fn settings(app: &Shared) -> Value {
+    json!({ "install_mode": install_mode(app), "stream": stream::status(app) })
+}
+
+/// Installing or linking a version makes it the one the active profile sees for that game.
+fn choose_version(app: &Shared, rom_id: i64) {
+    if let (Some(p), Some(g)) = (app.active_profile(), app.db.game(rom_id)) {
+        app.db.set_game_pref(&p.id, &g.group_key, Some(Some(rom_id)), None);
     }
 }
 
@@ -290,15 +311,98 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             let platform = query(&q, "platform");
             let search = query(&q, "q");
             let local = query(&q, "local").as_deref() == Some("1");
-            ok(req, json!(app.db.games(platform.as_deref(), search.as_deref(), local)))
+            let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
+            let rows = app.db.games(platform.as_deref(), search.as_deref(), local);
+            let prefs = app.active_profile().map(|p| app.db.game_prefs(&p.id)).unwrap_or_default();
+            ok(req, json!(library::groups(rows, &prefs, &lang)))
         }
         (Method::Get, ["api", "v1", "games", id]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
-            Some(g) => ok(req, json!(g)),
+            Some(g) => {
+                let versions = app.db.group(&g.group_key);
+                let prefs = app
+                    .active_profile()
+                    .and_then(|p| app.db.game_prefs(&p.id).remove(&g.group_key))
+                    .unwrap_or((None, None));
+                let mut game = library::version_json(&g);
+                library::fill_media(&mut game, &versions);
+                ok(
+                    req,
+                    json!({
+                        "game": game,
+                        "chosen_version": prefs.0,
+                        "versions": if versions.is_empty() { vec![g] } else { versions }
+                            .iter()
+                            .map(library::version_json)
+                            .collect::<Vec<_>>(),
+                        "emu_language": prefs.1.unwrap_or_else(|| "auto".into()),
+                        "emu_languages": library::EMU_LANGUAGES,
+                        "install_mode": install_mode(app),
+                        "stream": stream::status(app),
+                    }),
+                )
+            }
             None => err(req, 404, "unknown game"),
         },
+        (Method::Post, ["api", "v1", "games", id, "prefs"]) => {
+            let body = body_json(&mut req);
+            let (Some(g), Some(p)) = (id.parse::<i64>().ok().and_then(|i| app.db.game(i)), app.active_profile()) else {
+                return err(req, 404, "unknown game or no active profile");
+            };
+            let version = body.get("version").map(|v| v.as_i64());
+            if let Some(Some(v)) = version {
+                if app.db.game(v).map(|x| x.group_key != g.group_key).unwrap_or(true) {
+                    return err(req, 400, "this version belongs to another game");
+                }
+            }
+            let lang = body.get("emu_language").map(|v| v.as_str().filter(|l| *l != "auto"));
+            if let Some(Some(l)) = lang {
+                if !library::EMU_LANGUAGES.contains(&l) {
+                    return err(req, 400, "unknown language");
+                }
+            }
+            app.db.set_game_pref(&p.id, &g.group_key, version, lang);
+            ok(req, json!({ "ok": true }))
+        }
+        (Method::Post, ["api", "v1", "games", id, "link"]) => match id.parse::<i64>() {
+            Ok(rom_id) => match stream::link(app, rom_id) {
+                Ok(path) => {
+                    choose_version(app, rom_id);
+                    ok(req, json!({ "linked": rom_id, "path": path }))
+                }
+                Err(e) => err(req, 409, &e),
+            },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Delete, ["api", "v1", "games", id, "link"]) => match id.parse::<i64>() {
+            Ok(rom_id) => match stream::unlink(app, rom_id) {
+                Ok(()) => ok(req, json!({ "unlinked": rom_id })),
+                Err(e) => err(req, 409, &e),
+            },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Get, ["api", "v1", "settings"]) => ok(req, settings(app)),
+        (Method::Post, ["api", "v1", "settings"]) => {
+            let body = body_json(&mut req);
+            if let Some(m) = body["install_mode"].as_str() {
+                if !["download", "stream"].contains(&m) {
+                    return err(req, 400, "install_mode: download or stream");
+                }
+                app.db.set_setting("install_mode", m);
+            }
+            if let Some(mb) = body["stream_cache_mb"].as_u64() {
+                if !(1024..=1_048_576).contains(&mb) {
+                    return err(req, 400, "stream_cache_mb: 1024 to 1048576");
+                }
+                app.db.set_setting("stream_cache_mb", &mb.to_string());
+            }
+            ok(req, settings(app))
+        }
         (Method::Post, ["api", "v1", "games", id, "download"]) => match id.parse::<i64>() {
             Ok(rom_id) => match downloads::enqueue(app, rom_id) {
-                Ok(dl) => ok(req, json!({ "download_id": dl })),
+                Ok(dl) => {
+                    choose_version(app, rom_id);
+                    ok(req, json!({ "download_id": dl }))
+                }
                 Err(e) => err(req, 409, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),

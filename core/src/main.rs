@@ -17,12 +17,14 @@ mod db;
 mod diag;
 mod downloads;
 mod events;
+mod library;
 mod pad;
 mod pairing;
 mod paths;
 mod romm;
 mod secrets;
 mod state;
+mod stream;
 mod themes;
 
 use std::path::PathBuf;
@@ -109,6 +111,7 @@ fn main() {
         app.db.log("download", &format!("{requeued} interrupted download(s) resumed"));
     }
     downloads::spawn_worker(app.clone());
+    stream::start(&app);
     if app.client().is_some() {
         catalog::start_sync(&app);
     }
@@ -141,7 +144,10 @@ fn main() {
             .env("BORNE_UI_RESTARTS", crashes.len().to_string())
             .status();
         match status {
-            Ok(s) if s.success() => break,
+            Ok(s) if s.success() => {
+                stream::stop();
+                break;
+            }
             Ok(s) => {
                 eprintln!("[borne] the UI stopped ({s}): restarting");
                 crashes.push(Instant::now());
@@ -154,6 +160,7 @@ fn main() {
         crashes.retain(|t| t.elapsed() < Duration::from_secs(60));
         if crashes.len() >= 4 {
             eprintln!("[borne] too many UI crashes: giving up");
+            stream::stop();
             std::process::exit(1);
         }
         std::thread::sleep(Duration::from_millis(500));

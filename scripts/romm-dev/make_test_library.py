@@ -15,6 +15,12 @@ md = ["Thunder Fighter (Europe)", "Solar Chronicles (USA)", "Hyper Rush (Japan)"
       "Iron Saga (Europe)", "Neon Odyssey (USA)", "Pixel Kingdom (Europe)"]
 for n in md:
     write(f"{root}/library/roms/genesis/{n}.md", blob(524_288))
+# Versions of the same game (regions, languages, revisions), grouped by Borne
+variants = [("nes", "Crystal Knights (Europe) (En,Fr,De)", ".nes"), ("nes", "Crystal Knights (Japan) (Rev 1)", ".nes"),
+            ("genesis", "Ancient Heroes (France)", ".md"), ("genesis", "Ancient Heroes (USA)", ".md")]
+for system, n, ext in variants:
+    data = b"NES\x1a\x02\x01\x01\x00" + bytes(8) + blob(40_960) if ext == ".nes" else blob(524_288)
+    write(f"{root}/library/roms/{system}/{n}{ext}", data)
 # Compressed games (extraction on the Borne side must be tested)
 for n in ["Zip Adventure (Europe)", "Zip Arena (USA)"]:
     p = f"{root}/library/roms/genesis/{n}.zip"

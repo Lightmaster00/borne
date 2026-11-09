@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 
 const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -41,6 +41,9 @@ CREATE TABLE IF NOT EXISTS games (
     year INTEGER,
     genres TEXT,
     regions TEXT,
+    languages TEXT,
+    revision TEXT,
+    group_key TEXT NOT NULL DEFAULT '',
     players TEXT,
     sha1 TEXT,
     cover_remote TEXT,
@@ -69,6 +72,27 @@ CREATE TABLE IF NOT EXISTS downloads (
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
+-- Per-profile choices on a game group: the version to play and the emulator language.
+CREATE TABLE IF NOT EXISTS game_prefs (
+    profile_id TEXT NOT NULL,
+    group_key TEXT NOT NULL,
+    rom_id INTEGER,
+    emu_language TEXT,
+    PRIMARY KEY (profile_id, group_key)
+);
+-- Games exposed in the Borne virtual mount (played from RomM without a download).
+CREATE TABLE IF NOT EXISTS linked_games (
+    rom_id INTEGER PRIMARY KEY,
+    main_file TEXT NOT NULL,
+    linked_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS linked_files (
+    file_id INTEGER PRIMARY KEY,
+    rom_id INTEGER NOT NULL,
+    rel_path TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    size INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS oplog (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts INTEGER NOT NULL,
@@ -76,6 +100,20 @@ CREATE TABLE IF NOT EXISTS oplog (
     message TEXT NOT NULL
 );
 "#;
+
+/// Brings a database created by an older version up to date (columns added over time).
+/// The catalog is a cache: new columns are filled by the next sync.
+fn migrate(conn: &Connection) -> rusqlite::Result<()> {
+    let mut st = conn.prepare("SELECT name FROM pragma_table_info('games')")?;
+    let cols: Vec<String> = st.query_map([], |r| r.get(0))?.filter_map(Result::ok).collect();
+    for (col, def) in [("languages", "TEXT"), ("revision", "TEXT"), ("group_key", "TEXT NOT NULL DEFAULT ''")] {
+        if !cols.iter().any(|c| c == col) {
+            conn.execute_batch(&format!("ALTER TABLE games ADD COLUMN {col} {def}"))?;
+        }
+    }
+    conn.execute_batch("CREATE INDEX IF NOT EXISTS games_group ON games(group_key)")?;
+    Ok(())
+}
 
 pub fn now() -> i64 {
     std::time::SystemTime::now()
@@ -119,6 +157,9 @@ pub struct GameRow {
     pub year: Option<i64>,
     pub genres: Option<String>,
     pub regions: Option<String>,
+    pub languages: Option<String>,
+    pub revision: Option<String>,
+    pub group_key: String,
     pub players: Option<String>,
     pub sha1: Option<String>,
     pub cover_remote: Option<String>,
@@ -130,11 +171,23 @@ pub struct GameRow {
     pub local_state: String,
     pub local_dir: Option<String>,
     pub local_main: Option<String>,
+    /// Exposed in the Borne virtual mount (played from RomM without a download).
+    pub linked: bool,
     /// State of the current download, if any (queued, downloading, verifying, extracting, failed)
     pub download_state: Option<String>,
     pub download_received: Option<i64>,
     pub download_total: Option<i64>,
     pub download_error: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct LinkedFile {
+    pub file_id: i64,
+    pub rom_id: i64,
+    pub platform_slug: String,
+    pub rel_path: String,
+    pub file_name: String,
+    pub size: i64,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -154,7 +207,8 @@ const GAME_SELECT: &str = "SELECT g.rom_id, g.platform_slug, g.platform_name, g.
     (SELECT state FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1),
     (SELECT received FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1),
     (SELECT total FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1),
-    (SELECT error FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1)
+    (SELECT error FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1),
+    g.languages, g.revision, g.group_key, (SELECT 1 FROM linked_games k WHERE k.rom_id = g.rom_id)
     FROM games g LEFT JOIN local_games l ON l.rom_id = g.rom_id";
 
 fn game_from_row(r: &rusqlite::Row) -> rusqlite::Result<GameRow> {
@@ -189,6 +243,10 @@ fn game_from_row(r: &rusqlite::Row) -> rusqlite::Result<GameRow> {
         download_received: r.get(22)?,
         download_total: r.get(23)?,
         download_error: r.get(24)?,
+        languages: r.get(25)?,
+        revision: r.get(26)?,
+        group_key: r.get(27)?,
+        linked: r.get::<_, Option<i64>>(28)?.is_some(),
     })
 }
 
@@ -208,6 +266,9 @@ pub struct GameUpsert {
     pub year: Option<i64>,
     pub genres: Option<String>,
     pub regions: Option<String>,
+    pub languages: Option<String>,
+    pub revision: Option<String>,
+    pub group_key: String,
     pub players: Option<String>,
     pub sha1: Option<String>,
     pub cover_remote: Option<String>,
@@ -221,8 +282,10 @@ impl Db {
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.execute_batch(SCHEMA)?;
+        migrate(&conn)?;
         conn.execute(
-            "INSERT OR IGNORE INTO settings(key, value) VALUES ('schema_version', ?1)",
+            "INSERT INTO settings(key, value) VALUES ('schema_version', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             params![SCHEMA_VERSION.to_string()],
         )?;
         Ok(Self(Arc::new(Mutex::new(conn))))
@@ -232,6 +295,7 @@ impl Db {
     pub fn memory() -> Self {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(SCHEMA).unwrap();
+        migrate(&conn).unwrap();
         Self(Arc::new(Mutex::new(conn)))
     }
 
@@ -362,18 +426,20 @@ impl Db {
                 .unwrap();
             tx.execute(
                 "INSERT INTO games(rom_id, platform_id, platform_slug, platform_name, name, sort_key, fs_name, fs_size, multi_file,
-                    summary, year, genres, regions, players, sha1, cover_remote, video_remote, updated_at, seen_sync)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
+                    summary, year, genres, regions, players, sha1, cover_remote, video_remote, updated_at, seen_sync,
+                    languages, revision, group_key)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
                  ON CONFLICT(rom_id) DO UPDATE SET platform_id = excluded.platform_id, platform_slug = excluded.platform_slug,
                     platform_name = excluded.platform_name, name = excluded.name, sort_key = excluded.sort_key,
                     fs_name = excluded.fs_name, fs_size = excluded.fs_size, multi_file = excluded.multi_file,
                     summary = excluded.summary, year = excluded.year, genres = excluded.genres, regions = excluded.regions,
                     players = excluded.players, sha1 = excluded.sha1, cover_remote = excluded.cover_remote,
-                    video_remote = excluded.video_remote, updated_at = excluded.updated_at, seen_sync = excluded.seen_sync",
+                    video_remote = excluded.video_remote, updated_at = excluded.updated_at, seen_sync = excluded.seen_sync,
+                    languages = excluded.languages, revision = excluded.revision, group_key = excluded.group_key",
                 params![
                     g.rom_id, g.platform_id, g.platform_slug, g.platform_name, g.name, g.sort_key, g.fs_name, g.fs_size,
                     g.multi_file as i64, g.summary, g.year, g.genres, g.regions, g.players, g.sha1, g.cover_remote,
-                    g.video_remote, g.updated_at, sync_id
+                    g.video_remote, g.updated_at, sync_id, g.languages, g.revision, g.group_key
                 ],
             )
             .unwrap();
@@ -397,7 +463,8 @@ impl Db {
     pub fn prune_games(&self, sync_id: i64) -> usize {
         self.c()
             .execute(
-                "DELETE FROM games WHERE seen_sync <> ?1 AND rom_id NOT IN (SELECT rom_id FROM local_games)",
+                "DELETE FROM games WHERE seen_sync <> ?1 AND rom_id NOT IN (SELECT rom_id FROM local_games)
+                    AND rom_id NOT IN (SELECT rom_id FROM linked_games)",
                 [sync_id],
             )
             .unwrap_or(0)
@@ -422,7 +489,7 @@ impl Db {
             sql += &format!(" AND lower(g.name) LIKE ?{}", args.len());
         }
         if local_only {
-            sql += " AND l.status = 'ok'";
+            sql += " AND (l.status = 'ok' OR g.rom_id IN (SELECT rom_id FROM linked_games))";
         }
         sql += " ORDER BY g.sort_key, g.rom_id";
         let c = self.c();
@@ -464,6 +531,90 @@ impl Db {
             c.query_row("SELECT dir FROM local_games WHERE rom_id = ?1", [rom_id], |r| r.get(0)).optional().ok().flatten();
         let _ = c.execute("DELETE FROM local_games WHERE rom_id = ?1", [rom_id]);
         dir
+    }
+
+    pub fn group(&self, group_key: &str) -> Vec<GameRow> {
+        let c = self.c();
+        let mut st = c.prepare(&format!("{GAME_SELECT} WHERE g.group_key = ?1 ORDER BY g.rom_id")).unwrap();
+        st.query_map([group_key], game_from_row).unwrap().filter_map(Result::ok).collect()
+    }
+
+    // ---------- per-profile game preferences ----------
+    /// All of a profile's choices: group_key -> (chosen version, emulator language).
+    pub fn game_prefs(&self, profile_id: &str) -> std::collections::HashMap<String, (Option<i64>, Option<String>)> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT group_key, rom_id, emu_language FROM game_prefs WHERE profile_id = ?1").unwrap();
+        st.query_map([profile_id], |r| Ok((r.get::<_, String>(0)?, (r.get(1)?, r.get(2)?))))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect()
+    }
+    pub fn set_game_pref(&self, profile_id: &str, group_key: &str, rom_id: Option<Option<i64>>, lang: Option<Option<&str>>) {
+        let c = self.c();
+        let _ = c.execute(
+            "INSERT OR IGNORE INTO game_prefs(profile_id, group_key) VALUES (?1, ?2)",
+            params![profile_id, group_key],
+        );
+        if let Some(rom_id) = rom_id {
+            let _ = c.execute(
+                "UPDATE game_prefs SET rom_id = ?3 WHERE profile_id = ?1 AND group_key = ?2",
+                params![profile_id, group_key, rom_id],
+            );
+        }
+        if let Some(lang) = lang {
+            let _ = c.execute(
+                "UPDATE game_prefs SET emu_language = ?3 WHERE profile_id = ?1 AND group_key = ?2",
+                params![profile_id, group_key, lang],
+            );
+        }
+    }
+
+    // ---------- linked games (virtual mount) ----------
+    pub fn link_game(&self, rom_id: i64, main_file: &str, files: &[(i64, String, String, i64)]) {
+        let mut c = self.c();
+        let tx = c.transaction().unwrap();
+        tx.execute("DELETE FROM linked_files WHERE rom_id = ?1", [rom_id]).unwrap();
+        for (file_id, rel, name, size) in files {
+            tx.execute(
+                "INSERT OR REPLACE INTO linked_files(file_id, rom_id, rel_path, file_name, size) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![file_id, rom_id, rel, name, size],
+            )
+            .unwrap();
+        }
+        tx.execute(
+            "INSERT OR REPLACE INTO linked_games(rom_id, main_file, linked_at) VALUES (?1, ?2, ?3)",
+            params![rom_id, main_file, now()],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+    }
+    pub fn unlink_game(&self, rom_id: i64) -> bool {
+        let c = self.c();
+        let _ = c.execute("DELETE FROM linked_files WHERE rom_id = ?1", [rom_id]);
+        c.execute("DELETE FROM linked_games WHERE rom_id = ?1", [rom_id]).unwrap_or(0) > 0
+    }
+    /// Files of linked games: (file_id, rom_id, platform_slug, rel_path, file_name, size).
+    pub fn linked_files(&self) -> Vec<LinkedFile> {
+        let c = self.c();
+        let mut st = c
+            .prepare(
+                "SELECT f.file_id, f.rom_id, COALESCE(g.platform_slug, 'unknown'), f.rel_path, f.file_name, f.size
+                 FROM linked_files f LEFT JOIN games g ON g.rom_id = f.rom_id ORDER BY f.rom_id, f.rel_path",
+            )
+            .unwrap();
+        st.query_map([], |r| {
+            Ok(LinkedFile {
+                file_id: r.get(0)?,
+                rom_id: r.get(1)?,
+                platform_slug: r.get(2)?,
+                rel_path: r.get(3)?,
+                file_name: r.get(4)?,
+                size: r.get(5)?,
+            })
+        })
+        .unwrap()
+        .filter_map(Result::ok)
+        .collect()
     }
 
     // ---------- downloads ----------

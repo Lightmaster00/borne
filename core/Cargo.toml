@@ -24,6 +24,10 @@ zip = { version = "4", default-features = false, features = ["deflate"] }
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 libc = "0.2"
 
+# Borne virtual mount (games played from RomM without a download). Linux only.
+[target.'cfg(target_os = "linux")'.dependencies]
+fuser = { version = "0.18", default-features = false }
+
 [dev-dependencies]
 tempfile = "3"
 

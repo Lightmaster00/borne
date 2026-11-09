@@ -356,6 +356,34 @@ impl Client {
     }
 }
 
+impl Client {
+    /// Reads bytes `start..start + len` of a game file (virtual mount). Shorter at the end of the file.
+    pub fn fetch_range(&self, file_id: i64, file_name: &str, start: u64, len: u64) -> Result<Vec<u8>> {
+        let url = format!("{}/api/roms/{}/files/content/{}", self.base, file_id, percent_encode(file_name));
+        let mut req = self.dl.get(url).header("Range", format!("bytes={}-{}", start, start + len.max(1) - 1));
+        if let Some(a) = self.auth() {
+            req = req.header("Authorization", a);
+        }
+        let mut resp = req.call().map_err(map_transport)?;
+        let code = resp.status().as_u16();
+        if code == 416 {
+            return Ok(vec![]);
+        }
+        if !(200..300).contains(&code) {
+            return Err(status_error(code, ""));
+        }
+        let body = resp.body_mut().with_config().limit(len + 1024).read_to_vec();
+        let mut data = body.map_err(|e| RommError::Offline(e.to_string()))?;
+        if code == 200 {
+            // Server ignored the Range header: keep the requested part.
+            let s = (start as usize).min(data.len());
+            let e = (start as usize + len as usize).min(data.len());
+            data = data[s..e].to_vec();
+        }
+        Ok(data)
+    }
+}
+
 /// Encodes characters not allowed in an already structured URL (RomM returns for instance
 /// `…/big.png?ts=2026-11-08 16:15:31`, with a space) without touching the separators.
 pub fn encode_url(s: &str) -> String {

@@ -126,7 +126,7 @@ pub fn safe_relative(rel: &str) -> Option<PathBuf> {
     (!out.as_os_str().is_empty()).then_some(out)
 }
 
-fn relative_path(detail: &RomDetail, f: &RomFile) -> Option<PathBuf> {
+pub fn relative_path(detail: &RomDetail, f: &RomFile) -> Option<PathBuf> {
     if detail.files.len() <= 1 {
         return safe_relative(&f.file_name);
     }
@@ -377,17 +377,21 @@ fn collect_files(dir: &Path, out: &mut Vec<PathBuf>) {
 pub fn pick_main(dir: &Path) -> Option<PathBuf> {
     let mut files = vec![];
     collect_files(dir, &mut files);
+    let sized = files.into_iter().map(|p| (std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0), p)).collect();
+    pick_main_of(sized)
+}
+
+/// Same choice from a list of (size, path), for files that are not on disk (virtual mount).
+pub fn pick_main_of(mut files: Vec<(u64, PathBuf)>) -> Option<PathBuf> {
+    files.sort_by(|a, b| a.1.cmp(&b.1));
     for ext in MAIN_EXT {
-        let mut matching: Vec<&PathBuf> = files
-            .iter()
-            .filter(|p| p.extension().map(|e| e.eq_ignore_ascii_case(ext)).unwrap_or(false))
-            .collect();
-        matching.sort();
-        if let Some(p) = matching.first() {
-            return Some((*p).clone());
+        if let Some((_, p)) =
+            files.iter().find(|(_, p)| p.extension().map(|e| e.eq_ignore_ascii_case(ext)).unwrap_or(false))
+        {
+            return Some(p.clone());
         }
     }
-    files.into_iter().max_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0))
+    files.into_iter().max_by_key(|(size, _)| *size).map(|(_, p)| p)
 }
 
 /// Local deletion of a game (never touches the RomM server).

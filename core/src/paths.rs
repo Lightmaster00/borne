@@ -7,6 +7,8 @@
 //!     secrets/          RomM tokens (0600), never in the database
 //!     profiles/<id>/    per-profile saves and states (stage 2)
 //!     themes/           user themes
+//!     mount/            Borne virtual mount: linked games read from RomM on demand (Linux)
+//!     cache/stream/     blocks of linked games already read (bounded)
 //!
 //! BORNE_DATA_DIR overrides the root (tests, portable installs).
 
@@ -43,12 +45,20 @@ impl Paths {
     pub fn themes(&self) -> PathBuf {
         self.root.join("themes")
     }
+    /// Borne virtual mount: linked games, read from RomM on demand.
+    pub fn mount(&self) -> PathBuf {
+        self.root.join("mount")
+    }
+    /// Blocks of linked games already read (bounded cache).
+    pub fn stream_cache(&self) -> PathBuf {
+        self.root.join("cache").join("stream")
+    }
     pub fn reports(&self) -> PathBuf {
         self.root.join("reports")
     }
 
     pub fn ensure(&self) -> std::io::Result<()> {
-        for d in [self.root.clone(), self.library(), self.covers(), self.profiles(), self.themes(), self.reports()] {
+        for d in [self.root.clone(), self.library(), self.covers(), self.profiles(), self.themes(), self.reports(), self.stream_cache()] {
             std::fs::create_dir_all(d)?;
         }
         std::fs::create_dir_all(self.secrets())?;

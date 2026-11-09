@@ -5,7 +5,9 @@
 Starts the core without a UI in a temporary data directory, then checks:
 server, profiles, pairing (approved through the RomM API as if from a phone), catalog and cover
 sync, downloads (simple, extracted zip, large file interrupted by killing the core and then
-resumed), local deletion, a second profile on another RomM account.
+resumed), local deletion, versions of a game grouped with per-profile choices, the Borne virtual
+mount (a linked game read from RomM on demand, nothing else exposed), a second profile on another
+RomM account, offline use.
 """
 import base64, hashlib, json, os, re, shutil, signal, subprocess, sys, tempfile, time, urllib.request
 
@@ -90,7 +92,7 @@ def wait_sync(api):
 
 def wait_download(api, rom_id, timeout=120):
     def done():
-        g = call(api, "GET", f"/api/v1/games/{rom_id}")[1]
+        g = call(api, "GET", f"/api/v1/games/{rom_id}")[1]["game"]
         if g["local_state"] == "local":
             return g
         dl = [d for d in call(api, "GET", "/api/v1/downloads")[1] if d["rom_id"] == rom_id]
@@ -122,15 +124,33 @@ try:
 
     print("Catalog")
     sync = wait_sync(api)
-    check(sync["error"] is None and sync["total"] == 29, "29 games synced from RomM")
+    check(sync["error"] is None and sync["total"] == 33, "33 ROMs synced from RomM")
     wait(lambda: call(api, "GET", "/api/v1/status")[1]["sync"]["covers_pending"] == 0, 60, "covers")
     lib = call(api, "GET", "/api/v1/library")[1]
     covers = [g for g in lib if g["cover_local"] and os.path.exists(g["cover_local"])]
+    check(len(lib) == 29, "33 ROMs shown as 29 games (versions grouped)")
     check(len(covers) == 29, "29 covers cached locally")
     plats = call(api, "GET", "/api/v1/platforms")[1]
     check({p["slug"] for p in plats} >= {"nes", "genesis", "ngc", "ps2", "switch"}, "5 platforms")
     nes = call(api, "GET", "/api/v1/library?platform=nes")[1]
     check(len(nes) == 12, "platform filter")
+
+    print("Versions")
+    def crystal(lang):
+        return [g for g in call(api, "GET", f"/api/v1/library?platform=nes&lang={lang}")[1] if g["name"].startswith("Crystal")][0]
+    fr, en = crystal("fr"), crystal("en")
+    check(fr["version_count"] == 3 and "French" in fr["langs"], "French UI: the version with French shown first")
+    check("USA" in en["regions"], "English UI: the USA version shown first")
+    page = call(api, "GET", f"/api/v1/games/{fr['rom_id']}")[1]
+    check(len(page["versions"]) == 3 and page["emu_language"] == "auto" and "ja" in page["emu_languages"], "game page lists every version")
+    japan = [v for v in page["versions"] if "Japan" in v["regions"]][0]
+    s, _ = call(api, "POST", f"/api/v1/games/{fr['rom_id']}/prefs", {"version": japan["rom_id"], "emu_language": "ja"})
+    check(s == 200 and crystal("fr")["rom_id"] == japan["rom_id"], "chosen version kept for the profile")
+    check(call(api, "GET", f"/api/v1/games/{fr['rom_id']}")[1]["emu_language"] == "ja", "emulator language kept for the profile")
+    s, _ = call(api, "POST", f"/api/v1/games/{fr['rom_id']}/prefs", {"version": nes[5]["rom_id"]})
+    check(s == 400, "a version of another game refused")
+    s, _ = call(api, "POST", f"/api/v1/games/{fr['rom_id']}/prefs", {"version": None, "emu_language": "auto"})
+    check(crystal("fr")["rom_id"] == fr["rom_id"], "choice reset to automatic")
     check(len(call(api, "GET", "/api/v1/library?q=zip")[1]) == 2, "search by name")
     s, r = call(api, "GET", "/api/v1/file?path=/etc/passwd".replace("/api/v1", ""))
     check(s == 403, "files outside the allowed folders refused")
@@ -194,8 +214,36 @@ try:
     if pending:
         call(api, "DELETE", f"/api/v1/downloads/{pending[0]['id']}")
     s, _ = call(api, "DELETE", f"/api/v1/games/{small['rom_id']}/local")
-    check(s == 200 and call(api, "GET", f"/api/v1/games/{small['rom_id']}")[1]["local_state"] == "remote", "local deletion (the game stays on RomM)")
+    check(s == 200 and call(api, "GET", f"/api/v1/games/{small['rom_id']}")[1]["game"]["local_state"] == "remote", "local deletion (the game stays on RomM)")
     check(romm("GET", f"/api/roms/{small['rom_id']}")["id"] == small["rom_id"], "game still present in RomM")
+
+    print("Virtual mount")
+    settings = call(api, "GET", "/api/v1/settings")[1]
+    mount = settings["stream"]["path"]
+    check(settings["stream"]["available"] and settings["install_mode"] == "download", "virtual mount ready, download by default")
+    check(os.listdir(mount) == [], "nothing exposed before a game is linked")
+    target = [g for g in lib if g["name"].startswith("Thunder")][0]
+    s, r = call(api, "POST", f"/api/v1/games/{target['rom_id']}/link")
+    check(s == 200 and os.path.isfile(r["path"]), "linked game visible in the mount")
+    check(os.listdir(mount) == ["genesis"] and os.listdir(os.path.join(mount, "genesis")) == [str(target["rom_id"])], "only the linked game is exposed")
+    with open(r["path"], "rb") as f:
+        check(hashlib.sha1(f.read()).hexdigest() == target["sha1"], "file read from RomM through the mount (SHA-1)")
+    check(any(g["rom_id"] == target["rom_id"] for g in call(api, "GET", "/api/v1/library?local=1")[1]), "linked game listed with installed games")
+    s, rb = call(api, "POST", f"/api/v1/games/{big['rom_id']}/link")
+    with open(rb["path"], "rb") as f, open(call(api, "GET", f"/api/v1/games/{big['rom_id']}")[1]["game"]["local_main"], "rb") as local:
+        ok_ranges = True
+        for off in (0, 4 * 1024 * 1024 - 100, 50 * 1024 * 1024 + 123, big["fs_size"] - 5000):
+            f.seek(off); local.seek(off)
+            ok_ranges &= f.read(1 << 20) == local.read(1 << 20)
+    check(ok_ranges, "random reads across blocks match the file")
+    call(api, "DELETE", f"/api/v1/games/{big['rom_id']}/link")
+    s, _ = call(api, "DELETE", f"/api/v1/games/{target['rom_id']}/link")
+    check(s == 200 and os.listdir(mount) == [], "unlinked games disappear from the mount")
+    check(not os.path.exists(os.path.join(data_dir, "cache", "stream", str(target["rom_id"]))), "their cached blocks are removed")
+    s, st = call(api, "POST", "/api/v1/settings", {"install_mode": "stream"})
+    check(s == 200 and st["install_mode"] == "stream", "install mode setting")
+    s, _ = call(api, "POST", "/api/v1/settings", {"install_mode": "nfs"})
+    check(s == 400, "unknown install mode refused")
 
     print("Second profile")
     s, p2 = call(api, "POST", "/api/v1/profiles", {"name": "Guest"})
@@ -205,6 +253,10 @@ try:
     s, _ = call(api, "POST", f"/api/v1/profiles/{p2['id']}/activate")
     st = call(api, "GET", "/api/v1/status")[1]
     check(st["active_profile"]["romm_user"] == USER2, "active profile switch")
+    s, _ = call(api, "POST", f"/api/v1/games/{fr['rom_id']}/prefs", {"version": japan["rom_id"]})
+    call(api, "POST", f"/api/v1/profiles/{p1['id']}/activate")
+    check(crystal("fr")["rom_id"] != japan["rom_id"], "version choices are per profile")
+    call(api, "POST", f"/api/v1/profiles/{p2['id']}/activate")
     devices = romm("GET", "/api/devices")
     check(any(d.get("client") == "borne" for d in devices), "Borne device registered in RomM")
 
@@ -227,4 +279,5 @@ finally:
         core.send_signal(signal.SIGTERM)
     except Exception:
         pass
+    subprocess.run(["fusermount3", "-u", "-z", os.path.join(data_dir, "mount")], capture_output=True)
     shutil.rmtree(data_dir, ignore_errors=True)
