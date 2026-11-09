@@ -137,6 +137,7 @@ jobs:
           fi
           echo "TAG=$TAG" >> "$GITHUB_ENV"
           echo "CHANNEL=$CHANNEL" >> "$GITHUB_ENV"
+          export TAG CHANNEL
           python3 - <<'PY'
           import hashlib, json, os
           tag, repo = os.environ["TAG"], os.environ["GITHUB_REPOSITORY"]
