@@ -9,6 +9,11 @@ Item {
     property QtObject theme
     property string cardUrl: ""
     property string emptyText: qsTr("No games here.")
+    property bool pointerActive: false
+
+    signal picked(int index)
+
+    readonly property string nav: "grid"
 
     clip: true
     readonly property int columns: Math.max(1, Math.floor((width - 128 + theme.cardGap) / grid.cellWidth))
@@ -60,7 +65,17 @@ Item {
                     item.game = Qt.binding(() => cell.model)
                     item.focused = Qt.binding(() => cell.index === grid.currentIndex)
                     item.posterUrl = Qt.binding(() => cell.model.cover)
+                    if ("hovered" in item) item.hovered = Qt.binding(() => mouse.containsMouse)
                 }
+            }
+            MouseArea {
+                id: mouse
+                x: ld.x
+                width: theme.cardW
+                height: theme.cardH
+                hoverEnabled: root.pointerActive
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.picked(cell.index)
             }
         }
     }

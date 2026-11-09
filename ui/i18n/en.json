@@ -1,0 +1,5 @@
+{
+ "%n player(s)": ["%n player", "%n players"],
+ "%n version(s)": ["%n version", "%n versions"],
+ "Safe mode: default theme (the UI crashed %n time(s))": ["Safe mode: default theme (the UI crashed once)", "Safe mode: default theme (the UI crashed %n times)"]
+}

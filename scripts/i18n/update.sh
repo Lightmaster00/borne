@@ -14,6 +14,8 @@ for json in "$HERE"/ui/i18n/*.json; do
   ts="$HERE/ui/i18n/borne_$lang.ts"
   LC_ALL=C.UTF-8 "$LUPDATE" -silent -extensions qml -recursive "$HERE/ui" -ts "$ts" \
     -source-language en -target-language "$lang" -no-obsolete -locations none
-  python3 "$HERE/scripts/i18n/fill-ts.py" "$ts" "$json" || status=1
+  # English is the source language: only its plural forms need a translation.
+  partial=""; [ "$lang" = "en" ] && partial="--partial"
+  python3 "$HERE/scripts/i18n/fill-ts.py" "$ts" "$json" $partial || status=1
 done
 exit $status

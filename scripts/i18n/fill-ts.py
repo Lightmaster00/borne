@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fills a Qt Linguist .ts file from a JSON dictionary {English source: translation}.
 
-Usage: fill-ts.py ui/i18n/borne_fr.ts ui/i18n/fr.json
+Usage: fill-ts.py ui/i18n/borne_fr.ts ui/i18n/fr.json [--partial]
 Disambiguated messages use the key "source|comment". Plural messages (%n) take a list of forms in the JSON. Untranslated sources are reported
 and the script exits with status 1, so CI catches strings added without a translation.
 """
@@ -9,6 +9,7 @@ import json, sys
 import xml.etree.ElementTree as ET
 
 ts_path, dict_path = sys.argv[1], sys.argv[2]
+partial = "--partial" in sys.argv[3:]
 tr = json.load(open(dict_path, encoding="utf-8"))
 tree = ET.parse(ts_path)
 missing = set()
@@ -18,7 +19,8 @@ for msg in tree.iter("message"):
     key = f"{src}|{comment.text}" if comment is not None else src
     t = msg.find("translation")
     if key not in tr:
-        missing.add(key)
+        if not partial or msg.get("numerus") == "yes":
+            missing.add(key)
         continue
     value = tr[key]
     t.attrib.pop("type", None)

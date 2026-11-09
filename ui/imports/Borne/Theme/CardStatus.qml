@@ -1,6 +1,7 @@
 // Theme API v1: a game's state badge, to place in a custom card.
 //   CardStatus { anchors.fill: <poster>; game: card.game; theme: card.theme }
-// Shows: download progress, "installed", or an error. Nothing for a game that is only on RomM.
+// Shows: download progress, "installed", "played from the network", or an error.
+// Nothing for a game that is only on RomM.
 import QtQuick
 
 Item {
@@ -37,6 +38,33 @@ Item {
         width: 28; height: 28; radius: 14
         color: theme.ok
         Text { anchors.centerIn: parent; text: "✓"; color: "#0b1a10"; font { pixelSize: 16; bold: true } }
+    }
+    // Linked: played from RomM through the Borne virtual mount
+    Rectangle {
+        visible: !st.active && st.game && st.game.linked && st.game.local_state !== "local"
+        anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
+        width: 28; height: 28; radius: 14
+        color: theme.accent
+        // Signal arcs drawn with Canvas, so no icon font is needed.
+        Canvas {
+            anchors.fill: parent
+            onPaint: {
+                const c = getContext("2d")
+                c.reset()
+                c.strokeStyle = theme.accentFg
+                c.fillStyle = theme.accentFg
+                c.lineWidth = 2
+                c.lineCap = "round"
+                for (const r of [5, 9]) {
+                    c.beginPath()
+                    c.arc(14, 19, r, Math.PI * 1.25, Math.PI * 1.75)
+                    c.stroke()
+                }
+                c.beginPath()
+                c.arc(14, 19, 1.8, 0, Math.PI * 2)
+                c.fill()
+            }
+        }
     }
     // Download error or missing files
     Rectangle {

@@ -10,6 +10,7 @@ Rectangle {
     property var items: []
     property int index: 0
     property var callback: null
+    property bool pointerActive: false
     readonly property bool opened: visible
 
     visible: false
@@ -45,6 +46,9 @@ Rectangle {
         else if (a === "b" || a === "start" || a === "y") close()
     }
 
+    // Click outside the panel: same as B.
+    MouseArea { anchors.fill: parent; onClicked: menu.close(); onWheel: (w) => w.accepted = true }
+
     Rectangle {
         anchors.centerIn: parent
         width: Math.min(560, parent.width - 80)
@@ -52,12 +56,17 @@ Rectangle {
         radius: theme.radius + 4
         color: theme.panel
         border.color: theme.panelBorder
+        MouseArea { anchors.fill: parent }   // clicks on the panel itself do not close it
         Column {
             id: col
             x: 28; y: 28; width: parent.width - 56; spacing: 14
             Text { width: parent.width; text: menu.title; elide: Text.ElideRight; color: theme.fg; font { family: theme.displayFont; pixelSize: 24; bold: true } }
             Text { visible: menu.subtitle !== ""; width: parent.width; text: menu.subtitle; wrapMode: Text.WordWrap; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 14 } }
-            Menu { width: parent.width; theme: menu.theme; currentIndex: menu.index; items: menu.items }
+            Menu {
+                width: parent.width; theme: menu.theme; currentIndex: menu.index; items: menu.items
+                pointerActive: menu.pointerActive
+                onClicked: (i) => { menu.index = i; menu.handle("a") }
+            }
             Text { text: qsTr("A  Choose      B  Back"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 13 } }
         }
     }

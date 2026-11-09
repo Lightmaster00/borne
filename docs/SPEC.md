@@ -28,6 +28,7 @@ Version 1.4 — November 2026
 | 1.2 | Theme system and media handling (posters, ES-DE-style background trailers). |
 | 1.3 | Dedicated Qt 6 / QML UI, separate from the Rust core (two processes linked by a local HTTP + WebSocket API). ES-DE dropped. Tauri + Nuxt, Electron and a custom native engine rejected (see 5.2). QML themes with guardrails; plugin section. |
 | 1.4 | Project renamed **Borne**. Specification moved to English. Stage plan aligned with the repository. UI translated (English source, French). |
+| 1.5 | Game page before any download; versions of a game grouped, with per-profile version and emulator language; "play from the network" through the Borne virtual mount (FUSE, only chosen games, read from RomM); mouse control; console-inspired themes (home row, tile dashboard, bright home, cabinet carousel) with UI sounds. |
 
 ## 1. Executive summary
 
@@ -231,6 +232,18 @@ A theme is a hot-loaded folder. Since a QML theme is code, it is framed:
 - Community themes are installed knowingly (warning: a theme is code); built-in themes are the reference.
 - Provided layouts: poster grid and detailed view; live theme switching from the gamepad with preview.
 
+### 5.4.1 Game page and input
+
+- A game opens on its own page before anything is downloaded: details, state, actions (download, play from
+  the network, play, delete…), version chips (region, languages, revision), emulator language chips
+  (Automatic follows the UI language), summary. Choices are stored per profile.
+- Everything works with the gamepad (focus rings, row/column navigation) and with the mouse (hover and press
+  states, clickable hints, back button, wheel scrolling). The pointer shows when the mouse moves and hides
+  after a few seconds or as soon as a gamepad or the keyboard is used.
+- Built-in themes: Nocturne (poster grid), Cristal (light list), Horizon (cinematic home row), Mosaic (tile
+  dashboard), Lumen (bright home row with round shortcuts), Arcade (cabinet carousel). Layouts available to
+  themes: `grid`, `list`, `shelf`, `carousel`. Original synthesized UI sound sets; bundled OFL fonts.
+
 ### 5.5 Media and trailers
 
 - Managed media: poster/cover, background (fanart), game logo, screenshots, video trailer.
@@ -302,6 +315,19 @@ reports the offline state and syncs on reconnection according to section 6.4.
 - Locally installed game: no needless re-download; detection of missing or modified files.
 - Switch updates and DLC handled as content attached to the base game.
 - Local deletion is separate from remote deletion in RomM; clear confirmation, never any confusion between the two.
+- Versions of the same game (regions, languages, revisions) are grouped into one library entry, keyed by the
+  metadata id RomM matched (RomM's own "sibling" identity) or by the file name without tags. The version shown
+  is the profile's choice, then an installed one, then the best match for the UI language.
+
+### 6.7 Playing from the network (Borne virtual mount)
+
+Instead of downloading, a game can be *linked*: it appears, alone, in `<data>/mount/<platform>/<rom_id>/`, a
+read-only FUSE filesystem owned by the user (no root, no NFS export). Only linked games are exposed; the rest
+of the catalog never is. Files are read from RomM on demand with Range requests and the active profile's
+token, so RomM's per-account permissions apply, through a bounded cache of 4 MiB blocks (default 20 GB,
+least recently read evicted first). Unlinking removes the game and its cached blocks. A setting chooses the
+default action of a game page (download or network). Linux only (FUSE); macOS builds report it unavailable.
+Offline, linked games are unavailable unless their blocks are cached.
 
 ## 7. Profiles and data separation
 

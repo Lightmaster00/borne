@@ -27,6 +27,13 @@
     </message>
 </context>
 <context>
+    <name>CarouselView</name>
+    <message>
+        <source>No games here.</source>
+        <translation>Aucun jeu ici.</translation>
+    </message>
+</context>
+<context>
     <name>DetailView</name>
     <message>
         <source>%1 GB</source>
@@ -73,18 +80,6 @@
         <translation>Sur RomM · %1 à télécharger</translation>
     </message>
     <message>
-        <source>Y  Cancel</source>
-        <translation>Y  Annuler</translation>
-    </message>
-    <message>
-        <source>A  Play      Y  Options</source>
-        <translation>A  Jouer      Y  Options</translation>
-    </message>
-    <message>
-        <source>A  Download      Y  Options</source>
-        <translation>A  Télécharger      Y  Options</translation>
-    </message>
-    <message>
         <source>System</source>
         <translation>Système</translation>
     </message>
@@ -107,6 +102,14 @@
     <message>
         <source>No summary in RomM for this game.</source>
         <translation>Pas de résumé dans RomM pour ce jeu.</translation>
+    </message>
+    <message>
+        <source>Played from the network</source>
+        <translation>Joué depuis le réseau</translation>
+    </message>
+    <message>
+        <source>A  Open      Y  Options</source>
+        <translation>A  Ouvrir      Y  Options</translation>
     </message>
 </context>
 <context>
@@ -156,8 +159,207 @@
         <translation>Aucun téléchargement récent.</translation>
     </message>
     <message>
-        <source>A  Cancel / retry      B  Close</source>
-        <translation>A  Annuler / réessayer      B  Fermer</translation>
+        <source>Cancel / retry</source>
+        <translation>Annuler / réessayer</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
+</context>
+<context>
+    <name>GamePage</name>
+    <message>
+        <source>%1 GB</source>
+        <translation>%1 Go</translation>
+    </message>
+    <message>
+        <source>%1 MB</source>
+        <translation>%1 Mo</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 Ko</translation>
+    </message>
+    <message>
+        <source>Cancel download</source>
+        <translation>Annuler le téléchargement</translation>
+    </message>
+    <message>
+        <source>Retry download</source>
+        <translation>Réessayer le téléchargement</translation>
+    </message>
+    <message>
+        <source>Give up</source>
+        <translation>Abandonner</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Jouer</translation>
+    </message>
+    <message>
+        <source>Delete from this device</source>
+        <translation>Supprimer de cet appareil</translation>
+    </message>
+    <message>
+        <source>Remove from the network mount</source>
+        <translation>Retirer du montage réseau</translation>
+    </message>
+    <message>
+        <source>Download again</source>
+        <translation>Retélécharger</translation>
+    </message>
+    <message>
+        <source>Forget the local copy</source>
+        <translation>Oublier la copie locale</translation>
+    </message>
+    <message>
+        <source>Download · %1</source>
+        <translation>Télécharger · %1</translation>
+    </message>
+    <message>
+        <source>Play from the network</source>
+        <translation>Jouer depuis le réseau</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Automatique</translation>
+    </message>
+    <message>
+        <source>Europe</source>
+        <translation>Europe</translation>
+    </message>
+    <message>
+        <source>USA</source>
+        <translation>États-Unis</translation>
+    </message>
+    <message>
+        <source>Japan</source>
+        <translation>Japon</translation>
+    </message>
+    <message>
+        <source>World</source>
+        <translation>Monde</translation>
+    </message>
+    <message>
+        <source>France</source>
+        <translation>France</translation>
+    </message>
+    <message>
+        <source>Germany</source>
+        <translation>Allemagne</translation>
+    </message>
+    <message>
+        <source>Spain</source>
+        <translation>Espagne</translation>
+    </message>
+    <message>
+        <source>Italy</source>
+        <translation>Italie</translation>
+    </message>
+    <message>
+        <source>United Kingdom</source>
+        <translation>Royaume-Uni</translation>
+    </message>
+    <message>
+        <source>Australia</source>
+        <translation>Australie</translation>
+    </message>
+    <message>
+        <source>Brazil</source>
+        <translation>Brésil</translation>
+    </message>
+    <message>
+        <source>Korea</source>
+        <translation>Corée</translation>
+    </message>
+    <message>
+        <source>China</source>
+        <translation>Chine</translation>
+    </message>
+    <message>
+        <source>Canada</source>
+        <translation>Canada</translation>
+    </message>
+    <message>
+        <source>Netherlands</source>
+        <translation>Pays-Bas</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Version %1</translation>
+    </message>
+    <message>
+        <source>Rev. %1</source>
+        <translation>Rév. %1</translation>
+    </message>
+    <message>
+        <source>Waiting to download</source>
+        <translation>En attente de téléchargement</translation>
+    </message>
+    <message>
+        <source>Downloading… %1%</source>
+        <translation>Téléchargement… %1 %</translation>
+    </message>
+    <message>
+        <source>Verifying files…</source>
+        <translation>Vérification des fichiers…</translation>
+    </message>
+    <message>
+        <source>Extracting…</source>
+        <translation>Extraction…</translation>
+    </message>
+    <message>
+        <source>Download failed: %1</source>
+        <translation>Échec du téléchargement : %1</translation>
+    </message>
+    <message>
+        <source>Installed on this device</source>
+        <translation>Installé sur cet appareil</translation>
+    </message>
+    <message>
+        <source>Played from the network: nothing stored on this device</source>
+        <translation>Joué depuis le réseau : rien n'est stocké sur cet appareil</translation>
+    </message>
+    <message>
+        <source>Local files not found</source>
+        <translation>Fichiers locaux introuvables</translation>
+    </message>
+    <message>
+        <source>On RomM · %1</source>
+        <translation>Sur RomM · %1</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Retour</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n player(s)</source>
+        <translation><numerusform>%n joueur</numerusform><numerusform>%n joueurs</numerusform></translation>
+    </message>
+    <message>
+        <source>%1 players</source>
+        <translation>%1 joueurs</translation>
+    </message>
+    <message>
+        <source>Playing from the network is unavailable here: %1</source>
+        <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
+    </message>
+    <message>
+        <source>Version</source>
+        <translation>Version</translation>
+    </message>
+    <message>
+        <source>Game language</source>
+        <translation>Langue du jeu</translation>
+    </message>
+    <message>
+        <source>Used at launch by emulators that let the console language be set (Switch, GameCube, PS2…). Automatic follows Borne's language.</source>
+        <translation>Utilisée au lancement par les émulateurs qui permettent de régler la langue de la console (Switch, GameCube, PS2…). Automatique suit la langue de Borne.</translation>
+    </message>
+    <message>
+        <source>No summary in RomM for this game.</source>
+        <translation>Pas de résumé dans RomM pour ce jeu.</translation>
     </message>
 </context>
 <context>
@@ -248,30 +450,6 @@
         <translation>Annuler le téléchargement</translation>
     </message>
     <message>
-        <source>Retry download</source>
-        <translation>Réessayer le téléchargement</translation>
-    </message>
-    <message>
-        <source>Give up</source>
-        <translation>Abandonner</translation>
-    </message>
-    <message>
-        <source>Play</source>
-        <translation>Jouer</translation>
-    </message>
-    <message>
-        <source>Arrives with stage 3 (emulators)</source>
-        <translation>Arrive à l'étape 3 (émulateurs)</translation>
-    </message>
-    <message>
-        <source>Download again</source>
-        <translation>Retélécharger</translation>
-    </message>
-    <message>
-        <source>Forget the local copy</source>
-        <translation>Oublier la copie locale</translation>
-    </message>
-    <message>
         <source>Download</source>
         <translation>Télécharger</translation>
     </message>
@@ -298,14 +476,6 @@
     <message>
         <source>Theme</source>
         <translation>Thème</translation>
-    </message>
-    <message>
-        <source>Switch to detailed view</source>
-        <translation>Passer en vue détaillée</translation>
-    </message>
-    <message>
-        <source>Switch to grid view</source>
-        <translation>Passer en vue grille</translation>
     </message>
     <message>
         <source>Switch profile</source>
@@ -412,10 +582,6 @@
         <translation>Synchronisation de la bibliothèque…</translation>
     </message>
     <message>
-        <source>No game installed. Pick a game in “All games” and press A to download it.</source>
-        <translation>Aucun jeu installé. Choisis un jeu dans « Tous les jeux » et appuie sur A pour le télécharger.</translation>
-    </message>
-    <message>
         <source>No games here.</source>
         <translation>Aucun jeu ici.</translation>
     </message>
@@ -424,20 +590,8 @@
         <translation>%1 à télécharger</translation>
     </message>
     <message>
-        <source>Cancel…</source>
-        <translation>Annuler…</translation>
-    </message>
-    <message>
         <source>Options</source>
         <translation>Options</translation>
-    </message>
-    <message>
-        <source>Detailed view</source>
-        <translation>Vue détaillée</translation>
-    </message>
-    <message>
-        <source>Grid view</source>
-        <translation>Vue grille</translation>
     </message>
     <message>
         <source>System</source>
@@ -458,10 +612,6 @@
     <message>
         <source>Profile name</source>
         <translation>Nom du profil</translation>
-    </message>
-    <message>
-        <source>A  Key     B  Erase     Start  Confirm     Select  Cancel</source>
-        <translation>A  Touche     B  Effacer     Start  Valider     Select  Annuler</translation>
     </message>
     <message>
         <source>Borne core unreachable — reconnecting…</source>
@@ -488,10 +638,6 @@
         <translation>vue grille</translation>
     </message>
     <message>
-        <source>detailed view</source>
-        <translation>vue détaillée</translation>
-    </message>
-    <message>
         <source>custom posters</source>
         <translation>affiches personnalisées</translation>
     </message>
@@ -502,10 +648,6 @@
     <message>
         <source>Ignored themes</source>
         <translation>Thèmes ignorés</translation>
-    </message>
-    <message>
-        <source>A  Keep      B  Cancel</source>
-        <translation>A  Garder      B  Annuler</translation>
     </message>
     <message>
         <source>Benchmark running…</source>
@@ -707,6 +849,118 @@
         <source>Borne core unreachable</source>
         <translation>Cœur Borne injoignable</translation>
     </message>
+    <message>
+        <source>%1 is ready to play from the network.</source>
+        <translation>%1 est prêt à être joué depuis le réseau.</translation>
+    </message>
+    <message>
+        <source>Open the game page</source>
+        <translation>Ouvrir la page du jeu</translation>
+    </message>
+    <message>
+        <source>Remove from the network mount</source>
+        <translation>Retirer du montage réseau</translation>
+    </message>
+    <message>
+        <source>Play from the network</source>
+        <translation>Jouer depuis le réseau</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n version(s)</source>
+        <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
+    </message>
+    <message>
+        <source>Games: play from the network</source>
+        <translation>Jeux : jouer depuis le réseau</translation>
+    </message>
+    <message>
+        <source>Games: download to this device</source>
+        <translation>Jeux : télécharger sur cet appareil</translation>
+    </message>
+    <message>
+        <source>Nothing is copied; only the games you pick are mounted, read from RomM on demand</source>
+        <translation>Rien n'est copié : seuls les jeux choisis sont montés, lus depuis RomM à la demande</translation>
+    </message>
+    <message>
+        <source>Games are copied to this device and work offline</source>
+        <translation>Les jeux sont copiés sur cet appareil et fonctionnent hors ligne</translation>
+    </message>
+    <message>
+        <source>Interface sounds: on</source>
+        <translation>Sons de l'interface : activés</translation>
+    </message>
+    <message>
+        <source>Interface sounds: off</source>
+        <translation>Sons de l'interface : désactivés</translation>
+    </message>
+    <message>
+        <source>Playing from the network is unavailable here: %1</source>
+        <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
+    </message>
+    <message>
+        <source>Switch to the theme's view</source>
+        <translation>Revenir à la vue du thème</translation>
+    </message>
+    <message>
+        <source>Switch to the list view</source>
+        <translation>Passer en vue liste</translation>
+    </message>
+    <message>
+        <source>No game installed yet. Open a game in “All games” to download it or play it from the network.</source>
+        <translation>Aucun jeu installé pour l'instant. Ouvre un jeu dans « Tous les jeux » pour le télécharger ou y jouer depuis le réseau.</translation>
+    </message>
+    <message>
+        <source>Downloading…</source>
+        <translation>Téléchargement…</translation>
+    </message>
+    <message>
+        <source>From the network</source>
+        <translation>Depuis le réseau</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <source>Theme view</source>
+        <translation>Vue du thème</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>Vue liste</translation>
+    </message>
+    <message>
+        <source>Key</source>
+        <translation>Touche</translation>
+    </message>
+    <message>
+        <source>Erase</source>
+        <translation>Effacer</translation>
+    </message>
+    <message>
+        <source>Confirm</source>
+        <translation>Valider</translation>
+    </message>
+    <message>
+        <source>list view</source>
+        <translation>vue liste</translation>
+    </message>
+    <message>
+        <source>home row</source>
+        <translation>rangée d'accueil</translation>
+    </message>
+    <message>
+        <source>carousel</source>
+        <translation>carrousel</translation>
+    </message>
+    <message>
+        <source>Keep</source>
+        <translation>Garder</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -770,8 +1024,12 @@
         <translation>Appairer « %1 »</translation>
     </message>
     <message>
-        <source>B  Cancel</source>
-        <translation>B  Annuler</translation>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>Réessayer</translation>
     </message>
 </context>
 <context>
@@ -808,8 +1066,16 @@
         <translation>hors ligne</translation>
     </message>
     <message>
-        <source>A  Choose      Y  Profile options      Start  Menu</source>
-        <translation>A  Choisir      Y  Options du profil      Start  Menu</translation>
+        <source>Choose</source>
+        <translation>Choisir</translation>
+    </message>
+    <message>
+        <source>Profile options</source>
+        <translation>Options du profil</translation>
+    </message>
+    <message>
+        <source>Menu</source>
+        <translation>Menu</translation>
     </message>
 </context>
 <context>
@@ -827,8 +1093,31 @@
         <translation>Connexion au serveur…</translation>
     </message>
     <message>
-        <source>A  Key     B  Erase     X  Shift     Y  Space     Start  Confirm</source>
-        <translation>A  Touche     B  Effacer     X  Majuscules     Y  Espace     Start  Valider</translation>
+        <source>Key</source>
+        <translation>Touche</translation>
+    </message>
+    <message>
+        <source>Erase</source>
+        <translation>Effacer</translation>
+    </message>
+    <message>
+        <source>Shift</source>
+        <translation>Majuscules</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>Espace</translation>
+    </message>
+    <message>
+        <source>Confirm</source>
+        <translation>Valider</translation>
+    </message>
+</context>
+<context>
+    <name>ShelfView</name>
+    <message>
+        <source>No games here.</source>
+        <translation>Aucun jeu ici.</translation>
     </message>
 </context>
 </TS>

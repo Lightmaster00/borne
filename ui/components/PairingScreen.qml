@@ -8,6 +8,7 @@ Item {
     property string profileName: ""
     property string qrUrl: ""
     property int qrRevision: 0
+    property bool pointerActive: false
     signal retry()
     signal back()
 
@@ -74,7 +75,12 @@ Item {
                 color: screen.state_ === "approved" ? theme.ok : (screen.state_ === "waiting" || screen.state_ === "starting") ? theme.fgMuted : theme.bad
                 font { family: theme.fontFamily; pixelSize: 16 }
             }
-            Text { text: qsTr("B  Cancel"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 13 } }
+            HintBar {
+                theme: screen.theme
+                pointerActive: screen.pointerActive
+                hints: screen.state_ === "waiting" || screen.state_ === "approved" ? [["B", qsTr("Cancel"), "b"]] : [["A", qsTr("Retry"), "a"], ["B", qsTr("Cancel"), "b"]]
+                onTriggered: (a) => screen.handle(a)
+            }
         }
     }
 }

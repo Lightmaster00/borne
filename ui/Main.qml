@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Window
 import QtCore
 import QtWebSockets
+import QtMultimedia
 import Borne.Theme
 import "components"
 
@@ -30,8 +31,10 @@ Window {
     property var systems: [{ id: "all", name: qsTr("All games") }, { id: "local", name: qsTr("Installed", "systems bar") }]
     property int systemIndex: 0
     property int focusIndex: 0
-    property string layoutId: "grid"
-    property string overlay: ""          // "", "theme", "diag", "launch"
+    property string layoutId: "grid"     // grid | list | shelf | carousel
+    property string overlay: ""          // "", "theme", "diag", "launch", "game"
+    property string focusArea: "games"   // games | quick (round shortcuts of some themes)
+    property int quickIndex: 0
     property bool hud: false
     property bool trailers: true
     property bool ready: false
@@ -67,6 +70,13 @@ Window {
     readonly property var opts: currentTheme ? currentTheme.options : ({ trailerDelayMs: 1500, trailerVolume: 0, backgroundBlur: false })
     readonly property var activeProfile: status ? status.active_profile : null
     readonly property bool textEntry: screen === "server" || nameEntry.visible
+    // Mouse in use (pointer moved recently): hover states and on-screen buttons.
+    readonly property bool pointerActive: typeof pointer !== "undefined" && pointer !== null && pointer.active
+    readonly property string uiLang: Qt.locale().name.substring(0, 2)
+    property var settings: ({ install_mode: "download", stream: { available: false, error: "" } })
+    // Game page
+    property var page: null              // API answer for the open game
+    property var pageGame: null          // its shown version, as a library row
 
     // ---------- Local API ----------
     function api(method, path, body, cb) {
@@ -104,7 +114,9 @@ Window {
             cover: g.cover_local ? fileUrl(g.cover_local, g.cover_stamp) : "",
             trailer: g.video_remote && server ? server + encodeURI(g.video_remote) : "",
             local_state: g.local_state, dl_state: g.download_state || "", dl_received: g.download_received || 0,
-            dl_total: g.download_total || 0, dl_error: g.download_error || "", hue: (g.rom_id * 47) % 360
+            dl_total: g.download_total || 0, dl_error: g.download_error || "", hue: (g.rom_id * 47) % 360,
+            linked: !!g.linked, version_count: g.version_count || 1, other_installed: !!g.other_installed,
+            group_key: g.group_key || ""
         }
     }
     function loadPlatforms() {
@@ -125,7 +137,7 @@ Window {
     // Reloads the list keeping the selection; updates in place if the list did not change.
     function loadLibrary(resetFocus) {
         const s = systems[systemIndex] || systems[0]
-        const q = s.id === "all" ? "" : s.id === "local" ? "?local=1" : "?platform=" + encodeURIComponent(s.id)
+        const q = "?lang=" + uiLang + (s.id === "all" ? "" : s.id === "local" ? "&local=1" : "&platform=" + encodeURIComponent(s.id))
         const keep = !resetFocus && focusedGame ? focusedGame.rom_id : -1
         const t0 = Date.now()
         api("GET", "/api/v1/library" + q, null, function (list, err) {
@@ -163,6 +175,7 @@ Window {
         if (m.state === "done") toasts.show(qsTr("%1 is installed.").arg(name), "ok")
         if (m.state === "failed") toasts.show(qsTr("%1: %2").arg(name).arg(m.error || qsTr("download failed")), "error")
         if (downloadsPanel.visible) downloadsRefresh.restart()
+        if (page && page.versions.some(v => v.rom_id === m.rom_id)) pageReload.restart()
     }
 
     // ---------- Game actions ----------
@@ -188,28 +201,102 @@ Window {
         })
     }
     function primaryAction() {
-        const g = focusedGame
-        if (!g) return
-        const active = ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0
-        if (active) gameMenu()
-        else if (g.local_state === "local") toasts.show(qsTr("Launching games arrives with stage 3 (emulators)."), "info")
-        else download(g)
+        if (focusedGame) openGame(focusedGame.rom_id)
     }
+    // ---------- Game page ----------
+    function openGame(romId) {
+        api("GET", "/api/v1/games/" + romId + "?lang=" + uiLang, null, function (d, err) {
+            if (!d) { toasts.show(err, "error"); return }
+            const first = page === null || overlay !== "game"
+            page = d
+            pageGame = toRow(d.game)
+            if (first) { gamePage.reset(); overlay = "game"; sfx.play("accept") }
+        })
+    }
+    function reloadGame() { if (page && overlay === "game") openGame(page.game.rom_id) }
+    Timer { id: pageReload; interval: 250; onTriggered: win.reloadGame() }
+    function closeGame() {
+        overlay = ""
+        page = null
+        pageGame = null
+        libReload.restart()
+    }
+    function link(g) {
+        api("POST", "/api/v1/games/" + g.rom_id + "/link", {}, function (r, err) {
+            if (err) toasts.show(err, "error")
+            else toasts.show(qsTr("%1 is ready to play from the network.").arg(g.name), "ok")
+            reloadGame(); libReload.restart()
+        })
+    }
+    function unlink(g) {
+        api("DELETE", "/api/v1/games/" + g.rom_id + "/link", null, function (r, err) {
+            if (err) toasts.show(err, "error")
+            reloadGame(); libReload.restart()
+        })
+    }
+    function play(g) {
+        toasts.show(qsTr("Launching games arrives with stage 3 (emulators)."), "info")
+    }
+    function pageAction(id, payload) {
+        const g = pageGame
+        if (id === "back") { sfx.play("back"); closeGame(); return }
+        if (!g) return
+        if (id === "download") download(g)
+        else if (id === "link") link(g)
+        else if (id === "unlink") unlink(g)
+        else if (id === "delete") deleteLocal(g)
+        else if (id === "cancel") cancelDownload(g)
+        else if (id === "play") play(g)
+        else if (id === "version" || id === "language") {
+            const body = id === "version" ? { version: payload } : { emu_language: payload }
+            api("POST", "/api/v1/games/" + g.rom_id + "/prefs", body, function (r, err) {
+                if (err) { toasts.show(err, "error"); return }
+                if (id === "version") openGame(payload); else reloadGame()
+            })
+        }
+    }
+    // Quick menu (Y) on the library: the most common actions without opening the page.
     function gameMenu() {
         const g = focusedGame
         if (!g) return
         const active = ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0
-        let items = []
-        if (active) items = [{ id: "cancel", label: qsTr("Cancel download") }]
-        else if (g.dl_state === "failed") items = [{ id: "download", label: qsTr("Retry download"), detail: g.dl_error }, { id: "cancel", label: qsTr("Give up") }]
-        else if (g.local_state === "local") items = [{ id: "play", label: qsTr("Play"), detail: qsTr("Arrives with stage 3 (emulators)"), disabled: true }, { id: "delete", label: qsTr("Delete from this device") }]
-        else if (g.local_state === "missing") items = [{ id: "download", label: qsTr("Download again") }, { id: "delete", label: qsTr("Forget the local copy") }]
-        else items = [{ id: "download", label: qsTr("Download"), detail: fmtSize(g.fs_size) }]
+        let items = [{ id: "open", label: qsTr("Open the game page") }]
+        if (active) items.push({ id: "cancel", label: qsTr("Cancel download") })
+        else if (g.local_state === "local") items.push({ id: "delete", label: qsTr("Delete from this device") })
+        else if (g.linked) items.push({ id: "unlink", label: qsTr("Remove from the network mount") })
+        else {
+            items.push({ id: "download", label: qsTr("Download"), detail: fmtSize(g.fs_size) })
+            items.push({ id: "link", label: qsTr("Play from the network"), disabled: !settings.stream.available, detail: settings.stream.available ? "" : settings.stream.error || "" })
+        }
         items.push({ id: "close", label: qsTr("Close") })
-        menu.open(g.name, g.platform_name + (g.year > 0 ? " · " + g.year : ""), items, function (c) {
-            if (c === "download") download(g)
+        menu.open(g.name, g.platform_name + (g.year > 0 ? " · " + g.year : "") + (g.version_count > 1 ? " · " + qsTr("%n version(s)", "", g.version_count) : ""), items, function (c) {
+            if (c === "open") openGame(g.rom_id)
+            else if (c === "download") download(g)
+            else if (c === "link") link(g)
+            else if (c === "unlink") unlink(g)
             else if (c === "cancel") cancelDownload(g)
             else if (c === "delete") deleteLocal(g)
+        })
+    }
+    function loadSettings() { api("GET", "/api/v1/settings", null, function (r) { if (r) settings = r }) }
+    function settingsMenu() {
+        const net = settings.install_mode === "stream"
+        menu.open(qsTr("Settings"), "", [
+            { id: "install", label: net ? qsTr("Games: play from the network") : qsTr("Games: download to this device"),
+              detail: net ? qsTr("Nothing is copied; only the games you pick are mounted, read from RomM on demand")
+                          : qsTr("Games are copied to this device and work offline") },
+            { id: "sounds", label: prefs.sounds ? qsTr("Interface sounds: on") : qsTr("Interface sounds: off") },
+            { id: "trailers", label: win.trailers ? qsTr("Trailers: on") : qsTr("Trailers: off") },
+            { id: "close", label: qsTr("Close") }
+        ], function (c) {
+            if (c === "install") {
+                if (!net && !settings.stream.available) { toasts.show(qsTr("Playing from the network is unavailable here: %1").arg(settings.stream.error || ""), "error"); return }
+                api("POST", "/api/v1/settings", { install_mode: net ? "download" : "stream" }, function (r, err) {
+                    if (err) toasts.show(err, "error"); else settings = r
+                    settingsMenu()
+                })
+            } else if (c === "sounds") { prefs.sounds = !prefs.sounds; settingsMenu() }
+            else if (c === "trailers") { win.trailers = !win.trailers; settingsMenu() }
         })
     }
     function mainMenu() {
@@ -220,9 +307,10 @@ Window {
             items.push({ id: "sync", label: qsTr("Sync library"), detail: sync && sync.running ? qsTr("In progress…") : (sync && sync.last_sync ? qsTr("Last: %1").arg(new Date(sync.last_sync * 1000).toLocaleTimeString(Qt.locale(), Locale.ShortFormat)) : ""), disabled: sync && sync.running })
             items.push({ id: "downloads", label: qsTr("Downloads") })
             items.push({ id: "theme", label: qsTr("Theme"), detail: currentTheme ? currentTheme.name : "" })
-            items.push({ id: "layout", label: layoutId === "grid" ? qsTr("Switch to detailed view") : qsTr("Switch to grid view") })
+            items.push({ id: "layout", label: layoutId === "list" ? qsTr("Switch to the theme's view") : qsTr("Switch to the list view") })
             items.push({ id: "profile", label: qsTr("Switch profile"), detail: activeProfile ? activeProfile.name : "" })
         }
+        items.push({ id: "settings", label: qsTr("Settings") })
         items.push({ id: "server", label: qsTr("RomM server"), detail: status && status.server_url ? status.server_url : qsTr("not configured") })
         items.push({ id: "diag", label: qsTr("Diagnostics and measurements") })
         items.push({ id: "quit", label: qsTr("Quit Borne") })
@@ -230,7 +318,8 @@ Window {
             if (c === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else toasts.show(qsTr("Sync started."), "info") })
             else if (c === "downloads") openDownloads()
             else if (c === "theme") themePicker.open()
-            else if (c === "layout") layoutId = layoutId === "grid" ? "list" : "grid"
+            else if (c === "layout") toggleLayout()
+            else if (c === "settings") settingsMenu()
             else if (c === "profile") showProfiles()
             else if (c === "server") showServer()
             else if (c === "diag") diag.open()
@@ -265,6 +354,8 @@ Window {
         api("POST", "/api/v1/profiles/" + profile.id + "/activate", {}, function (r, err) {
             if (err) { toasts.show(err, "error"); return }
             refreshStatus()
+            loadSettings()
+            focusArea = "games"
             screen = "library"
             systemIndex = 0
             loadPlatforms()
@@ -306,21 +397,63 @@ Window {
     }
 
     // ---------- Input ----------
+    readonly property string themeLayout: currentTheme ? currentTheme.layout : "grid"
+    function toggleLayout() { layoutId = layoutId === "list" ? (themeLayout === "list" ? "grid" : themeLayout) : "list" }
     function move(a) {
         const n = libModel.count
         if (!n) return
-        const cols = layoutId === "grid" && libraryLoader.item ? libraryLoader.item.columns : 1
+        const view = libraryLoader.item
+        const nav = view ? view.nav : "grid"
+        const cols = nav === "grid" && view ? view.columns : 1
         let i = focusIndex
-        if (a === "left") i -= (layoutId === "grid" ? 1 : 10)
-        else if (a === "right") i += (layoutId === "grid" ? 1 : 10)
-        else if (a === "up") i -= cols
-        else if (a === "down") {
-            if (Math.floor(i / cols) < Math.floor((n - 1) / cols)) i = Math.min(n - 1, i + cols)
+        if (nav === "row") {
+            if (a === "left") i -= 1
+            else if (a === "right") i += 1
+            else if (a === "down" && theme.quickBar) { focusArea = "quick"; sfx.play("move"); return }
+            else return
+        } else if (nav === "column") {
+            if (a === "up") i -= 1
+            else if (a === "down") i += 1
+            else if (a === "left") i -= 10
+            else if (a === "right") i += 10
+        } else {
+            if (a === "left") i -= 1
+            else if (a === "right") i += 1
+            else if (a === "up") i -= cols
+            else if (a === "down") {
+                if (Math.floor(i / cols) < Math.floor((n - 1) / cols)) i = Math.min(n - 1, i + cols)
+            }
         }
-        focusIndex = Math.max(0, Math.min(n - 1, i))
+        i = Math.max(0, Math.min(n - 1, i))
+        if (i !== focusIndex) sfx.play("move")
+        focusIndex = i
+    }
+    // Round shortcuts under the home row (themes with quickBar).
+    readonly property var quickItems: [
+        { id: "downloads", label: qsTr("Downloads"), glyph: "↓" },
+        { id: "theme", label: qsTr("Theme"), glyph: "◐" },
+        { id: "settings", label: qsTr("Settings"), glyph: "⚙" },
+        { id: "profile", label: qsTr("Switch profile"), glyph: "☺" },
+        { id: "menu", label: qsTr("Menu"), glyph: "≡" }
+    ]
+    function quickAction(id) {
+        sfx.play("accept")
+        if (id === "downloads") openDownloads()
+        else if (id === "theme") themePicker.open()
+        else if (id === "settings") settingsMenu()
+        else if (id === "profile") showProfiles()
+        else mainMenu()
+    }
+    function quickHandle(a) {
+        if (a === "up" || a === "b") { focusArea = "games"; sfx.play("move") }
+        else if (a === "left") { quickIndex = Math.max(0, quickIndex - 1); sfx.play("move") }
+        else if (a === "right") { quickIndex = Math.min(quickItems.length - 1, quickIndex + 1); sfx.play("move") }
+        else if (a === "a") quickAction(quickItems[quickIndex].id)
+        else if (a === "start") mainMenu()
     }
     function setSystem(d) {
         systemIndex = (systemIndex + d + systems.length) % systems.length
+        sfx.play("move")
         loadLibrary(true)
     }
 
@@ -328,20 +461,23 @@ Window {
         inputCounts[source] = (inputCounts[source] || 0) + 1
         inputCountsChanged()
         lastInput = a + " via " + source
+        if (source === "pad" && win.pointerActive) pointer.hide()
         if (bench.running && a !== "start") return
-        if (menu.visible) return menu.handle(a)
+        if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
         if (downloadsPanel.visible) return downloadsPanel.handle(a)
         if (overlay === "theme") return themePicker.handle(a)
         if (overlay === "diag") return diag.handle(a)
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
+        if (overlay === "game") { if (a !== "a" && a !== "b") sfx.play("move"); return gamePage.handle(a) }
         if (screen === "server") return setup.handle(a)
         if (screen === "profiles") return picker.handle(a)
         if (screen === "pairing") return pairingScreen.handle(a)
         if (screen !== "library") return
+        if (focusArea === "quick" && theme.quickBar && layoutId === "shelf") return quickHandle(a)
         if (a === "a") primaryAction()
         else if (a === "y") gameMenu()
-        else if (a === "x") layoutId = layoutId === "grid" ? "list" : "grid"
+        else if (a === "x") toggleLayout()
         else if (a === "start") mainMenu()
         else if (a === "select") hud = !hud
         else if (a === "b") { /* root: nothing to close */ }
@@ -421,7 +557,7 @@ Window {
         if (typeof m.id !== "string" || !/^[a-z0-9-]{2,40}$/.test(m.id)) throw "invalid id"
         if (typeof m.name !== "string" || !m.name.trim()) throw "invalid name"
         const layout = m.layout || "grid"
-        if (layout !== "grid" && layout !== "list") throw "unknown layout: " + layout
+        if (["grid", "list", "shelf", "carousel"].indexOf(layout) < 0) throw "unknown layout: " + layout
         const o = m.options || {}
         const num = (v, d, lo, hi) => { if (v === undefined) return d; if (typeof v !== "number" || v < lo || v > hi) throw "option out of range: " + v; return v }
         return {
@@ -481,7 +617,7 @@ Window {
     Loader {
         id: bgLoader
         anchors.fill: parent
-        active: win.screen === "library" && win.ready && win.layoutId === "grid" && !win.gameMode
+        active: win.screen === "library" && win.ready && win.layoutId !== "list" && !win.gameMode && win.overlay !== "game"
         sourceComponent: TrailerStage {
             game: win.focusedGame
             theme: win.theme
@@ -496,7 +632,7 @@ Window {
     Item {
         id: topbar
         width: parent.width; height: 72
-        visible: win.screen === "library" && !win.gameMode
+        visible: win.screen === "library" && !win.gameMode && win.overlay !== "game"
         Text {
             x: 64; anchors.verticalCenter: parent.verticalCenter
             text: "Borne"; color: theme.fg
@@ -506,6 +642,7 @@ Window {
             anchors { right: sysBar.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
             text: "LB"; color: theme.fgMuted
             font { family: theme.fontFamily; pixelSize: 11; bold: true }
+            MouseArea { anchors { fill: parent; margins: -10 } cursorShape: Qt.PointingHandCursor; onClicked: win.setSystem(-1) }
         }
         // Systems bar: scrolls to keep the active system visible, without overflowing.
         ListView {
@@ -529,7 +666,15 @@ Window {
                 required property int index
                 readonly property bool cur: index === win.systemIndex
                 width: lbl.implicitWidth + 28; height: 34; radius: 17
-                color: cur ? theme.accent : "transparent"
+                color: cur ? theme.accent : sysMouse.containsMouse ? Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.1) : "transparent"
+                Behavior on color { ColorAnimation { duration: 150 } }
+                MouseArea {
+                    id: sysMouse
+                    anchors.fill: parent
+                    hoverEnabled: win.pointerActive
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: if (!parent.cur) { win.systemIndex = parent.index; win.loadLibrary(true) }
+                }
                 Text {
                     id: lbl; anchors.centerIn: parent
                     text: modelData.name
@@ -542,6 +687,7 @@ Window {
             anchors { left: sysBar.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
             text: "RB"; color: theme.fgMuted
             font { family: theme.fontFamily; pixelSize: 11; bold: true }
+            MouseArea { anchors { fill: parent; margins: -10 } cursorShape: Qt.PointingHandCursor; onClicked: win.setSystem(1) }
         }
         Row {
             anchors { right: parent.right; rightMargin: 64; verticalCenter: parent.verticalCenter }
@@ -568,35 +714,141 @@ Window {
         }
     }
 
+    readonly property string emptyLibraryText: {
+        const st = win.status ? win.status.sync : null
+        if (st && st.running) return qsTr("Syncing the library…")
+        if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
+            return qsTr("No game installed yet. Open a game in “All games” to download it or play it from the network.")
+        return qsTr("No games here.")
+    }
+    function gameStateText(g) {
+        if (!g) return ""
+        const parts = [g.platform_name]
+        if (g.year > 0) parts.push(g.year)
+        if (g.version_count > 1) parts.push(qsTr("%n version(s)", "", g.version_count))
+        if (g.dl_state) parts.push(qsTr("Downloading…"))
+        else if (g.local_state === "local") parts.push(qsTr("Installed"))
+        else if (g.linked) parts.push(qsTr("From the network"))
+        else parts.push(qsTr("%1 to download").arg(win.fmtSize(g.fs_size)))
+        return parts.join("  ·  ")
+    }
+    function pick(i) {
+        win.focusIndex = i
+        win.openGame(libModel.get(i).rom_id)
+    }
+
     Loader {
         id: libraryLoader
         anchors { top: topbar.bottom; left: parent.left; right: parent.right; bottom: info.top }
         active: win.screen === "library" && win.ready && !win.gameMode
-        sourceComponent: win.layoutId === "grid" ? gridComp : listComp
+        visible: win.overlay !== "game"
+        sourceComponent: win.layoutId === "list" ? listComp : win.layoutId === "shelf" ? shelfComp : win.layoutId === "carousel" ? carouselComp : gridComp
+    }
+    // Mouse wheel and trackpad: move the selection like the gamepad would.
+    WheelHandler {
+        target: null
+        enabled: win.screen === "library" && win.overlay === "" && !menu.visible
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        property real acc: 0
+        onWheel: (e) => {
+            acc += (e.angleDelta.y !== 0 ? e.angleDelta.y : -e.angleDelta.x)
+            const nav = libraryLoader.item ? libraryLoader.item.nav : "grid"
+            while (Math.abs(acc) >= 120) {
+                const back = acc > 0
+                win.move(nav === "row" ? (back ? "left" : "right") : (back ? "up" : "down"))
+                acc += back ? -120 : 120
+            }
+        }
     }
     Component {
         id: gridComp
         PosterGrid {
             games: libModel; currentIndex: win.focusIndex; theme: win.theme; cardUrl: win.cardUrl
-            emptyText: {
-                const s = win.status ? win.status.sync : null
-                if (s && s.running) return qsTr("Syncing the library…")
-                if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
-                    return qsTr("No game installed. Pick a game in “All games” and press A to download it.")
-                return qsTr("No games here.")
-            }
+            pointerActive: win.pointerActive; emptyText: win.emptyLibraryText
+            onPicked: (i) => win.pick(i)
         }
     }
     Component {
         id: listComp
-        DetailView { games: libModel; currentIndex: win.focusIndex; game: win.focusedGame; theme: win.theme; options: win.opts; trailers: win.trailers; paused: win.overlay !== "" || menu.visible }
+        DetailView {
+            games: libModel; currentIndex: win.focusIndex; game: win.focusedGame; theme: win.theme; options: win.opts
+            trailers: win.trailers; paused: win.overlay !== "" || menu.visible; pointerActive: win.pointerActive
+            onPicked: (i) => win.pick(i)
+        }
+    }
+    Component {
+        id: shelfComp
+        ShelfView {
+            games: libModel; currentIndex: win.focusIndex; theme: win.theme; cardUrl: win.cardUrl
+            pointerActive: win.pointerActive; emptyText: win.emptyLibraryText
+            game: win.focusedGame; stateText: win.gameStateText(win.focusedGame)
+            onPicked: (i) => win.pick(i)
+        }
+    }
+    Component {
+        id: carouselComp
+        CarouselView {
+            games: libModel; currentIndex: win.focusIndex; theme: win.theme; cardUrl: win.cardUrl
+            pointerActive: win.pointerActive; emptyText: win.emptyLibraryText
+            game: win.focusedGame; stateText: win.gameStateText(win.focusedGame)
+            onPicked: (i) => win.pick(i)
+        }
+    }
+
+    // Round shortcuts under the home row (themes with quickBar, shelf layout).
+    Row {
+        id: quickBar
+        visible: theme.quickBar && win.layoutId === "shelf" && win.screen === "library" && win.overlay !== "game" && !win.gameMode
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: hints.top; bottomMargin: 18 }
+        spacing: 26
+        Repeater {
+            model: win.quickItems
+            Item {
+                id: qi
+                required property var modelData
+                required property int index
+                readonly property bool focused: win.focusArea === "quick" && win.quickIndex === index
+                width: 64; height: 64
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 32
+                    color: theme.panel
+                    border { width: 1; color: theme.panelBorder }
+                    scale: qm.pressed ? 0.94 : 1
+                    Behavior on scale { NumberAnimation { duration: 120 } }
+                    Text { anchors.centerIn: parent; text: qi.modelData.glyph; color: theme.accent; font { family: theme.fontFamily; pixelSize: 26 } }
+                }
+                Rectangle {
+                    anchors { fill: parent; margins: -5 }
+                    radius: 37
+                    color: "transparent"
+                    border { width: 3; color: theme.focusRing }
+                    opacity: qi.focused || qm.containsMouse ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                }
+                Text {
+                    visible: qi.focused || qm.containsMouse
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.top; bottomMargin: 12 }
+                    text: qi.modelData.label
+                    color: theme.fg
+                    font { family: theme.fontFamily; pixelSize: 14; weight: Font.Medium }
+                }
+                MouseArea {
+                    id: qm
+                    anchors.fill: parent
+                    hoverEnabled: win.pointerActive
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: win.quickAction(qi.modelData.id)
+                }
+            }
+        }
     }
 
     Item {
         id: info
         anchors { left: parent.left; right: parent.right; bottom: hints.top }
         height: win.layoutId === "grid" ? 96 : 0
-        visible: win.screen === "library" && win.layoutId === "grid" && !win.gameMode && win.focusedGame !== null
+        visible: win.screen === "library" && win.layoutId === "grid" && !win.gameMode && win.focusedGame !== null && win.overlay !== "game"
         Column {
             x: 64; y: 8
             Text {
@@ -606,38 +858,31 @@ Window {
             }
             Text {
                 readonly property var g: win.focusedGame
-                text: g ? [g.platform_name, g.year > 0 ? g.year : "", g.genres,
-                           g.local_state === "local" ? qsTr("Installed") : g.dl_state ? "" : qsTr("%1 to download").arg(win.fmtSize(g.fs_size))].filter(x => x).join(" · ") : ""
+                text: win.gameStateText(g)
                 color: theme.fgMuted
                 font { family: theme.fontFamily; pixelSize: 15 }
             }
         }
     }
 
-    Row {
+    HintBar {
         id: hints
         anchors { left: parent.left; leftMargin: 64; bottom: parent.bottom }
         height: 56
-        spacing: 28
-        visible: win.screen === "library" && !win.gameMode
-        Repeater {
-            model: {
-                const g = win.focusedGame
-                const active = g && ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0
-                const a = !g ? "" : active ? qsTr("Cancel…") : g.local_state === "local" ? qsTr("Play") : qsTr("Download")
-                return [["A", a], ["Y", qsTr("Options")], ["X", win.layoutId === "grid" ? qsTr("Detailed view") : qsTr("Grid view")], ["LB/RB", qsTr("System")], ["Start", qsTr("Menu")]].filter(h => h[1])
-            }
-            Row {
-                required property var modelData
-                spacing: 6
-                anchors.verticalCenter: parent.verticalCenter
-                Rectangle {
-                    width: k.implicitWidth + 12; height: 20; radius: 6; color: theme.fg
-                    Text { id: k; anchors.centerIn: parent; text: modelData[0]; color: theme.bg; font { family: theme.fontFamily; pixelSize: 11; bold: true } }
-                }
-                Text { text: modelData[1]; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 14 } }
-            }
+        theme: win.theme
+        pointerActive: win.pointerActive
+        visible: win.screen === "library" && !win.gameMode && win.overlay !== "game"
+        hints: {
+            const g = win.focusedGame
+            const h = []
+            if (g) h.push(["A", qsTr("Open"), "a"])
+            if (g) h.push(["Y", qsTr("Options"), "y"])
+            h.push(["X", win.layoutId === "list" ? qsTr("Theme view") : qsTr("List view"), "x"])
+            h.push(["LB/RB", qsTr("System"), "rb"])
+            h.push(["Start", qsTr("Menu"), "start"])
+            return h
         }
+        onTriggered: (a) => win.dispatch(a, "mouse")
     }
 
     // ---------- Screens outside the library ----------
@@ -646,6 +891,7 @@ Window {
         anchors.fill: parent
         visible: win.screen === "server"
         theme: win.theme
+        pointerActive: win.pointerActive
         onSubmit: (url) => {
             busy = true
             win.api("POST", "/api/v1/server", { url: url }, function (r, err) {
@@ -662,6 +908,7 @@ Window {
         anchors.fill: parent
         visible: win.screen === "profiles"
         theme: win.theme
+        pointerActive: win.pointerActive
         serverUrl: win.status && win.status.server_url ? win.status.server_url : ""
         online: win.status ? win.status.online : false
         onChoose: (p) => p.paired ? win.enterLibrary(p) : win.startPairing(p)
@@ -674,6 +921,7 @@ Window {
         anchors.fill: parent
         visible: win.screen === "pairing"
         theme: win.theme
+        pointerActive: win.pointerActive
         pairing: win.pairing
         profileName: win.pairingProfile ? win.pairingProfile.name : ""
         qrUrl: win.apiBase + "/api/v1/pairing/qr.svg"
@@ -721,7 +969,12 @@ Window {
                 }
                 onCancelled: nameEntry.visible = false
             }
-            Text { text: qsTr("A  Key     B  Erase     Start  Confirm     Select  Cancel"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 13 } }
+            HintBar {
+                theme: win.theme
+                pointerActive: win.pointerActive
+                hints: [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["Start", qsTr("Confirm"), "start"], ["Select", qsTr("Cancel"), "select"]]
+                onTriggered: (a) => nameEntry.handle(a)
+            }
         }
     }
 
@@ -767,14 +1020,50 @@ Window {
         Text { anchors.centerIn: parent; text: qsTr("Game mode (test) — B to go back"); color: "#8b97ab"; font { family: theme.fontFamily; pixelSize: 16 } }
     }
 
+    GamePage {
+        id: gamePage
+        anchors.fill: parent
+        z: 20
+        visible: win.overlay === "game" && win.pageGame !== null
+        theme: win.theme
+        game: win.pageGame
+        versions: win.page ? win.page.versions : []
+        emuLanguage: win.page ? win.page.emu_language : "auto"
+        emuLanguages: win.page ? win.page.emu_languages : []
+        installMode: win.page ? win.page.install_mode : "download"
+        streamAvailable: win.page ? win.page.stream.available : false
+        streamError: win.page && win.page.stream.error ? win.page.stream.error : ""
+        pointerActive: win.pointerActive
+        trailers: win.trailers
+        paused: menu.visible || !visible
+        options: win.opts
+        onAction: (id, payload) => win.pageAction(id, payload)
+    }
+
+    // UI sounds (theme.soundSet), short and quiet; off in the settings.
+    QtObject {
+        id: sfx
+        readonly property string base: win.uiRoot + "/sounds/" + theme.soundSet + "/"
+        readonly property bool on: prefs.sounds && theme.soundSet !== "" && !bench.running
+        function play(kind) {
+            if (!on) return
+            const e = kind === "accept" ? sAccept : kind === "back" ? sBack : sMove
+            e.play()
+        }
+    }
+    SoundEffect { id: sMove; source: theme.soundSet ? sfx.base + "move.wav" : ""; volume: theme.soundVolume * 0.7 }
+    SoundEffect { id: sAccept; source: theme.soundSet ? sfx.base + "accept.wav" : ""; volume: theme.soundVolume }
+    SoundEffect { id: sBack; source: theme.soundSet ? sfx.base + "back.wav" : ""; volume: theme.soundVolume }
+
     DownloadsPanel {
         id: downloadsPanel
         theme: win.theme
+        pointerActive: win.pointerActive
         z: 60
         onCancel: (d) => win.api("DELETE", "/api/v1/downloads/" + d.id, null, function () { win.refreshDownloads() })
         onRetry: (d) => win.api("POST", "/api/v1/games/" + d.rom_id + "/download", {}, function (r, err) { if (err) toasts.show(err, "error"); win.refreshDownloads() })
     }
-    ActionMenu { id: menu; theme: win.theme; z: 80 }
+    ActionMenu { id: menu; theme: win.theme; pointerActive: win.pointerActive; z: 80 }
     Toasts {
         id: toasts
         theme: win.theme
@@ -842,7 +1131,11 @@ Window {
             const n = win.themeEntries.length
             if (a === "up") preview((index - 1 + n) % n)
             else if (a === "down") preview((index + 1) % n)
-            else if (a === "a") { prefs.theme = win.currentTheme ? win.currentTheme.id : ""; win.overlay = "" }
+            else if (a === "a") {
+                prefs.theme = win.currentTheme ? win.currentTheme.id : ""
+                if (win.currentTheme) win.layoutId = win.currentTheme.layout
+                win.overlay = ""
+            }
             else if (a === "b" || a === "y") { if (original && original !== win.currentTheme) win.applyTheme(original); win.overlay = "" }
         }
         Rectangle {
@@ -854,7 +1147,11 @@ Window {
                 Text { text: qsTr("Theme"); color: theme.fg; font { family: theme.displayFont; pixelSize: 24; bold: true } }
                 Menu {
                     width: parent.width; theme: win.theme; currentIndex: themePicker.index
-                    items: win.themeEntries.map(t => ({ label: t.name, detail: [t.builtin ? qsTr("built-in") : qsTr("user"), t.layout === "grid" ? qsTr("grid view") : qsTr("detailed view"), t.files.indexOf("Card.qml") >= 0 ? qsTr("custom posters") : ""].filter(x => x).join(" · ") }))
+                    items: win.themeEntries.map(t => ({ label: t.name, detail: [t.builtin ? qsTr("built-in") : qsTr("user"),
+                        ({ grid: qsTr("grid view"), list: qsTr("list view"), shelf: qsTr("home row"), carousel: qsTr("carousel") })[t.layout],
+                        t.files.indexOf("Card.qml") >= 0 ? qsTr("custom posters") : ""].filter(x => x).join(" · ") }))
+                    pointerActive: win.pointerActive
+                    onClicked: (i) => { themePicker.preview(i); themePicker.handle("a") }
                 }
                 Text { text: qsTr("Applied in %1 ms (NFR-19 target: < 1000 ms)").arg(win.themeApplyMs); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 13 } }
                 Rectangle {
@@ -869,7 +1166,12 @@ Window {
                         }
                     }
                 }
-                Text { text: qsTr("A  Keep      B  Cancel"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 13 } }
+                HintBar {
+                    theme: win.theme
+                    pointerActive: win.pointerActive
+                    hints: [["A", qsTr("Keep"), "a"], ["B", qsTr("Cancel"), "b"]]
+                    onTriggered: (a) => themePicker.handle(a)
+                }
             }
         }
     }
@@ -921,7 +1223,7 @@ Window {
             Text { x: 32; y: 24; text: qsTr("Diagnostics"); color: theme.fg; font { family: theme.displayFont; pixelSize: 24; bold: true } }
             Column {
                 x: 32; y: 72; width: parent.width * 0.4 - 32; spacing: 14
-                Menu { width: parent.width; theme: win.theme; currentIndex: diag.index; items: diag.items }
+                Menu { width: parent.width; theme: win.theme; currentIndex: diag.index; items: diag.items; pointerActive: win.pointerActive; onClicked: (i) => { diag.index = i; diag.handle("a") } }
                 Text { visible: diag.report !== null; text: qsTr("LAST BENCHMARK"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 12; letterSpacing: 1 } }
                 KeyValues {
                     visible: diag.report !== null; width: parent.width; theme: win.theme; keyWidth: 200
@@ -1072,6 +1374,7 @@ Window {
         category: "ui"
         property string theme: ""
         property string layout: ""
+        property bool sounds: true
     }
     onLayoutIdChanged: if (ready && !bench.running) prefs.layout = layoutId
 

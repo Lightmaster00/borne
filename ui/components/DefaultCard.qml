@@ -2,6 +2,7 @@
 // A theme can provide its own Card.qml exposing the same properties:
 //   game (name, platform_name, year, local_state, dl_state, dl_received, dl_total…),
 //   focused (bool), theme (ThemeBase), posterUrl (string)
+// and optionally hovered (bool, mouse over the card) and showLabel (bool, title under the focused card).
 import QtQuick
 import Borne.Theme
 
@@ -11,6 +12,8 @@ Item {
     property bool focused: false
     property QtObject theme
     property string posterUrl: ""
+    property bool hovered: false
+    property bool showLabel: true
 
     width: theme ? theme.cardW : 180
     height: theme ? theme.cardH + theme.labelH : 286
@@ -71,8 +74,8 @@ Item {
             anchors.fill: parent
             radius: theme.cardRadius
             color: "transparent"
-            border { width: 3; color: theme.focusRing }
-            opacity: card.focused ? 1 : 0
+            border { width: card.focused ? 3 : 2; color: card.focused ? theme.focusRing : theme.fgMuted }
+            opacity: card.focused ? 1 : card.hovered ? 0.7 : 0
             Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
         }
     }
@@ -84,7 +87,7 @@ Item {
         elide: Text.ElideRight
         color: theme.fg
         font { family: theme.fontFamily; pixelSize: 13 }
-        opacity: card.focused ? 1 : 0
+        opacity: card.focused && card.showLabel ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }
 }

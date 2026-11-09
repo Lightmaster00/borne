@@ -11,7 +11,13 @@ Item {
     property var options
     property bool trailers: true
     property bool paused: false
+    property bool pointerActive: false
     readonly property alias stage: stage
+
+    signal picked(int index)
+
+    readonly property string nav: "column"
+    readonly property int columns: 1
 
     function fmtSize(b) {
         return b >= 1073741824 ? qsTr("%1 GB").arg(Number(b / 1073741824).toLocaleString(Qt.locale(), "f", 1))
@@ -26,14 +32,12 @@ Item {
         if (dl === "extracting") return qsTr("Extracting…")
         if (dl === "failed") return qsTr("Download failed: %1").arg(g.dl_error || "")
         if (g.local_state === "local") return qsTr("Installed on this device")
+        if (g.linked) return qsTr("Played from the network")
         if (g.local_state === "missing") return qsTr("Local files not found")
         return qsTr("On RomM · %1 to download").arg(fmtSize(g.fs_size))
     }
     function actionText(g) {
-        if (!g) return ""
-        if (["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0) return qsTr("Y  Cancel")
-        if (g.local_state === "local") return qsTr("A  Play      Y  Options")
-        return qsTr("A  Download      Y  Options")
+        return g ? qsTr("A  Open      Y  Options") : ""
     }
 
     ListView {
@@ -60,9 +64,22 @@ Item {
             width: list.width
             height: theme.listRowH
             readonly property bool cur: index === list.currentIndex
+            Rectangle {
+                anchors.fill: parent
+                radius: 8
+                color: theme.fg
+                opacity: rowMouse.containsMouse && !parent.cur ? 0.06 : 0
+            }
+            MouseArea {
+                id: rowMouse
+                anchors.fill: parent
+                hoverEnabled: root.pointerActive
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.picked(parent.index)
+            }
             Text {
                 anchors { left: parent.left; leftMargin: 14; right: sys.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                text: (parent.model.local_state === "local" ? "✓  " : "") + parent.model.name
+                text: (parent.model.local_state === "local" || parent.model.linked ? "✓  " : "") + parent.model.name
                 elide: Text.ElideRight
                 color: parent.cur ? theme.accentFg : theme.fgMuted
                 font { family: theme.fontFamily; pixelSize: 16; bold: parent.cur }

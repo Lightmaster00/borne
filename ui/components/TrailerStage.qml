@@ -15,6 +15,8 @@ Item {
     property bool paused: false     // game running, overlay…
     property bool blur: false
     property bool panel: false      // detailed view thumbnail (no dimming)
+    property real backdropOpacity: theme.heroOpacity   // the selected game's cover behind everything
+    property bool video: theme.heroVideo
     property string errorText: ""
     property bool shown: false
     /// Video frames received (for the benchmark).
@@ -31,20 +33,22 @@ Item {
     function restart() {
         stopVideo()
         errorText = ""
-        if (active && !paused && game && game.trailer)
+        if (active && video && !paused && game && game.trailer)
             delay.restart()
     }
     onGameChanged: restart()
     onActiveChanged: restart()
     onPausedChanged: restart()
     onDelayMsChanged: restart()
+    onVideoChanged: restart()
     Component.onDestruction: stopVideo()
 
     Rectangle { anchors.fill: parent; color: theme.bg; radius: stage.panel ? theme.radius : 0 }
     Rectangle {
         anchors.fill: parent
         radius: stage.panel ? theme.radius : 0
-        opacity: 0.55
+        // Tint from the game's color, unless the theme wants a plain background.
+        opacity: stage.panel || stage.backdropOpacity > 0 ? 0.55 : 0
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0; color: "transparent" }
@@ -58,15 +62,15 @@ Item {
         source: stage.game && stage.game.cover ? stage.game.cover : ""
         asynchronous: true
         fillMode: Image.PreserveAspectCrop
-        sourceSize: Qt.size(640, 360)
-        opacity: 0.25
+        sourceSize: Qt.size(960, 540)
+        opacity: stage.backdropOpacity
         visible: !stage.blur && status === Image.Ready
     }
     MultiEffect {
         anchors.fill: backdrop
         source: backdrop
         visible: stage.blur && backdrop.status === Image.Ready
-        opacity: 0.3
+        opacity: Math.min(1, stage.backdropOpacity + 0.05)
         blurEnabled: true
         blur: 1.0
         blurMax: 48

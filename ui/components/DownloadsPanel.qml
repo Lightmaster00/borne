@@ -8,6 +8,7 @@ Rectangle {
     property int index: 0
     signal cancel(var dl)
     signal retry(var dl)
+    property bool pointerActive: false
 
     visible: false
     anchors.fill: parent
@@ -33,12 +34,14 @@ Rectangle {
         else if (a === "b" || a === "start") visible = false
     }
 
+    MouseArea { anchors.fill: parent; onClicked: panel.visible = false; onWheel: (w) => w.accepted = true }
     Rectangle {
         anchors.centerIn: parent
         width: Math.min(820, parent.width - 80)
         height: Math.min(parent.height - 80, col.height + 56)
         radius: theme.radius + 4; color: theme.panel; border.color: theme.panelBorder
         clip: true
+        MouseArea { anchors.fill: parent }
         Column {
             id: col
             x: 28; y: 28; width: parent.width - 56; spacing: 10
@@ -53,6 +56,11 @@ Rectangle {
                     width: col.width; height: 64; radius: 8
                     color: cur ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                     border { width: cur ? 2 : 0; color: theme.accent }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: { panel.index = parent.index; panel.handle("a") }
+                    }
                     Column {
                         x: 14; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 28; spacing: 6
                         Row {
@@ -74,7 +82,12 @@ Rectangle {
                     }
                 }
             }
-            Text { text: qsTr("A  Cancel / retry      B  Close"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 13 } }
+            HintBar {
+                theme: panel.theme
+                pointerActive: panel.pointerActive
+                hints: [["A", qsTr("Cancel / retry"), "a"], ["B", qsTr("Close"), "b"]]
+                onTriggered: (a) => panel.handle(a)
+            }
         }
     }
 }

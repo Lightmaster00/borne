@@ -23,7 +23,8 @@ QtObject {
     property color bad: "#f87171"
 
     // Typography
-    property string fontFamily: "Inter, Cantarell, Noto Sans, DejaVu Sans"
+    // Bundled with Borne: Inter, Poppins, Bebas Neue, Press Start 2P (SIL Open Font License).
+    property string fontFamily: "Inter"
     property string displayFont: fontFamily
     property bool uppercaseTitles: false
     property int titleSize: 28
@@ -41,6 +42,27 @@ QtObject {
 
     // Detailed view
     property int listRowH: 44
+
+    // Home row ("shelf" layout): tiles in one row, like a console home screen
+    property string shelfAlign: "left"   // "left": row starts at the margin; "center": focused tile stays centered
+    property real shelfY: 0.18           // vertical position of the row (0 = top, 1 = bottom)
+    property bool shelfLabels: true      // title next to the focused tile
+    property bool quickBar: false        // row of round shortcuts under the shelf
+
+    // Carousel ("carousel" layout): wheel of titles beside a large cover
+    property int wheelRowH: 64
+
+    // UI sounds: "" (none), "soft", "deep", "tick" or "chip"
+    property string soundSet: ""
+    property real soundVolume: 0.6
+
+    // Game page
+    property real heroDim: 0.62
+    property int buttonRadius: 10
+
+    // Library background: the selected game's cover and trailer
+    property real heroOpacity: 0.25
+    property bool heroVideo: true
 
     // Stage (poster + trailer)
     property real stageDim: 0.55

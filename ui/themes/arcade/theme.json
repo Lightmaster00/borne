@@ -1,2 +1,2 @@
-{ "schema": 1, "api": 1, "id": "arcade", "name": "Arcade", "author": "Borne", "version": "1.0.0",
-  "layout": "grid", "options": { "trailerDelayMs": 900, "trailerVolume": 0.4, "backgroundBlur": true } }
+{ "schema": 1, "api": 1, "id": "arcade", "name": "Arcade", "author": "Borne", "version": "2.0.0",
+  "layout": "carousel", "options": { "trailerDelayMs": 700, "trailerVolume": 0.4, "backgroundBlur": false } }

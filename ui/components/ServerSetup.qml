@@ -7,6 +7,7 @@ Item {
     property bool busy: false
     property string error: ""
     property string initial: "http://"
+    property bool pointerActive: false
     signal submit(string url)
     signal cancelled()
 
@@ -44,10 +45,11 @@ Item {
             color: setup.busy ? theme.fgMuted : theme.bad
             font { family: theme.fontFamily; pixelSize: 15 }
         }
-        Text {
-            text: qsTr("A  Key     B  Erase     X  Shift     Y  Space     Start  Confirm")
-            color: theme.fgMuted
-            font { family: theme.fontFamily; pixelSize: 13 }
+        HintBar {
+            theme: setup.theme
+            pointerActive: setup.pointerActive
+            hints: [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["X", qsTr("Shift"), "x"], ["Y", qsTr("Space"), "y"], ["Start", qsTr("Confirm"), "start"]]
+            onTriggered: (a) => setup.handle(a)
         }
     }
 }
