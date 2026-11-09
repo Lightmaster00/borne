@@ -44,9 +44,12 @@ pub fn start(token: String, hub: Broadcaster) -> std::io::Result<u16> {
                             Err(r)
                         }
                     };
+                    // A client that never finishes the handshake must not hold a thread forever.
+                    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(5)));
                     let Ok(mut ws) = tungstenite::accept_hdr(stream, check) else {
                         return;
                     };
+                    let _ = ws.get_ref().set_read_timeout(None);
                     let (tx, rx) = channel::<String>();
                     hub.clients.lock().unwrap().push(tx);
                     let _ = ws.send(Message::text(r#"{"type":"hello","api":1}"#));
