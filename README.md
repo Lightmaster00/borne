@@ -44,8 +44,9 @@ Since then:
 - **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
   gamepad is used. The wheel scrolls the library.
 - **One look, "Halo"**: the selected game's art fills the screen, blurred and slowly drifting, and its
-  trailer fades in after a pause; the selected game is shown large beside a showcase of large covers, with
-  a letter index to jump through the alphabet; panels are glass; the accent color is taken from each
+  trailer fades in after a pause; the games stand as boxes in space: the selected
+  box faces you and sways gently, the others turn toward it and show their spines; a letter index jumps
+  through the alphabet; panels are glass; the accent color is taken from each
   game's cover.
 - **Game page**: the trailer plays across the top; below, the choices, an introduction, the credits
   (developer, publisher, director, producer, composer, series) and anecdotes from Wikidata and Wikipedia

@@ -1,7 +1,6 @@
-// Library ("showcase"): the selected game large on the left, over its living background, and a
-// grid of large covers on the right, two rows on screen. An index of letters on the edge shows
-// where you are in the alphabet; LT / RT jump to the previous / next letter. GridView is
-// virtualized: only visible covers exist, even with thousands of games.
+// Library: the selected game's title over its living background, and the games as boxes standing
+// in space below it (BoxShelf). An index of letters on the edge shows where you are in the
+// alphabet; LT / RT jump to the previous / next letter.
 import QtQuick
 
 Item {
@@ -20,7 +19,8 @@ Item {
     signal action(string id)
     signal jumpTo(string letter)
 
-    readonly property int columns: 4
+    readonly property int columns: 10    // up / down jump this many games
+    property int revision: 0
 
     function fmtSize(b) {
         return b >= 1073741824 ? qsTr("%1 GB").arg(Number(b / 1073741824).toLocaleString(Qt.locale(), "f", 1))
@@ -51,9 +51,9 @@ Item {
     }
     Column {
         id: info
-        x: 96; y: 190
-        width: 660
-        spacing: 22
+        x: 96; y: 130
+        width: 900
+        spacing: 18
         visible: root.game !== null
         Text {
             width: parent.width
@@ -64,13 +64,14 @@ Item {
         }
         Text {
             width: parent.width
+            height: 92
             text: root.game ? root.game.name : ""
-            wrapMode: Text.WordWrap
-            maximumLineCount: 3
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: 44
             elide: Text.ElideRight
-            lineHeight: 0.98
+            verticalAlignment: Text.AlignVCenter
             color: theme.fg
-            font { family: theme.displayFont; pixelSize: root.game && root.game.name.length > 22 ? 64 : 88; weight: Font.ExtraBold; letterSpacing: -2.5 }
+            font { family: theme.displayFont; pixelSize: 88; weight: Font.ExtraBold; letterSpacing: -2.5 }
         }
         Flow {
             width: parent.width
@@ -106,73 +107,29 @@ Item {
             }
         }
         Text {
-            width: parent.width
             text: root.game && root.game.summary ? root.game.summary : ""
             visible: text !== ""
             wrapMode: Text.WordWrap
-            maximumLineCount: 4
+            width: 760
+            maximumLineCount: 2
             elide: Text.ElideRight
-            lineHeight: 1.45
+            lineHeight: 1.4
             color: theme.fgSoft
             font { family: theme.fontFamily; pixelSize: 20 }
         }
-        Row {
-            spacing: 14
-            topPadding: 6
-            PageButton { theme: root.theme; key: "A"; text: qsTr("Open"); primary: true; pointerActive: root.pointerActive; onClicked: root.action("a") }
-            PageButton { theme: root.theme; key: "X"; text: qsTr("Play"); pointerActive: root.pointerActive; onClicked: root.action("x") }
-        }
     }
 
-    // ---------- the covers ----------
-    GridView {
-        id: grid
-        x: 850; y: 130
-        width: root.columns * cellWidth
-        // A slight turn toward the title: the covers recede to the right, like a shelf seen at an angle.
-        transform: Rotation { origin.x: 0; origin.y: grid.height / 2; axis { x: 0; y: 1; z: 0 } angle: 5 }
-        height: 2 * cellHeight + 60
-        clip: false
-        interactive: false
-        model: root.games
+    // ---------- the boxes ----------
+    BoxShelf {
+        id: boxes
+        x: 0; y: 360
+        width: parent.width; height: 600
+        theme: root.theme
+        games: root.games
         currentIndex: root.currentIndex
-        cellWidth: 258
-        cellHeight: 394
-        topMargin: 30
-        cacheBuffer: cellHeight
-        reuseItems: true
-        highlight: Item {}
-        highlightFollowsCurrentItem: true
-        highlightRangeMode: GridView.StrictlyEnforceRange
-        preferredHighlightBegin: topMargin
-        preferredHighlightEnd: topMargin + cellHeight
-        highlightMoveDuration: theme.scrollMs
-        delegate: Item {
-            id: cell
-            required property var model
-            required property int index
-            width: grid.cellWidth
-            height: grid.cellHeight
-            z: index === grid.currentIndex ? 2 : 1
-            // Rows leaving the top or bottom of the screen fade out instead of being cut.
-            readonly property real rowTop: y - grid.contentY
-            opacity: rowTop < -40 || rowTop > 2 * grid.cellHeight - 20 ? 0 : 1
-            Behavior on opacity { NumberAnimation { duration: theme.scrollMs } }
-            GameCard {
-                id: tile
-                theme: root.theme
-                game: cell.model
-                focused: cell.index === grid.currentIndex
-                hovered: mouse.containsMouse
-                MouseArea {
-                    id: mouse
-                    anchors.fill: parent
-                    hoverEnabled: root.pointerActive
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.picked(cell.index)
-                }
-            }
-        }
+        revision: root.revision
+        pointerActive: root.pointerActive
+        onPicked: (i) => root.picked(i)
     }
 
     // ---------- letters ----------
@@ -185,7 +142,7 @@ Item {
     }
     Column {
         id: letterCol
-        anchors { right: parent.right; rightMargin: 34; verticalCenter: grid.verticalCenter }
+        anchors { right: parent.right; rightMargin: 34; verticalCenter: parent.verticalCenter }
         spacing: 3
         visible: root.letters.length > 1
         Repeater {

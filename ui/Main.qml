@@ -862,6 +862,7 @@ Window {
         emptyText: win.emptyLibraryText
         pointerActive: win.pointerActive
         letters: win.letters
+        revision: win.libRevision
         currentLetter: win.focusedGame ? win.letterOf(win.focusedGame.name) : ""
         onPicked: (i) => win.pick(i)
         onAction: (a) => win.dispatch(a, "mouse")
@@ -877,7 +878,7 @@ Window {
             acc += (e.angleDelta.y !== 0 ? e.angleDelta.y : -e.angleDelta.x)
             while (Math.abs(acc) >= 120) {
                 const back = acc > 0
-                win.move(back ? "up" : "down")
+                win.move(back ? "left" : "right")
                 acc += back ? -120 : 120
             }
         }

@@ -29,7 +29,7 @@ Version 1.7 — November 2026
 | 1.3 | Dedicated Qt 6 / QML UI, separate from the Rust core (two processes linked by a local HTTP + WebSocket API). ES-DE dropped. Tauri + Nuxt, Electron and a custom native engine rejected (see 5.2). QML themes with guardrails; plugin section. |
 | 1.4 | Project renamed **Borne**. Specification moved to English. Stage plan aligned with the repository. UI translated (English source, French). |
 | 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
-| 1.7 | One built-in look, "Halo" (living background from the selected game's art, one row of games, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
+| 1.7 | One built-in look, "Halo" (living background from the selected game's art, game boxes in space, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
 | 1.5 | Game page before any download; versions of a game grouped, with per-profile version and emulator language; "play from the network" through the Borne virtual mount (FUSE, only chosen games, read from RomM); mouse control; console-inspired themes (home row, tile dashboard, bright home, cabinet carousel) with UI sounds. |
 
 ## 1. Executive summary
@@ -225,9 +225,11 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
 - Living background: the selected game's art, blurred (computed at 480×270 and scaled), drifting a few
   pixels over 20 s and cross-fading in 600 ms when the focus moves; the trailer fades in after 2.5 s.
   Scrims on the left and at the bottom keep text readable whatever the art.
-- Library ("showcase"): the selected game large on the left (platform, title, states, summary, Open / Play),
-  a grid of large covers on the right (two rows on screen, white ring and halo on the focused one), and a
-  letter index; LT / RT jump between letters. The catalog rarely changes, so there is no "featured" slot.
+- Library: the selected game's platform, title, states and summary over its art, and the games as boxes
+  standing in space below (front with the cover in a plastic case, spines, a faint floor reflection). The
+  selected box faces the camera, a little forward, swaying gently; the others turn toward it and recede.
+  Drawn without Qt Quick 3D: each face is a flat item through one perspective matrix, and only the 13
+  boxes around the selection exist. A letter index; LT / RT jump between letters. The catalog rarely changes, so there is no "featured" slot.
 - Game page: the trailer across the top (muted, sound on request), then the choices and an introduction,
   the credits and anecdotes (Wikidata, Wikipedia in the UI language, cached 30 days; only the name and
   year are sent), and the screenshots from RomM (fetched through the core with the profile's token).

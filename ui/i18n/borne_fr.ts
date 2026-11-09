@@ -403,14 +403,6 @@
         <source>%n version(s)</source>
         <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
     </message>
-    <message>
-        <source>Open</source>
-        <translation>Ouvrir</translation>
-    </message>
-    <message>
-        <source>Play</source>
-        <translation>Jouer</translation>
-    </message>
 </context>
 <context>
     <name>Main</name>
