@@ -150,6 +150,8 @@ fn base() -> String {
 
 fn agent() -> ureq::Agent {
     ureq::Agent::config_builder()
+        .http_status_as_error(false)
+        .tls_config(crate::romm::tls())
         .timeout_connect(Some(Duration::from_secs(10)))
         .timeout_recv_response(Some(Duration::from_secs(20)))
         .user_agent(format!("Borne/{VERSION}"))

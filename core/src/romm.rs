@@ -163,6 +163,12 @@ pub fn normalize_url(input: &str) -> std::result::Result<String, String> {
     Ok(format!("{scheme}://{rest}"))
 }
 
+/// HTTPS trust: the system's certificate store, so a RomM server signed by a home CA installed
+/// on the machine (or a corporate proxy's) is accepted like in the browser.
+pub fn tls() -> ureq::tls::TlsConfig {
+    ureq::tls::TlsConfig::builder().root_certs(ureq::tls::RootCerts::PlatformVerifier).build()
+}
+
 impl Client {
     pub fn new(base: &str, token: Option<String>) -> Self {
         let api = ureq::Agent::config_builder()
@@ -170,6 +176,7 @@ impl Client {
             .timeout_connect(Some(Duration::from_secs(5)))
             .timeout_global(Some(Duration::from_secs(30)))
             .user_agent(concat!("Borne/", env!("CARGO_PKG_VERSION")))
+            .tls_config(tls())
             .build()
             .into();
         // Long downloads: no global timeout, but bounded connection and first response.
@@ -178,6 +185,7 @@ impl Client {
             .timeout_connect(Some(Duration::from_secs(10)))
             .timeout_recv_response(Some(Duration::from_secs(30)))
             .user_agent(concat!("Borne/", env!("CARGO_PKG_VERSION")))
+            .tls_config(tls())
             .build()
             .into();
         Self { base: base.trim_end_matches('/').to_string(), token, api, dl }
