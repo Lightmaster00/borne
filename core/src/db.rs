@@ -105,8 +105,15 @@ CREATE TABLE IF NOT EXISTS oplog (
 /// The catalog is a cache: new columns are filled by the next sync.
 fn migrate(conn: &Connection) -> rusqlite::Result<()> {
     let mut st = conn.prepare("SELECT name FROM pragma_table_info('games')")?;
-    let cols: Vec<String> = st.query_map([], |r| r.get(0))?.filter_map(Result::ok).collect();
-    for (col, def) in [("languages", "TEXT"), ("revision", "TEXT"), ("group_key", "TEXT NOT NULL DEFAULT ''")] {
+    let cols: Vec<String> = st
+        .query_map([], |r| r.get(0))?
+        .filter_map(Result::ok)
+        .collect();
+    for (col, def) in [
+        ("languages", "TEXT"),
+        ("revision", "TEXT"),
+        ("group_key", "TEXT NOT NULL DEFAULT ''"),
+    ] {
         if !cols.iter().any(|c| c == col) {
             conn.execute_batch(&format!("ALTER TABLE games ADD COLUMN {col} {def}"))?;
         }
@@ -306,7 +313,9 @@ impl Db {
     // ---------- settings ----------
     pub fn setting(&self, key: &str) -> Option<String> {
         self.c()
-            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| r.get(0))
+            .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
+                r.get(0)
+            })
             .optional()
             .ok()
             .flatten()
@@ -318,7 +327,9 @@ impl Db {
         );
     }
     pub fn delete_setting(&self, key: &str) {
-        let _ = self.c().execute("DELETE FROM settings WHERE key = ?1", [key]);
+        let _ = self
+            .c()
+            .execute("DELETE FROM settings WHERE key = ?1", [key]);
     }
 
     pub fn log(&self, kind: &str, message: &str) {
@@ -326,7 +337,7 @@ impl Db {
             "INSERT INTO oplog(ts, kind, message) VALUES (?1, ?2, ?3)",
             params![now(), kind, message],
         );
-        eprintln!("[borne] {kind}: {message}");
+        crate::logfile::write(kind, message);
     }
 
     // ---------- profiles ----------
@@ -360,10 +371,19 @@ impl Db {
         Ok(())
     }
     pub fn rename_profile(&self, id: &str, name: &str) -> bool {
-        self.c().execute("UPDATE profiles SET name = ?2 WHERE id = ?1", params![id, name]).unwrap_or(0) > 0
+        self.c()
+            .execute(
+                "UPDATE profiles SET name = ?2 WHERE id = ?1",
+                params![id, name],
+            )
+            .unwrap_or(0)
+            > 0
     }
     pub fn delete_profile(&self, id: &str) -> bool {
-        self.c().execute("DELETE FROM profiles WHERE id = ?1", [id]).unwrap_or(0) > 0
+        self.c()
+            .execute("DELETE FROM profiles WHERE id = ?1", [id])
+            .unwrap_or(0)
+            > 0
     }
     pub fn set_paired(&self, id: &str, user: &str, user_id: i64, device_id: &str) {
         let _ = self.c().execute(
@@ -372,10 +392,16 @@ impl Db {
         );
     }
     pub fn set_unpaired(&self, id: &str) {
-        let _ = self.c().execute("UPDATE profiles SET paired = 0, device_id = NULL WHERE id = ?1", [id]);
+        let _ = self.c().execute(
+            "UPDATE profiles SET paired = 0, device_id = NULL WHERE id = ?1",
+            [id],
+        );
     }
     pub fn touch_profile(&self, id: &str) {
-        let _ = self.c().execute("UPDATE profiles SET last_used_at = ?2 WHERE id = ?1", params![id, now()]);
+        let _ = self.c().execute(
+            "UPDATE profiles SET last_used_at = ?2 WHERE id = ?1",
+            params![id, now()],
+        );
     }
 
     // ---------- catalog ----------
@@ -404,7 +430,13 @@ impl Db {
             )
             .unwrap();
         st.query_map([], |r| {
-            Ok(Platform { id: r.get(0)?, slug: r.get(1)?, name: r.get(2)?, rom_count: r.get(3)?, local_count: r.get(4)? })
+            Ok(Platform {
+                id: r.get(0)?,
+                slug: r.get(1)?,
+                name: r.get(2)?,
+                rom_count: r.get(3)?,
+                local_count: r.get(4)?,
+            })
         })
         .unwrap()
         .filter_map(Result::ok)
@@ -419,9 +451,11 @@ impl Db {
         let tx = c.transaction().unwrap();
         for g in games {
             let old: Option<(Option<String>, Option<String>)> = tx
-                .query_row("SELECT cover_stamp, cover_local FROM games WHERE rom_id = ?1", [g.rom_id], |r| {
-                    Ok((r.get(0)?, r.get(1)?))
-                })
+                .query_row(
+                    "SELECT cover_stamp, cover_local FROM games WHERE rom_id = ?1",
+                    [g.rom_id],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
                 .optional()
                 .unwrap();
             tx.execute(
@@ -477,7 +511,12 @@ impl Db {
         );
     }
 
-    pub fn games(&self, platform: Option<&str>, query: Option<&str>, local_only: bool) -> Vec<GameRow> {
+    pub fn games(
+        &self,
+        platform: Option<&str>,
+        query: Option<&str>,
+        local_only: bool,
+    ) -> Vec<GameRow> {
         let mut sql = format!("{GAME_SELECT} WHERE 1 = 1");
         let mut args: Vec<String> = vec![];
         if let Some(p) = platform.filter(|p| !p.is_empty() && *p != "all") {
@@ -485,8 +524,15 @@ impl Db {
             sql += &format!(" AND g.platform_slug = ?{}", args.len());
         }
         if let Some(q) = query.filter(|q| !q.trim().is_empty()) {
-            args.push(format!("%{}%", q.trim().to_lowercase()));
-            sql += &format!(" AND lower(g.name) LIKE ?{}", args.len());
+            // Search text is literal: % and _ typed by the user are not wildcards.
+            let escaped = q
+                .trim()
+                .to_lowercase()
+                .replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_");
+            args.push(format!("%{escaped}%"));
+            sql += &format!(" AND lower(g.name) LIKE ?{} ESCAPE '\\'", args.len());
         }
         if local_only {
             sql += " AND (l.status = 'ok' OR g.rom_id IN (SELECT rom_id FROM linked_games))";
@@ -502,7 +548,14 @@ impl Db {
 
     pub fn game(&self, rom_id: i64) -> Option<GameRow> {
         let c = self.c();
-        c.query_row(&format!("{GAME_SELECT} WHERE g.rom_id = ?1"), [rom_id], game_from_row).optional().ok().flatten()
+        c.query_row(
+            &format!("{GAME_SELECT} WHERE g.rom_id = ?1"),
+            [rom_id],
+            game_from_row,
+        )
+        .optional()
+        .ok()
+        .flatten()
     }
 
     // ---------- local games ----------
@@ -516,40 +569,72 @@ impl Db {
     }
     pub fn local_games(&self) -> Vec<(i64, String, String, String)> {
         let c = self.c();
-        let mut st = c.prepare("SELECT rom_id, dir, main_file, status FROM local_games").unwrap();
+        let mut st = c
+            .prepare("SELECT rom_id, dir, main_file, status FROM local_games")
+            .unwrap();
         st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
             .unwrap()
             .filter_map(Result::ok)
             .collect()
     }
     pub fn set_local_status(&self, rom_id: i64, status: &str) {
-        let _ = self.c().execute("UPDATE local_games SET status = ?2 WHERE rom_id = ?1", params![rom_id, status]);
+        let _ = self.c().execute(
+            "UPDATE local_games SET status = ?2 WHERE rom_id = ?1",
+            params![rom_id, status],
+        );
     }
     pub fn remove_local(&self, rom_id: i64) -> Option<String> {
         let c = self.c();
-        let dir: Option<String> =
-            c.query_row("SELECT dir FROM local_games WHERE rom_id = ?1", [rom_id], |r| r.get(0)).optional().ok().flatten();
+        let dir: Option<String> = c
+            .query_row(
+                "SELECT dir FROM local_games WHERE rom_id = ?1",
+                [rom_id],
+                |r| r.get(0),
+            )
+            .optional()
+            .ok()
+            .flatten();
         let _ = c.execute("DELETE FROM local_games WHERE rom_id = ?1", [rom_id]);
         dir
     }
 
     pub fn group(&self, group_key: &str) -> Vec<GameRow> {
         let c = self.c();
-        let mut st = c.prepare(&format!("{GAME_SELECT} WHERE g.group_key = ?1 ORDER BY g.rom_id")).unwrap();
-        st.query_map([group_key], game_from_row).unwrap().filter_map(Result::ok).collect()
-    }
-
-    // ---------- per-profile game preferences ----------
-    /// All of a profile's choices: group_key -> (chosen version, emulator language).
-    pub fn game_prefs(&self, profile_id: &str) -> std::collections::HashMap<String, (Option<i64>, Option<String>)> {
-        let c = self.c();
-        let mut st = c.prepare("SELECT group_key, rom_id, emu_language FROM game_prefs WHERE profile_id = ?1").unwrap();
-        st.query_map([profile_id], |r| Ok((r.get::<_, String>(0)?, (r.get(1)?, r.get(2)?))))
+        let mut st = c
+            .prepare(&format!(
+                "{GAME_SELECT} WHERE g.group_key = ?1 ORDER BY g.rom_id"
+            ))
+            .unwrap();
+        st.query_map([group_key], game_from_row)
             .unwrap()
             .filter_map(Result::ok)
             .collect()
     }
-    pub fn set_game_pref(&self, profile_id: &str, group_key: &str, rom_id: Option<Option<i64>>, lang: Option<Option<&str>>) {
+
+    // ---------- per-profile game preferences ----------
+    /// All of a profile's choices: group_key -> (chosen version, emulator language).
+    pub fn game_prefs(
+        &self,
+        profile_id: &str,
+    ) -> std::collections::HashMap<String, (Option<i64>, Option<String>)> {
+        let c = self.c();
+        let mut st = c
+            .prepare("SELECT group_key, rom_id, emu_language FROM game_prefs WHERE profile_id = ?1")
+            .unwrap();
+        st.query_map([profile_id], |r| {
+            Ok((r.get::<_, String>(0)?, (r.get(1)?, r.get(2)?)))
+        })
+        .unwrap()
+        .filter_map(Result::ok)
+        .collect()
+    }
+    pub fn set_game_pref(
+        &self,
+        profile_id: &str,
+        group_key: &str,
+        rom_id: Option<Option<i64>>,
+        lang: Option<Option<&str>>,
+    ) {
         let c = self.c();
         let _ = c.execute(
             "INSERT OR IGNORE INTO game_prefs(profile_id, group_key) VALUES (?1, ?2)",
@@ -573,7 +658,8 @@ impl Db {
     pub fn link_game(&self, rom_id: i64, main_file: &str, files: &[(i64, String, String, i64)]) {
         let mut c = self.c();
         let tx = c.transaction().unwrap();
-        tx.execute("DELETE FROM linked_files WHERE rom_id = ?1", [rom_id]).unwrap();
+        tx.execute("DELETE FROM linked_files WHERE rom_id = ?1", [rom_id])
+            .unwrap();
         for (file_id, rel, name, size) in files {
             tx.execute(
                 "INSERT OR REPLACE INTO linked_files(file_id, rom_id, rel_path, file_name, size) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -591,7 +677,9 @@ impl Db {
     pub fn unlink_game(&self, rom_id: i64) -> bool {
         let c = self.c();
         let _ = c.execute("DELETE FROM linked_files WHERE rom_id = ?1", [rom_id]);
-        c.execute("DELETE FROM linked_games WHERE rom_id = ?1", [rom_id]).unwrap_or(0) > 0
+        c.execute("DELETE FROM linked_games WHERE rom_id = ?1", [rom_id])
+            .unwrap_or(0)
+            > 0
     }
     /// Files of linked games: (file_id, rom_id, platform_slug, rel_path, file_name, size).
     pub fn linked_files(&self) -> Vec<LinkedFile> {
@@ -640,21 +728,36 @@ impl Db {
     }
     pub fn next_queued_download(&self) -> Option<(i64, i64)> {
         self.c()
-            .query_row("SELECT id, rom_id FROM downloads WHERE state = 'queued' ORDER BY id LIMIT 1", [], |r| {
-                Ok((r.get(0)?, r.get(1)?))
-            })
+            .query_row(
+                "SELECT id, rom_id FROM downloads WHERE state = 'queued' ORDER BY id LIMIT 1",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
             .optional()
             .ok()
             .flatten()
     }
-    pub fn update_download(&self, id: i64, state: &str, received: i64, total: i64, error: Option<&str>) {
+    pub fn update_download(
+        &self,
+        id: i64,
+        state: &str,
+        received: i64,
+        total: i64,
+        error: Option<&str>,
+    ) {
         let _ = self.c().execute(
             "UPDATE downloads SET state = ?2, received = ?3, total = ?4, error = ?5, updated_at = ?6 WHERE id = ?1",
             params![id, state, received, total, error, now()],
         );
     }
     pub fn download_state(&self, id: i64) -> Option<String> {
-        self.c().query_row("SELECT state FROM downloads WHERE id = ?1", [id], |r| r.get(0)).optional().ok().flatten()
+        self.c()
+            .query_row("SELECT state FROM downloads WHERE id = ?1", [id], |r| {
+                r.get(0)
+            })
+            .optional()
+            .ok()
+            .flatten()
     }
     /// At startup: downloads interrupted by a shutdown start again (resumed through Range).
     pub fn requeue_interrupted(&self) -> usize {

@@ -21,10 +21,14 @@ pub fn all_themes(builtin_dir: &Path, user_dir: &Path) -> Vec<ThemeEntry> {
 
 fn scan(root: &Path, builtin: bool) -> Vec<ThemeEntry> {
     let mut out = vec![];
-    let Ok(rd) = std::fs::read_dir(root) else { return out };
+    let Ok(rd) = std::fs::read_dir(root) else {
+        return out;
+    };
     for e in rd.flatten() {
         let dir = e.path();
-        let Ok(manifest) = std::fs::read_to_string(dir.join("theme.json")) else { continue };
+        let Ok(manifest) = std::fs::read_to_string(dir.join("theme.json")) else {
+            continue;
+        };
         if manifest.len() > 64 * 1024 {
             continue;
         }
@@ -33,7 +37,12 @@ fn scan(root: &Path, builtin: bool) -> Vec<ThemeEntry> {
             .filter(|f| dir.join(f).exists())
             .map(|f| f.to_string())
             .collect();
-        out.push(ThemeEntry { builtin, dir: dir.to_string_lossy().into_owned(), manifest, files });
+        out.push(ThemeEntry {
+            builtin,
+            dir: dir.to_string_lossy().into_owned(),
+            manifest,
+            files,
+        });
     }
     out.sort_by(|a, b| a.dir.cmp(&b.dir));
     out

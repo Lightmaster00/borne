@@ -72,7 +72,12 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
             let mut held: HashMap<&'static str, (Instant, String)> = HashMap::new();
             let mut stick: HashMap<&'static str, bool> = HashMap::new();
             let emit = |action: &'static str, pad: &str, repeat: bool| {
-                let ev = PadEvent { kind: "pad", action, pad: pad.to_string(), repeat };
+                let ev = PadEvent {
+                    kind: "pad",
+                    action,
+                    pad: pad.to_string(),
+                    repeat,
+                };
                 if let Ok(s) = serde_json::to_string(&ev) {
                     emit_json(s);
                 }
@@ -81,7 +86,10 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
             loop {
                 {
                     let mut s = state.lock().unwrap();
-                    s.pads = gilrs.gamepads().map(|(_, g)| g.name().to_string()).collect();
+                    s.pads = gilrs
+                        .gamepads()
+                        .map(|(_, g)| g.name().to_string())
+                        .collect();
                 }
                 while let Some(ev) = gilrs.next_event() {
                     let pad = gilrs.gamepad(ev.id).name().to_string();
@@ -107,11 +115,16 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
                                 _ => None,
                             };
                             if let Some((neg, pos)) = dirs {
-                                for (dir, active) in [(neg, v < -STICK_THRESHOLD), (pos, v > STICK_THRESHOLD)] {
+                                for (dir, active) in
+                                    [(neg, v < -STICK_THRESHOLD), (pos, v > STICK_THRESHOLD)]
+                                {
                                     let was = *stick.get(dir).unwrap_or(&false);
                                     if active && !was {
                                         emit(dir, &pad, false);
-                                        held.insert(dir, (Instant::now() + FIRST_REPEAT, pad.clone()));
+                                        held.insert(
+                                            dir,
+                                            (Instant::now() + FIRST_REPEAT, pad.clone()),
+                                        );
                                     } else if !active && was {
                                         held.remove(dir);
                                     }

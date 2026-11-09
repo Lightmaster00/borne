@@ -260,6 +260,39 @@ try:
     devices = romm("GET", "/api/devices")
     check(any(d.get("client") == "borne" for d in devices), "Borne device registered in RomM")
 
+    print("Diagnostics")
+    s, rep = call(api, "POST", "/api/v1/diagnostic-report")
+    check(s == 200 and rep["paths"], "diagnostic report exported")
+    with open(rep["paths"][0], encoding="utf-8") as f:
+        text = f.read()
+    with open(secret_file, encoding="utf-8") as f:
+        token = f.read().strip()
+    check("RomM " in text and "--- log ---" in text and "synced" in text, "report holds versions and the log")
+    check(token not in text and "rmm_" not in text and api.rsplit("/", 1)[-1] not in text, "report holds no token")
+    with open(os.path.join(data_dir, "logs", "borne.log"), encoding="utf-8") as f:
+        log = f.read()
+    check(token not in log and api.rsplit("/", 1)[-1] not in log, "log file holds no token")
+
+    lib_dir = os.environ.get("BORNE_IT_ROMM_LIBRARY")
+    if lib_dir:
+        # A server whose stored SHA-1 no longer matches what it serves (same size): Borne
+        # downloads twice, gets identical bytes, keeps the game and says so in the log.
+        print("Server hash differs from the served bytes")
+        target = os.path.join(lib_dir, "genesis", "Hyper Rush (Japan).md")
+        with open(target, "r+b") as f:
+            f.seek(-1, 2); last = f.read(1); f.seek(-1, 2); f.write(bytes([last[0] ^ 0xFF]))
+        try:
+            hits = [g for g in call(api, "GET", "/api/v1/library?q=hyper%20rush")[1]]
+            rid = hits[0]["rom_id"]
+            call(api, "POST", f"/api/v1/games/{rid}/download")
+            g = wait_download(api, rid)
+            check(g["local_state"] == "local", "game kept when two downloads are identical")
+            with open(os.path.join(data_dir, "logs", "borne.log"), encoding="utf-8") as f:
+                check("two downloads are identical" in f.read(), "hash difference explained in the log")
+        finally:
+            with open(target, "r+b") as f:
+                f.seek(-1, 2); f.write(last)
+
     print("Offline")
     core.send_signal(signal.SIGTERM); core.wait()
     env_offline = dict(env)

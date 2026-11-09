@@ -11,7 +11,14 @@ use crate::db::GameRow;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-const IDENTITY_FIELDS: [&str; 6] = ["igdb_id", "moby_id", "ss_id", "launchbox_id", "ra_id", "hasheous_id"];
+const IDENTITY_FIELDS: [&str; 6] = [
+    "igdb_id",
+    "moby_id",
+    "ss_id",
+    "launchbox_id",
+    "ra_id",
+    "hasheous_id",
+];
 
 /// Normalized title: lowercase letters and digits, single spaces.
 pub fn normalize_title(s: &str) -> String {
@@ -57,7 +64,12 @@ fn language_hints(lang: &str) -> (&'static str, &'static [&'static str]) {
 }
 
 fn split(s: &Option<String>) -> Vec<String> {
-    s.as_deref().unwrap_or("").split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect()
+    s.as_deref()
+        .unwrap_or("")
+        .split(',')
+        .map(|x| x.trim().to_string())
+        .filter(|x| !x.is_empty())
+        .collect()
 }
 
 /// Language implied by a region when RomM lists no language for a version.
@@ -103,10 +115,18 @@ fn score(g: &GameRow, lang: &str) -> i64 {
         s += 100;
     }
     let game_regions = split(&g.regions);
-    if let Some(i) = regions.iter().position(|r| game_regions.iter().any(|g| g == r)) {
+    if let Some(i) = regions
+        .iter()
+        .position(|r| game_regions.iter().any(|g| g == r))
+    {
         s += 60 - 10 * i as i64;
     }
-    s + g.revision.as_deref().and_then(|r| r.trim().parse::<i64>().ok()).unwrap_or(0).min(9)
+    s + g
+        .revision
+        .as_deref()
+        .and_then(|r| r.trim().parse::<i64>().ok())
+        .unwrap_or(0)
+        .min(9)
 }
 
 /// Picks the version shown for a group.
@@ -121,11 +141,19 @@ pub fn pick<'a>(versions: &'a [GameRow], chosen: Option<i64>, lang: &str) -> &'a
 }
 
 /// One entry per group, in catalog order. `prefs`: group_key -> chosen rom_id.
-pub fn groups(rows: Vec<GameRow>, prefs: &HashMap<String, (Option<i64>, Option<String>)>, lang: &str) -> Vec<Value> {
+pub fn groups(
+    rows: Vec<GameRow>,
+    prefs: &HashMap<String, (Option<i64>, Option<String>)>,
+    lang: &str,
+) -> Vec<Value> {
     let mut order: Vec<String> = vec![];
     let mut by_key: HashMap<String, Vec<GameRow>> = HashMap::new();
     for g in rows {
-        let key = if g.group_key.is_empty() { format!("rom:{}", g.rom_id) } else { g.group_key.clone() };
+        let key = if g.group_key.is_empty() {
+            format!("rom:{}", g.rom_id)
+        } else {
+            g.group_key.clone()
+        };
         if !by_key.contains_key(&key) {
             order.push(key.clone());
         }
@@ -147,8 +175,9 @@ pub fn entry(shown: &GameRow, versions: &[GameRow]) -> Value {
     let mut v = version_json(shown);
     v["version_count"] = json!(versions.len());
     fill_media(&mut v, versions);
-    v["other_installed"] =
-        json!(versions.iter().any(|g| g.rom_id != shown.rom_id && (g.local_state == "local" || g.linked)));
+    v["other_installed"] = json!(versions
+        .iter()
+        .any(|g| g.rom_id != shown.rom_id && (g.local_state == "local" || g.linked)));
     v
 }
 
@@ -194,8 +223,10 @@ mod tests {
 
     #[test]
     fn keys() {
-        let a = json!({"platform_slug": "nes", "fs_name_no_tags": "Crystal Knights", "igdb_id": null});
-        let b = json!({"platform_slug": "nes", "fs_name_no_tags": "Crystal  Knights!", "name": "x"});
+        let a =
+            json!({"platform_slug": "nes", "fs_name_no_tags": "Crystal Knights", "igdb_id": null});
+        let b =
+            json!({"platform_slug": "nes", "fs_name_no_tags": "Crystal  Knights!", "name": "x"});
         assert_eq!(group_key(&a), group_key(&b));
         assert_eq!(group_key(&a), "nes:name:crystal knights");
         let c = json!({"platform_slug": "nes", "igdb_id": 42, "fs_name_no_tags": "Other"});
@@ -204,13 +235,25 @@ mod tests {
 
     #[test]
     fn picks_by_language_then_choice_then_install() {
-        let mut v = vec![rom(1, "USA", "", ""), rom(2, "Europe", "English, French, German", ""), rom(3, "Japan", "", "1")];
+        let mut v = vec![
+            rom(1, "USA", "", ""),
+            rom(2, "Europe", "English, French, German", ""),
+            rom(3, "Japan", "", "1"),
+        ];
         assert_eq!(pick(&v, None, "fr").rom_id, 2);
         assert_eq!(pick(&v, None, "en").rom_id, 1);
         assert_eq!(pick(&v, None, "ja").rom_id, 3);
-        assert_eq!(pick(&v, Some(3), "fr").rom_id, 3, "the profile's choice wins");
+        assert_eq!(
+            pick(&v, Some(3), "fr").rom_id,
+            3,
+            "the profile's choice wins"
+        );
         v[0].local_state = "local".into();
-        assert_eq!(pick(&v, None, "fr").rom_id, 1, "an installed version comes first");
+        assert_eq!(
+            pick(&v, None, "fr").rom_id,
+            1,
+            "an installed version comes first"
+        );
         let g = groups(v, &HashMap::new(), "fr");
         assert_eq!(g.len(), 1);
         assert_eq!(g[0]["version_count"], 3);

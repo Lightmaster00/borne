@@ -14,7 +14,10 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 /// Mount state, shown in the status and on the game page.
-static STATE: Mutex<MountState> = Mutex::new(MountState { mounted: false, error: None });
+static STATE: Mutex<MountState> = Mutex::new(MountState {
+    mounted: false,
+    error: None,
+});
 
 #[derive(Clone)]
 struct MountState {
@@ -32,36 +35,68 @@ pub fn status(app: &Shared) -> Value {
     })
 }
 
+/// Whether this system can host the virtual mount at all.
+pub fn available() -> bool {
+    cfg!(target_os = "linux")
+}
+
 fn set_state(mounted: bool, error: Option<String>) {
     *STATE.lock().unwrap() = MountState { mounted, error };
 }
 
 pub fn cache_limit_mb(app: &Shared) -> u64 {
-    app.db.setting("stream_cache_mb").and_then(|v| v.parse().ok()).unwrap_or(20_480)
+    app.db
+        .setting("stream_cache_mb")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(20_480)
 }
 
 /// Exposes a game in the virtual mount. Returns the path of the file to launch.
 pub fn link(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
     if !STATE.lock().unwrap().mounted {
-        return Err(STATE.lock().unwrap().error.clone().unwrap_or_else(|| "virtual mount unavailable".into()));
+        return Err(STATE
+            .lock()
+            .unwrap()
+            .error
+            .clone()
+            .unwrap_or_else(|| "virtual mount unavailable".into()));
     }
     let game = app.db.game(rom_id).ok_or("unknown game")?;
     let client = app.client().ok_or("no paired profile or server offline")?;
     let detail = client.rom(rom_id).map_err(|e| e.to_string())?;
     let mut files = vec![];
     for f in detail.installable_files() {
-        let rel = relative_path(&detail, f).ok_or_else(|| format!("file path refused: {}", f.full_path))?;
-        files.push((f.id, rel.to_string_lossy().into_owned(), f.file_name.clone(), f.file_size_bytes));
+        let rel = relative_path(&detail, f)
+            .ok_or_else(|| format!("file path refused: {}", f.full_path))?;
+        files.push((
+            f.id,
+            rel.to_string_lossy().into_owned(),
+            f.file_name.clone(),
+            f.file_size_bytes,
+        ));
     }
     if files.is_empty() {
         return Err("RomM lists no game file for this title".into());
     }
-    let main = pick_main_of(files.iter().map(|(_, rel, _, size)| (*size as u64, PathBuf::from(rel))).collect())
-        .ok_or("no game file found")?;
+    let main = pick_main_of(
+        files
+            .iter()
+            .map(|(_, rel, _, size)| (*size as u64, PathBuf::from(rel)))
+            .collect(),
+    )
+    .ok_or("no game file found")?;
     app.db.link_game(rom_id, &main.to_string_lossy(), &files);
     imp::refresh(app);
-    app.db.log("stream", &format!("{} linked ({} file(s))", game.name, files.len()));
-    Ok(app.paths.mount().join(&game.platform_slug).join(rom_id.to_string()).join(main))
+    app.db.log(
+        "stream",
+        &format!("{} linked ({} file(s))", game.name, files.len()),
+    );
+    Ok(app
+        .paths
+        .mount()
+        .join(&game.platform_slug)
+        .join(rom_id.to_string())
+        .join(main))
 }
 
 pub fn unlink(app: &Shared, rom_id: i64) -> Result<(), String> {
@@ -87,7 +122,10 @@ pub fn stop() {
 mod imp {
     use crate::state::Shared;
     pub fn start(_app: &Shared) {
-        super::set_state(false, Some("the virtual mount is only available on Linux".into()));
+        super::set_state(
+            false,
+            Some("the virtual mount is only available on Linux".into()),
+        );
     }
     pub fn refresh(_app: &Shared) {}
     pub fn stop() {}
@@ -98,8 +136,8 @@ mod imp {
 mod imp {
     use crate::state::Shared;
     use fuser::{
-        Errno, FileAttr, FileHandle, FileType, Filesystem, INodeNo, LockOwner, MountOption, OpenFlags, ReplyAttr,
-        ReplyData, ReplyDirectory, ReplyEntry, Request,
+        Errno, FileAttr, FileHandle, FileType, Filesystem, INodeNo, LockOwner, MountOption,
+        OpenFlags, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, Request,
     };
     use std::collections::{BTreeMap, HashMap};
     use std::ffi::OsStr;
@@ -168,19 +206,33 @@ mod imp {
         tree.parents.insert(1, 1);
         for f in app.db.linked_files() {
             let platform = tree.dir(&f.platform_slug, 1);
-            tree.dirs.get_mut(&1).unwrap().insert(f.platform_slug.clone(), platform);
+            tree.dirs
+                .get_mut(&1)
+                .unwrap()
+                .insert(f.platform_slug.clone(), platform);
             let game_path = format!("{}/{}", f.platform_slug, f.rom_id);
             let mut parent = tree.dir(&game_path, platform);
-            tree.dirs.get_mut(&platform).unwrap().insert(f.rom_id.to_string(), parent);
+            tree.dirs
+                .get_mut(&platform)
+                .unwrap()
+                .insert(f.rom_id.to_string(), parent);
             let rel = PathBuf::from(&f.rel_path);
-            let comps: Vec<String> = rel.iter().map(|c| c.to_string_lossy().into_owned()).collect();
+            let comps: Vec<String> = rel
+                .iter()
+                .map(|c| c.to_string_lossy().into_owned())
+                .collect();
             let mut path = game_path;
             for (i, c) in comps.iter().enumerate() {
                 if i + 1 == comps.len() {
                     let ino = FILE_INO + f.file_id as u64;
                     tree.files.insert(
                         ino,
-                        FileNode { file_id: f.file_id, rom_id: f.rom_id, name: f.file_name.clone(), size: f.size as u64 },
+                        FileNode {
+                            file_id: f.file_id,
+                            rom_id: f.rom_id,
+                            name: f.file_name.clone(),
+                            size: f.size as u64,
+                        },
                     );
                     tree.parents.insert(ino, parent);
                     tree.dirs.get_mut(&parent).unwrap().insert(c.clone(), ino);
@@ -230,26 +282,46 @@ mod imp {
         let mount = app.paths.mount();
         clear_stale(&mount);
         if let Err(e) = std::fs::create_dir_all(&mount) {
-            super::set_state(false, Some(format!("cannot create {}: {e}", mount.display())));
+            super::set_state(
+                false,
+                Some(format!("cannot create {}: {e}", mount.display())),
+            );
             return;
         }
-        let tree = TREE.get_or_init(|| Arc::new(RwLock::new(Tree::default()))).clone();
+        let tree = TREE
+            .get_or_init(|| Arc::new(RwLock::new(Tree::default())))
+            .clone();
         rebuild(app, &mut tree.write().unwrap());
         // SAFETY: getuid/getgid have no preconditions.
         let (uid, gid) = unsafe { (libc::getuid(), libc::getgid()) };
-        let fs = Fs { app: app.clone(), tree, locks: Mutex::new(HashMap::new()), written: AtomicU64::new(0), uid, gid };
+        let fs = Fs {
+            app: app.clone(),
+            tree,
+            locks: Mutex::new(HashMap::new()),
+            written: AtomicU64::new(0),
+            uid,
+            gid,
+        };
         let mut cfg = fuser::Config::default();
-        cfg.mount_options = vec![MountOption::RO, MountOption::FSName("borne".into()), MountOption::NoExec];
+        cfg.mount_options = vec![
+            MountOption::RO,
+            MountOption::FSName("borne".into()),
+            MountOption::NoExec,
+        ];
         cfg.n_threads = Some(4);
         match fuser::spawn_mount(fs, &mount, &cfg) {
             Ok(session) => {
                 *SESSION.lock().unwrap() = Some(session);
                 super::set_state(true, None);
-                eprintln!("[borne] virtual mount ready: {}", mount.display());
+                crate::logfile::write(
+                    "stream",
+                    &format!("virtual mount ready: {}", mount.display()),
+                );
             }
             Err(e) => {
-                let msg = format!("virtual mount unavailable ({e}); FUSE (fusermount3) is required");
-                eprintln!("[borne] {msg}");
+                let msg =
+                    format!("virtual mount unavailable ({e}); FUSE (fusermount3) is required");
+                crate::logfile::write("stream", &msg);
                 super::set_state(false, Some(msg));
             }
         }
@@ -284,13 +356,24 @@ mod imp {
         }
 
         fn block_path(&self, rom_id: i64, file_id: i64, block: u64) -> PathBuf {
-            self.app.paths.stream_cache().join(rom_id.to_string()).join(file_id.to_string()).join(format!("{block}.blk"))
+            self.app
+                .paths
+                .stream_cache()
+                .join(rom_id.to_string())
+                .join(file_id.to_string())
+                .join(format!("{block}.blk"))
         }
 
         /// One block of a file, from the cache or from RomM.
         fn block(&self, f: &FileNode, block: u64) -> Result<Vec<u8>, String> {
             let path = self.block_path(f.rom_id, f.file_id, block);
-            let lock = self.locks.lock().unwrap().entry((f.file_id, block)).or_default().clone();
+            let lock = self
+                .locks
+                .lock()
+                .unwrap()
+                .entry((f.file_id, block))
+                .or_default()
+                .clone();
             let _guard = lock.lock().unwrap();
             if let Ok(data) = std::fs::read(&path) {
                 return Ok(data);
@@ -298,9 +381,14 @@ mod imp {
             let client = self.app.client().ok_or("no paired profile")?;
             let start = block * BLOCK;
             let len = BLOCK.min(f.size.saturating_sub(start));
-            let data = client.fetch_range(f.file_id, &f.name, start, len).map_err(|e| e.to_string())?;
+            let data = client
+                .fetch_range(f.file_id, &f.name, start, len)
+                .map_err(|e| e.to_string())?;
             if data.len() as u64 != len {
-                return Err(format!("short read from RomM ({} of {len} bytes)", data.len()));
+                return Err(format!(
+                    "short read from RomM ({} of {len} bytes)",
+                    data.len()
+                ));
             }
             if let Some(dir) = path.parent() {
                 let _ = std::fs::create_dir_all(dir);
@@ -328,7 +416,11 @@ mod imp {
                 let p = e.path();
                 match e.metadata() {
                     Ok(m) if m.is_dir() => stack.push(p),
-                    Ok(m) => blocks.push((m.accessed().or_else(|_| m.modified()).unwrap_or(UNIX_EPOCH), m.len(), p)),
+                    Ok(m) => blocks.push((
+                        m.accessed().or_else(|_| m.modified()).unwrap_or(UNIX_EPOCH),
+                        m.len(),
+                        p,
+                    )),
                     Err(_) => {}
                 }
             }
@@ -348,7 +440,11 @@ mod imp {
     impl Filesystem for Fs {
         fn lookup(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEntry) {
             let tree = self.tree.read().unwrap();
-            let child = tree.dirs.get(&parent.0).and_then(|d| d.get(name.to_string_lossy().as_ref())).copied();
+            let child = tree
+                .dirs
+                .get(&parent.0)
+                .and_then(|d| d.get(name.to_string_lossy().as_ref()))
+                .copied();
             match child.and_then(|c| self.attr(c, &tree)) {
                 Some(a) => reply.entry(&TTL, &a, fuser::Generation(0)),
                 None => reply.error(Errno::ENOENT),
@@ -363,15 +459,29 @@ mod imp {
             }
         }
 
-        fn readdir(&self, _req: &Request, ino: INodeNo, _fh: FileHandle, offset: u64, mut reply: ReplyDirectory) {
+        fn readdir(
+            &self,
+            _req: &Request,
+            ino: INodeNo,
+            _fh: FileHandle,
+            offset: u64,
+            mut reply: ReplyDirectory,
+        ) {
             let tree = self.tree.read().unwrap();
             let Some(children) = tree.dirs.get(&ino.0) else {
                 return reply.error(Errno::ENOENT);
             };
             let parent = tree.parents.get(&ino.0).copied().unwrap_or(1);
-            let mut entries = vec![(ino.0, FileType::Directory, ".".to_string()), (parent, FileType::Directory, "..".to_string())];
+            let mut entries = vec![
+                (ino.0, FileType::Directory, ".".to_string()),
+                (parent, FileType::Directory, "..".to_string()),
+            ];
             for (name, child) in children {
-                let kind = if tree.files.contains_key(child) { FileType::RegularFile } else { FileType::Directory };
+                let kind = if tree.files.contains_key(child) {
+                    FileType::RegularFile
+                } else {
+                    FileType::Directory
+                };
                 entries.push((*child, kind, name.clone()));
             }
             for (i, (child, kind, name)) in entries.into_iter().enumerate().skip(offset as usize) {
@@ -397,7 +507,12 @@ mod imp {
             let node = {
                 let tree = self.tree.read().unwrap();
                 match tree.files.get(&ino.0) {
-                    Some(f) => FileNode { file_id: f.file_id, rom_id: f.rom_id, name: f.name.clone(), size: f.size },
+                    Some(f) => FileNode {
+                        file_id: f.file_id,
+                        rom_id: f.rom_id,
+                        name: f.name.clone(),
+                        size: f.size,
+                    },
                     None => return reply.error(Errno::ENOENT),
                 }
             };
@@ -420,7 +535,7 @@ mod imp {
                         pos = b * BLOCK + e as u64;
                     }
                     Err(e) => {
-                        eprintln!("[borne] virtual mount: {e}");
+                        crate::logfile::write("stream", &format!("virtual mount: {e}"));
                         return reply.error(Errno::EIO);
                     }
                 }

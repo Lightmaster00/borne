@@ -27,33 +27,37 @@ impl Broadcaster {
 pub fn start(token: String, hub: Broadcaster) -> std::io::Result<u16> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
-    std::thread::Builder::new().name("borne-ws".into()).spawn(move || {
-        for stream in listener.incoming().flatten() {
-            let token = token.clone();
-            let hub = hub.clone();
-            std::thread::spawn(move || {
-                let expected = format!("/{token}");
-                let check = |req: &Request, resp: Response| {
-                    if req.uri().path() == expected {
-                        Ok(resp)
-                    } else {
-                        let mut r = tungstenite::handshake::server::ErrorResponse::new(None);
-                        *r.status_mut() = StatusCode::FORBIDDEN;
-                        Err(r)
+    std::thread::Builder::new()
+        .name("borne-ws".into())
+        .spawn(move || {
+            for stream in listener.incoming().flatten() {
+                let token = token.clone();
+                let hub = hub.clone();
+                std::thread::spawn(move || {
+                    let expected = format!("/{token}");
+                    let check = |req: &Request, resp: Response| {
+                        if req.uri().path() == expected {
+                            Ok(resp)
+                        } else {
+                            let mut r = tungstenite::handshake::server::ErrorResponse::new(None);
+                            *r.status_mut() = StatusCode::FORBIDDEN;
+                            Err(r)
+                        }
+                    };
+                    let Ok(mut ws) = tungstenite::accept_hdr(stream, check) else {
+                        return;
+                    };
+                    let (tx, rx) = channel::<String>();
+                    hub.clients.lock().unwrap().push(tx);
+                    let _ = ws.send(Message::text(r#"{"type":"hello","api":1}"#));
+                    // Send only: the client has nothing to tell the core on this channel.
+                    for msg in rx {
+                        if ws.send(Message::text(msg)).is_err() {
+                            break;
+                        }
                     }
-                };
-                let Ok(mut ws) = tungstenite::accept_hdr(stream, check) else { return };
-                let (tx, rx) = channel::<String>();
-                hub.clients.lock().unwrap().push(tx);
-                let _ = ws.send(Message::text(r#"{"type":"hello","api":1}"#));
-                // Send only: the client has nothing to tell the core on this channel.
-                for msg in rx {
-                    if ws.send(Message::text(msg)).is_err() {
-                        break;
-                    }
-                }
-            });
-        }
-    })?;
+                });
+            }
+        })?;
     Ok(port)
 }

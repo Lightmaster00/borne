@@ -62,7 +62,9 @@ impl App {
     }
 
     pub fn active_profile(&self) -> Option<Profile> {
-        self.db.setting("active_profile").and_then(|id| self.db.profile(&id))
+        self.db
+            .setting("active_profile")
+            .and_then(|id| self.db.profile(&id))
     }
 
     /// RomM client authenticated with the active profile's token.

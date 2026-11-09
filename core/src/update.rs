@@ -35,7 +35,9 @@ pub const COMMIT: &str = match option_env!("BORNE_COMMIT") {
 
 /// CI build number; 0 for a local build.
 pub fn build() -> u64 {
-    option_env!("BORNE_BUILD").and_then(|b| b.parse().ok()).unwrap_or(0)
+    option_env!("BORNE_BUILD")
+        .and_then(|b| b.parse().ok())
+        .unwrap_or(0)
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -77,12 +79,22 @@ static BUSY: AtomicBool = AtomicBool::new(false);
 pub static RESTART: AtomicBool = AtomicBool::new(false);
 
 fn get_state() -> UpdateState {
-    STATE.lock().unwrap().clone().unwrap_or_else(|| UpdateState { state: "idle".into(), ..Default::default() })
+    STATE
+        .lock()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| UpdateState {
+            state: "idle".into(),
+            ..Default::default()
+        })
 }
 
 fn set_state(app: &Shared, f: impl FnOnce(&mut UpdateState)) {
     let mut guard = STATE.lock().unwrap();
-    let mut s = guard.clone().unwrap_or_else(|| UpdateState { state: "idle".into(), ..Default::default() });
+    let mut s = guard.clone().unwrap_or_else(|| UpdateState {
+        state: "idle".into(),
+        ..Default::default()
+    });
     f(&mut s);
     *guard = Some(s.clone());
     drop(guard);
@@ -90,7 +102,9 @@ fn set_state(app: &Shared, f: impl FnOnce(&mut UpdateState)) {
 }
 
 pub fn channel(app: &Shared) -> String {
-    app.db.setting("update_channel").unwrap_or_else(|| "stable".into())
+    app.db
+        .setting("update_channel")
+        .unwrap_or_else(|| "stable".into())
 }
 pub fn auto_check(app: &Shared) -> bool {
     app.db.setting("update_auto").as_deref() != Some("0")
@@ -106,7 +120,11 @@ pub fn package_dir() -> Option<PathBuf> {
     let bin = exe.parent()?;
     if bin.file_name()? == "MacOS" {
         let app = bin.parent()?.parent()?;
-        return app.extension().map(|e| e == "app").unwrap_or(false).then(|| app.to_path_buf());
+        return app
+            .extension()
+            .map(|e| e == "app")
+            .unwrap_or(false)
+            .then(|| app.to_path_buf());
     }
     let pkg = bin.parent()?;
     (bin.file_name()? == "bin" && pkg.join("ui").is_dir()).then(|| pkg.to_path_buf())
@@ -115,7 +133,9 @@ pub fn package_dir() -> Option<PathBuf> {
 /// Why this installation cannot update itself, if it cannot.
 pub fn unsupported_reason() -> Option<String> {
     if build() == 0 {
-        return Some("this copy was built locally; updates come with the builds published on GitHub".into());
+        return Some(
+            "this copy was built locally; updates come with the builds published on GitHub".into(),
+        );
     }
     if std::env::var_os("FLATPAK_ID").is_some() {
         return Some("installed with Flatpak: update it with Flatpak".into());
@@ -145,7 +165,20 @@ pub fn status(app: &Shared) -> Value {
 }
 
 fn base() -> String {
-    std::env::var("BORNE_UPDATE_URL").unwrap_or_else(|_| DEFAULT_BASE.into()).trim_end_matches('/').to_string()
+    std::env::var("BORNE_UPDATE_URL")
+        .unwrap_or_else(|_| DEFAULT_BASE.into())
+        .trim_end_matches('/')
+        .to_string()
+}
+
+/// Packages are only fetched from where the manifest lives (GitHub releases of this project,
+/// or the test server given in BORNE_UPDATE_URL), over HTTPS for the real one.
+fn asset_url_allowed(url: &str) -> bool {
+    if std::env::var("BORNE_UPDATE_URL").is_ok() {
+        return url.starts_with(&format!("{}/", base()));
+    }
+    url.starts_with("https://github.com/Lightmaster00/borne/releases/download/")
+        || url.starts_with("https://objects.githubusercontent.com/")
 }
 
 fn agent() -> ureq::Agent {
@@ -165,14 +198,22 @@ fn fetch_manifest(channel: &str) -> Result<Manifest, String> {
     } else {
         format!("{}/latest/download/latest.json", base())
     };
-    let mut resp = agent().get(&url).call().map_err(|e| format!("update server unreachable ({e})"))?;
+    let mut resp = agent()
+        .get(&url)
+        .call()
+        .map_err(|e| format!("update server unreachable ({e})"))?;
     if resp.status().as_u16() == 404 {
         return Err("no version published on this channel yet".into());
     }
     if !resp.status().is_success() {
         return Err(format!("update server answered {}", resp.status().as_u16()));
     }
-    let body = resp.body_mut().with_config().limit(1 << 20).read_to_vec().map_err(|e| e.to_string())?;
+    let body = resp
+        .body_mut()
+        .with_config()
+        .limit(1 << 20)
+        .read_to_vec()
+        .map_err(|e| e.to_string())?;
     serde_json::from_slice(&body).map_err(|e| format!("unreadable update information ({e})"))
 }
 
@@ -217,13 +258,19 @@ pub fn check(app: &Shared) {
 }
 
 fn staging_dir(pkg: &Path, build: u64) -> PathBuf {
-    pkg.parent().unwrap_or(Path::new("/")).join(format!(".borne-update-{build}"))
+    pkg.parent()
+        .unwrap_or(Path::new("/"))
+        .join(format!(".borne-update-{build}"))
 }
 
 /// Downloads, verifies and extracts the available build next to the installed package.
 pub fn download(app: &Shared) -> Result<(), String> {
     let manifest = get_state().available.ok_or("no update available")?;
-    let asset = manifest.assets.get(&platform()).cloned().ok_or("no build for this platform")?;
+    let asset = manifest
+        .assets
+        .get(&platform())
+        .cloned()
+        .ok_or("no build for this platform")?;
     let pkg = package_dir().ok_or("installation folder not recognized")?;
     if BUSY.swap(true, Ordering::SeqCst) {
         return Err("an update is already in progress".into());
@@ -255,8 +302,22 @@ fn fetch_and_extract(app: &Shared, m: &Manifest, asset: &Asset, pkg: &Path) -> R
     });
     let dir = app.paths.root.join("updates");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let archive = dir.join(format!("borne-{}.{}", m.build, if asset.url.ends_with(".zip") { "zip" } else { "tar.gz" }));
-    let resp = agent().get(&asset.url).call().map_err(|e| format!("download failed ({e})"))?;
+    if !asset_url_allowed(&asset.url) {
+        return Err("the update points to an unexpected address: refused".into());
+    }
+    let archive = dir.join(format!(
+        "borne-{}.{}",
+        m.build,
+        if asset.url.ends_with(".zip") {
+            "zip"
+        } else {
+            "tar.gz"
+        }
+    ));
+    let resp = agent()
+        .get(&asset.url)
+        .call()
+        .map_err(|e| format!("download failed ({e})"))?;
     if !resp.status().is_success() {
         return Err(format!("download failed (HTTP {})", resp.status().as_u16()));
     }
@@ -267,20 +328,31 @@ fn fetch_and_extract(app: &Shared, m: &Manifest, asset: &Asset, pkg: &Path) -> R
     let mut received = 0u64;
     let mut last = std::time::Instant::now();
     loop {
-        let n = reader.read(&mut buf).map_err(|e| format!("download interrupted ({e})"))?;
+        let n = reader
+            .read(&mut buf)
+            .map_err(|e| format!("download interrupted ({e})"))?;
         if n == 0 {
             break;
         }
+        received += n as u64;
+        if asset.size > 0 && received > asset.size {
+            drop(out);
+            let _ = std::fs::remove_file(&archive);
+            return Err("the downloaded file is larger than announced: refused".into());
+        }
         hasher.update(&buf[..n]);
         out.write_all(&buf[..n]).map_err(|e| e.to_string())?;
-        received += n as u64;
         if last.elapsed() > Duration::from_millis(250) {
             last = std::time::Instant::now();
             set_state(app, |s| s.received = received);
         }
     }
     out.flush().map_err(|e| e.to_string())?;
-    let digest: String = hasher.finalize().iter().map(|b| format!("{b:02x}")).collect();
+    let digest: String = hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
     if !digest.eq_ignore_ascii_case(asset.sha256.trim()) {
         let _ = std::fs::remove_file(&archive);
         return Err("the downloaded file is damaged (SHA-256 mismatch)".into());
@@ -292,21 +364,39 @@ fn fetch_and_extract(app: &Shared, m: &Manifest, asset: &Asset, pkg: &Path) -> R
     std::fs::create_dir_all(&staging).map_err(|e| e.to_string())?;
     // System tools keep permissions and symbolic links (Qt frameworks on macOS) intact.
     let status = if cfg!(target_os = "macos") {
-        std::process::Command::new("ditto").arg("-x").arg("-k").arg(&archive).arg(&staging).status()
+        std::process::Command::new("ditto")
+            .arg("-x")
+            .arg("-k")
+            .arg(&archive)
+            .arg(&staging)
+            .status()
     } else {
-        std::process::Command::new("tar").arg("-xzf").arg(&archive).arg("-C").arg(&staging).status()
+        std::process::Command::new("tar")
+            .arg("--no-same-owner")
+            .arg("-xzf")
+            .arg(&archive)
+            .arg("-C")
+            .arg(&staging)
+            .status()
     };
     match status {
         Ok(s) if s.success() => {}
         _ => return Err("cannot extract the update".into()),
     }
     let new_pkg = staging.join(pkg.file_name().unwrap_or_default());
-    let core = if cfg!(target_os = "macos") { new_pkg.join("Contents/MacOS/borne") } else { new_pkg.join("bin/borne") };
+    let core = if cfg!(target_os = "macos") {
+        new_pkg.join("Contents/MacOS/borne")
+    } else {
+        new_pkg.join("bin/borne")
+    };
     if !core.is_file() {
         return Err("the update does not contain Borne".into());
     }
     let _ = std::fs::remove_file(&archive);
-    app.db.log("update", &format!("build {} ({}) downloaded and verified", m.build, m.version));
+    app.db.log(
+        "update",
+        &format!("build {} ({}) downloaded and verified", m.build, m.version),
+    );
     Ok(())
 }
 
@@ -318,19 +408,26 @@ pub fn apply(app: &Shared) -> Result<(), String> {
     }
     let m = state.available.ok_or("no update ready to install")?;
     let pkg = package_dir().ok_or("installation folder not recognized")?;
-    let parent = pkg.parent().ok_or("installation folder not recognized")?.to_path_buf();
+    let parent = pkg
+        .parent()
+        .ok_or("installation folder not recognized")?
+        .to_path_buf();
     let staging = staging_dir(&pkg, m.build);
     let new_pkg = staging.join(pkg.file_name().unwrap_or_default());
     let previous = parent.join(".borne-previous");
     let _ = std::fs::remove_dir_all(&previous);
-    std::fs::rename(&pkg, &previous).map_err(|e| format!("cannot move the current version aside ({e})"))?;
+    std::fs::rename(&pkg, &previous)
+        .map_err(|e| format!("cannot move the current version aside ({e})"))?;
     if let Err(e) = std::fs::rename(&new_pkg, &pkg) {
         // Put the current version back: Borne must never be left without a package.
         let _ = std::fs::rename(&previous, &pkg);
         return Err(format!("cannot install the update ({e})"));
     }
     let _ = std::fs::remove_dir_all(&staging);
-    app.db.log("update", &format!("updated to build {} ({}); restarting", m.build, m.version));
+    app.db.log(
+        "update",
+        &format!("updated to build {} ({}); restarting", m.build, m.version),
+    );
     RESTART.store(true, Ordering::SeqCst);
     Ok(())
 }
@@ -338,7 +435,11 @@ pub fn apply(app: &Shared) -> Result<(), String> {
 /// Path of the new core after an update was applied.
 pub fn restart_exe() -> Option<PathBuf> {
     let pkg = package_dir_after_swap()?;
-    Some(if cfg!(target_os = "macos") { pkg.join("Contents/MacOS/borne") } else { pkg.join("bin/borne") })
+    Some(if cfg!(target_os = "macos") {
+        pkg.join("Contents/MacOS/borne")
+    } else {
+        pkg.join("bin/borne")
+    })
 }
 
 fn package_dir_after_swap() -> Option<PathBuf> {
@@ -353,7 +454,11 @@ fn package_dir_after_swap() -> Option<PathBuf> {
     }
     let parent = p.parent()?;
     let name = if p.file_name()? == ".borne-previous" {
-        if cfg!(target_os = "macos") { "Borne.app".to_string() } else { "Borne".to_string() }
+        if cfg!(target_os = "macos") {
+            "Borne.app".to_string()
+        } else {
+            "Borne".to_string()
+        }
     } else {
         p.file_name()?.to_string_lossy().into_owned()
     };
@@ -365,9 +470,9 @@ pub fn exec_new_core() -> ! {
     use std::os::unix::process::CommandExt;
     let exe = restart_exe().unwrap_or_else(|| PathBuf::from("borne"));
     let args: Vec<String> = std::env::args().skip(1).collect();
-    eprintln!("[borne] restarting on {}", exe.display());
+    crate::logfile::write("update", &format!("restarting on {}", exe.display()));
     let err = std::process::Command::new(&exe).args(args).exec();
-    eprintln!("[borne] cannot restart: {err}");
+    crate::logfile::write("update", &format!("cannot restart: {err}"));
     std::process::exit(1);
 }
 
@@ -379,7 +484,12 @@ pub fn start(app: &Shared) {
     let app = app.clone();
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_secs(20));
-        if auto_check(&app) && matches!(get_state().state.as_str(), "idle" | "uptodate" | "error" | "available") {
+        if auto_check(&app)
+            && matches!(
+                get_state().state.as_str(),
+                "idle" | "uptodate" | "error" | "available"
+            )
+        {
             check(&app);
         }
         std::thread::sleep(Duration::from_secs(6 * 3600));

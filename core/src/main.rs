@@ -18,6 +18,7 @@ mod diag;
 mod downloads;
 mod events;
 mod library;
+mod logfile;
 mod pad;
 mod pairing;
 mod paths;
@@ -51,16 +52,29 @@ fn layout() -> Layout {
         .unwrap_or_else(|| PathBuf::from("."));
     if exe_dir.file_name().map(|n| n == "MacOS").unwrap_or(false) {
         let res = exe_dir.parent().unwrap_or(&exe_dir).join("Resources");
-        return Layout { ui_bin: exe_dir.join("borne-ui"), ui_dir: res.join("ui"), resources: res.join("resources") };
+        return Layout {
+            ui_bin: exe_dir.join("borne-ui"),
+            ui_dir: res.join("ui"),
+            resources: res.join("resources"),
+        };
     }
-    let root = exe_dir.parent().map(PathBuf::from).unwrap_or_else(|| exe_dir.clone());
-    Layout { ui_bin: root.join("bin").join("borne-ui"), ui_dir: root.join("ui"), resources: root.join("resources") }
+    let root = exe_dir
+        .parent()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| exe_dir.clone());
+    Layout {
+        ui_bin: root.join("bin").join("borne-ui"),
+        ui_dir: root.join("ui"),
+        resources: root.join("resources"),
+    }
 }
 
 fn random_token() -> String {
     use rand::Rng;
     let mut rng = rand::rng();
-    (0..32).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect()
+    (0..32)
+        .map(|_| format!("{:x}", rng.random_range(0..16u8)))
+        .collect()
 }
 
 fn main() {
@@ -76,11 +90,25 @@ fn main() {
 
     let paths = paths::Paths::from_env();
     if let Err(e) = paths.ensure() {
-        eprintln!("[borne] cannot create {}: {e}", paths.root.display());
+        crate::logfile::write(
+            "main",
+            &format!("cannot create {}: {e}", paths.root.display()),
+        );
         std::process::exit(1);
     }
+    logfile::init(paths.root.join("logs"));
+    logfile::write(
+        "start",
+        &format!(
+            "Borne {} (build {}) on {} {}",
+            update::VERSION,
+            update::build(),
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        ),
+    );
     let db = db::Db::open(&paths.db()).unwrap_or_else(|e| {
-        eprintln!("[borne] unreadable local database: {e}");
+        crate::logfile::write("main", &format!("unreadable local database: {e}"));
         std::process::exit(1);
     });
 
@@ -109,7 +137,10 @@ fn main() {
     downloads::verify_local(&app);
     let requeued = app.db.requeue_interrupted();
     if requeued > 0 {
-        app.db.log("download", &format!("{requeued} interrupted download(s) resumed"));
+        app.db.log(
+            "download",
+            &format!("{requeued} interrupted download(s) resumed"),
+        );
     }
     downloads::spawn_worker(app.clone());
     stream::start(&app);
@@ -123,9 +154,15 @@ fn main() {
     let ws_port = events::start(token.clone(), app.hub.clone()).expect("starting the WebSocket");
     let api_url = format!("http://127.0.0.1:{http_port}/{token}");
     let ws_url = format!("ws://127.0.0.1:{ws_port}/{token}");
-    eprintln!("[borne] data {}", app.paths.root.display());
+    crate::logfile::write("main", &format!("data {}", app.paths.root.display()));
+    // The URLs carry the session token: they go to stderr (read by whoever launched the core,
+    // e.g. tests) but never to the log file.
     eprintln!("[borne] API {api_url}");
     eprintln!("[borne] events {ws_url}");
+    logfile::write(
+        "start",
+        &format!("API on port {http_port}, events on port {ws_port}"),
+    );
 
     if no_ui {
         loop {
@@ -139,9 +176,13 @@ fn main() {
 
     let mut crashes: Vec<Instant> = vec![];
     loop {
-        let safe_mode = crashes.iter().filter(|t| t.elapsed() < Duration::from_secs(60)).count() >= 2;
+        let safe_mode = crashes
+            .iter()
+            .filter(|t| t.elapsed() < Duration::from_secs(60))
+            .count()
+            >= 2;
         if safe_mode {
-            eprintln!("[borne] safe mode: default theme");
+            logfile::write("main", "safe mode: default theme");
         }
         let status = Command::new(&ui_bin)
             .env("BORNE_API", &api_url)
@@ -158,17 +199,20 @@ fn main() {
                 break;
             }
             Ok(s) => {
-                eprintln!("[borne] the UI stopped ({s}): restarting");
+                logfile::write("ui", &format!("the UI stopped ({s}): restarting"));
                 crashes.push(Instant::now());
             }
             Err(e) => {
-                eprintln!("[borne] cannot launch the UI {}: {e}", ui_bin.display());
+                logfile::write(
+                    "ui",
+                    &format!("cannot launch the UI {}: {e}", ui_bin.display()),
+                );
                 std::process::exit(1);
             }
         }
         crashes.retain(|t| t.elapsed() < Duration::from_secs(60));
         if crashes.len() >= 4 {
-            eprintln!("[borne] too many UI crashes: giving up");
+            logfile::write("ui", "too many UI crashes: giving up");
             stream::stop();
             std::process::exit(1);
         }
