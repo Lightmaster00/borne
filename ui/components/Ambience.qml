@@ -96,8 +96,8 @@ Item {
                     blur: 1.0
                     blurMax: 32
                     autoPaddingEnabled: false
-                    saturation: -0.1
-                    brightness: -0.25
+                    saturation: 0.1
+                    brightness: -0.16
                 }
             }
         }
@@ -137,10 +137,10 @@ Item {
         anchors.fill: parent
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.92) }
-            GradientStop { position: 0.36; color: Qt.rgba(0.024, 0.027, 0.04, 0.62) }
-            GradientStop { position: 0.62; color: Qt.rgba(0.024, 0.027, 0.04, 0.3) }
-            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.35) }
+            GradientStop { position: 0.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.88) }
+            GradientStop { position: 0.36; color: Qt.rgba(0.024, 0.027, 0.04, 0.5) }
+            GradientStop { position: 0.62; color: Qt.rgba(0.024, 0.027, 0.04, 0.12) }
+            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.22) }
         }
     }
     Rectangle {

@@ -43,9 +43,16 @@ Item {
     }
 
     // ---------- the selected game ----------
+    onGameChanged: if (game) reveal.restart()
+    ParallelAnimation {
+        id: reveal
+        NumberAnimation { target: info; property: "opacity"; from: 0.0; to: 1.0; duration: 320; easing.type: Easing.OutCubic }
+        NumberAnimation { target: info; property: "x"; from: 120; to: 96; duration: 420; easing.type: Easing.OutCubic }
+    }
     Column {
-        x: 96; y: 200
-        width: 640
+        id: info
+        x: 96; y: 190
+        width: 660
         spacing: 22
         visible: root.game !== null
         Text {
@@ -63,7 +70,7 @@ Item {
             elide: Text.ElideRight
             lineHeight: 0.98
             color: theme.fg
-            font { family: theme.displayFont; pixelSize: root.game && root.game.name.length > 22 ? 60 : 76; weight: Font.ExtraBold; letterSpacing: -2 }
+            font { family: theme.displayFont; pixelSize: root.game && root.game.name.length > 22 ? 64 : 88; weight: Font.ExtraBold; letterSpacing: -2.5 }
         }
         Flow {
             width: parent.width
@@ -120,14 +127,16 @@ Item {
     // ---------- the covers ----------
     GridView {
         id: grid
-        x: 800; y: 130
+        x: 850; y: 130
         width: root.columns * cellWidth
+        // A slight turn toward the title: the covers recede to the right, like a shelf seen at an angle.
+        transform: Rotation { origin.x: 0; origin.y: grid.height / 2; axis { x: 0; y: 1; z: 0 } angle: 5 }
         height: 2 * cellHeight + 60
         clip: false
         interactive: false
         model: root.games
         currentIndex: root.currentIndex
-        cellWidth: 266
+        cellWidth: 258
         cellHeight: 394
         topMargin: 30
         cacheBuffer: cellHeight
@@ -167,9 +176,17 @@ Item {
     }
 
     // ---------- letters ----------
+    Rectangle {
+        anchors { fill: letterCol; margins: -10 }
+        radius: 22
+        visible: letterCol.visible
+        color: theme.glass
+        border { width: 1; color: theme.glassEdge }
+    }
     Column {
-        anchors { right: parent.right; rightMargin: 26; verticalCenter: grid.verticalCenter }
-        spacing: 2
+        id: letterCol
+        anchors { right: parent.right; rightMargin: 34; verticalCenter: grid.verticalCenter }
+        spacing: 3
         visible: root.letters.length > 1
         Repeater {
             model: root.letters
@@ -180,7 +197,7 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 text: modelData
                 color: cur ? theme.accent : theme.fgFaint
-                font { family: theme.fontFamily; pixelSize: cur ? 17 : 13; weight: cur ? Font.Bold : Font.DemiBold }
+                font { family: theme.fontFamily; pixelSize: cur ? 19 : 14; weight: cur ? Font.Bold : Font.DemiBold }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.jumpTo(parent.modelData) }
             }
         }

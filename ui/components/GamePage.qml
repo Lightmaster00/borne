@@ -584,10 +584,11 @@ Item {
     }
     Rectangle {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-        height: 110
+        height: 150
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.0) }
-            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.9) }
+            GradientStop { position: 0.55; color: Qt.rgba(0.024, 0.027, 0.04, 0.92) }
+            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.98) }
         }
     }
     HintBar {
