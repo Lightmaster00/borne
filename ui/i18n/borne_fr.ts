@@ -121,10 +121,6 @@
         <translation>Jouer depuis le réseau</translation>
     </message>
     <message>
-        <source>Automatic</source>
-        <translation>Automatique</translation>
-    </message>
-    <message>
         <source>Europe</source>
         <translation>Europe</translation>
     </message>
@@ -253,18 +249,6 @@
         <translation>Bibliothèque</translation>
     </message>
     <message>
-        <source>VERSION</source>
-        <translation>VERSION</translation>
-    </message>
-    <message>
-        <source>GAME LANGUAGE</source>
-        <translation>LANGUE DU JEU</translation>
-    </message>
-    <message>
-        <source>— passed to the emulator</source>
-        <translation>— transmise à l'émulateur</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>Sélectionner</translation>
     </message>
@@ -337,20 +321,12 @@
         <translation>Le saviez-vous ?</translation>
     </message>
     <message>
-        <source>From the game's Wikipedia article</source>
-        <translation>D'après l'article Wikipédia du jeu</translation>
-    </message>
-    <message>
         <source>Screenshots</source>
         <translation>Captures d'écran</translation>
     </message>
     <message>
         <source>More about the game</source>
         <translation>Plus sur le jeu</translation>
-    </message>
-    <message>
-        <source>No trailer in RomM for this game</source>
-        <translation>Pas de bande-annonce dans RomM pour ce jeu</translation>
     </message>
     <message>
         <source>The trailer cannot be played: %1</source>
@@ -363,6 +339,14 @@
     <message>
         <source>Loading the trailer…</source>
         <translation>Chargement de la bande-annonce…</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Langue</translation>
+    </message>
+    <message>
+        <source>About</source>
+        <translation>À propos</translation>
     </message>
 </context>
 <context>
@@ -1476,6 +1460,26 @@
     <message>
         <source>Arcade room</source>
         <translation>Salle d'arcade</translation>
+    </message>
+    <message>
+        <source>Background</source>
+        <translation>Fond</translation>
+    </message>
+    <message>
+        <source>Behind the game boxes</source>
+        <translation>Derrière les boîtes de jeux</translation>
+    </message>
+    <message>
+        <source>The game's art</source>
+        <translation>L’art du jeu</translation>
+    </message>
+    <message>
+        <source>Game room</source>
+        <translation>Salle de jeu</translation>
+    </message>
+    <message>
+        <source>Moving light</source>
+        <translation>Lumière animée</translation>
     </message>
 </context>
 </TS>

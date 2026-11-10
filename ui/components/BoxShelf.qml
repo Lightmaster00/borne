@@ -32,11 +32,14 @@ Item {
 
     // Gentle idle sway of the selected box.
     property real sway: 0
+    property bool showSelection: true
+    property real swayAmp: 4              // degrees
+    property int swayPeriod: 3600
     SequentialAnimation on sway {
         loops: Animation.Infinite
         running: shelf.visible
-        NumberAnimation { from: -1; to: 1; duration: 3600; easing.type: Easing.InOutSine }
-        NumberAnimation { from: 1; to: -1; duration: 3600; easing.type: Easing.InOutSine }
+        NumberAnimation { from: -1; to: 1; duration: shelf.swayPeriod; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 1; to: -1; duration: shelf.swayPeriod; easing.type: Easing.InOutSine }
     }
 
     // Place of a box at offset t from the selection (continuous).
@@ -52,7 +55,7 @@ Item {
             z = -60 - (a - 1) * 18
             ang = -s * 62
         }
-        if (a < 0.5) ang += shelf.sway * 4 * (1 - 2 * a)
+        if (a < 0.5) ang += shelf.sway * shelf.swayAmp * (1 - 2 * a)
         return { x: x, y: shelf.baseY + (a < 1 ? -8 * (1 - a) : 0), z: z, ang: ang }
     }
 

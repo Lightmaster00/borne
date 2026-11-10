@@ -253,6 +253,60 @@ fn screenshot(app: &Shared, rom_id: i64, n: usize) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// The art kinds RomM has for these versions of a game.
+fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
+    let mut out: Vec<String> = vec![];
+    for e in ids.iter().filter_map(|id| app.db.game_extra(*id)) {
+        let extra: Value = serde_json::from_str(&e).unwrap_or(Value::Null);
+        if let Some(o) = extra["art"].as_object() {
+            out.extend(o.keys().cloned());
+        }
+        if extra["art"]["fanart"].is_string() || extra["screenshots"][0].is_string() {
+            out.push("backdrop".into());
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
+}
+
+pub const ART_KINDS: [&str; 7] = ["side", "back", "fanart", "logo", "physical", "title", "backdrop"];
+
+/// A box scan or artwork of the game (any version of it), fetched once from RomM with the
+/// profile's token and kept on disk. "backdrop": the fanart, else the first screenshot.
+fn art(app: &Shared, rom_id: i64, kind: &str) -> Result<PathBuf, String> {
+    let dir = app.paths.art();
+    let path = dir.join(format!("{rom_id}-{kind}.img"));
+    if path.is_file() {
+        return Ok(path);
+    }
+    let g = app.db.game(rom_id).ok_or("unknown game")?;
+    let extras: Vec<Value> = std::iter::once(g.rom_id)
+        .chain(app.db.group(&g.group_key).iter().map(|v| v.rom_id))
+        .filter_map(|id| app.db.game_extra(id))
+        .filter_map(|e| serde_json::from_str(&e).ok())
+        .collect();
+    let find = |k: &str| extras.iter().find_map(|e| e["art"][k].as_str().map(String::from));
+    let remote = match kind {
+        "backdrop" => find("fanart").or_else(|| extras.iter().find_map(|e| e["screenshots"][0].as_str().map(String::from))),
+        k => find(k),
+    }
+    .ok_or("not in RomM")?;
+    let client = app.client().ok_or("offline")?;
+    let bytes = client
+        .fetch_bytes(&remote, 25 * 1024 * 1024)
+        .map_err(|e| e.to_string())?;
+    if !catalog::looks_like_image(&bytes) {
+        return Err("not an image".into());
+    }
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let tmp = path.with_extension("tmp");
+    std::fs::write(&tmp, &bytes)
+        .and_then(|_| std::fs::rename(&tmp, &path))
+        .map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
 /// The game's trailer, fetched once from RomM with the profile's token and kept on disk, so
 /// the player reads a local file (seeking works, no credentials in a URL). Capped at 300 MB;
 /// the oldest trailers are removed past 2 GB.
@@ -474,7 +528,18 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 .active_profile()
                 .map(|p| app.db.game_prefs(&p.id))
                 .unwrap_or_default();
-            ok(req, json!(library::groups(rows, &prefs, &lang)))
+            let mut list = library::groups(rows, &prefs, &lang);
+            // Which scans exist (spine, backdrop…), so the UI asks only for those.
+            for v in list.iter_mut() {
+                let mut ids = vec![v["rom_id"].as_i64().unwrap_or(0)];
+                if v["version_count"].as_i64().unwrap_or(1) > 1 {
+                    if let Some(k) = v["group_key"].as_str() {
+                        ids.extend(app.db.group(k).iter().map(|g| g.rom_id));
+                    }
+                }
+                v["art_kinds"] = json!(art_kinds(app, &ids));
+            }
+            ok(req, json!(list))
         }
         (Method::Get, ["api", "v1", "games", id]) => {
             match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
@@ -485,7 +550,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         .and_then(|p| app.db.game_prefs(&p.id).remove(&g.group_key))
                         .unwrap_or((None, None));
                     let mut game = library::version_json(&g);
+                    let all = if versions.is_empty() { vec![g.clone()] } else { versions.clone() };
                     library::fill_media(&mut game, &versions);
+                    let ids: Vec<i64> = std::iter::once(g.rom_id).chain(versions.iter().map(|v| v.rom_id)).collect();
+                    game["art_kinds"] = json!(art_kinds(app, &ids));
                     ok(
                         req,
                         json!({
@@ -497,6 +565,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                                 .collect::<Vec<_>>(),
                             "emu_language": prefs.1.unwrap_or_else(|| "auto".into()),
                             "emu_languages": library::EMU_LANGUAGES,
+                            "languages": library::game_languages(&all),
                             "install_mode": install_mode(app),
                             "stream": stream::status(app),
                         }),
@@ -538,6 +607,15 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             },
             Err(_) => err(req, 400, "invalid identifier"),
         },
+        (Method::Get, ["api", "v1", "games", id, "art", kind]) => {
+            match id.parse::<i64>() {
+                Ok(rom_id) if ART_KINDS.contains(kind) => match art(app, rom_id, kind) {
+                    Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+                    Err(e) => err(req, 404, &e),
+                },
+                _ => err(req, 400, "invalid identifier"),
+            }
+        }
         (Method::Get, ["api", "v1", "games", id, "screenshots", n]) => {
             match (id.parse::<i64>(), n.parse::<usize>()) {
                 (Ok(rom_id), Ok(n)) if n < 8 => match screenshot(app, rom_id, n) {
@@ -715,6 +793,7 @@ pub fn start(app: Shared, token: String) -> std::io::Result<u16> {
         app.paths.covers(),
         app.paths.screenshots(),
         app.paths.videos(),
+        app.paths.art(),
         app.resources.clone(),
     ]
     .into_iter()

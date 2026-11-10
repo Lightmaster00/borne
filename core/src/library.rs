@@ -202,8 +202,39 @@ pub fn fill_media(v: &mut Value, versions: &[GameRow]) {
     }
 }
 
-/// Emulator languages offered on the game page ("auto" follows the UI language).
-pub const EMU_LANGUAGES: [&str; 9] = ["auto", "en", "fr", "de", "es", "it", "nl", "pt", "ja"];
+/// Language codes accepted as a game's language ("auto" follows the UI language).
+pub const EMU_LANGUAGES: [&str; 17] = [
+    "auto", "en", "fr", "de", "es", "it", "nl", "pt", "ja", "sv", "da", "no", "fi", "pl", "ru", "ko", "zh",
+];
+
+const LANGUAGE_CODES: [(&str, &str); 16] = [
+    ("English", "en"), ("French", "fr"), ("German", "de"), ("Spanish", "es"), ("Italian", "it"),
+    ("Dutch", "nl"), ("Portuguese", "pt"), ("Japanese", "ja"), ("Swedish", "sv"), ("Danish", "da"),
+    ("Norwegian", "no"), ("Finnish", "fi"), ("Polish", "pl"), ("Russian", "ru"), ("Korean", "ko"),
+    ("Chinese", "zh"),
+];
+
+/// The languages the game really exists in (across its versions), each with the version that
+/// is launched for it: the best one carrying that language (installed first, then the region
+/// that usually carries it). In the order of LANGUAGE_CODES.
+pub fn game_languages(versions: &[GameRow]) -> Vec<Value> {
+    LANGUAGE_CODES
+        .iter()
+        .filter_map(|(name, code)| {
+            versions
+                .iter()
+                .filter(|g| languages_of(g).iter().any(|l| l == name))
+                // The region that natively speaks it first (English → USA, French → France or
+                // Europe…), then installed, then the usual score.
+                .max_by_key(|g| {
+                    let regions = split(&g.regions);
+                    let rank = language_hints(code).1.iter().position(|r| regions.iter().any(|x| x == r));
+                    (rank.map(|i| 100 - i as i64).unwrap_or(0), score(g, code), -g.rom_id)
+                })
+                .map(|g| json!({ "code": code, "version": g.rom_id }))
+        })
+        .collect()
+}
 
 #[cfg(test)]
 mod tests {
@@ -231,6 +262,16 @@ mod tests {
         assert_eq!(group_key(&a), "nes:name:crystal knights");
         let c = json!({"platform_slug": "nes", "igdb_id": 42, "fs_name_no_tags": "Other"});
         assert_eq!(group_key(&c), "nes:igdb_id:42");
+    }
+
+    #[test]
+    fn languages_launch_their_version() {
+        let mut eu = rom(2, "Europe", "English,French,German", "");
+        eu.linked = true;
+        let v = vec![rom(1, "USA", "", ""), eu, rom(3, "Japan", "", "")];
+        let l = game_languages(&v);
+        let get = |c: &str| l.iter().find(|x| x["code"] == c).map(|x| x["version"].as_i64().unwrap());
+        assert_eq!((get("en"), get("fr"), get("de"), get("ja"), get("es")), (Some(1), Some(2), Some(2), Some(3), None));
     }
 
     #[test]

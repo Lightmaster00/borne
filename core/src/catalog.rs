@@ -147,9 +147,30 @@ pub fn extra_of(v: &Value) -> Value {
         "franchises": strings(&v["metadatum"]["franchises"]),
         "collections": strings(&v["metadatum"]["collections"]),
         "screenshots": shots,
+        "art": art_of(v),
         "igdb_id": v["igdb_id"].as_i64(),
         "release": v["metadatum"]["first_release_date"].as_i64(),
     })
+}
+
+/// ScreenScraper scans stored by RomM (when enabled in its scan.media): spine, back cover,
+/// fanart, transparent logo, cartridge or disc. Paths under /assets/romm/resources/.
+pub fn art_of(v: &Value) -> Value {
+    let ss = &v["ss_metadata"];
+    let mut out = serde_json::Map::new();
+    for (kind, field) in [
+        ("side", "box2d_side_path"),
+        ("back", "box2d_back_path"),
+        ("fanart", "fanart_path"),
+        ("logo", "logo_path"),
+        ("physical", "physical_path"),
+        ("title", "title_screen_path"),
+    ] {
+        if let Some(p) = ss[field].as_str().map(str::trim).filter(|p| !p.is_empty()) {
+            out.insert(kind.into(), Value::String(resource_path(p)));
+        }
+    }
+    Value::Object(out)
 }
 
 /// Starts a background sync (no effect if one is already running).

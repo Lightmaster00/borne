@@ -1,11 +1,10 @@
-// Game page: opened from the library before anything is downloaded. Shows the game, lets the
-// player choose the version (region / languages) and the language the emulator starts in,
-// then download it, play it from the network (Borne virtual mount) or manage the local copy.
+// Game page, laid out like a film poster: the trailer (or the game's artwork) across the screen,
+// the game's logo, its actions and the languages it really exists in on the left, its case in 3D
+// on the right. Choosing a language chooses the version that is launched (French → the European
+// version that has French, Japanese → the Japanese one…). Below: about, screenshots, credits and
+// anecdotes (RomM, Wikidata, Wikipedia).
 //
-// The trailer plays across the top of the page; below come the choices, the credits and the
-// anecdotes (Wikidata, Wikipedia), and the screenshots (RomM).
-//
-// Gamepad: up/down between rows (actions, versions, language, then the rest of the page),
+// Gamepad: up/down between rows (actions, language, then the rest of the page),
 // left/right inside a row, A to activate, B to go back. Mouse and wheel: everything works.
 import QtQuick
 import QtQuick.Effects
@@ -17,7 +16,8 @@ Item {
     property var game: null            // shown version, as a library row (cover, trailer, states…)
     property var versions: []          // every version of the game (raw API rows)
     property string emuLanguage: "auto"
-    property var emuLanguages: []
+    property var gameLanguages: []     // [{ code, version }]: the game's real languages
+    property string uiLang: "en"
     property string installMode: "download"
     property bool streamAvailable: false
     property string streamError: ""
@@ -33,10 +33,10 @@ Item {
     signal action(string id, var payload)
 
     property int row: 0
-    property var col: [0, 0, 0]
+    property var col: [0, 0]
 
     readonly property bool busy: game !== null && ["queued", "downloading", "verifying", "extracting"].indexOf(game.dl_state) >= 0
-    readonly property var rows: versions.length > 1 ? ["actions", "versions", "language", "more"] : ["actions", "language", "more"]
+    readonly property var rows: gameLanguages.length > 0 ? ["actions", "language", "more"] : ["actions", "more"]
     readonly property bool hasTrailer: !!(game && game.trailer)
 
     function fmtSize(b) {
@@ -59,7 +59,7 @@ Item {
         dl.primary = true
         return [dl, net]
     }
-    readonly property var allActions: hasTrailer ? actions.concat([{ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") }]) : actions
+    readonly property var allActions: hasTrailer && trailers ? actions.concat([{ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") }]) : actions
 
     // Credits: Wikidata first; RomM's studios and series when Wikidata has nothing.
     readonly property var credits: {
@@ -82,12 +82,26 @@ Item {
     readonly property var anecdotes: facts && facts.facts && facts.facts.anecdotes ? facts.facts.anecdotes : []
     readonly property string longSummary: facts && facts.facts && facts.facts.summary ? facts.facts.summary : (game && game.summary ? game.summary : "")
     readonly property bool factsLoading: !!(facts && facts.facts && facts.facts.status === "loading")
-    readonly property var languages: emuLanguages.map(code => ({ id: code, label: languageName(code) }))
-
+    // The language played: the stored choice if it matches the shown version, else the UI
+    // language, else the version's first language.
+    readonly property string currentLang: {
+        const fits = c => gameLanguages.some(l => l.code === c && game && l.version === game.rom_id)
+        if (fits(emuLanguage)) return emuLanguage
+        if (fits(uiLang)) return uiLang
+        const m = gameLanguages.find(l => game && l.version === game.rom_id)
+        return m ? m.code : ""
+    }
     function languageName(code) {
-        const names = { en: "English", fr: "Français", de: "Deutsch", es: "Español", it: "Italiano", nl: "Nederlands", pt: "Português", ja: "日本語" }
-        if (code === "auto") return qsTr("Automatic")
+        const names = { en: "English", fr: "Français", de: "Deutsch", es: "Español", it: "Italiano", nl: "Nederlands", pt: "Português",
+                        ja: "日本語", sv: "Svenska", da: "Dansk", no: "Norsk", fi: "Suomi", pl: "Polski", ru: "Русский", ko: "한국어", zh: "中文" }
         return names[code] || code
+    }
+    function has(kind) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + kind + ",") >= 0) }
+    function versionOf(romId) { return versions.find(v => v.rom_id === romId) || null }
+    function regionShort(v) {
+        const map = { Europe: "EU", USA: "US", Japan: "JP", World: "W", France: "FR", Germany: "DE", Spain: "ES", Italy: "IT", UK: "UK",
+                      Australia: "AU", Brazil: "BR", Korea: "KR", China: "CN", Canada: "CA", Netherlands: "NL" }
+        return v ? (v.regions || "").split(",").map(x => x.trim()).filter(x => x).map(r => map[r] || r).join("/") : ""
     }
     function regionName(r) {
         const map = {
@@ -132,10 +146,9 @@ Item {
         row = 0
         sound = false
         body.contentY = 0
-        const chosen = Math.max(0, versions.findIndex(v => game && v.rom_id === game.rom_id))
-        col = [0, chosen, Math.max(0, emuLanguages.indexOf(emuLanguage))]
+        col = [0, Math.max(0, gameLanguages.findIndex(l => l.code === currentLang))]
     }
-    function rowItems(name) { return name === "actions" ? allActions : name === "versions" ? versions : name === "language" ? languages : [] }
+    function rowItems(name) { return name === "actions" ? allActions : name === "language" ? gameLanguages : [] }
     function setCol(r, c) { const n = col.slice(); n[r] = c; col = n }
     function activate(name, i) {
         if (name === "actions") {
@@ -143,12 +156,9 @@ Item {
             if (!a || a.disabled) return
             if (a.id === "sound") sound = !sound
             else page.action(a.id, null)
-        } else if (name === "versions") {
-            const v = versions[i]
-            if (v) page.action("version", v.rom_id)
         } else if (name === "language") {
-            const l = emuLanguages[i]
-            if (l) page.action("language", l)
+            const l = gameLanguages[i]
+            if (l) page.action("lang", l)
         }
     }
     function scrollTo(y) {
@@ -157,12 +167,12 @@ Item {
     }
     function handle(a) {
         const name = rows[Math.min(row, rows.length - 1)]
-        const idx = name === "actions" ? 0 : name === "versions" ? 1 : 2
+        const idx = name === "actions" ? 0 : 1
         const n = rowItems(name).length
         if (name === "more" && (a === "up" || a === "down")) {
             // The rest of the page: scroll, and go back to the choices from the top.
             if (a === "down") scrollTo(body.contentY + 420)
-            else if (body.contentY > choices.y + 40) scrollTo(body.contentY - 420)
+            else if (body.contentY > hero.height - 120) scrollTo(body.contentY - 420)
             else row = row - 1
             return
         }
@@ -180,8 +190,8 @@ Item {
         if (fromMouse) return
         const name = rows[row]
         if (name === "actions") scrollTo(0)
-        else if (name === "versions" || name === "language") scrollTo(choices.y - 360)
-        else if (name === "more") scrollTo(credits.y - 120)
+        else if (name === "language") scrollTo(0)
+        else if (name === "more") scrollTo(hero.height - 160)
     }
     NumberAnimation { id: scrollAnim; target: body; property: "contentY"; duration: 260; easing.type: Easing.OutCubic }
 
@@ -191,7 +201,7 @@ Item {
         if (visible && trailers && !paused && trailerUrl !== "") delay.restart()
     }
     property bool videoShown: false
-    onGameChanged: restartVideo()
+    onGameChanged: { restartVideo(); boxModel.clear(); if (game) boxModel.append(game) }
     onPausedChanged: restartVideo()
     onVisibleChanged: restartVideo()
     onTrailersChanged: restartVideo()
@@ -213,10 +223,12 @@ Item {
     // Swallow clicks so the library underneath never receives them.
     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: (w) => w.accepted = true }
 
+    ListModel { id: boxModel }
+
     Flickable {
         id: body
         anchors.fill: parent
-        contentHeight: content.height + 120
+        contentHeight: content.height + 140
         boundsBehavior: Flickable.StopAtBounds
         interactive: page.pointerActive
         flickDeceleration: 4000
@@ -224,14 +236,32 @@ Item {
         Item {
             id: content
             width: body.width
-            height: shots.y + shots.height
+            height: lower.y + lower.height
 
-            // Hero: the trailer across the top, fading into the page.
+            // ---------- hero: trailer or artwork, logo, actions, languages, the case ----------
             Item {
                 id: hero
                 width: parent.width
-                height: page.hasTrailer ? 660 : 560
-                Behavior on height { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                height: Math.max(760, page.height * 0.8)
+                clip: true
+                Image {
+                    id: backdrop
+                    anchors.fill: parent
+                    source: page.has("backdrop") ? page.game.art + "backdrop" : ""
+                    asynchronous: true
+                    fillMode: Image.PreserveAspectCrop
+                    sourceSize: Qt.size(1920, 1080)
+                    opacity: status === Image.Ready && !page.videoShown ? 0.7 : 0
+                    Behavior on opacity { NumberAnimation { duration: 700 } }
+                    property real drift: 1.03
+                    scale: drift
+                    SequentialAnimation on drift {
+                        loops: Animation.Infinite
+                        running: page.visible && !page.paused
+                        NumberAnimation { from: 1.03; to: 1.1; duration: 26000; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 1.1; to: 1.03; duration: 26000; easing.type: Easing.InOutSine }
+                    }
+                }
                 VideoOutput {
                     id: video
                     anchors.fill: parent
@@ -239,74 +269,54 @@ Item {
                     opacity: page.videoShown ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
                 }
-                Rectangle {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.0) }
-                        GradientStop { position: 0.5; color: Qt.rgba(0.047, 0.051, 0.063, 0.25) }
-                        GradientStop { position: 0.82; color: Qt.rgba(0.047, 0.051, 0.063, 0.8) }
-                        GradientStop { position: 1.0; color: Qt.rgba(0.047, 0.051, 0.063, 1.0) }
-                    }
-                }
+                // Scrims: the left side for the text, the bottom into the page.
                 Rectangle {
                     anchors.fill: parent
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.8) }
-                        GradientStop { position: 0.55; color: Qt.rgba(0.047, 0.051, 0.063, 0.0) }
+                        GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.92) }
+                        GradientStop { position: 0.45; color: Qt.rgba(0.047, 0.051, 0.063, 0.45) }
+                        GradientStop { position: 0.75; color: Qt.rgba(0.047, 0.051, 0.063, 0.1) }
+                        GradientStop { position: 1.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.3) }
                     }
-                }
-                // Without a trailer, the game case stands on the right, like on a shelf.
-                Item {
-                    id: caseItem
-                    visible: !page.videoShown && coverImg.status === Image.Ready
-                    readonly property real aspect: coverImg.implicitHeight > 0 ? Math.max(0.55, Math.min(1.45, coverImg.implicitWidth / coverImg.implicitHeight)) : 0.68
-                    height: aspect > 1 ? 300 / aspect + 16 : 430
-                    width: aspect > 1 ? 300 + 16 : (430 - 16) * aspect + 16
-                    x: parent.width - 96 - width
-                    y: Math.max(108, (parent.height - height) / 2 - 10)
-                    layer.enabled: true
-                    layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.7; shadowBlur: 1.0; shadowVerticalOffset: 18 }
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 9
-                        color: "#1a1c21"
-                        border { width: 1; color: Qt.rgba(1, 1, 1, 0.1) }
-                    }
-                    Item {
-                        anchors { fill: parent; margins: 8 }
-                        clip: true
-                        Image {
-                            id: coverImg
-                            anchors.fill: parent
-                            source: page.game ? page.game.cover : ""
-                            asynchronous: true
-                            fillMode: Image.PreserveAspectCrop
-                            sourceSize: Qt.size(600, 860)
-                        }
-                        Rectangle {
-                            anchors.fill: parent
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.0) }
-                                GradientStop { position: 0.32; color: Qt.rgba(1, 1, 1, 0.09) }
-                                GradientStop { position: 0.4; color: Qt.rgba(1, 1, 1, 0.0) }
-                            }
-                        }
-                    }
-                    Rectangle { x: 10; width: parent.width - 20; height: 1; color: Qt.rgba(1, 1, 1, 0.22) }
                 }
                 Rectangle {
-                    visible: !page.videoShown && page.trailers
-                    anchors { right: parent.right; rightMargin: 96; top: parent.top; topMargin: 56 }
+                    anchors.fill: parent
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.45) }
+                        GradientStop { position: 0.22; color: "transparent" }
+                        GradientStop { position: 0.62; color: "transparent" }
+                        GradientStop { position: 1.0; color: Qt.rgba(0.047, 0.051, 0.063, 1.0) }
+                    }
+                }
+
+                // The case, turning slowly to show its spine.
+                BoxShelf {
+                    id: caseStage
+                    width: 620; height: 640
+                    x: parent.width - 96 - 520
+                    y: (parent.height - height) / 2 + 20
+                    theme: page.theme
+                    games: boxModel
+                    currentIndex: 0
+                    swayAmp: 24
+                    showSelection: false
+                    swayPeriod: 7000
+                    opacity: page.videoShown ? 0.0 : 1
+                    Behavior on opacity { NumberAnimation { duration: 600 } }
+                }
+
+                // Trailer state, discreet, top right.
+                Rectangle {
+                    visible: !page.videoShown && page.trailers && page.hasTrailer
+                    anchors { right: parent.right; rightMargin: 96; top: parent.top; topMargin: 48 }
                     width: tl.implicitWidth + 44; height: 36; radius: 18
                     color: theme.glass
                     border { width: 1; color: theme.glassEdge }
                     Icon { x: 14; anchors.verticalCenter: parent.verticalCenter; name: "play"; size: 12; filled: true; stroke: 1.5; color: theme.fg }
                     Text {
                         id: tl; x: 32; anchors.verticalCenter: parent.verticalCenter
-                        text: !page.hasTrailer ? qsTr("No trailer in RomM for this game")
-                            : page.videoError !== "" ? qsTr("The trailer cannot be played: %1").arg(page.videoError)
+                        text: page.videoError !== "" ? qsTr("The trailer cannot be played: %1").arg(page.videoError)
                             : page.trailerState.startsWith("error") ? qsTr("Trailer unavailable: %1").arg(page.trailerState.substring(7))
                             : qsTr("Loading the trailer…")
                         color: theme.fg; font { family: theme.fontFamily; pixelSize: 15 }
@@ -314,26 +324,48 @@ Item {
                 }
 
                 Column {
-                    x: 96; anchors.bottom: parent.bottom; anchors.bottomMargin: 36
-                    width: 1300
-                    spacing: 16
+                    id: info
+                    x: 96
+                    anchors { bottom: parent.bottom; bottomMargin: 56 }
+                    width: Math.min(1100, hero.width - 96 - 96 - (caseStage.opacity > 0.5 ? 560 : 0))
+                    spacing: 22
+
+                    // The game's own logo (RomM / ScreenScraper), else its name.
+                    Item {
+                        width: parent.width
+                        height: logo.status === Image.Ready ? Math.min(230, logo.paintedHeight) : title.height
+                        Image {
+                            id: logo
+                            width: Math.min(parent.width, 760); height: 230
+                            source: page.has("logo") ? page.game.art + "logo" : ""
+                            asynchronous: true
+                            fillMode: Image.PreserveAspectFit
+                            horizontalAlignment: Image.AlignLeft
+                            verticalAlignment: Image.AlignBottom
+                            y: parent.height - height
+                            sourceSize: Qt.size(1200, 400)
+                            visible: status === Image.Ready
+                        }
+                        Text {
+                            id: title
+                            visible: logo.status !== Image.Ready
+                            width: parent.width
+                            text: page.game ? page.game.name : ""
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                            lineHeight: 0.95
+                            color: theme.fg
+                            font { family: theme.displayFont; pixelSize: page.game && page.game.name.length > 24 ? 64 : 84; weight: Font.ExtraBold; letterSpacing: -2 }
+                        }
+                    }
                     Text {
                         width: parent.width
                         text: page.game ? [page.game.platform_name, page.game.year > 0 ? page.game.year : "", page.game.genres.split(",")[0],
-                                           page.game.players ? (/^\d+$/.test(page.game.players) ? qsTr("%n player(s)", "", Number(page.game.players)) : qsTr("%1 players").arg(page.game.players)) : ""].filter(x => x).join(" · ").toUpperCase() : ""
+                                           page.game.players ? (/^\d+$/.test(page.game.players) ? qsTr("%n player(s)", "", Number(page.game.players)) : qsTr("%1 players").arg(page.game.players)) : ""].filter(x => x).join("  ·  ") : ""
                         elide: Text.ElideRight
-                        color: theme.accent
-                        font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold; letterSpacing: 3 }
-                    }
-                    Text {
-                        width: Math.min(1100, hero.width - 192 - (caseItem.visible ? caseItem.width + 48 : 0))
-                        text: page.game ? page.game.name : ""
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
-                        lineHeight: 0.95
-                        color: theme.fg
-                        font { family: theme.displayFont; pixelSize: page.game && page.game.name.length > 24 ? 60 : 78; weight: Font.ExtraBold; letterSpacing: -2 }
+                        color: theme.fgSoft
+                        font { family: theme.fontFamily; pixelSize: 20; weight: Font.Medium }
                     }
                     Row {
                         spacing: 14
@@ -359,7 +391,7 @@ Item {
                             spacing: 8
                             Text {
                                 text: page.stateText()
-                                width: Math.min(implicitWidth, 480)
+                                width: Math.min(implicitWidth, 420)
                                 elide: Text.ElideRight
                                 color: page.game && page.game.dl_state === "failed" ? theme.bad : theme.fgMuted
                                 font { family: theme.fontFamily; pixelSize: 16 }
@@ -376,9 +408,40 @@ Item {
                             }
                         }
                     }
+                    // Languages the game exists in; each one launches its version.
+                    Row {
+                        visible: page.gameLanguages.length > 0
+                        spacing: 16
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: qsTr("Language")
+                            color: theme.fgMuted
+                            font { family: theme.fontFamily; pixelSize: 17; weight: Font.DemiBold }
+                        }
+                        Flow {
+                            width: info.width - 140
+                            spacing: 10
+                            Repeater {
+                                model: page.gameLanguages
+                                Chip {
+                                    required property var modelData
+                                    required property int index
+                                    readonly property var v: page.versionOf(modelData.version)
+                                    theme: page.theme
+                                    text: page.languageName(modelData.code)
+                                    detail: page.regionShort(v)
+                                    selected: modelData.code === page.currentLang
+                                    badge: !!v && (v.local_state === "local" || v.linked)
+                                    focused: page.rows[page.row] === "language" && page.col[1] === index
+                                    pointerActive: page.pointerActive
+                                    onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("language"); page.fromMouse = false; page.setCol(1, index); page.activate("language", index) }
+                                }
+                            }
+                        }
+                    }
                     Text {
                         visible: !page.streamAvailable && page.streamError !== "" && page.actions.some(a => a.id === "link")
-                        width: 1100
+                        width: parent.width
                         text: qsTr("Playing from the network is unavailable here: %1").arg(page.streamError)
                         wrapMode: Text.WordWrap
                         color: theme.fgFaint
@@ -387,200 +450,101 @@ Item {
                 }
             }
 
-            // The rest of the page sits on the same veil as the end of the hero.
+            // ---------- below: about and screenshots | credits and anecdotes ----------
             Rectangle {
                 y: hero.height
                 width: parent.width
-                height: Math.max(parent.height, body.height + body.contentY) - hero.height + 200
-                color: Qt.rgba(0.047, 0.051, 0.063, 0.82)
+                height: lower.height + 400
+                color: Qt.rgba(0.047, 0.051, 0.063, 1)
             }
-
-            // Choices and the introduction.
             Row {
-                id: choices
-                x: 96; y: hero.height
-                spacing: 28
-                Rectangle {
-                    width: 1048
-                    height: choiceCol.height + 48
-                    radius: 24
-                    color: Qt.rgba(1, 1, 1, 0.06)
-                    border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
-                    Column {
-                        id: choiceCol
-                        x: 26; y: 24
-                        width: parent.width - 64
-                        spacing: 20
-                        Column {
-                            visible: page.versions.length > 1
-                            width: parent.width
-                            spacing: 12
-                            Text { text: qsTr("VERSION"); color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 14; weight: Font.DemiBold; letterSpacing: 2 } }
-                            Flow {
-                                width: parent.width
-                                spacing: 10
-                                Repeater {
-                                    model: page.versions
-                                    Chip {
-                                        required property var modelData
-                                        required property int index
-                                        theme: page.theme
-                                        text: page.versionTitle(modelData)
-                                        detail: page.versionDetail(modelData)
-                                        selected: page.game !== null && modelData.rom_id === page.game.rom_id
-                                        badge: modelData.local_state === "local" || modelData.linked
-                                        focused: page.rows[page.row] === "versions" && page.col[1] === index
-                                        pointerActive: page.pointerActive
-                                        onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("versions"); page.fromMouse = false; page.setCol(1, index); page.activate("versions", index) }
-                                    }
-                                }
-                            }
-                        }
-                        Column {
-                            width: parent.width
-                            spacing: 12
-                            Text {
-                                textFormat: Text.StyledText
-                                text: qsTr("GAME LANGUAGE") + "<font color='#99F4F6FA'>  " + qsTr("— passed to the emulator") + "</font>"
-                                color: theme.fgFaint
-                                font { family: theme.fontFamily; pixelSize: 14; weight: Font.DemiBold; letterSpacing: 2 }
-                            }
-                            Flow {
-                                width: parent.width
-                                spacing: 10
-                                Repeater {
-                                    model: page.languages
-                                    Chip {
-                                        required property var modelData
-                                        required property int index
-                                        theme: page.theme
-                                        text: modelData.label
-                                        selected: modelData.id === page.emuLanguage
-                                        focused: page.rows[page.row] === "language" && page.col[2] === index
-                                        pointerActive: page.pointerActive
-                                        onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("language"); page.fromMouse = false; page.setCol(2, index); page.activate("language", index) }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                Text {
-                    width: 640
-                    text: page.longSummary || qsTr("No summary for this game yet.")
-                    wrapMode: Text.WordWrap
-                    lineHeight: 1.55
-                    color: theme.fgSoft
-                    font { family: theme.fontFamily; pixelSize: 20 }
-                }
-            }
-
-            // Credits and anecdotes.
-            Row {
-                id: credits
-                x: 96; y: choices.y + choices.height + 28
-                spacing: 28
-                visible: page.credits.length > (page.game && page.game.players ? 1 : 0) || page.anecdotes.length > 0 || page.factsLoading
-                height: visible ? Math.max(creditsPanel.height, triviaPanel.height) : 0
-                Rectangle {
-                    id: creditsPanel
-                    width: 760
-                    height: creditsCol.height + 52
-                    radius: 24
-                    color: Qt.rgba(1, 1, 1, 0.06)
-                    border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
-                    Column {
-                        id: creditsCol
-                        x: 26; y: 26
-                        width: parent.width - 52
-                        spacing: 16
-                        Text { text: qsTr("Credits"); color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.Bold } }
-                        Grid {
-                            columns: 2
-                            columnSpacing: 28
-                            rowSpacing: 20
-                            Repeater {
-                                model: page.credits
-                                Column {
-                                    required property var modelData
-                                    width: (creditsCol.width - 28) / 2
-                                    spacing: 4
-                                    Text { text: modelData[0]; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 15 } }
-                                    Text { width: parent.width; text: modelData[1]; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontFamily; pixelSize: 19; weight: Font.Medium } }
-                                }
-                            }
-                        }
-                        Text {
-                            visible: page.factsLoading && page.credits.length === 0
-                            text: qsTr("Looking up the credits…")
-                            color: theme.fgMuted
-                            font { family: theme.fontFamily; pixelSize: 17 }
-                        }
-                        Text {
-                            text: qsTr("Sources: RomM, Wikidata, Wikipedia")
-                            color: theme.fgFaint
-                            font { family: theme.fontFamily; pixelSize: 14 }
-                        }
-                    }
-                }
-                Rectangle {
-                    id: triviaPanel
-                    visible: page.anecdotes.length > 0
-                    width: 928
-                    height: triviaCol.height + 52
-                    radius: 24
-                    color: Qt.rgba(1, 1, 1, 0.06)
-                    border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
-                    Column {
-                        id: triviaCol
-                        x: 26; y: 26
-                        width: parent.width - 52
-                        spacing: 14
-                        Text { text: qsTr("Did you know?"); color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.Bold } }
-                        Repeater {
-                            model: page.anecdotes
-                            Row {
-                                required property string modelData
-                                spacing: 16
-                                Rectangle { y: 11; width: 8; height: 8; radius: 4; color: theme.accent }
-                                Text { width: triviaCol.width - 24; text: modelData; wrapMode: Text.WordWrap; lineHeight: 1.5; color: theme.fgSoft; font { family: theme.fontFamily; pixelSize: 19 } }
-                            }
-                        }
-                        Text {
-                            text: qsTr("From the game's Wikipedia article")
-                            color: theme.fgFaint
-                            font { family: theme.fontFamily; pixelSize: 14 }
-                        }
-                    }
-                }
-            }
-
-            // Screenshots.
-            Column {
-                id: shots
-                x: 96; y: credits.y + credits.height + 28
+                id: lower
+                x: 96; y: hero.height + 8
                 width: parent.width - 192
-                spacing: 18
-                visible: page.facts && page.facts.screenshots > 0
-                height: visible ? implicitHeight : 0
-                Text { text: qsTr("Screenshots"); color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.Bold } }
-                Row {
-                    spacing: 20
-                    Repeater {
-                        model: page.facts ? Math.min(4, page.facts.screenshots) : 0
-                        Rectangle {
-                            required property int index
-                            width: 420; height: 236; radius: 14
-                            color: theme.glass
-                            clip: true
-                            Image {
-                                anchors.fill: parent
-                                source: page.shotBase ? page.shotBase + parent.index : ""
-                                asynchronous: true
-                                fillMode: Image.PreserveAspectCrop
-                                sourceSize: Qt.size(840, 472)
+                spacing: 72
+                readonly property real rightW: Math.min(620, width * 0.36)
+
+                Column {
+                    width: lower.width - lower.rightW - lower.spacing
+                    spacing: 22
+                    Text { text: qsTr("About"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
+                    Text {
+                        width: Math.min(parent.width, 900)
+                        text: page.longSummary || qsTr("No summary for this game yet.")
+                        wrapMode: Text.WordWrap
+                        lineHeight: 1.5
+                        color: theme.fgSoft
+                        font { family: theme.fontFamily; pixelSize: 20 }
+                    }
+                    Item { width: 1; height: 10 }
+                    Text {
+                        visible: shotGrid.count > 0
+                        text: qsTr("Screenshots"); color: theme.fg
+                        font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold }
+                    }
+                    Flow {
+                        width: parent.width
+                        spacing: 16
+                        Repeater {
+                            id: shotGrid
+                            model: page.facts ? Math.min(6, page.facts.screenshots) : 0
+                            Rectangle {
+                                required property int index
+                                width: (parent.width - 32) / 3; height: width * 9 / 16; radius: 12
+                                color: theme.glass
+                                clip: true
+                                Image {
+                                    anchors.fill: parent
+                                    source: page.shotBase ? page.shotBase + parent.index : ""
+                                    asynchronous: true
+                                    fillMode: Image.PreserveAspectCrop
+                                    sourceSize: Qt.size(640, 360)
+                                }
                             }
                         }
+                    }
+                }
+
+                Column {
+                    id: credits
+                    width: lower.rightW
+                    spacing: 18
+                    Text { text: qsTr("Credits"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
+                    Repeater {
+                        model: page.credits
+                        Row {
+                            required property var modelData
+                            width: credits.width
+                            spacing: 20
+                            Text { width: 170; text: modelData[0]; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 17 } }
+                            Text { width: parent.width - 190; text: modelData[1]; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontFamily; pixelSize: 18; weight: Font.Medium } }
+                        }
+                    }
+                    Text {
+                        visible: page.factsLoading && page.credits.length === 0
+                        text: qsTr("Looking up the credits…")
+                        color: theme.fgMuted
+                        font { family: theme.fontFamily; pixelSize: 17 }
+                    }
+                    Item { width: 1; height: 14; visible: page.anecdotes.length > 0 }
+                    Text {
+                        visible: page.anecdotes.length > 0
+                        text: qsTr("Did you know?"); color: theme.fg
+                        font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold }
+                    }
+                    Repeater {
+                        model: page.anecdotes
+                        Row {
+                            required property string modelData
+                            spacing: 14
+                            Rectangle { y: 10; width: 6; height: 6; radius: 3; color: theme.accent }
+                            Text { width: credits.width - 20; text: modelData; wrapMode: Text.WordWrap; lineHeight: 1.45; color: theme.fgSoft; font { family: theme.fontFamily; pixelSize: 18 } }
+                        }
+                    }
+                    Text {
+                        text: qsTr("Sources: RomM, Wikidata, Wikipedia")
+                        color: theme.fgFaint
+                        font { family: theme.fontFamily; pixelSize: 14 }
                     }
                 }
             }

@@ -109,7 +109,9 @@ Window {
             local_state: g.local_state, dl_state: g.download_state || "", dl_received: g.download_received || 0,
             dl_total: g.download_total || 0, dl_error: g.download_error || "", hue: (g.rom_id * 47) % 360,
             linked: !!g.linked, version_count: g.version_count || 1, other_installed: !!g.other_installed,
-            group_key: g.group_key || ""
+            group_key: g.group_key || "",
+            art: apiBase + "/api/v1/games/" + g.rom_id + "/art/",
+            art_kinds: "," + (g.art_kinds || []).join(",") + ","
         }
     }
     function loadPlatforms() {
@@ -271,6 +273,13 @@ Window {
         else if (id === "delete") deleteLocal(g)
         else if (id === "cancel") cancelDownload(g)
         else if (id === "play") play(g)
+        else if (id === "lang") {
+            // A language picks the version launched for it.
+            api("POST", "/api/v1/games/" + g.rom_id + "/prefs", { version: payload.version, emu_language: payload.code }, function (r, err) {
+                if (err) { toasts.show(err, "error"); return }
+                if (payload.version !== g.rom_id) openGame(payload.version); else reloadGame()
+            })
+        }
         else if (id === "version" || id === "language") {
             const body = id === "version" ? { version: payload } : { emu_language: payload }
             api("POST", "/api/v1/games/" + g.rom_id + "/prefs", body, function (r, err) {
@@ -328,6 +337,7 @@ Window {
         else if (id === "sounds") prefs.sounds = payload
         else if (id === "trailers") prefs.trailers = payload
         else if (id === "home") prefs.homeStyle = payload
+        else if (id === "background") prefs.backgroundStyle = payload
         else if (id === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Sync started."), "info"); refreshStatus() } })
         else if (id === "server") { overlay = ""; showServer() }
         else if (id === "profile") { overlay = ""; showProfiles() }
@@ -725,6 +735,7 @@ Window {
         Ambience {
             id: ambience
             anchors.fill: parent
+            style: prefs.backgroundStyle
             theme: win.theme
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.focusedGame
@@ -1117,7 +1128,8 @@ Window {
         game: win.pageGame
         versions: win.page ? win.page.versions : []
         emuLanguage: win.page ? win.page.emu_language : "auto"
-        emuLanguages: win.page ? win.page.emu_languages : []
+        gameLanguages: win.page && win.page.languages ? win.page.languages : []
+        uiLang: win.uiLang
         installMode: win.page ? win.page.install_mode : "download"
         streamAvailable: win.page ? win.page.stream.available : false
         streamError: win.page && win.page.stream.error ? win.page.stream.error : ""
@@ -1143,6 +1155,7 @@ Window {
         reportPaths: win.reportPaths
         sounds: prefs.sounds
         homeStyle: prefs.homeStyle
+        backgroundStyle: prefs.backgroundStyle
         trailers: win.trailers
         pointerActive: win.pointerActive
         onAction: (id, payload) => win.settingsAction(id, payload)
@@ -1295,6 +1308,7 @@ Window {
         property bool sounds: true
         property bool trailers: true
         property string homeStyle: "boxes"
+        property string backgroundStyle: "game"
         property int notifiedBuild: 0
     }
 

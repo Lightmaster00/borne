@@ -47,6 +47,10 @@ impl Paths {
     pub fn videos(&self) -> PathBuf {
         self.root.join("media").join("videos")
     }
+    /// Box scans and artwork fetched from RomM (spine, back, fanart, logo, cartridge).
+    pub fn art(&self) -> PathBuf {
+        self.root.join("media").join("art")
+    }
     pub fn secrets(&self) -> PathBuf {
         self.root.join("secrets")
     }
@@ -71,6 +75,7 @@ impl Paths {
             self.library(),
             self.covers(),
             self.screenshots(),
+            self.art(),
             self.videos(),
             self.profiles(),
             self.reports(),

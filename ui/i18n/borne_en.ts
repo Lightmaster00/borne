@@ -121,10 +121,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Automatic</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Europe</source>
         <translation type="unfinished" />
     </message>
@@ -253,18 +249,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>VERSION</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>GAME LANGUAGE</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>— passed to the emulator</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Select</source>
         <translation type="unfinished" />
     </message>
@@ -337,19 +321,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>From the game's Wikipedia article</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Screenshots</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>More about the game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No trailer in RomM for this game</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -362,6 +338,14 @@
     </message>
     <message>
         <source>Loading the trailer…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>About</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1475,6 +1459,26 @@
     </message>
     <message>
         <source>Arcade room</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Background</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Behind the game boxes</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The game's art</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game room</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Moving light</source>
         <translation type="unfinished" />
     </message>
 </context>
