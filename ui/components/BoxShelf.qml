@@ -17,8 +17,8 @@ Item {
 
     // Box size (screen pixels at depth 0) and layout.
     readonly property real boxW: 270
-    readonly property real boxH: 405
-    readonly property real boxD: 34
+    readonly property real boxH: 420
+    readonly property real boxD: 30
     readonly property real focal: 1500    // camera distance: lower = stronger perspective
     readonly property real cx: width / 2
     readonly property real cy: height / 2
@@ -44,11 +44,11 @@ Item {
         const a = Math.abs(t), s = t < 0 ? -1 : 1
         let x, z, ang
         if (a <= 1) {
-            x = t * 300
+            x = t * 340
             z = 140 * (1 - a) - 60 * a
             ang = -t * 62
         } else {
-            x = s * (300 + (a - 1) * 112)
+            x = s * (340 + (a - 1) * 108)
             z = -60 - (a - 1) * 18
             ang = -s * 62
         }
@@ -57,19 +57,22 @@ Item {
     }
 
     // Matrix drawing face point (u, v) of a box placed at p. face: "front", "left", "right".
-    function faceMatrix(p, face, mirror) {
+    // dims: { w, h, d } of this box. face "shadow": a patch of floor under the box.
+    function faceMatrix(p, face, mirror, dims) {
         const th = p.ang * Math.PI / 180, c = Math.cos(th), s = Math.sin(th)
-        const W = boxW, H = boxH, D = boxD
+        const W = dims ? dims.w : boxW, H = dims ? dims.h : boxH, D = dims ? dims.d : boxD
         // Face coordinates → box coordinates: (u, v) ↦ ax·u + bx·v + cx0 (same for y, z).
         let ax, ay, az, bx, by, bz, ox, oy, oz
         if (face === "front") { ax = 1; ay = 0; az = 0; bx = 0; by = 1; bz = 0; ox = -W / 2; oy = -H / 2; oz = D / 2 }
         else if (face === "left") { ax = 0; ay = 0; az = 1; bx = 0; by = 1; bz = 0; ox = -W / 2; oy = -H / 2; oz = -D / 2 }
-        else { ax = 0; ay = 0; az = -1; bx = 0; by = 1; bz = 0; ox = W / 2; oy = -H / 2; oz = D / 2 }
+        else if (face === "right") { ax = 0; ay = 0; az = -1; bx = 0; by = 1; bz = 0; ox = W / 2; oy = -H / 2; oz = D / 2 }
+        else { ax = 1; ay = 0; az = 0; bx = 0; by = 0; bz = -1; ox = -W / 2 - 60; oy = shelf.boxH / 2; oz = D / 2 + 70 }
         if (mirror) { by = -1; oy = H / 2 + H + 6 }   // reflection on the floor, just under the box
         // Box rotation about the vertical axis, then its place in the world.
         const rx = (x, z) => x * c + z * s, rz = (x, z) => -x * s + z * c
         const A1 = rx(ax, az), B1 = rx(bx, bz), C1 = rx(ox, oz) + shelf.cx + p.x
-        const A2 = ay, B2 = by, C2 = oy + shelf.cy + p.y
+        const floorShift = face === "shadow" ? 0 : (shelf.boxH - H) / 2
+        const A2 = ay, B2 = by, C2 = oy + shelf.cy + p.y + floorShift
         const A3 = rz(ax, az), B3 = rz(bx, bz), C3 = rz(ox, oz) + p.z
         const f = shelf.focal, X0 = shelf.cx, Y0 = shelf.cy
         // Perspective: x' = X − Z·X0/f, y' = Y − Z·Y0/f, w = 1 − Z/f (the GPU divides by w).

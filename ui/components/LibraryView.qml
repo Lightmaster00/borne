@@ -137,7 +137,8 @@ Item {
     BoxShelf {
         id: boxes
         visible: !root.arcade
-        x: 0; y: 360
+        // Centered in the space between the title block and the hint bar, whatever the aspect ratio.
+        x: 0; y: Math.max(330, 300 + (root.height - 300 - 90 - 600) / 2)
         width: parent.width; height: 600
         theme: root.theme
         games: root.games
@@ -149,14 +150,16 @@ Item {
 
     // ---------- letters ----------
     Rectangle {
+        z: 3
         anchors { fill: letterCol; margins: -10 }
         radius: 22
         visible: letterCol.visible
-        color: theme.glass
+        color: Qt.rgba(0.07, 0.075, 0.09, 0.92)
         border { width: 1; color: theme.glassEdge }
     }
     Column {
         id: letterCol
+        z: 4
         anchors { right: parent.right; rightMargin: 34; verticalCenter: parent.verticalCenter }
         spacing: 3
         visible: root.letters.length > 1
@@ -170,8 +173,39 @@ Item {
                 text: modelData
                 color: cur ? theme.accent : theme.fgFaint
                 font { family: theme.fontFamily; pixelSize: cur ? 19 : 14; weight: cur ? Font.Bold : Font.DemiBold }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.jumpTo(parent.modelData) }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { root.jumpTo(parent.modelData); root.showLetter(parent.modelData) } }
             }
+        }
+    }
+
+    // Big letter shown briefly when jumping through the alphabet.
+    function showLetter(l) {
+        bigLetter.text = l
+        letterPop.restart()
+    }
+    Rectangle {
+        id: letterBadge
+        z: 5
+        anchors.centerIn: boxes
+        width: 190; height: 190; radius: 32
+        color: Qt.rgba(0.08, 0.09, 0.11, 0.86)
+        border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
+        opacity: 0
+        scale: 0.9
+        Text {
+            id: bigLetter
+            anchors.centerIn: parent
+            color: theme.fg
+            font { family: theme.displayFont; pixelSize: 112; weight: Font.ExtraBold }
+        }
+        SequentialAnimation {
+            id: letterPop
+            ParallelAnimation {
+                NumberAnimation { target: letterBadge; property: "opacity"; to: 1; duration: 110; easing.type: Easing.OutCubic }
+                NumberAnimation { target: letterBadge; property: "scale"; from: 0.9; to: 1; duration: 160; easing.type: Easing.OutCubic }
+            }
+            PauseAnimation { duration: 520 }
+            NumberAnimation { target: letterBadge; property: "opacity"; to: 0; duration: 260; easing.type: Easing.InCubic }
         }
     }
 

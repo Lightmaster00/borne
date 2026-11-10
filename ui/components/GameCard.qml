@@ -100,7 +100,7 @@ Item {
         visible: card.installed || card.mounted || card.broken
         anchors { right: parent.right; top: parent.top; margins: 10 }
         width: 28; height: 28; radius: 14
-        color: card.broken ? theme.bad : Qt.rgba(0.024, 0.027, 0.04, 0.6)
+        color: card.broken ? theme.bad : Qt.rgba(0.047, 0.051, 0.063, 0.6)
         border { width: card.broken ? 0 : 1; color: Qt.rgba(1, 1, 1, 0.3) }
         Icon {
             anchors.centerIn: parent

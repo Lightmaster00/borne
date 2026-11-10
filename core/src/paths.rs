@@ -43,6 +43,10 @@ impl Paths {
     pub fn screenshots(&self) -> PathBuf {
         self.root.join("media").join("screenshots")
     }
+    /// Trailers fetched from RomM (with the profile's token), played from here.
+    pub fn videos(&self) -> PathBuf {
+        self.root.join("media").join("videos")
+    }
     pub fn secrets(&self) -> PathBuf {
         self.root.join("secrets")
     }
@@ -67,6 +71,7 @@ impl Paths {
             self.library(),
             self.covers(),
             self.screenshots(),
+            self.videos(),
             self.profiles(),
             self.reports(),
             self.stream_cache(),

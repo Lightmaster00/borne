@@ -30,6 +30,7 @@
 //!   POST   /api/v1/games/<rom_id>/link           exposes the game in the virtual mount (no download)
 //!   DELETE /api/v1/games/<rom_id>/link           removes it from the virtual mount
 //!   POST   /api/v1/games/<rom_id>/prefs  {version?, emu_language?}   active profile's choices
+//!   POST   /api/v1/games/<rom_id>/trailer         fetches the RomM trailer once (token, cache) → {path}
 //!   GET    /api/v1/settings                      install mode, virtual mount state
 //!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
 //! Updates
@@ -252,6 +253,66 @@ fn screenshot(app: &Shared, rom_id: i64, n: usize) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// The game's trailer, fetched once from RomM with the profile's token and kept on disk, so
+/// the player reads a local file (seeking works, no credentials in a URL). Capped at 300 MB;
+/// the oldest trailers are removed past 2 GB.
+fn trailer(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
+    let g = app.db.game(rom_id).ok_or("unknown game")?;
+    // A version without its own trailer uses another version's (same game).
+    let (rom_id, remote) = std::iter::once(g.clone())
+        .chain(app.db.group(&g.group_key))
+        .find_map(|v| v.video_remote.clone().map(|r| (v.rom_id, r)))
+        .ok_or("no trailer in RomM for this game")?;
+    let remote = catalog::resource_path(&remote);
+    let ext = remote
+        .split('?')
+        .next()
+        .and_then(|p| p.rsplit('/').next())
+        .and_then(|n| n.rsplit_once('.').map(|(_, e)| e.to_ascii_lowercase()))
+        .filter(|e| ["mp4", "m4v", "webm", "mkv"].contains(&e.as_str()))
+        .unwrap_or_else(|| "mp4".into());
+    let dir = app.paths.videos();
+    let path = dir.join(format!("{rom_id}.{ext}"));
+    if path.is_file() {
+        return Ok(path);
+    }
+    let client = app.client().ok_or("offline")?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let tmp = dir.join(format!("{rom_id}.part"));
+    client
+        .fetch_to_file(&remote, &tmp, 300 * 1024 * 1024)
+        .map_err(|e| {
+            let _ = std::fs::remove_file(&tmp);
+            app.db.log("trailer", &format!("game {rom_id}: {e}"));
+            e.to_string()
+        })?;
+    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    prune_videos(&dir, 2 * 1024 * 1024 * 1024);
+    Ok(path)
+}
+
+fn prune_videos(dir: &std::path::Path, max: u64) {
+    let mut files: Vec<(std::time::SystemTime, u64, PathBuf)> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let m = e.metadata().ok()?;
+            Some((m.modified().ok()?, m.len(), e.path()))
+        })
+        .collect();
+    let mut total: u64 = files.iter().map(|f| f.1).sum();
+    files.sort();
+    for (_, len, p) in files {
+        if total <= max {
+            break;
+        }
+        if std::fs::remove_file(&p).is_ok() {
+            total -= len;
+        }
+    }
+}
+
 fn new_profile_id() -> String {
     use rand::Rng;
     let mut rng = rand::rng();
@@ -470,6 +531,13 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 None => err(req, 404, "unknown game"),
             }
         }
+        (Method::Post, ["api", "v1", "games", id, "trailer"]) => match id.parse::<i64>() {
+            Ok(rom_id) => match trailer(app, rom_id) {
+                Ok(path) => ok(req, json!({ "path": path })),
+                Err(e) => err(req, 404, &e),
+            },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
         (Method::Get, ["api", "v1", "games", id, "screenshots", n]) => {
             match (id.parse::<i64>(), n.parse::<usize>()) {
                 (Ok(rom_id), Ok(n)) if n < 8 => match screenshot(app, rom_id, n) {
@@ -646,6 +714,7 @@ pub fn start(app: Shared, token: String) -> std::io::Result<u16> {
     let roots: Vec<PathBuf> = [
         app.paths.covers(),
         app.paths.screenshots(),
+        app.paths.videos(),
         app.resources.clone(),
     ]
     .into_iter()

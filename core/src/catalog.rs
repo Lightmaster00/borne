@@ -78,6 +78,16 @@ pub fn safe_slug(s: &str) -> String {
     }
 }
 
+/// RomM gives some media (trailers) relative to its resources folder ("roms/12/34/video/…");
+/// they are served under /assets/romm/resources/.
+pub fn resource_path(p: &str) -> String {
+    if p.starts_with('/') || p.starts_with("http://") || p.starts_with("https://") {
+        p.to_string()
+    } else {
+        format!("/assets/romm/resources/{}", p.trim_start_matches("./"))
+    }
+}
+
 pub fn map_rom(v: &Value) -> Option<GameUpsert> {
     let name = non_empty(&v["name"])
         .or_else(|| non_empty(&v["fs_name_no_tags"]))
@@ -106,7 +116,7 @@ pub fn map_rom(v: &Value) -> Option<GameUpsert> {
         players: non_empty(&v["metadatum"]["player_count"]),
         sha1: non_empty(&v["sha1_hash"]),
         cover_remote: non_empty(&v["path_cover_large"]).or_else(|| non_empty(&v["url_cover"])),
-        video_remote: non_empty(&v["path_video"]),
+        video_remote: non_empty(&v["path_video"]).map(|p| resource_path(&p)),
         updated_at: non_empty(&v["updated_at"]),
         extra: Some(extra_of(v).to_string()),
     })
@@ -330,6 +340,13 @@ pub fn looks_like_image(b: &[u8]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn media_paths_point_at_resources() {
+        assert_eq!(resource_path("roms/3/12/video/video.mp4"), "/assets/romm/resources/roms/3/12/video/video.mp4");
+        assert_eq!(resource_path("/assets/romm/resources/x.mp4"), "/assets/romm/resources/x.mp4");
+        assert_eq!(resource_path("https://cdn/x.mp4"), "https://cdn/x.mp4");
+    }
 
     #[test]
     fn slugs_are_safe_directory_names() {

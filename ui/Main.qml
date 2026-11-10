@@ -209,8 +209,25 @@ Window {
             pageGame = toRow(d.game)
             if (first) { pageFacts = null; gamePage.reset(); overlay = "game"; sfx.play("accept") }
             loadFacts(romId)
+            loadTrailer(pageGame)
         })
     }
+    // Trailer: the core fetches it once from RomM (with the token) and plays it from disk.
+    property string pageTrailer: ""
+    property string pageTrailerState: ""   // "", "loading", "ready", "error: …"
+    function loadTrailer(g) {
+        if (!g || !g.trailer) { pageTrailer = ""; pageTrailerState = ""; return }
+        if (pageTrailerState === "loading" && pageTrailerFor === g.rom_id) return
+        pageTrailerFor = g.rom_id
+        pageTrailer = ""
+        pageTrailerState = "loading"
+        api("POST", "/api/v1/games/" + g.rom_id + "/trailer", {}, function (r, err) {
+            if (pageTrailerFor !== g.rom_id) return
+            if (r && r.path) { pageTrailer = fileUrl(r.path, 0); pageTrailerState = "ready" }
+            else pageTrailerState = "error: " + (err || "")
+        })
+    }
+    property int pageTrailerFor: -1
     // Credits, anecdotes and screenshots: fetched by the core in the background on first view.
     property var pageFacts: null
     function loadFacts(romId) {
@@ -225,6 +242,7 @@ Window {
         page = null
         pageGame = null
         pageFacts = null
+        pageTrailer = ""; pageTrailerState = ""; pageTrailerFor = -1
         libReload.restart()
     }
     function link(g) {
@@ -458,6 +476,13 @@ Window {
         const c = (name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase()
         return c >= "A" && c <= "Z" ? c : "#"
     }
+    function openSearch(initial, fromKeyboard) {
+        if (!libModel.count) return
+        searchReturn = focusIndex
+        sfx.play("accept")
+        search.open(initial, fromKeyboard)
+    }
+    property int searchReturn: 0
     function jumpLetter(d) {
         if (!focusedGame || letters.length < 2) return
         const k = letters.indexOf(letterOf(focusedGame.name))
@@ -465,6 +490,7 @@ Window {
         if (next !== undefined && letterStart[next] !== undefined && letterStart[next] !== focusIndex) {
             focusIndex = letterStart[next]
             sfx.play("move")
+            libraryView.showLetter(next)
         }
     }
     function setSystem(d) {
@@ -481,6 +507,7 @@ Window {
         if (bench.running && a !== "start") return
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
+        if (search.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return search.handle(a) }
         if (downloadsPanel.visible) return downloadsPanel.handle(a)
         if (overlay === "diag") return diag.handle(a)
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
@@ -491,7 +518,7 @@ Window {
         if (screen === "pairing") return pairingScreen.handle(a)
         if (screen !== "library") return
         if (a === "a") primaryAction()
-        else if (a === "y") gameMenu()
+        else if (a === "y") openSearch("", false)
         else if (a === "x") { if (focusedGame) play(focusedGame) }
         else if (a === "start") settingsMenu()
         else if (a === "select") mainMenu()
@@ -686,10 +713,13 @@ Window {
     // ---------- Scene: 1920×1080, scaled to the window ----------
     Item {
         id: scene
-        width: 1920
-        height: 1080
+        // 1080 logical pixels high; the width follows the screen's shape (16:10, 21:9…) so there
+        // are no bars, never narrower than 1600.
+        readonly property real k: Math.min(win.height / 1080, win.width / 1600)
+        width: win.width / k
+        height: win.height / k
         anchors.centerIn: parent
-        scale: Math.min(win.width / 1920, win.height / 1080)
+        scale: k
 
         // Living background, shared by the library, the game page and the settings.
         Ambience {
@@ -722,6 +752,27 @@ Window {
                 if (e.key === Qt.Key_Escape) { e.accepted = true; target.handle("select"); return }
                 if (e.key === Qt.Key_Backspace) { e.accepted = true; target.backspace(); return }
                 if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32) { e.accepted = true; target.typeText(e.text); return }
+            }
+            // Search: typing goes into the field; Enter lands on the game, Esc closes.
+            if (search.visible && !menu.visible) {
+                e.accepted = true
+                if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) search.confirm()
+                else if (e.key === Qt.Key_Escape) search.close()
+                else if (e.key === Qt.Key_Backspace) search.backspace()
+                else if (e.key === Qt.Key_Up) search.step(-1)
+                else if (e.key === Qt.Key_Down) search.step(1)
+                else if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32) { search.showKeyboard = false; search.typeText(e.text) }
+                else if (search.showKeyboard) e.accepted = false
+                if (e.accepted) return
+            }
+            // In the library, Ctrl+F, F or / open the search; other letters start it with that letter.
+            if (screen === "library" && overlay === "" && !menu.visible && !nameEntry.visible && !downloadsPanel.visible) {
+                const f = e.key === Qt.Key_Slash || (e.key === Qt.Key_F && (e.modifiers & Qt.ControlModifier))
+                if (f) { e.accepted = true; openSearch("", true); return }
+                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_Q, Qt.Key_E, Qt.Key_Z, Qt.Key_C].indexOf(e.key) >= 0
+                if (!shortcut && !(e.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && e.text && e.text.length === 1 && (e.text.toLowerCase() !== e.text.toUpperCase() || /[0-9]/.test(e.text))) {
+                    e.accepted = true; openSearch(e.text, true); return
+                }
             }
             const map = {}
             map[Qt.Key_Up] = "up"; map[Qt.Key_Down] = "down"; map[Qt.Key_Left] = "left"; map[Qt.Key_Right] = "right"
@@ -902,7 +953,7 @@ Window {
                 const h = []
                 if (g) h.push(["A", qsTr("Open"), "a"])
                 if (g) h.push(["X", qsTr("Play"), "x"])
-                if (g) h.push(["Y", qsTr("Options"), "y"])
+                h.push(["Y", qsTr("Search"), "y"])
                 h.push(["LB RB", qsTr("Systems"), "rb"])
                 if (win.letters.length > 1) h.push(["LT RT", qsTr("Letters"), "rt"])
                 h.push(["Start", qsTr("Settings"), "start"])
@@ -1072,6 +1123,8 @@ Window {
         streamError: win.page && win.page.stream.error ? win.page.stream.error : ""
         pointerActive: win.pointerActive
         trailers: win.trailers
+        trailerUrl: win.pageTrailer
+        trailerState: win.pageTrailerState
         paused: menu.visible || downloadsPanel.visible || !visible
         facts: win.pageFacts
         shotBase: win.pageGame ? win.apiBase + "/api/v1/games/" + win.pageGame.rom_id + "/screenshots/" : ""
@@ -1117,6 +1170,15 @@ Window {
         z: 60
         onCancel: (d) => win.api("DELETE", "/api/v1/downloads/" + d.id, null, function () { win.refreshDownloads() })
         onRetry: (d) => win.api("POST", "/api/v1/games/" + d.rom_id + "/download", {}, function (r, err) { if (err) toasts.show(err, "error"); win.refreshDownloads() })
+    }
+    SearchOverlay {
+        id: search
+        anchors.fill: parent
+        theme: win.theme
+        model: libModel
+        pointerActive: win.pointerActive
+        z: 60
+        onPicked: (i) => { if (win.focusIndex !== i) win.focusIndex = i }
     }
     ActionMenu { id: menu; theme: win.theme; pointerActive: win.pointerActive; z: 80 }
     Toasts {

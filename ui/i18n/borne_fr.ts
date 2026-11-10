@@ -317,10 +317,6 @@
         <translation>Joueurs</translation>
     </message>
     <message>
-        <source>Trailer in a moment</source>
-        <translation>Bande-annonce dans un instant</translation>
-    </message>
-    <message>
         <source>No summary for this game yet.</source>
         <translation>Pas encore de résumé pour ce jeu.</translation>
     </message>
@@ -351,6 +347,22 @@
     <message>
         <source>More about the game</source>
         <translation>Plus sur le jeu</translation>
+    </message>
+    <message>
+        <source>No trailer in RomM for this game</source>
+        <translation>Pas de bande-annonce dans RomM pour ce jeu</translation>
+    </message>
+    <message>
+        <source>The trailer cannot be played: %1</source>
+        <translation>La bande-annonce ne peut pas être lue : %1</translation>
+    </message>
+    <message>
+        <source>Trailer unavailable: %1</source>
+        <translation>Bande-annonce indisponible : %1</translation>
+    </message>
+    <message>
+        <source>Loading the trailer…</source>
+        <translation>Chargement de la bande-annonce…</translation>
     </message>
 </context>
 <context>
@@ -618,10 +630,6 @@
     <message>
         <source>No games here.</source>
         <translation>Aucun jeu ici.</translation>
-    </message>
-    <message>
-        <source>Options</source>
-        <translation>Options</translation>
     </message>
     <message>
         <source>Connected to RomM (%1).</source>
@@ -931,6 +939,10 @@
         <source>Letters</source>
         <translation>Lettres</translation>
     </message>
+    <message>
+        <source>Search</source>
+        <translation>Rechercher</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1055,6 +1067,53 @@
     <message>
         <source>Menu</source>
         <translation>Menu</translation>
+    </message>
+</context>
+<context>
+    <name>SearchOverlay</name>
+    <message>
+        <source>Search</source>
+        <translation>Rechercher</translation>
+    </message>
+    <message>
+        <source>No game found</source>
+        <translation>Aucun jeu trouvé</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
+    </message>
+    <message>
+        <source>Game title</source>
+        <translation>Titre du jeu</translation>
+    </message>
+    <message>
+        <source>Type a game title</source>
+        <translation>Tapez le titre d’un jeu</translation>
+    </message>
+    <message>
+        <source>Results appear as you type. The library follows the highlighted game.</source>
+        <translation>Les résultats s’affichent pendant la saisie. La bibliothèque suit le jeu en surbrillance.</translation>
+    </message>
+    <message>
+        <source>Key</source>
+        <translation>Touche</translation>
+    </message>
+    <message>
+        <source>Erase</source>
+        <translation>Effacer</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Résultat</translation>
+    </message>
+    <message>
+        <source>Go to game</source>
+        <translation>Aller au jeu</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
     </message>
 </context>
 <context>

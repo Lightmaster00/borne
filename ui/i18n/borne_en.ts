@@ -317,10 +317,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Trailer in a moment</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No summary for this game yet.</source>
         <translation type="unfinished" />
     </message>
@@ -350,6 +346,22 @@
     </message>
     <message>
         <source>More about the game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No trailer in RomM for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The trailer cannot be played: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trailer unavailable: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Loading the trailer…</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -656,10 +668,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Options</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Connected to RomM (%1).</source>
         <translation type="unfinished" />
     </message>
@@ -931,6 +939,10 @@
         <source>Letters</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Search</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1054,6 +1066,53 @@
     </message>
     <message>
         <source>Menu</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>SearchOverlay</name>
+    <message>
+        <source>Search</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No game found</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
+    </message>
+    <message>
+        <source>Game title</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Type a game title</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Results appear as you type. The library follows the highlighted game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Key</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Erase</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Result</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Go to game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Close</source>
         <translation type="unfinished" />
     </message>
 </context>

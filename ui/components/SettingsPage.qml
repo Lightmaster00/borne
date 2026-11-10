@@ -240,7 +240,7 @@ Item {
     // ---------- rows ----------
     Column {
         x: side.width + 80; y: 64
-        width: parent.width - x - 96
+        width: Math.min(1500, parent.width - x - 96)
         spacing: 32
 
         Column {

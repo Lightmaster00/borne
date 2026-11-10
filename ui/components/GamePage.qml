@@ -23,6 +23,8 @@ Item {
     property string streamError: ""
     property bool pointerActive: false
     property bool trailers: true
+    property string trailerUrl: ""         // local file prepared by the core
+    property string trailerState: ""       // "", "loading", "ready", "error: …"
     property bool paused: false
     property var facts: null           // GET /api/v1/games/<id>/facts
     property string shotBase: ""       // URL prefix of the screenshots (…/screenshots/)
@@ -185,21 +187,24 @@ Item {
 
     // ---------- trailer ----------
     function restartVideo() {
-        delay.stop(); player.stop(); player.source = ""; videoShown = false
-        if (visible && trailers && !paused && hasTrailer) delay.restart()
+        delay.stop(); player.stop(); player.source = ""; videoShown = false; videoError = ""
+        if (visible && trailers && !paused && trailerUrl !== "") delay.restart()
     }
     property bool videoShown: false
     onGameChanged: restartVideo()
     onPausedChanged: restartVideo()
     onVisibleChanged: restartVideo()
     onTrailersChanged: restartVideo()
-    Timer { id: delay; interval: 700; onTriggered: { player.source = page.game.trailer; player.play() } }
+    onTrailerUrlChanged: restartVideo()
+    Timer { id: delay; interval: 400; onTriggered: { player.source = page.trailerUrl; player.play() } }
     MediaPlayer {
         id: player
         videoOutput: video
         audioOutput: AudioOutput { muted: !page.sound; volume: 0.8 }
         loops: MediaPlayer.Infinite
+        onErrorOccurred: (e, text) => page.videoError = text
     }
+    property string videoError: ""
     Connections {
         target: video.videoSink
         function onVideoFrameChanged() { if (!page.videoShown && player.source.toString() !== "") page.videoShown = true }
@@ -225,7 +230,8 @@ Item {
             Item {
                 id: hero
                 width: parent.width
-                height: 820
+                height: page.hasTrailer ? 660 : 560
+                Behavior on height { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                 VideoOutput {
                     id: video
                     anchors.fill: parent
@@ -233,57 +239,84 @@ Item {
                     opacity: page.videoShown ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
                 }
-                // Without a trailer, the cover stands on the right.
-                Image {
-                    visible: !page.videoShown
-                    x: parent.width - 96 - 340; y: 150
-                    width: 340; height: 510
-                    source: page.game ? page.game.cover : ""
-                    asynchronous: true
-                    fillMode: Image.PreserveAspectCrop
-                    sourceSize: Qt.size(510, 765)
-                    opacity: status === Image.Ready ? 1 : 0
-                    layer.enabled: true
-                    layer.effect: MultiEffect { maskEnabled: true; maskSource: coverMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
-                }
-                Item {
-                    id: coverMask
-                    width: 340; height: 510
-                    layer.enabled: true
-                    visible: false
-                    Rectangle { anchors.fill: parent; radius: 20; color: "black" }
-                }
                 Rectangle {
                     anchors.fill: parent
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.0) }
-                        GradientStop { position: 0.45; color: Qt.rgba(0.024, 0.027, 0.04, 0.15) }
-                        GradientStop { position: 0.8; color: Qt.rgba(0.024, 0.027, 0.04, 0.6) }
-                        GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.82) }
+                        GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.0) }
+                        GradientStop { position: 0.5; color: Qt.rgba(0.047, 0.051, 0.063, 0.25) }
+                        GradientStop { position: 0.82; color: Qt.rgba(0.047, 0.051, 0.063, 0.8) }
+                        GradientStop { position: 1.0; color: Qt.rgba(0.047, 0.051, 0.063, 1.0) }
                     }
                 }
                 Rectangle {
                     anchors.fill: parent
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.8) }
-                        GradientStop { position: 0.55; color: Qt.rgba(0.024, 0.027, 0.04, 0.0) }
+                        GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.8) }
+                        GradientStop { position: 0.55; color: Qt.rgba(0.047, 0.051, 0.063, 0.0) }
                     }
                 }
+                // Without a trailer, the game case stands on the right, like on a shelf.
+                Item {
+                    id: caseItem
+                    visible: !page.videoShown && coverImg.status === Image.Ready
+                    readonly property real aspect: coverImg.implicitHeight > 0 ? Math.max(0.55, Math.min(1.45, coverImg.implicitWidth / coverImg.implicitHeight)) : 0.68
+                    height: aspect > 1 ? 300 / aspect + 16 : 430
+                    width: aspect > 1 ? 300 + 16 : (430 - 16) * aspect + 16
+                    x: parent.width - 96 - width
+                    y: Math.max(108, (parent.height - height) / 2 - 10)
+                    layer.enabled: true
+                    layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.7; shadowBlur: 1.0; shadowVerticalOffset: 18 }
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 9
+                        color: "#1a1c21"
+                        border { width: 1; color: Qt.rgba(1, 1, 1, 0.1) }
+                    }
+                    Item {
+                        anchors { fill: parent; margins: 8 }
+                        clip: true
+                        Image {
+                            id: coverImg
+                            anchors.fill: parent
+                            source: page.game ? page.game.cover : ""
+                            asynchronous: true
+                            fillMode: Image.PreserveAspectCrop
+                            sourceSize: Qt.size(600, 860)
+                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.0) }
+                                GradientStop { position: 0.32; color: Qt.rgba(1, 1, 1, 0.09) }
+                                GradientStop { position: 0.4; color: Qt.rgba(1, 1, 1, 0.0) }
+                            }
+                        }
+                    }
+                    Rectangle { x: 10; width: parent.width - 20; height: 1; color: Qt.rgba(1, 1, 1, 0.22) }
+                }
                 Rectangle {
-                    visible: page.hasTrailer && !page.videoShown && page.trailers
+                    visible: !page.videoShown && page.trailers
                     anchors { right: parent.right; rightMargin: 96; top: parent.top; topMargin: 56 }
                     width: tl.implicitWidth + 44; height: 36; radius: 18
                     color: theme.glass
                     border { width: 1; color: theme.glassEdge }
                     Icon { x: 14; anchors.verticalCenter: parent.verticalCenter; name: "play"; size: 12; filled: true; stroke: 1.5; color: theme.fg }
-                    Text { id: tl; x: 32; anchors.verticalCenter: parent.verticalCenter; text: qsTr("Trailer in a moment"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 15 } }
+                    Text {
+                        id: tl; x: 32; anchors.verticalCenter: parent.verticalCenter
+                        text: !page.hasTrailer ? qsTr("No trailer in RomM for this game")
+                            : page.videoError !== "" ? qsTr("The trailer cannot be played: %1").arg(page.videoError)
+                            : page.trailerState.startsWith("error") ? qsTr("Trailer unavailable: %1").arg(page.trailerState.substring(7))
+                            : qsTr("Loading the trailer…")
+                        color: theme.fg; font { family: theme.fontFamily; pixelSize: 15 }
+                    }
                 }
 
                 Column {
-                    x: 96; y: 360
+                    x: 96; anchors.bottom: parent.bottom; anchors.bottomMargin: 36
                     width: 1300
-                    spacing: 24
+                    spacing: 16
                     Text {
                         width: parent.width
                         text: page.game ? [page.game.platform_name, page.game.year > 0 ? page.game.year : "", page.game.genres.split(",")[0],
@@ -293,14 +326,14 @@ Item {
                         font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold; letterSpacing: 3 }
                     }
                     Text {
-                        width: 1100
+                        width: Math.min(1100, hero.width - 192 - (caseItem.visible ? caseItem.width + 48 : 0))
                         text: page.game ? page.game.name : ""
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
                         lineHeight: 0.95
                         color: theme.fg
-                        font { family: theme.displayFont; pixelSize: page.game && page.game.name.length > 24 ? 72 : 96; weight: Font.ExtraBold; letterSpacing: -3 }
+                        font { family: theme.displayFont; pixelSize: page.game && page.game.name.length > 24 ? 60 : 78; weight: Font.ExtraBold; letterSpacing: -2 }
                     }
                     Row {
                         spacing: 14
@@ -359,23 +392,23 @@ Item {
                 y: hero.height
                 width: parent.width
                 height: Math.max(parent.height, body.height + body.contentY) - hero.height + 200
-                color: Qt.rgba(0.024, 0.027, 0.04, 0.82)
+                color: Qt.rgba(0.047, 0.051, 0.063, 0.82)
             }
 
             // Choices and the introduction.
             Row {
                 id: choices
-                x: 96; y: hero.height + 20
-                spacing: 40
+                x: 96; y: hero.height
+                spacing: 28
                 Rectangle {
                     width: 1048
-                    height: choiceCol.height + 60
+                    height: choiceCol.height + 48
                     radius: 24
                     color: Qt.rgba(1, 1, 1, 0.06)
                     border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
                     Column {
                         id: choiceCol
-                        x: 32; y: 30
+                        x: 26; y: 24
                         width: parent.width - 64
                         spacing: 20
                         Column {
@@ -445,23 +478,23 @@ Item {
             // Credits and anecdotes.
             Row {
                 id: credits
-                x: 96; y: choices.y + choices.height + 48
-                spacing: 40
+                x: 96; y: choices.y + choices.height + 28
+                spacing: 28
                 visible: page.credits.length > (page.game && page.game.players ? 1 : 0) || page.anecdotes.length > 0 || page.factsLoading
                 height: visible ? Math.max(creditsPanel.height, triviaPanel.height) : 0
                 Rectangle {
                     id: creditsPanel
                     width: 760
-                    height: creditsCol.height + 64
+                    height: creditsCol.height + 52
                     radius: 24
                     color: Qt.rgba(1, 1, 1, 0.06)
                     border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
                     Column {
                         id: creditsCol
-                        x: 32; y: 32
-                        width: parent.width - 64
-                        spacing: 20
-                        Text { text: qsTr("Credits"); color: theme.fg; font { family: theme.displayFont; pixelSize: 30; weight: Font.Bold } }
+                        x: 26; y: 26
+                        width: parent.width - 52
+                        spacing: 16
+                        Text { text: qsTr("Credits"); color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.Bold } }
                         Grid {
                             columns: 2
                             columnSpacing: 28
@@ -494,16 +527,16 @@ Item {
                     id: triviaPanel
                     visible: page.anecdotes.length > 0
                     width: 928
-                    height: triviaCol.height + 64
+                    height: triviaCol.height + 52
                     radius: 24
                     color: Qt.rgba(1, 1, 1, 0.06)
                     border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
                     Column {
                         id: triviaCol
-                        x: 32; y: 32
-                        width: parent.width - 64
-                        spacing: 18
-                        Text { text: qsTr("Did you know?"); color: theme.fg; font { family: theme.displayFont; pixelSize: 30; weight: Font.Bold } }
+                        x: 26; y: 26
+                        width: parent.width - 52
+                        spacing: 14
+                        Text { text: qsTr("Did you know?"); color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.Bold } }
                         Repeater {
                             model: page.anecdotes
                             Row {
@@ -525,12 +558,12 @@ Item {
             // Screenshots.
             Column {
                 id: shots
-                x: 96; y: credits.y + credits.height + 48
+                x: 96; y: credits.y + credits.height + 28
                 width: parent.width - 192
                 spacing: 18
                 visible: page.facts && page.facts.screenshots > 0
                 height: visible ? implicitHeight : 0
-                Text { text: qsTr("Screenshots"); color: theme.fg; font { family: theme.displayFont; pixelSize: 30; weight: Font.Bold } }
+                Text { text: qsTr("Screenshots"); color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.Bold } }
                 Row {
                     spacing: 20
                     Repeater {
@@ -586,9 +619,9 @@ Item {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: 150
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.0) }
-            GradientStop { position: 0.55; color: Qt.rgba(0.024, 0.027, 0.04, 0.92) }
-            GradientStop { position: 1.0; color: Qt.rgba(0.024, 0.027, 0.04, 0.98) }
+            GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.0) }
+            GradientStop { position: 0.55; color: Qt.rgba(0.047, 0.051, 0.063, 0.92) }
+            GradientStop { position: 1.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.98) }
         }
     }
     HintBar {

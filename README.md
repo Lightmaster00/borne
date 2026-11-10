@@ -43,12 +43,14 @@ Since then:
   size, updates, interface sounds and trailers.
 - **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
   gamepad is used. The wheel scrolls the library.
-- **One look, "Halo"**: the selected game's art fills the screen, blurred and slowly drifting, and its
-  trailer fades in after a pause; the games stand as boxes in space: the selected
-  box faces you and sways gently, the others turn toward it and show their spines; a letter index jumps
-  through the alphabet; panels are glass; the accent color is taken from each
-  game's cover.
-- **Game page**: the trailer plays across the top; below, the choices, an introduction, the credits
+- **One look, "Halo"**: a sober dark stage with a soft light behind the selection; the games stand as
+  physical cases (cover under a plastic rim, spines with the system's color band, a contact shadow and a
+  faint reflection): the selected case faces you and sways gently, the others turn toward it and show
+  their spines. An arcade room is offered as an alternative home (Settings → Interface). A letter index
+  and LT / RT jump through the alphabet (the letter shows briefly); Y opens a search with results as you
+  type. Panels are glass; the accent color is taken from each game's cover; type is Manrope.
+- **Game page**: the trailer plays across the top (RomM's ScreenScraper video, fetched by the core with
+  the profile's token and cached; enable the video media in RomM's ScreenScraper settings and rescan); below, the choices, an introduction, the credits
   (developer, publisher, director, producer, composer, series) and anecdotes from Wikidata and Wikipedia
   (in the UI language when the article exists), and RomM's screenshots. Only the game's name and year
   are sent to Wikimedia; answers are cached for 30 days. Designed at 1920×1080 and scaled to any window.
@@ -104,7 +106,8 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | A | Enter | Open the game page / choose |
 | B | Escape | Back |
 | X | X | Play |
-| Y | Y or T | Game or profile options |
+| Y | Y, T, Ctrl+F or / | Search (on the profile screen: profile options) |
+| — | Any letter or digit | Start a search with that letter |
 | D-pad | Arrows | Move through the covers |
 | LT / RT | Z / C, Home / End | Previous / next letter |
 | LB / RB | Page Up / Page Down, Q / E | Previous / next system |
@@ -150,7 +153,7 @@ Useful variables: `BORNE_DATA_DIR` (data directory), `BORNE_LANG` (UI language),
 
 Borne has a single look, "Halo", defined in `ui/imports/Borne/Theme/Theme.qml` (colors, type, sizes,
 motion) and drawn by the components in `ui/components/`. User QML themes were removed: a QML theme is
-code, and one well-made look serves better than several half-finished ones. Bundled font: Archivo (SIL
+code, and one well-made look serves better than several half-finished ones. Bundled font: Manrope (SIL
 Open Font License, see `ui/fonts/licenses`); UI sounds are synthesized by `scripts/assets/make_sounds.py`.
 After two UI crashes, Borne restarts in safe mode, with trailers and sounds off.
 

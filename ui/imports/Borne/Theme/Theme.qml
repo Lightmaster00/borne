@@ -1,13 +1,13 @@
 // Borne's single look: "Halo".
-// The selected game's art fills the background, blurred and slowly drifting; panels are glass
-// (translucent white with a fine edge); the accent is taken from the game's cover, so the whole
-// interface takes on the color of what you are looking at. Focus: a white ring and the game's halo.
+// A quiet dark stage with a soft light behind the selected game; panels are glass (translucent
+// white with a fine edge); the accent is taken from the game's cover, faintly. Type: Manrope.
+// Focus: a white ring.
 // Designed at 1920×1080; the window scales the whole scene.
 import QtQuick
 
 QtObject {
     // ---------- Color ----------
-    readonly property color bg: "#06070A"
+    readonly property color bg: "#0C0D10"
     readonly property color fg: "#F4F6FA"
     readonly property color fgSoft: Qt.rgba(0.957, 0.965, 0.98, 0.80)
     readonly property color fgMuted: Qt.rgba(0.957, 0.965, 0.98, 0.70)
@@ -15,7 +15,7 @@ QtObject {
     readonly property color glass: Qt.rgba(1, 1, 1, 0.08)
     readonly property color glassRaised: Qt.rgba(1, 1, 1, 0.14)
     readonly property color glassEdge: Qt.rgba(1, 1, 1, 0.15)
-    readonly property color scrim: Qt.rgba(0.024, 0.027, 0.04, 0.92)
+    readonly property color scrim: Qt.rgba(0.047, 0.051, 0.063, 0.92)
     readonly property color bad: "#FF7B7B"
     readonly property color badTint: Qt.rgba(1, 0.48, 0.48, 0.16)
 
@@ -41,8 +41,8 @@ QtObject {
     readonly property color bg2: panel
 
     // ---------- Type ----------
-    readonly property string fontFamily: "Archivo"
-    readonly property string displayFont: "Archivo Expanded"
+    readonly property string fontFamily: "Manrope"
+    readonly property string displayFont: "Manrope"
 
     // ---------- Shape and motion ----------
     readonly property int radius: 14

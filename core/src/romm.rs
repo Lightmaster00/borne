@@ -392,6 +392,23 @@ impl Client {
             .map_err(|e| RommError::Parse(e.to_string()))
     }
 
+    /// Downloads a server asset (a trailer…) to `dest`, at most `limit` bytes.
+    pub fn fetch_to_file(&self, path: &str, dest: &std::path::Path, limit: u64) -> Result<u64> {
+        let url = if path.starts_with("http") { path.to_string() } else { format!("{}{}", self.base, path) };
+        let mut req = self.dl.get(encode_url(&url));
+        if let Some(a) = self.auth() {
+            req = req.header("Authorization", a);
+        }
+        let mut resp = req.call().map_err(map_transport)?;
+        let code = resp.status().as_u16();
+        if !(200..300).contains(&code) {
+            return Err(status_error(code, ""));
+        }
+        let mut reader = resp.body_mut().with_config().limit(limit).reader();
+        let mut out = std::fs::File::create(dest).map_err(|e| RommError::Parse(e.to_string()))?;
+        std::io::copy(&mut reader, &mut out).map_err(|e| RommError::Parse(e.to_string()))
+    }
+
     /// Opens a game file stream starting at byte `from` (resume).
     /// Returns (reader, total file size, resume accepted by the server).
     pub fn open_file(

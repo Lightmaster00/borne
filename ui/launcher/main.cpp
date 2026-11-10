@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     const QDir fonts(ui + QStringLiteral("/fonts"));
     for (const QString &f : fonts.entryList({QStringLiteral("*.otf"), QStringLiteral("*.ttf")}, QDir::Files))
         QFontDatabase::addApplicationFont(fonts.filePath(f));
-    QFont base(QStringLiteral("Archivo"));
+    QFont base(QStringLiteral("Manrope"));
     base.setHintingPreference(QFont::PreferNoHinting);
     QGuiApplication::setFont(base);
 
