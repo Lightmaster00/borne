@@ -81,7 +81,11 @@ Settings → Updates: Borne checks GitHub for a newer build, downloads it, verif
 installs it on "Restart and install" (the previous version is kept next to it as `.borne-previous`).
 Two channels: **Stable** (releases published with a `vX.Y.Z` tag) and **Development** (the `dev`
 pre-release, rebuilt by CI on every change of `main`). Automatic checks run at startup and every
-6 hours; nothing is installed without confirmation. Copies built locally do not update themselves.
+6 hours; nothing is installed without confirmation. *Check now* looks right away; *Reinstall the latest
+build* offers the channel's latest build even when it is not newer (to repair, or to go back from
+Development to Stable); *Open on GitHub* opens the channel's release. Where Borne cannot install itself
+(a local build, Flatpak, a read-only folder, or macOS running the app from a temporary copy because
+it was not moved to Applications), it still checks and offers the build as a download from GitHub.
 
 To publish a stable version: `git tag v0.2.0 && git push origin v0.2.0` (CI builds and publishes it).
 

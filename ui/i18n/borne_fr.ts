@@ -1222,10 +1222,6 @@
         <translation>Trailers</translation>
     </message>
     <message>
-        <source>Updates are handled outside Borne here: %1</source>
-        <translation>Ici, les mises à jour se font hors de Borne : %1</translation>
-    </message>
-    <message>
         <source>Version %1 is available.</source>
         <translation>La version %1 est disponible.</translation>
     </message>
@@ -1236,10 +1232,6 @@
     <message>
         <source>Downloaded and verified. Borne restarts to install it.</source>
         <translation>Téléchargée et vérifiée. Borne redémarre pour l'installer.</translation>
-    </message>
-    <message>
-        <source>Download · %1</source>
-        <translation>Télécharger · %1</translation>
     </message>
     <message>
         <source>Please wait…</source>
@@ -1480,6 +1472,30 @@
     <message>
         <source>Moving light</source>
         <translation>Lumière animée</translation>
+    </message>
+    <message>
+        <source>Borne cannot install it itself here (%1): download it from GitHub.</source>
+        <translation>Borne ne peut pas l’installer lui-même ici (%1) : téléchargez-la depuis GitHub.</translation>
+    </message>
+    <message>
+        <source>Latest build of this channel: %1 (the one installed).</source>
+        <translation>Dernière build de ce canal : %1 (celle qui est installée).</translation>
+    </message>
+    <message>
+        <source>Open on GitHub</source>
+        <translation>Ouvrir sur GitHub</translation>
+    </message>
+    <message>
+        <source>Download from GitHub</source>
+        <translation>Télécharger depuis GitHub</translation>
+    </message>
+    <message>
+        <source>Install · %1</source>
+        <translation>Installer · %1</translation>
+    </message>
+    <message>
+        <source>Reinstall the latest build</source>
+        <translation>Réinstaller la dernière build</translation>
     </message>
 </context>
 </TS>

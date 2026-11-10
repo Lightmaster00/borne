@@ -36,23 +36,33 @@ Item {
 
     readonly property string updateText: {
         if (!upd) return ""
-        if (upd.unsupported) return qsTr("Updates are handled outside Borne here: %1").arg(upd.unsupported)
         const st = updState ? updState.state : "idle"
-        if (st === "available") return qsTr("Version %1 is available.").arg(updState.available.version)
+        const manual = upd.unsupported ? qsTr("Borne cannot install it itself here (%1): download it from GitHub.").arg(upd.unsupported) : ""
+        if (st === "available") {
+            const v = updState.available
+            const newer = v.build > upd.current.build
+            return (newer ? qsTr("Version %1 is available.").arg(v.version) : qsTr("Latest build of this channel: %1 (the one installed).").arg(v.version)) + (manual ? " " + manual : "")
+        }
         if (st === "downloading") return qsTr("Downloading the update… %1%").arg(updState.total > 0 ? Math.round(100 * updState.received / updState.total) : 0)
         if (st === "ready") return qsTr("Downloaded and verified. Borne restarts to install it.")
         if (st === "checking") return qsTr("Checking…")
         if (st === "uptodate") return qsTr("Borne is up to date.")
         if (st === "error") return qsTr("Update failed: %1").arg(updState.error || "")
-        return ""
+        return manual
     }
     readonly property var updateButtons: {
-        if (!upd || upd.unsupported) return []
+        if (!upd) return []
         const st = updState ? updState.state : "idle"
-        if (st === "available") return [{ id: "update-download", label: qsTr("Download · %1").arg(fmtSize(updState.available.assets[upd.current.platform].size)), primary: true }]
+        const github = { id: "update-github", label: qsTr("Open on GitHub") }
         if (st === "downloading" || st === "checking") return [{ id: "none", label: qsTr("Please wait…"), disabled: true }]
         if (st === "ready") return [{ id: "update-apply", label: qsTr("Restart and install"), primary: true }]
-        return [{ id: "update-check", label: qsTr("Check now") }]
+        if (st === "available") {
+            const a = updState.available.assets[upd.current.platform]
+            if (upd.unsupported) return [{ id: "update-github", label: qsTr("Download from GitHub"), primary: true }]
+            return [{ id: "update-download", label: qsTr("Install · %1").arg(fmtSize(a ? a.size : 0)), primary: true }, github]
+        }
+        return [{ id: "update-check", label: qsTr("Check now"), primary: true },
+                { id: "update-force", label: qsTr("Reinstall the latest build") }, github]
     }
 
     readonly property var sections: [

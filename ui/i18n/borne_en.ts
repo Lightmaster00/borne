@@ -1222,10 +1222,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Updates are handled outside Borne here: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Version %1 is available.</source>
         <translation type="unfinished" />
     </message>
@@ -1235,10 +1231,6 @@
     </message>
     <message>
         <source>Downloaded and verified. Borne restarts to install it.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Download · %1</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1479,6 +1471,30 @@
     </message>
     <message>
         <source>Moving light</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne cannot install it itself here (%1): download it from GitHub.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Latest build of this channel: %1 (the one installed).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open on GitHub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download from GitHub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reinstall the latest build</source>
         <translation type="unfinished" />
     </message>
 </context>

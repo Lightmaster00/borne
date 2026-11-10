@@ -137,6 +137,14 @@ pub fn unsupported_reason() -> Option<String> {
             "this copy was built locally; updates come with the builds published on GitHub".into(),
         );
     }
+    if std::env::current_exe()
+        .map(|p| p.to_string_lossy().contains("/AppTranslocation/"))
+        .unwrap_or(false)
+    {
+        return Some(
+            "macOS runs Borne from a temporary read-only copy: move Borne.app to Applications and open it again".into(),
+        );
+    }
     if std::env::var_os("FLATPAK_ID").is_some() {
         return Some("installed with Flatpak: update it with Flatpak".into());
     }
@@ -160,6 +168,7 @@ pub fn status(app: &Shared) -> Value {
         "channel": channel(app),
         "auto_check": auto_check(app),
         "unsupported": unsupported_reason(),
+        "release_page": release_page(app),
         "update": get_state(),
     })
 }
@@ -217,15 +226,19 @@ fn fetch_manifest(channel: &str) -> Result<Manifest, String> {
     serde_json::from_slice(&body).map_err(|e| format!("unreadable update information ({e})"))
 }
 
-/// Looks for a newer build on the chosen channel (background thread).
-pub fn check(app: &Shared) {
-    if let Some(reason) = unsupported_reason() {
-        set_state(app, |s| {
-            s.state = "unsupported".into();
-            s.error = Some(reason);
-        });
-        return;
+/// The page to download a build by hand: the channel's release on GitHub.
+pub fn release_page(app: &Shared) -> String {
+    if channel(app) == "dev" {
+        format!("{DEFAULT_BASE}/tag/dev")
+    } else {
+        format!("{DEFAULT_BASE}/latest")
     }
+}
+
+/// Looks for a newer build on the chosen channel (background thread). `force` offers the
+/// channel's latest build even when it is not newer (reinstall, or move from dev to stable).
+/// Works even where Borne cannot install itself: the build is then offered as a manual download.
+pub fn check(app: &Shared, force: bool) {
     if BUSY.swap(true, Ordering::SeqCst) {
         return;
     }
@@ -239,7 +252,7 @@ pub fn check(app: &Shared) {
         set_state(&app, |s| {
             s.checked_at = Some(crate::db::now());
             match result {
-                Ok(m) if m.build > build() && m.assets.contains_key(&platform()) => {
+                Ok(m) if (force || m.build > build()) && m.assets.contains_key(&platform()) => {
                     s.state = "available".into();
                     s.available = Some(m);
                 }
@@ -265,6 +278,9 @@ fn staging_dir(pkg: &Path, build: u64) -> PathBuf {
 
 /// Downloads, verifies and extracts the available build next to the installed package.
 pub fn download(app: &Shared) -> Result<(), String> {
+    if let Some(reason) = unsupported_reason() {
+        return Err(reason);
+    }
     let manifest = get_state().available.ok_or("no update available")?;
     let asset = manifest
         .assets
@@ -490,7 +506,7 @@ pub fn start(app: &Shared) {
                 "idle" | "uptodate" | "error" | "available"
             )
         {
-            check(&app);
+            check(&app, false);
         }
         std::thread::sleep(Duration::from_secs(6 * 3600));
     });

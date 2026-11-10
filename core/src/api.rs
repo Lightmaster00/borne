@@ -35,7 +35,8 @@
 //!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
 //! Updates
 //!   GET    /api/v1/update                        current build, channel, state of the update
-//!   POST   /api/v1/update/check                  looks for a newer build (event "update")
+//!   POST   /api/v1/update/check                  looks for a newer build (event "update");
+//!                                                 {"force": true} offers the latest even if not newer
 //!   POST   /api/v1/update/download               downloads and verifies it
 //!   POST   /api/v1/update/apply                  installs it; Borne restarts when the UI quits
 //!   GET    /api/v1/downloads  ·  DELETE /api/v1/downloads/<id>
@@ -675,7 +676,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Get, ["api", "v1", "settings"]) => ok(req, settings(app)),
         (Method::Get, ["api", "v1", "update"]) => ok(req, update::status(app)),
         (Method::Post, ["api", "v1", "update", "check"]) => {
-            update::check(app);
+            let force = body_json(&mut req)["force"].as_bool().unwrap_or(false);
+            update::check(app, force);
             ok(req, update::status(app))
         }
         (Method::Post, ["api", "v1", "update", "download"]) => match update::download(app) {

@@ -352,6 +352,12 @@ Window {
             })
         }
         else if (id === "update-check") api("POST", "/api/v1/update/check", {}, function () { loadSettings() })
+        else if (id === "update-force") api("POST", "/api/v1/update/check", { force: true }, function () { loadSettings() })
+        else if (id === "update-github") {
+            const u = settingsPage.upd
+            const a = u && settingsPage.updState && settingsPage.updState.available ? settingsPage.updState.available.assets[u.current.platform] : null
+            Qt.openUrlExternally(a && a.url ? a.url : (u ? u.release_page : "https://github.com/Lightmaster00/borne/releases"))
+        }
         else if (id === "update-download") api("POST", "/api/v1/update/download", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "update-apply") {
             api("POST", "/api/v1/update/apply", {}, function (r, err) {
