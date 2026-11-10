@@ -21,6 +21,8 @@ Item {
 
     readonly property int columns: 10    // up / down jump this many games
     property int revision: 0
+    property string homeStyle: "boxes"   // "boxes" or "arcade"
+    readonly property bool arcade: homeStyle === "arcade"
 
     function fmtSize(b) {
         return b >= 1073741824 ? qsTr("%1 GB").arg(Number(b / 1073741824).toLocaleString(Qt.locale(), "f", 1))
@@ -51,7 +53,7 @@ Item {
     }
     Column {
         id: info
-        x: 96; y: 130
+        x: 96; y: root.arcade ? 926 : 130
         width: 900
         spacing: 18
         visible: root.game !== null
@@ -65,6 +67,7 @@ Item {
         Text {
             width: parent.width
             height: 92
+            visible: !root.arcade
             text: root.game ? root.game.name : ""
             fontSizeMode: Text.HorizontalFit
             minimumPixelSize: 44
@@ -107,8 +110,8 @@ Item {
             }
         }
         Text {
+            visible: !root.arcade && text !== ""
             text: root.game && root.game.summary ? root.game.summary : ""
-            visible: text !== ""
             wrapMode: Text.WordWrap
             width: 760
             maximumLineCount: 2
@@ -120,8 +123,20 @@ Item {
     }
 
     // ---------- the boxes ----------
+    ArcadeRoom {
+        z: -1
+        visible: root.arcade
+        anchors.fill: parent
+        theme: root.theme
+        games: root.games
+        currentIndex: root.currentIndex
+        revision: root.revision
+        pointerActive: root.pointerActive
+        onPicked: (i) => root.picked(i)
+    }
     BoxShelf {
         id: boxes
+        visible: !root.arcade
         x: 0; y: 360
         width: parent.width; height: 600
         theme: root.theme

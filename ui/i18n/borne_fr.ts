@@ -1402,5 +1402,21 @@
         <source>Change value</source>
         <translation>Changer la valeur</translation>
     </message>
+    <message>
+        <source>Home</source>
+        <translation>Accueil</translation>
+    </message>
+    <message>
+        <source>How the library is shown</source>
+        <translation>Présentation de la bibliothèque</translation>
+    </message>
+    <message>
+        <source>Game boxes</source>
+        <translation>Boîtes de jeux</translation>
+    </message>
+    <message>
+        <source>Arcade room</source>
+        <translation>Salle d'arcade</translation>
+    </message>
 </context>
 </TS>

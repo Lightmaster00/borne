@@ -309,6 +309,7 @@ Window {
         else if (id === "auto") post({ update_auto: payload })
         else if (id === "sounds") prefs.sounds = payload
         else if (id === "trailers") prefs.trailers = payload
+        else if (id === "home") prefs.homeStyle = payload
         else if (id === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Sync started."), "info"); refreshStatus() } })
         else if (id === "server") { overlay = ""; showServer() }
         else if (id === "profile") { overlay = ""; showProfiles() }
@@ -863,6 +864,7 @@ Window {
         pointerActive: win.pointerActive
         letters: win.letters
         revision: win.libRevision
+        homeStyle: prefs.homeStyle
         currentLetter: win.focusedGame ? win.letterOf(win.focusedGame.name) : ""
         onPicked: (i) => win.pick(i)
         onAction: (a) => win.dispatch(a, "mouse")
@@ -1087,6 +1089,7 @@ Window {
         version: win.coreVersion
         reportPaths: win.reportPaths
         sounds: prefs.sounds
+        homeStyle: prefs.homeStyle
         trailers: win.trailers
         pointerActive: win.pointerActive
         onAction: (id, payload) => win.settingsAction(id, payload)
@@ -1229,6 +1232,7 @@ Window {
         category: "ui"
         property bool sounds: true
         property bool trailers: true
+        property string homeStyle: "boxes"
         property int notifiedBuild: 0
     }
 

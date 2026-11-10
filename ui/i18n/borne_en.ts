@@ -1402,5 +1402,21 @@
         <source>Change value</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Home</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How the library is shown</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game boxes</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Arcade room</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 </TS>

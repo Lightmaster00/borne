@@ -10,6 +10,7 @@ Item {
     property var status: null            // GET /api/v1/status
     property bool sounds: true
     property bool trailers: true
+    property string homeStyle: "boxes"
     property bool pointerActive: false
     property string version: ""
     property var reportPaths: []
@@ -77,6 +78,8 @@ Item {
             { id: "update", kind: "buttons", title: qsTr("Borne %1").arg(page.version), desc: updateText, items: updateButtons }
         ]
         if (id === "interface") return [
+            { id: "home", kind: "chips", title: qsTr("Home"), desc: qsTr("How the library is shown"), selected: homeStyle,
+              items: [{ id: "boxes", label: qsTr("Game boxes") }, { id: "arcade", label: qsTr("Arcade room") }] },
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
             { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Play the selected game's trailer, muted, after two seconds"), selected: trailers ? "on" : "off", items: onOff() }
         ]
@@ -125,6 +128,7 @@ Item {
         else if (r.id === "channel") page.action("channel", item.id)
         else if (r.id === "auto") page.action("auto", item.id === "on")
         else if (r.id === "sounds") page.action("sounds", item.id === "on")
+        else if (r.id === "home") page.action("home", item.id)
         else if (r.id === "trailers") page.action("trailers", item.id === "on")
         else page.action(item.id, null)
     }
