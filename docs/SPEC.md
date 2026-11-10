@@ -730,7 +730,9 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 ## Cases, art and languages
 
 - Each console's games have a case profile (ui/components/Cases.js): material (cardboard, keep case,
-  jewel case, clamshell), plastic color and thickness from real case dimensions. Logos and printed art
+  jewel case, clamshell), plastic color and real outer size in millimetres; cases are drawn to scale
+  against each other (PlayStation jewel case small and nearly square, GameCube case tall, Super
+  Nintendo box wide, or upright when its cover is). Logos and printed art
   come only from the user's RomM scans.
 - `GET /api/v1/games/{id}/art/{side|back|fanart|logo|physical|title|backdrop}`: ScreenScraper media
   stored by RomM (`ss_metadata.*_path`), from any version of the game, fetched once with the profile's

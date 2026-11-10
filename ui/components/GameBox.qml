@@ -17,16 +17,18 @@ Item {
     property bool pointerActive: false
     signal clicked()
 
-    // Shape from the cover's proportions (portrait 2:3 until the cover is loaded).
-    readonly property real aspect: cover.status === Image.Ready && cover.implicitHeight > 0
-                                   ? Math.max(0.55, Math.min(1.45, cover.implicitWidth / cover.implicitHeight)) : 0.68
-    readonly property real bh: aspect > 1 ? Math.min(stage.boxH, 400 / aspect) : stage.boxH
-    readonly property real bw: bh * aspect
+    // The case's real size, to scale with the other consoles' cases. Boxes sold both ways
+    // (Super Nintendo: wide in America, upright in Europe) follow their cover.
     readonly property var kind: Cases.of(game ? game.platform_slug : "")
+    readonly property real coverAspect: cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
+    readonly property bool turned: !!kind.turns && coverAspect > 0 && coverAspect < 1
+    readonly property real mm: stage.boxH / Cases.TALLEST
+    readonly property real bw: (turned ? kind.h : kind.w) * mm
+    readonly property real bh: (turned ? kind.w : kind.h) * mm
+    readonly property real bd: Math.max(6, kind.d * mm)
     readonly property string mat: kind.mat
     readonly property bool plastic: mat !== "card"
     readonly property real rim: mat === "keep" ? 5 : mat === "clam" ? 4 : mat === "jewel" ? 2 : 0
-    readonly property real bd: Math.max(12, Math.min(80, bh * kind.depth))
     readonly property var dims: ({ w: bw, h: bh, d: bd })
 
     readonly property real frontFacing: stage.facing(place, "front")

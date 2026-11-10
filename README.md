@@ -43,7 +43,8 @@ Since then:
   size, updates, interface sounds and trailers.
 - **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
   gamepad is used. The wheel scrolls the library.
-- **One look, "Halo"**: the games stand as physical cases shaped by their console (cardboard boxes
+- **One look, "Halo"**: the games stand as physical cases at the real size and shape of their console's
+  retail case (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), with the real spine printed from
   RomM's ScreenScraper scan when there is one. Three backgrounds (Settings → Interface → Background):
