@@ -33,8 +33,8 @@ Specification: [`docs/SPEC.md`](docs/SPEC.md).
 Since then:
 
 - **Game page**: a game opens on its own page before anything is downloaded. Versions of the same game
-  (regions, languages, revisions) are grouped into one entry; the page picks the version and the
-  language the emulator starts in, both remembered per profile.
+  (regions, languages, revisions) are grouped into one entry; picking a language picks the version,
+  remembered per profile.
 - **Play from the network** (Linux): instead of downloading, a game can be linked into the Borne
   virtual mount (`~/.local/share/borne/mount`). Only the games you pick appear there; their files
   are read from RomM on demand with the profile's token, through a bounded cache. No NFS export,
@@ -43,17 +43,20 @@ Since then:
   size, updates, interface sounds and trailers.
 - **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
   gamepad is used. The wheel scrolls the library.
-- **One look, "Halo"**: a sober dark stage with a soft light behind the selection; the games stand as
-  physical cases (cover under a plastic rim, spines with the system's color band, a contact shadow and a
-  faint reflection): the selected case faces you and sways gently, the others turn toward it and show
-  their spines. An arcade room is offered as an alternative home (Settings → Interface). A letter index
-  and LT / RT jump through the alphabet (the letter shows briefly); Y opens a search with results as you
-  type. Panels are glass; the accent color is taken from each game's cover; type is Manrope.
-- **Game page**: the trailer plays across the top (RomM's ScreenScraper video, fetched by the core with
-  the profile's token and cached; enable the video media in RomM's ScreenScraper settings and rescan); below, the choices, an introduction, the credits
-  (developer, publisher, director, producer, composer, series) and anecdotes from Wikidata and Wikipedia
-  (in the UI language when the article exists), and RomM's screenshots. Only the game's name and year
-  are sent to Wikimedia; answers are cached for 30 days. Designed at 1920×1080 and scaled to any window.
+- **One look, "Halo"**: the games stand as physical cases shaped by their console (cardboard boxes
+  for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
+  Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), with the real spine printed from
+  RomM's ScreenScraper scan when there is one. Three backgrounds (Settings → Interface → Background):
+  the selected game's art, a dim game room with a neon and a shelf, or moving light. An arcade room is
+  offered as an alternative home. A letter index and LT / RT jump through the alphabet; Y opens a
+  search with results as you type. The accent color is taken from each game's cover; type is Manrope.
+- **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
+  the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
+  a language chooses the version launched (English → USA, Français → the European version that has
+  French, 日本語 → Japan). Below: summary, screenshots, credits and anecdotes from Wikidata and
+  Wikipedia (only the game's name and year are sent; answers cached 30 days). For spines, logos,
+  artwork and trailers, enable these media in RomM's ScreenScraper settings (`scan.media`:
+  `box2d_side`, `logo`, `fanart`, `video`) and rescan.
 - **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
   writes a shareable text report (versions, settings, server version, recent downloads, log; no
   passwords or tokens) to the data folder and to Downloads.

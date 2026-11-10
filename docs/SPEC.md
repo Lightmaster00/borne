@@ -222,7 +222,9 @@ application, client of the Rust core's local API. ES-DE is not used, neither as 
 Since v1.7 Borne has one look, "Halo", instead of interchangeable themes: several themes spread the
 effort thin, and a user QML theme is code that runs with the UI's rights.
 
-- Background: a sober dark stage (vertical graphite gradient, a soft light tinted by the selected game's
+- Background (three styles in Settings: the game's art — RomM fanart, else a screenshot, else the
+  cover — drifting and cross-fading; a game room — wall, neon tinted by the game, wooden shelf, dust;
+  moving light — beams, veils, particles). Former default: a sober dark stage (vertical graphite gradient, a soft light tinted by the selected game's
   accent behind the shelf, breathing slowly, and a vignette). No art or video behind the library: the
   cases carry the color.
 - Library: the selected game's platform, title and states, and the games as physical cases standing on
@@ -724,3 +726,16 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - [S5] ChimeraOS — chimeraos.org. Immutable gaming distribution, Steam session.
 - [S6] State of Switch emulation (specialized press, 2026): discontinuations and takedown requests, Eden and Citron active. Secondary sources to revalidate.
 - [S7] Pegasus Frontend — pegasus-frontend.org. Qt/QML launcher with QML themes, reference for theme architecture.
+
+## Cases, art and languages
+
+- Each console's games have a case profile (ui/components/Cases.js): material (cardboard, keep case,
+  jewel case, clamshell), plastic color and thickness from real case dimensions. Logos and printed art
+  come only from the user's RomM scans.
+- `GET /api/v1/games/{id}/art/{side|back|fanart|logo|physical|title|backdrop}`: ScreenScraper media
+  stored by RomM (`ss_metadata.*_path`), from any version of the game, fetched once with the profile's
+  token and cached in `media/art`. Library entries and the game page list the kinds available
+  (`art_kinds`) so the UI asks only for those.
+- Game page `languages`: the languages found across the game's versions, each with the version
+  launched for it (the region that natively speaks it first, then installed, then the usual score).
+  Choosing one stores both the version and the language.
