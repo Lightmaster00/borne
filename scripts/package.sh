@@ -21,7 +21,7 @@ rm -rf "$OUT"; mkdir -p "$OUT"/{bin,lib,plugins,qml,resources}
 cp -a "$QT/lib/." "$OUT/lib/"
 ( cd "$OUT/lib" && rm -rf cmake pkgconfig metatypes ./*.prl \
   libQt6WebEngine* libQt63D* libQt6Quick3DParticle* libQt6Quick3DXr* libQt6Quick3DSpatialAudio* \
-  libQt6Quick3DAssetImport* libQt6Quick3DPhysics* libQt6Charts* libQt6DataVisualization* libQt6Graphs* \
+  libQt6Quick3DPhysics* libQt6Charts* libQt6DataVisualization* libQt6Graphs* \
   libQt6Location* libQt6Pdf* libQt6Designer* libQt6Bluetooth* libQt6Nfc* libQt6Sensors* libQt6Serial* \
   libQt6Scxml* libQt6StateMachine* libQt6RemoteObjects* libQt6TextToSpeech* libQt6WebView* libQt6Positioning* \
   libQt6Help* libQt6UiTools* libQt6HttpServer* libQt6SpatialAudio* libQt6Sql* libQt6Test* libQt6PrintSupport* \
