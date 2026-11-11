@@ -1,4 +1,6 @@
-// Background, in one of three styles (Settings → Interface → Background):
+// Background, in one of four styles (Settings → Interface → Background):
+//  "ribbons" — the console's own color, lit from above, with slow ribbons of light across it and
+//            a glossy floor under the cases (the default);
 //  "game"  — the selected game's artwork (RomM fanart, else a screenshot, else the cover), sharp
 //            but darkened, drifting slowly and cross-fading when the selection settles;
 //  "room"  — a dim game room: a wall, a neon tube tinted by the game, a shelf the cases stand on,
@@ -7,12 +9,15 @@
 import QtQuick
 import QtQuick.Shapes
 import QtQuick.Particles
+import "Cases.js" as Cases
 
 Item {
     id: amb
     property QtObject theme
     property var game: null
-    property string style: "game"
+    property string style: "ribbons"
+    property color tint: Cases.tint(game ? game.platform_slug : "")
+    Behavior on tint { ColorAnimation { duration: 700 } }
     property bool trailers: true      // kept for callers; no video plays behind the library
     property bool paused: false
     property real dim: 0              // extra darkening for pages drawn over it
@@ -21,7 +26,7 @@ Item {
     readonly property string cover: game && game.cover ? game.cover : ""
     readonly property color accent: theme.accent
     // Where the cases stand (same rule as LibraryView's shelf).
-    readonly property real floorY: Math.max(330, 300 + (height - 990) / 2) + 510
+    readonly property real floorY: Math.max(170, (height - 1000) / 2 + 170) + 510
 
     // ---------- shared base ----------
     Rectangle {
@@ -29,6 +34,78 @@ Item {
         gradient: Gradient {
             GradientStop { position: 0.0; color: "#121419" }
             GradientStop { position: 1.0; color: "#07080a" }
+        }
+    }
+
+    // ---------- "ribbons": the console's color and flowing light ----------
+    Item {
+        anchors.fill: parent
+        visible: amb.style === "ribbons"
+        Shape {
+            anchors.fill: parent
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                strokeWidth: -1
+                fillGradient: RadialGradient {
+                    centerX: amb.width / 2; centerY: amb.height * 0.32
+                    focalX: centerX; focalY: centerY
+                    centerRadius: Math.max(amb.width, amb.height) * 0.85; focalRadius: 0
+                    GradientStop { position: 0.0; color: Qt.darker(amb.tint, 1.25) }
+                    GradientStop { position: 0.55; color: Qt.darker(amb.tint, 2.6) }
+                    GradientStop { position: 1.0; color: Qt.darker(amb.tint, 6) }
+                }
+                PathRectangle { x: 0; y: 0; width: amb.width; height: amb.height }
+            }
+        }
+        // Ribbons of light: long curves whose bends drift slowly.
+        Repeater {
+            model: 4
+            Shape {
+                id: rib
+                required property int index
+                property real t: index * 1.7
+                anchors.fill: parent
+                preferredRendererType: Shape.CurveRenderer
+                NumberAnimation on t {
+                    from: rib.index * 1.7; to: rib.index * 1.7 + Math.PI * 2
+                    duration: 30000 + rib.index * 9000; loops: Animation.Infinite
+                    running: amb.visible && amb.style === "ribbons" && !amb.paused
+                }
+                readonly property real baseY: amb.height * (0.16 + rib.index * 0.13)
+                ShapePath {
+                    strokeWidth: 7
+                    strokeColor: Qt.rgba(1, 0.92, 0.92, 0.05 * (1 - rib.index * 0.15))
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    startX: -40; startY: rib.baseY + Math.sin(rib.t) * 60
+                    PathCubic {
+                        x: amb.width + 40; y: rib.baseY + 120 + Math.cos(rib.t * 0.8) * 70
+                        control1X: amb.width * 0.35; control1Y: rib.baseY - 160 + Math.sin(rib.t * 1.3) * 120
+                        control2X: amb.width * 0.65; control2Y: rib.baseY + 220 + Math.cos(rib.t * 1.1) * 120
+                    }
+                }
+                ShapePath {
+                    strokeWidth: 2
+                    strokeColor: Qt.rgba(1, 0.92, 0.92, 0.32 * (1 - rib.index * 0.15))
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    startX: -40; startY: rib.baseY + Math.sin(rib.t) * 60
+                    PathCubic {
+                        x: amb.width + 40; y: rib.baseY + 120 + Math.cos(rib.t * 0.8) * 70
+                        control1X: amb.width * 0.35; control1Y: rib.baseY - 160 + Math.sin(rib.t * 1.3) * 120
+                        control2X: amb.width * 0.65; control2Y: rib.baseY + 220 + Math.cos(rib.t * 1.1) * 120
+                    }
+                }
+            }
+        }
+        // Glossy floor: lighter just under the cases, fading into shadow.
+        Rectangle {
+            y: amb.floorY - 4; width: amb.width; height: amb.height - amb.floorY + 4
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(amb.tint.r, amb.tint.g, amb.tint.b, 0.22) }
+                GradientStop { position: 0.06; color: Qt.rgba(0, 0, 0, 0.12) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.6) }
+            }
         }
     }
 
@@ -248,7 +325,7 @@ Item {
     ParticleSystem {
         id: dust
         anchors.fill: parent
-        running: amb.visible && amb.style !== "game" && !amb.paused
+        running: amb.visible && (amb.style === "room" || amb.style === "light") && !amb.paused
     }
     Emitter {
         system: dust

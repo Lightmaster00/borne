@@ -40,85 +40,87 @@ Item {
         else if (g.local_state === "missing") c.push({ text: qsTr("Files missing"), bad: true })
         else c.push({ text: qsTr("On RomM · %1").arg(fmtSize(g.fs_size)) })
         if (g.version_count > 1) c.push({ text: qsTr("%n version(s)", "", g.version_count) })
-        if (g.genres) c.push({ text: g.genres.split(",")[0] })
         return c
     }
 
-    // ---------- the selected game ----------
+    // ---------- section header (top left) and the selected game (under its case) ----------
+    Column {
+        x: 96; y: 112
+        visible: !root.arcade
+        spacing: 6
+        Text {
+            text: (root.sectionTitle || qsTr("All games")).toUpperCase()
+            color: Qt.rgba(1, 1, 1, 0.92)
+            font { family: theme.displayFont; pixelSize: 40; weight: Font.ExtraBold; letterSpacing: 6 }
+        }
+        Text {
+            text: root.games ? qsTr("%n game(s)", "", root.games.count) : ""
+            color: theme.fgMuted
+            font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium; letterSpacing: 2 }
+        }
+    }
+
     onGameChanged: if (game) reveal.restart()
     ParallelAnimation {
         id: reveal
         NumberAnimation { target: info; property: "opacity"; from: 0.0; to: 1.0; duration: 320; easing.type: Easing.OutCubic }
-        NumberAnimation { target: info; property: "x"; from: 120; to: 96; duration: 420; easing.type: Easing.OutCubic }
+        NumberAnimation { target: info; property: "anchors.topMargin"; from: 14; to: 0; duration: 420; easing.type: Easing.OutCubic }
     }
     Column {
         id: info
-        x: 96; y: root.arcade ? 926 : 130
-        width: 900
-        spacing: 18
+        anchors { top: root.arcade ? undefined : boxes.bottom; topMargin: 0; horizontalCenter: parent.horizontalCenter }
+        y: root.arcade ? 926 : 0
+        width: Math.min(1100, parent.width - 400)
+        spacing: 12
         visible: root.game !== null
         Text {
             width: parent.width
-            text: root.game ? [root.game.platform_name, root.game.year > 0 ? root.game.year : ""].filter(x => x).join(" · ").toUpperCase() : ""
-            elide: Text.ElideRight
-            color: theme.accent
-            font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold; letterSpacing: 3 }
-        }
-        Text {
-            width: parent.width
-            height: 92
-            visible: !root.arcade
             text: root.game ? root.game.name : ""
+            horizontalAlignment: Text.AlignHCenter
             fontSizeMode: Text.HorizontalFit
-            minimumPixelSize: 44
+            minimumPixelSize: 32
             elide: Text.ElideRight
-            verticalAlignment: Text.AlignVCenter
             color: theme.fg
-            font { family: theme.displayFont; pixelSize: 88; weight: Font.ExtraBold; letterSpacing: -2.5 }
+            font { family: theme.displayFont; pixelSize: 50; weight: Font.Bold; letterSpacing: -0.5 }
         }
-        Flow {
-            width: parent.width
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
             spacing: 10
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.game ? [root.game.platform_name, root.game.year > 0 ? root.game.year : ""].filter(x => x).join("  ·  ") : ""
+                color: theme.fgMuted
+                font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium }
+            }
             Repeater {
                 model: root.chips
                 Rectangle {
                     required property var modelData
-                    height: 36
-                    width: chipRow.implicitWidth + 32
-                    radius: 18
-                    color: modelData.bad ? theme.badTint : theme.glass
-                    border { width: 1; color: theme.glassEdge }
+                    height: 30
+                    width: chipRow.implicitWidth + 26
+                    radius: 15
+                    color: modelData.bad ? theme.badTint : Qt.rgba(1, 1, 1, 0.08)
+                    border { width: 1; color: Qt.rgba(1, 1, 1, 0.12) }
                     Row {
                         id: chipRow
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 7
                         Icon {
                             visible: !!modelData.icon
                             anchors.verticalCenter: parent.verticalCenter
                             name: modelData.icon || ""
-                            size: 14; stroke: 3
-                            color: theme.accent
+                            size: 13; stroke: 3
+                            color: theme.fg
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.text
                             color: modelData.bad ? theme.badSoft : theme.fg
-                            font { family: theme.fontFamily; pixelSize: 15; weight: modelData.icon ? Font.DemiBold : Font.Medium }
+                            font { family: theme.fontFamily; pixelSize: 14; weight: Font.Medium }
                         }
                     }
                 }
             }
-        }
-        Text {
-            visible: !root.arcade && text !== ""
-            text: root.game && root.game.summary ? root.game.summary : ""
-            wrapMode: Text.WordWrap
-            width: 760
-            maximumLineCount: 2
-            elide: Text.ElideRight
-            lineHeight: 1.4
-            color: theme.fgSoft
-            font { family: theme.fontFamily; pixelSize: 20 }
         }
     }
 
@@ -137,8 +139,8 @@ Item {
     BoxShelf {
         id: boxes
         visible: !root.arcade
-        // Centered in the space between the title block and the hint bar, whatever the aspect ratio.
-        x: 0; y: Math.max(330, 300 + (root.height - 300 - 90 - 600) / 2)
+        // The cases stand in the middle; the selected game's name sits under its case.
+        x: 0; y: Math.max(170, (root.height - 1000) / 2 + 170)
         width: parent.width; height: 600
         theme: root.theme
         games: root.games

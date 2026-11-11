@@ -28,7 +28,7 @@ Item {
     readonly property real bd: Math.max(6, kind.d * mm)
     readonly property string mat: kind.mat
     readonly property bool plastic: mat !== "card"
-    readonly property real rim: mat === "keep" ? 5 : mat === "clam" ? 4 : mat === "jewel" ? 2 : 0
+    readonly property real rim: mat === "keep" ? 7 : mat === "clam" ? 4 : mat === "jewel" ? 2 : 0
     readonly property var dims: ({ w: bw, h: bh, d: bd })
 
     readonly property real frontFacing: stage.facing(place, "front")
@@ -65,7 +65,7 @@ Item {
     Item {
         width: box.bw; height: box.bh
         visible: box.frontFacing > 0.05
-        opacity: 0.08 * box.frontFacing
+        opacity: 0.06 * box.frontFacing
         transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, "front", true, box.dims) }
         Image {
             anchors.fill: parent
@@ -233,13 +233,13 @@ Item {
         // Turned away: darker.
         Rectangle { anchors.fill: parent; color: "black"; opacity: Math.max(0, 0.62 - box.frontFacing * 0.62) }
 
-        // Selection: a fine white line around the box.
+        // Hover (mouse): a fine white line around the box. The selected box needs none: it stands forward.
         Rectangle {
             anchors { fill: parent; margins: -8 }
             radius: 12
             color: "transparent"
             border { width: 2.5; color: box.theme.focusRing }
-            opacity: box.current && box.stage.showSelection ? 0.9 : mouse.containsMouse ? 0.35 : 0
+            opacity: !box.current && mouse.containsMouse ? 0.35 : 0
             Behavior on opacity { NumberAnimation { duration: 200 } }
         }
         MouseArea {

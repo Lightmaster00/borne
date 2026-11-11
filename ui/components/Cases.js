@@ -36,9 +36,19 @@ const CASES = {
     psp:       { mat: "keep",  color: "#141416", w: 105, h: 180, d: 14 },
     nds:       { mat: "keep",  color: "#18181b", w: 125, h: 137, d: 14 },
     "3ds":     { mat: "keep",  color: "#eceef1", w: 125, h: 137, d: 13 },
-    switch:    { mat: "keep",  color: "#dfe2e6", w: 105, h: 170, d: 11 }
+    switch:    { mat: "keep",  color: "#d0202b", w: 105, h: 170, d: 11 }
 }
 const TALLEST = 191   // mm: the tallest case is drawn at the shelf's full box height
+
+// Each console's color, for the stage behind its cases.
+const TINTS = {
+    switch: "#c4161f", ngc: "#5a3fb0", wii: "#7f8fa3", wiiu: "#1f7fc4", ps2: "#1d3c94", psx: "#4a4f5c",
+    ps: "#4a4f5c", ps3: "#253f86", ps4: "#1f4aa8", psp: "#3b3f4c", nes: "#a3242b", famicom: "#a3242b",
+    snes: "#5b4b9a", sfam: "#5b4b9a", n64: "#2e7d4f", gb: "#6c7a3a", gbc: "#7a3fa0", gba: "#4b3fa8",
+    genesis: "#1e3f9a", sms: "#a3242b", gamegear: "#2b2f38", saturn: "#3a3f8a", dc: "#e26a1b",
+    xbox: "#3d8b2f", xbox360: "#5aa832", nds: "#5c6470", "3ds": "#b3262d"
+}
+function tint(slug) { return TINTS[slug] || "#3a4a6a" }
 
 function of(slug) {
     return CASES[slug] || { mat: "keep", color: "#18191c", w: 135, h: 190, d: 14 }

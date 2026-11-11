@@ -399,6 +399,14 @@
         <source>%n version(s)</source>
         <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
     </message>
+    <message>
+        <source>All games</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
+    </message>
 </context>
 <context>
     <name>Main</name>
@@ -1495,6 +1503,10 @@
     </message>
     <message>
         <source>Reinstall the latest build</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Console color</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -1314,7 +1314,7 @@ Window {
         property bool sounds: true
         property bool trailers: true
         property string homeStyle: "boxes"
-        property string backgroundStyle: "game"
+        property string backgroundStyle: "ribbons"
         property int notifiedBuild: 0
     }
 

@@ -48,12 +48,12 @@ Item {
         let x, z, ang
         if (a <= 1) {
             x = t * 340
-            z = 140 * (1 - a) - 60 * a
-            ang = -t * 62
+            z = 210 * (1 - a) - 60 * a
+            ang = -t * 64
         } else {
-            x = s * (340 + (a - 1) * 108)
+            x = s * (330 + (a - 1) * 76)
             z = -60 - (a - 1) * 18
-            ang = -s * 62
+            ang = -s * 64
         }
         if (a < 0.5) ang += shelf.sway * shelf.swayAmp * (1 - 2 * a)
         return { x: x, y: shelf.baseY + (a < 1 ? -8 * (1 - a) : 0), z: z, ang: ang }
