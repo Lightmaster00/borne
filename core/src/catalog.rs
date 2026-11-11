@@ -292,6 +292,7 @@ fn sync(app: &Shared) -> Result<(), RommError> {
     fetch_covers(app, &client, covers);
     crate::media::prefetch(app, &client);
     crate::screenscraper::start(app, false);
+    crate::launchbox::start(app, false);
     Ok(())
 }
 

@@ -363,6 +363,8 @@ Window {
         else if (id === "trailers") prefs.trailers = payload
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
+        else if (id === "lb-enabled") api("POST", "/api/v1/launchbox", { enabled: payload, fetch: payload }, function () { loadSettings() })
+        else if (id === "lb-fetch" || id === "lb-again") api("POST", "/api/v1/launchbox", { fetch: true, again: id === "lb-again" }, function () { loadSettings() })
         else if (id === "ss-signin") ssSignIn()
         else if (id === "ss-signout") api("DELETE", "/api/v1/screenscraper", null, function () { loadSettings() })
         else if (id === "ss-fetch" || id === "ss-again") api("POST", "/api/v1/screenscraper/fetch", { again: id === "ss-again" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
@@ -608,6 +610,7 @@ Window {
             else if (m.type === "library") libReload.restart()
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
+            else if (m.type === "launchbox") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "screenscraper") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "sync") {
                 if (win.status) { const s = win.status; s.sync = m.sync; win.status = s; win.statusChanged() }

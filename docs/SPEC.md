@@ -770,3 +770,14 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   front) using the front's proportions. ScreenScraper's images take precedence over RomM's copies.
 - Boxes are real boxes: the spine on the left side only, the opening edge on the right; the front
   takes the exact proportions of its image (scan, else cover), so nothing is cropped.
+
+## LaunchBox Games Database (no account)
+
+- On by default (Settings → Game images). The core downloads LaunchBox's public `Metadata.zip`
+  once every 30 days, reads `Metadata.xml` as a stream and keeps only the consoles in the library
+  (platform names from RomM's LaunchBox mapping, `launchbox_platforms.rs`).
+- Games are matched by console and normalized title, then alternate titles. Images: `Box - Front`,
+  `Box - Spine`, `Box - Back` (and reconstructed variants), `Cart - Front` / `Disc`, `Clear Logo`,
+  `Fanart - Background`, from `images.launchbox-app.com`, in the version's region first.
+- Precedence: Borne's ScreenScraper access, then LaunchBox, then RomM's copies.
+  `BORNE_LAUNCHBOX_BASE` points tests at a local stand-in.

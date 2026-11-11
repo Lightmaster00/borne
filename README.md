@@ -57,7 +57,8 @@ Since then:
   French, 日本語 → Japan). Below: summary, screenshots, credits and anecdotes from Wikidata and
   Wikipedia (only the game's name and year are sent; answers cached 30 days). For spines, logos,
   artwork and trailers, enable these media in RomM's ScreenScraper settings (`scan.media`:
-  `box2d`, `box2d_side`, `box2d_back`, `logo`, `fanart`, `video`) and rescan, or connect Borne to ScreenScraper directly (Settings → ScreenScraper, with your account and
+  `box2d`, `box2d_side`, `box2d_back`, `logo`, `fanart`, `video`) and rescan, Borne also fetches them, with no account, from the LaunchBox Games Database (Settings → Game images),
+  or connect Borne to ScreenScraper directly (Settings → ScreenScraper, with your account and
   developer credentials): it then fetches the case front, spine, back, cartridge, logo and artwork itself.
 - **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
   writes a shareable text report (versions, settings, server version, recent downloads, log; no

@@ -1606,18 +1606,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>ScreenScraper</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Not connected</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Account</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Change</source>
         <translation type="unfinished" />
     </message>
@@ -1639,6 +1627,50 @@
     </message>
     <message>
         <source>Fetch everything again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Free, no account: case front, spine and back, cartridge or disc, logo and artwork from the LaunchBox community database. Borne downloads its index (a large file) once a month.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading the LaunchBox index…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reading the LaunchBox index…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetching images… %1 / %2 games, %3 found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 of %2 games found on LaunchBox. ScreenScraper's images, when connected, take precedence.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetched after each sync.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>LaunchBox, ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>LaunchBox Games Database</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>LaunchBox images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper account</source>
         <translation type="unfinished" />
     </message>
 </context>

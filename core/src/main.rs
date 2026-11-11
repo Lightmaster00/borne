@@ -18,6 +18,8 @@ mod diag;
 mod downloads;
 mod events;
 mod facts;
+mod launchbox;
+mod launchbox_platforms;
 mod library;
 mod media;
 mod logfile;

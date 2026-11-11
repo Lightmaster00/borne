@@ -107,6 +107,12 @@ CREATE TABLE IF NOT EXISTS media (
     stamp TEXT NOT NULL,
     PRIMARY KEY (group_key, kind)
 );
+CREATE TABLE IF NOT EXISTS lb_games (id INTEGER NOT NULL, platform TEXT NOT NULL, norm TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS lb_games_key ON lb_games(platform, norm);
+CREATE TABLE IF NOT EXISTS lb_names (id INTEGER NOT NULL, norm TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS lb_names_key ON lb_names(norm);
+CREATE TABLE IF NOT EXISTS lb_images (id INTEGER NOT NULL, type TEXT NOT NULL, region TEXT NOT NULL, file TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS lb_images_id ON lb_images(id);
 CREATE TABLE IF NOT EXISTS oplog (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts INTEGER NOT NULL,
@@ -696,6 +702,16 @@ impl Db {
             .collect()
     }
     pub fn set_media(&self, group_key: &str, kind: &str, path: &str, w: u32, h: u32, stamp: &str) {
+        if stamp.starts_with("lb|") {
+            // ScreenScraper (Borne's own account) takes precedence over LaunchBox.
+            let _ = self.c().execute(
+                "INSERT INTO media (group_key, kind, path, w, h, stamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+                 ON CONFLICT(group_key, kind) DO UPDATE SET path = excluded.path, w = excluded.w, h = excluded.h, stamp = excluded.stamp
+                 WHERE media.stamp NOT LIKE 'ss|%'",
+                rusqlite::params![group_key, kind, path, w, h, stamp],
+            );
+            return;
+        }
         let _ = self.c().execute(
             "INSERT OR REPLACE INTO media (group_key, kind, path, w, h, stamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             rusqlite::params![group_key, kind, path, w, h, stamp],
@@ -714,6 +730,70 @@ impl Db {
         let _ = c.execute("DELETE FROM media", []);
         paths
     }
+    // ---------- LaunchBox Games Database index ----------
+    pub fn lb_replace(&self, idx: &crate::launchbox::Index) {
+        let mut c = self.c();
+        let tx = c.transaction().unwrap();
+        tx.execute_batch("DELETE FROM lb_games; DELETE FROM lb_names; DELETE FROM lb_images;").unwrap();
+        {
+            let mut g = tx.prepare("INSERT INTO lb_games (id, platform, norm) VALUES (?1, ?2, ?3)").unwrap();
+            for (id, p, n) in &idx.games {
+                let _ = g.execute(rusqlite::params![id, p, n]);
+            }
+            let mut a = tx.prepare("INSERT INTO lb_names (id, norm) VALUES (?1, ?2)").unwrap();
+            for (id, n) in &idx.names {
+                let _ = a.execute(rusqlite::params![id, n]);
+            }
+            let mut i = tx.prepare("INSERT INTO lb_images (id, type, region, file) VALUES (?1, ?2, ?3, ?4)").unwrap();
+            for (id, t, r, f) in &idx.images {
+                let _ = i.execute(rusqlite::params![id, t, r, f]);
+            }
+        }
+        tx.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('lb_indexed', ?1)", [now().to_string()]).unwrap();
+        tx.commit().unwrap();
+    }
+    pub fn lb_indexed(&self) -> bool {
+        self.setting("lb_indexed").is_some()
+    }
+    pub fn lb_find(&self, platform: &str, norm: &str) -> Option<i64> {
+        if norm.is_empty() {
+            return None;
+        }
+        let c = self.c();
+        c.query_row("SELECT id FROM lb_games WHERE platform = ?1 AND norm = ?2 LIMIT 1", [platform, norm], |r| r.get(0))
+            .optional()
+            .ok()
+            .flatten()
+            .or_else(|| {
+                c.query_row(
+                    "SELECT n.id FROM lb_names n JOIN lb_games g ON g.id = n.id WHERE g.platform = ?1 AND n.norm = ?2 LIMIT 1",
+                    [platform, norm],
+                    |r| r.get(0),
+                )
+                .optional()
+                .ok()
+                .flatten()
+            })
+    }
+    pub fn lb_images(&self, id: i64) -> Vec<(String, String, String)> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT type, region, file FROM lb_images WHERE id = ?1").unwrap();
+        st.query_map([id], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect()
+    }
+    /// Games looked up in LaunchBox, and found there.
+    pub fn lb_counts(&self) -> (i64, i64) {
+        self.c()
+            .query_row(
+                "SELECT COUNT(*), COALESCE(SUM(stamp = 'found'), 0) FROM media WHERE kind = 'lb'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap_or((0, 0))
+    }
+
     /// Games asked to ScreenScraper, and found there.
     pub fn ss_counts(&self) -> (i64, i64) {
         self.c()

@@ -41,6 +41,7 @@
 //!   POST   /api/v1/screenscraper                 {user,password,dev_id,dev_password}: checks, saves, fetches
 //!   DELETE /api/v1/screenscraper                 forgets the account
 //!   POST   /api/v1/screenscraper/fetch           {"again": bool}: asks ScreenScraper for the games
+//!   POST   /api/v1/launchbox                     {enabled?, fetch?, again?}: LaunchBox Games Database scans
 //!   POST   /api/v1/update/check                  looks for a newer build (event "update");
 //!                                                 {"force": true} offers the latest even if not newer
 //!   POST   /api/v1/update/download               downloads and verifies it
@@ -220,7 +221,8 @@ fn install_mode(app: &Shared) -> String {
 
 fn settings(app: &Shared) -> Value {
     json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app),
-            "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app) })
+            "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app),
+            "launchbox": crate::launchbox::status(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -667,6 +669,16 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "media", "report"]) => ok(req, crate::media::report(app)),
+        (Method::Post, ["api", "v1", "launchbox"]) => {
+            let b = body_json(&mut req);
+            if let Some(on) = b["enabled"].as_bool() {
+                app.db.set_setting("launchbox", if on { "on" } else { "off" });
+            }
+            if b["fetch"].as_bool().unwrap_or(false) || b["again"].as_bool().unwrap_or(false) {
+                crate::launchbox::start(app, b["again"].as_bool().unwrap_or(false));
+            }
+            ok(req, crate::launchbox::status(app))
+        }
         (Method::Get, ["api", "v1", "screenscraper"]) => ok(req, crate::screenscraper::status(app)),
         (Method::Post, ["api", "v1", "screenscraper"]) => {
             let b = body_json(&mut req);

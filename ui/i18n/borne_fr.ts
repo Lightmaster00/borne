@@ -1606,18 +1606,6 @@
         <translation>Récupéré après chaque synchro pour les nouveaux jeux.</translation>
     </message>
     <message>
-        <source>ScreenScraper</source>
-        <translation>ScreenScraper</translation>
-    </message>
-    <message>
-        <source>Not connected</source>
-        <translation>Non connecté</translation>
-    </message>
-    <message>
-        <source>Account</source>
-        <translation>Compte</translation>
-    </message>
-    <message>
         <source>Change</source>
         <translation>Modifier</translation>
     </message>
@@ -1640,6 +1628,50 @@
     <message>
         <source>Fetch everything again</source>
         <translation>Tout récupérer à nouveau</translation>
+    </message>
+    <message>
+        <source>Free, no account: case front, spine and back, cartridge or disc, logo and artwork from the LaunchBox community database. Borne downloads its index (a large file) once a month.</source>
+        <translation>Gratuit, sans compte : face, tranche et dos du boîtier, cartouche ou disque, logo et illustrations depuis la base communautaire LaunchBox. Borne télécharge son index (un gros fichier) une fois par mois.</translation>
+    </message>
+    <message>
+        <source>Downloading the LaunchBox index…</source>
+        <translation>Téléchargement de l’index LaunchBox…</translation>
+    </message>
+    <message>
+        <source>Reading the LaunchBox index…</source>
+        <translation>Lecture de l’index LaunchBox…</translation>
+    </message>
+    <message>
+        <source>Fetching images… %1 / %2 games, %3 found</source>
+        <translation>Récupération des images… %1 / %2 jeux, %3 trouvés</translation>
+    </message>
+    <message>
+        <source>%1 of %2 games found on LaunchBox. ScreenScraper's images, when connected, take precedence.</source>
+        <translation>%1 jeux sur %2 trouvés sur LaunchBox. Les images de ScreenScraper, s’il est connecté, priment.</translation>
+    </message>
+    <message>
+        <source>Fetched after each sync.</source>
+        <translation>Récupéré après chaque synchro.</translation>
+    </message>
+    <message>
+        <source>Game images</source>
+        <translation>Images des jeux</translation>
+    </message>
+    <message>
+        <source>LaunchBox, ScreenScraper</source>
+        <translation>LaunchBox, ScreenScraper</translation>
+    </message>
+    <message>
+        <source>LaunchBox Games Database</source>
+        <translation>Base LaunchBox Games Database</translation>
+    </message>
+    <message>
+        <source>LaunchBox images</source>
+        <translation>Images LaunchBox</translation>
+    </message>
+    <message>
+        <source>ScreenScraper account</source>
+        <translation>Compte ScreenScraper</translation>
     </message>
 </context>
 </TS>

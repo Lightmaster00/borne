@@ -24,6 +24,7 @@ sha2 = "0.10"
 zip = { version = "4", default-features = false, features = ["deflate"] }
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 libc = "0.2"
+quick-xml = "0.37"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
 
 # Borne virtual mount (games played from RomM without a download). Linux only.
