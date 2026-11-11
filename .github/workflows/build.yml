@@ -34,9 +34,15 @@ jobs:
         with:
           workspaces: core
       - name: Build dependencies
+        timeout-minutes: 12
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++ qt6-base-dev qt6-declarative-dev qt6-l10n-tools libudev-dev libxcb-cursor0 libgl-dev libpulse0
+          # Short network timeouts and retries: a stalled mirror once held this step for 40 min.
+          APT="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Dpkg::Use-Pty=0"
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+          sudo apt-get $APT update
+          sudo apt-get $APT install -y --no-install-recommends cmake g++ qt6-base-dev qt6-declarative-dev qt6-l10n-tools libudev-dev libxcb-cursor0 libgl-dev libpulse0
       - name: Core tests
         run: cargo test --release --manifest-path core/Cargo.toml
       - name: Qt 6.8 to bundle (PySide6 wheels)
