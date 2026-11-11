@@ -62,6 +62,9 @@ pub fn developer_access() -> bool {
 #[derive(Serialize, Clone, Default)]
 pub struct Status {
     pub running: bool,
+    pub paused: bool,
+    pub threads: usize,
+    pub max_threads: Option<i64>,
     pub done: usize,
     pub total: usize,
     pub found: usize,
@@ -71,6 +74,23 @@ pub struct Status {
 }
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
+static PAUSED: AtomicBool = AtomicBool::new(false);
+static STOP: AtomicBool = AtomicBool::new(false);
+
+/// Pauses or resumes the run under way (the game being asked finishes first).
+pub fn pause(app: &Shared, paused: bool) {
+    PAUSED.store(paused, Ordering::SeqCst);
+    status_set(app, |s| s.paused = paused && s.running);
+}
+
+/// Stops the run under way; what was fetched stays, the rest is asked next time.
+pub fn stop(app: &Shared) {
+    if RUNNING.load(Ordering::SeqCst) {
+        STOP.store(true, Ordering::SeqCst);
+        PAUSED.store(false, Ordering::SeqCst);
+        status_set(app, |s| s.paused = false);
+    }
+}
 static STATUS: Mutex<Option<Status>> = Mutex::new(None);
 
 fn status_get() -> Status {
@@ -160,6 +180,7 @@ pub fn test(app: &Shared, c: &Credentials) -> Result<Value, String> {
     status_set(app, |s| {
         s.requests_today = num("requeststoday");
         s.max_requests = num("maxrequestsperday");
+        s.max_threads = num("maxthreads");
         s.error = None;
     });
     Ok(json!({ "user": u["id"], "level": u["niveau"], "requests_today": num("requeststoday"), "max_requests": num("maxrequestsperday") }))
@@ -526,29 +547,67 @@ pub fn start(app: &Shared, again: bool) {
                 s.found = 0;
                 s.error = None;
             });
-            for (i, key) in keys.iter().enumerate() {
-                let versions = app.db.group(key);
-                match lookup(&app, &c, &versions) {
-                    Ok(Some(rec)) => {
-                        let rec = redact_record(&rec);
-                        app.db.set_ss_record(key, &rec.to_string());
-                        fetch_game(&app, &c, key, &rec);
-                        app.db.set_media(key, "ss", "", 0, 0, &format!("found|{}", rec["jeu"]["id"]));
-                        status_set(&app, |s| s.found += 1);
-                    }
-                    Ok(None) => app.db.set_media(key, "ss", "", 0, 0, "not found"),
-                    Err(e) => {
-                        app.db.log("screenscraper", &e);
-                        status_set(&app, |s| s.error = Some(e));
-                        break;
-                    }
+            // As many requests at once as the account allows (ScreenScraper's maxthreads, 1 for
+            // a free account), up to 4.
+            let threads = test(&app, &c)
+                .ok()
+                .and_then(|_| status_get().max_threads)
+                .map(|n| n.clamp(1, 4) as usize)
+                .unwrap_or(1);
+            STOP.store(false, Ordering::SeqCst);
+            PAUSED.store(false, Ordering::SeqCst);
+            status_set(&app, |s| {
+                s.threads = threads;
+                s.paused = false;
+            });
+            let queue = std::sync::Arc::new(Mutex::new(keys.into_iter().collect::<std::collections::VecDeque<String>>()));
+            std::thread::scope(|scope| {
+                for _ in 0..threads {
+                    let (queue, app, c) = (queue.clone(), &app, &c);
+                    scope.spawn(move || loop {
+                        while PAUSED.load(Ordering::SeqCst) && !STOP.load(Ordering::SeqCst) {
+                            std::thread::sleep(Duration::from_millis(300));
+                        }
+                        if STOP.load(Ordering::SeqCst) {
+                            return;
+                        }
+                        let Some(key) = queue.lock().unwrap().pop_front() else { return };
+                        let versions = app.db.group(&key);
+                        match lookup(app, c, &versions) {
+                            Ok(Some(rec)) => {
+                                let rec = redact_record(&rec);
+                                app.db.set_ss_record(&key, &rec.to_string());
+                                fetch_game(app, c, &key, &rec);
+                                app.db.set_media(&key, "ss", "", 0, 0, &format!("found|{}", rec["jeu"]["id"]));
+                                status_set(app, |s| s.found += 1);
+                            }
+                            Ok(None) => app.db.set_media(&key, "ss", "", 0, 0, "not found"),
+                            Err(e) => {
+                                app.db.log("screenscraper", &e);
+                                status_set(app, |s| s.error = Some(e));
+                                STOP.store(true, Ordering::SeqCst);
+                                return;
+                            }
+                        }
+                        let done = {
+                            let mut d = 0;
+                            status_set(app, |s| {
+                                s.done += 1;
+                                d = s.done;
+                            });
+                            d
+                        };
+                        if done % 10 == 0 {
+                            app.emit(json!({ "type": "library" }));
+                        }
+                    });
                 }
-                status_set(&app, |s| s.done = i + 1);
-                if i % 10 == 9 {
-                    app.emit(json!({ "type": "library" }));
-                }
-                std::thread::sleep(Duration::from_millis(400));
+            });
+            if STOP.swap(false, Ordering::SeqCst) {
+                app.db.log("screenscraper", "stopped");
             }
+            PAUSED.store(false, Ordering::SeqCst);
+            status_set(&app, |s| s.paused = false);
             status_set(&app, |s| s.running = false);
             app.emit(json!({ "type": "library" }));
             let st = status_get();

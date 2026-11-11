@@ -801,6 +801,15 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "media", "report"]) => ok(req, crate::media::report(app)),
+        (Method::Post, ["api", "v1", "screenscraper", "pause"]) => {
+            let b = body_json(&mut req);
+            crate::screenscraper::pause(app, b["paused"].as_bool().unwrap_or(true));
+            ok(req, crate::screenscraper::status(app))
+        }
+        (Method::Post, ["api", "v1", "screenscraper", "stop"]) => {
+            crate::screenscraper::stop(app);
+            ok(req, crate::screenscraper::status(app))
+        }
         (Method::Get, ["api", "v1", "screenscraper"]) => ok(req, crate::screenscraper::status(app)),
         (Method::Post, ["api", "v1", "screenscraper"]) => {
             let b = body_json(&mut req);

@@ -10,9 +10,6 @@ Item {
     property var status: null            // GET /api/v1/status
     property bool sounds: true
     property bool trailers: true
-    property string homeStyle: "boxes"
-    property string backgroundStyle: "video"
-    property bool cases3d: true
     property bool pointerActive: false
     property string version: ""
     property var reportPaths: []
@@ -110,7 +107,9 @@ Item {
     function ssFetchText() {
         const st = ss && ss.state ? ss.state : null
         if (!st) return ""
+        if (st.running && st.paused) return qsTr("Paused: %1 / %2 games, %3 found").arg(st.done).arg(st.total).arg(st.found)
         if (st.running) return qsTr("Asking ScreenScraper… %1 / %2 games, %3 found").arg(st.done).arg(st.total).arg(st.found)
+               + (st.threads > 1 ? " · " + qsTr("%1 at a time").arg(st.threads) : "")
         if (st.error) return qsTr("Stopped: %1").arg(st.error)
         if (ss.asked) return qsTr("%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.").arg(ss.found).arg(ss.asked).arg(Math.max(0, ss.games - ss.asked))
         return qsTr("Fetched after each sync for new games.")
@@ -202,14 +201,8 @@ Item {
             { id: "update", kind: "buttons", title: qsTr("Borne %1").arg(page.version), desc: updateText, items: updateButtons }
         ]
         if (id === "interface") return [
-            { id: "home", kind: "chips", title: qsTr("Home"), desc: qsTr("How the library is shown"), selected: homeStyle,
-              items: [{ id: "boxes", label: qsTr("Game boxes") }, { id: "arcade", label: qsTr("Arcade room") }] },
-            { id: "background", kind: "chips", title: qsTr("Background"), desc: qsTr("Behind the game boxes"), selected: backgroundStyle,
-              items: [{ id: "video", label: qsTr("Gameplay video") }, { id: "pixels", label: qsTr("Pixel mosaic") }, { id: "ribbons", label: qsTr("Console color") }, { id: "game", label: qsTr("The game's art") }, { id: "room", label: qsTr("Game room") }, { id: "light", label: qsTr("Moving light") }] },
-            { id: "cases", kind: "chips", title: qsTr("Game cases"), desc: qsTr("3D cases lit in real time, or a lighter flat drawing for slow machines"), selected: cases3d ? "3d" : "2d",
-              items: [{ id: "3d", label: qsTr("3D") }, { id: "2d", label: qsTr("Flat") }] },
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
-            { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Play the selected game's trailer, muted, after two seconds"), selected: trailers ? "on" : "off", items: onOff() }
+            { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Videos of the games, muted: behind the library and on the game page"), selected: trailers ? "on" : "off", items: onOff() }
         ]
         if (id === "emulators") return emulatorRows()
         if (id === "systemfiles") return sysFileRows()
@@ -219,12 +212,13 @@ Item {
                      : ss.configured ? [{ id: "ss-signin", label: qsTr("Change") }, { id: "ss-signout", label: qsTr("Sign out") }]
                      : [{ id: "ss-signin", label: qsTr("Connect"), primary: true }] },
             { id: "ss-fetch", kind: "buttons", title: qsTr("Case scans, cartridges, logos"), desc: ssFetchText(),
-              items: [{ id: "ss-fetch", label: qsTr("Fetch missing"), primary: true, disabled: !(ss && ss.configured) || ssRunning },
-                      { id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) || ssRunning }] }
+              items: ssRunning
+                     ? [{ id: ss.state.paused ? "ss-resume" : "ss-pause", label: ss.state.paused ? qsTr("Resume") : qsTr("Pause"), primary: true },
+                        { id: "ss-stop", label: qsTr("Stop") }]
+                     : [{ id: "ss-fetch", label: qsTr("Fetch missing"), primary: true, disabled: !(ss && ss.configured) },
+                        { id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) }] }
         ]
         if (id === "server") return [
-            { id: "media", kind: "buttons", title: qsTr("Game media"), desc: mediaText(),
-              items: [{ id: "media-refresh", label: qsTr("Fetch again"), disabled: !!(status && status.sync && status.sync.running) }] },
             { id: "sync", kind: "buttons", title: qsTr("Library"), desc: syncText(), items: [{ id: "sync", label: qsTr("Sync now"), disabled: !!(status && status.sync && status.sync.running) }] },
             { id: "server", kind: "buttons", title: qsTr("RomM server"), desc: status && status.server_url ? status.server_url + (status.online ? "" : " · " + qsTr("offline")) : qsTr("not configured"),
               items: [{ id: "server", label: qsTr("Change server") }] },
@@ -235,8 +229,6 @@ Item {
             { id: "report", kind: "buttons", title: qsTr("Diagnostic report"),
               desc: reportPaths.length ? qsTr("Saved: %1").arg(reportPaths[reportPaths.length - 1]) : qsTr("Saves the log and settings, without passwords or tokens, to share when something goes wrong"),
               items: [{ id: "report", label: qsTr("Export the report") }] },
-            { id: "diag", kind: "buttons", title: qsTr("Diagnostics and measurements"), desc: qsTr("Graphics session, memory, smoothness benchmark"),
-              items: [{ id: "diag", label: qsTr("Open") }] },
             { id: "quit", kind: "buttons", title: qsTr("Quit Borne"), desc: "", items: [{ id: "quit", label: qsTr("Quit") }] }
         ]
     }
@@ -269,9 +261,6 @@ Item {
         else if (r.id === "channel") page.action("channel", item.id)
         else if (r.id === "auto") page.action("auto", item.id === "on")
         else if (r.id === "sounds") page.action("sounds", item.id === "on")
-        else if (r.id === "home") page.action("home", item.id)
-        else if (r.id === "background") page.action("background", item.id)
-        else if (r.id === "cases") page.action("cases", item.id)
         else if (r.id.startsWith("console:")) page.action("console-emu", { slug: r.id.substring(8), engine: item.id })
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")

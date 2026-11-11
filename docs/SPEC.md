@@ -222,7 +222,7 @@ application, client of the Rust core's local API. ES-DE is not used, neither as 
 Since v1.7 Borne has one look, "Halo", instead of interchangeable themes: several themes spread the
 effort thin, and a user QML theme is code that runs with the UI's rights.
 
-- Background by default: a video of the selected game being played. When the selection rests
+- Background: a video of the selected game being played. When the selection rests
   (0.9 s), `POST /api/v1/games/{id}/gameplay` returns a local file: ScreenScraper's gameplay capture
   (`video-normalized`, else `video`; its address is noted without credentials during the media fetch
   and downloaded on first use, credentials added only for that request, ScreenScraper hosts only),
@@ -233,11 +233,8 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
 - Pixel mosaic, Borne's identity: the selected game's cover decoded at one pixel per 56-unit
   tile and drawn unsmoothed as a wall of large dark pixels, re-colouring tile by tile (each tile flashes
   at its own moment) when the selection settles, a slow diagonal light wave across it, a dark glossy
-  floor under the cases. Other styles (Settings: the game's art — RomM fanart, else a screenshot, else the
-  cover — drifting and cross-fading; a game room — wall, neon tinted by the game, wooden shelf, dust;
-  moving light — beams, veils, particles). Former default: a sober dark stage (vertical graphite gradient, a soft light tinted by the selected game's
-  accent behind the shelf, breathing slowly, and a vignette). No art or video behind the library: the
-  cases carry the color.
+  floor under the cases; it shows under the video, while it loads or when a game has none. The
+  background has no setting (the earlier styles and the arcade-room home were removed).
 - Library: the selected game's platform, title and states, and the games as physical cases standing on
   the stage below (cover inset under a plastic rim with gloss, spines with the system's color band and the
   title, a contact shadow, a faint floor reflection; the case follows the cover's aspect ratio). The
@@ -246,12 +243,10 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   printed front under a clear sleeve, spine on the left, plain opening edge on the right, back) with a
   key light casting soft shadows on a glossy floor that fades out, a fill and a rim light. Only the 13
   cases around the selection exist. Fallback: the earlier 2D drawing (`BoxShelf`, six flat faces
-  through one perspective matrix), used when Qt Quick 3D cannot load or when chosen in Settings →
-  Interface → Game cases (3D / Flat); `ShelfView` picks one and forwards the same properties. A letter index; LT / RT jump between letters and show the letter
+  through one perspective matrix), used when Qt Quick 3D cannot load; `ShelfView` picks one and forwards the same properties. A letter index; LT / RT jump between letters and show the letter
   large for a moment. Y opens the search: on-screen keyboard (or the physical keyboard, where typing any
   letter starts a search), up to six results ranked by title prefix, word prefix then substring, and the
   shelf follows the highlighted result. The catalog rarely changes, so there is no "featured" slot.
-  Alternative home: an arcade room of cabinets (Settings → Interface → Home).
 - Game page: the trailer across the top (muted, sound on request; RomM's `path_video`, a path under
   `/assets/romm/resources/`, downloaded by the core with the profile's token through
   `POST /api/v1/games/{id}/trailer`, cached in `media/videos` and pruned beyond 2 GB; when the shown

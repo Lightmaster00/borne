@@ -1370,10 +1370,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Play the selected game's trailer, muted, after two seconds</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Library</source>
         <translation type="unfinished" />
     </message>
@@ -1415,18 +1411,6 @@
     </message>
     <message>
         <source>Export the report</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Diagnostics and measurements</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Graphics session, memory, smoothness benchmark</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Open</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1514,59 +1498,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Home</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>How the library is shown</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game boxes</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Arcade room</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Background</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Behind the game boxes</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The game's art</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game room</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Moving light</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Borne cannot install it itself here (%1): download it from GitHub.</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Latest build of this channel: %1 (the one installed).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Console color</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game media</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fetch again</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1603,30 +1539,6 @@
     </message>
     <message>
         <source>ScreenScraper</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Pixel mosaic</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game cases</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>3D cases lit in real time, or a lighter flat drawing for slow machines</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>3D</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Flat</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Gameplay video</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1855,6 +1767,30 @@
     </message>
     <message>
         <source>Take them now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Paused: %1 / %2 games, %3 found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 at a time</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Videos of the games, muted: behind the library and on the game page</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stop</source>
         <translation type="unfinished" />
     </message>
 </context>

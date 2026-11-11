@@ -238,7 +238,7 @@ Window {
     // played (ScreenScraper's gameplay capture, else RomM's trailer) and the library plays it.
     property string bgVideo: ""
     property int bgVideoFor: -1
-    readonly property bool bgVideoWanted: prefs.backgroundStyle === "video" && win.trailers
+    readonly property bool bgVideoWanted: win.trailers
                                           && win.screen === "library" && win.overlay === ""
     Timer {
         id: bgVideoDelay
@@ -441,9 +441,6 @@ Window {
         else if (id === "auto") post({ update_auto: payload })
         else if (id === "sounds") prefs.sounds = payload
         else if (id === "trailers") prefs.trailers = payload
-        else if (id === "home") prefs.homeStyle = payload
-        else if (id === "background") prefs.backgroundStyle = payload
-        else if (id === "cases") prefs.cases3d = payload === "3d"
         else if (id === "sf-all") api("POST", "/api/v1/system-files/from-romm", {}, function (r, err) {
             if (err) toasts.show(err, "error")
             else toasts.show(r.added > 0 ? qsTr("%n file(s) taken from RomM.", "", r.added) : qsTr("Nothing new to take from RomM."), "info")
@@ -494,6 +491,8 @@ Window {
                 api("POST", "/api/v1/emulators/" + emu + "/path", { path: p }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
             }, qsTr("Path"), false, 600)
         }
+        else if (id === "ss-pause" || id === "ss-resume") api("POST", "/api/v1/screenscraper/pause", { paused: id === "ss-pause" }, function () { loadSettings() })
+        else if (id === "ss-stop") api("POST", "/api/v1/screenscraper/stop", {}, function () { loadSettings() })
         else if (id === "ss-signin") ssSignIn()
         else if (id === "ss-signout") api("DELETE", "/api/v1/screenscraper", null, function () { loadSettings() })
         else if (id === "ss-fetch" || id === "ss-again") api("POST", "/api/v1/screenscraper/fetch", { again: id === "ss-again" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
@@ -926,7 +925,6 @@ Window {
         Ambience {
             id: ambience
             anchors.fill: parent
-            style: prefs.backgroundStyle
             theme: win.theme
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.focusedGame
@@ -1117,7 +1115,6 @@ Window {
     }
 
     LibraryView {
-        cases3d: prefs.cases3d
         id: libraryView
         anchors.fill: parent
         boxYaw: win.boxYaw
@@ -1132,7 +1129,6 @@ Window {
         pointerActive: win.pointerActive
         letters: win.letters
         revision: win.libRevision
-        homeStyle: prefs.homeStyle
         currentLetter: win.focusedGame ? win.letterOf(win.focusedGame.name) : ""
         onPicked: (i) => win.pick(i)
         onAction: (a) => win.dispatch(a, "mouse")
@@ -1342,7 +1338,6 @@ Window {
     }
 
     GamePage {
-        cases3d: prefs.cases3d
         id: gamePage
         anchors.fill: parent
         z: 20
@@ -1380,9 +1375,6 @@ Window {
         version: win.coreVersion
         reportPaths: win.reportPaths
         sounds: prefs.sounds
-        homeStyle: prefs.homeStyle
-        backgroundStyle: prefs.backgroundStyle
-        cases3d: prefs.cases3d
         trailers: win.trailers
         pointerActive: win.pointerActive
         onAction: (id, payload) => win.settingsAction(id, payload)
@@ -1534,10 +1526,6 @@ Window {
         category: "ui"
         property bool sounds: true
         property bool trailers: true
-        property string homeStyle: "boxes"
-        property string backgroundStyle: "video"
-        property int backgroundRev: 0      // 1: the gameplay video became the default
-        property bool cases3d: true
         property int notifiedBuild: 0
     }
 
@@ -1549,7 +1537,6 @@ Window {
             coreVersion = h.core || ""
             // Safe mode: no video and no sound, the likeliest causes of repeated crashes.
             if (safeMode) { prefs.trailers = false; prefs.sounds = false }
-            if (prefs.backgroundRev < 1) { if (prefs.backgroundStyle === "pixels") prefs.backgroundStyle = "video"; prefs.backgroundRev = 1 }
             refreshStatus(function (s) {
                 if (!s) { fatal = qsTr("Borne core unreachable"); return }
                 if (!s.server_url) showServer()

@@ -1370,10 +1370,6 @@
         <translation>Sons courts et discrets en navigant et en validant</translation>
     </message>
     <message>
-        <source>Play the selected game's trailer, muted, after two seconds</source>
-        <translation>Lit la bande-annonce du jeu sélectionné, sans le son, après deux secondes</translation>
-    </message>
-    <message>
         <source>Library</source>
         <translation>Bibliothèque</translation>
     </message>
@@ -1416,18 +1412,6 @@
     <message>
         <source>Export the report</source>
         <translation>Exporter le rapport</translation>
-    </message>
-    <message>
-        <source>Diagnostics and measurements</source>
-        <translation>Diagnostic et mesures</translation>
-    </message>
-    <message>
-        <source>Graphics session, memory, smoothness benchmark</source>
-        <translation>Session graphique, mémoire, mesure de fluidité</translation>
-    </message>
-    <message>
-        <source>Open</source>
-        <translation>Ouvrir</translation>
     </message>
     <message>
         <source>Quit Borne</source>
@@ -1514,60 +1498,12 @@
         <translation>Changer la valeur</translation>
     </message>
     <message>
-        <source>Home</source>
-        <translation>Accueil</translation>
-    </message>
-    <message>
-        <source>How the library is shown</source>
-        <translation>Présentation de la bibliothèque</translation>
-    </message>
-    <message>
-        <source>Game boxes</source>
-        <translation>Boîtes de jeux</translation>
-    </message>
-    <message>
-        <source>Arcade room</source>
-        <translation>Salle d'arcade</translation>
-    </message>
-    <message>
-        <source>Background</source>
-        <translation>Fond</translation>
-    </message>
-    <message>
-        <source>Behind the game boxes</source>
-        <translation>Derrière les boîtes de jeux</translation>
-    </message>
-    <message>
-        <source>The game's art</source>
-        <translation>L’art du jeu</translation>
-    </message>
-    <message>
-        <source>Game room</source>
-        <translation>Salle de jeu</translation>
-    </message>
-    <message>
-        <source>Moving light</source>
-        <translation>Lumière animée</translation>
-    </message>
-    <message>
         <source>Borne cannot install it itself here (%1): download it from GitHub.</source>
         <translation>Borne ne peut pas l’installer lui-même ici (%1) : téléchargez-la depuis GitHub.</translation>
     </message>
     <message>
         <source>Latest build of this channel: %1 (the one installed).</source>
         <translation>Dernière build de ce canal : %1 (celle qui est installée).</translation>
-    </message>
-    <message>
-        <source>Console color</source>
-        <translation>Couleur de la console</translation>
-    </message>
-    <message>
-        <source>Game media</source>
-        <translation>Médias des jeux</translation>
-    </message>
-    <message>
-        <source>Fetch again</source>
-        <translation>Récupérer à nouveau</translation>
     </message>
     <message>
         <source>Change</source>
@@ -1604,30 +1540,6 @@
     <message>
         <source>ScreenScraper</source>
         <translation>ScreenScraper</translation>
-    </message>
-    <message>
-        <source>Pixel mosaic</source>
-        <translation>Mosaïque de pixels</translation>
-    </message>
-    <message>
-        <source>Game cases</source>
-        <translation>Boîtes de jeux</translation>
-    </message>
-    <message>
-        <source>3D cases lit in real time, or a lighter flat drawing for slow machines</source>
-        <translation>Boîtes en 3D éclairées en temps réel, ou un dessin plat plus léger pour les machines modestes</translation>
-    </message>
-    <message>
-        <source>3D</source>
-        <translation>3D</translation>
-    </message>
-    <message>
-        <source>Flat</source>
-        <translation>Plat</translation>
-    </message>
-    <message>
-        <source>Gameplay video</source>
-        <translation>Vidéo de jeu</translation>
     </message>
     <message>
         <source>Found: %1</source>
@@ -1856,6 +1768,30 @@
     <message>
         <source>Take them now</source>
         <translation>Récupérer maintenant</translation>
+    </message>
+    <message>
+        <source>Paused: %1 / %2 games, %3 found</source>
+        <translation>En pause : %1 / %2 jeux, %3 trouvés</translation>
+    </message>
+    <message>
+        <source>%1 at a time</source>
+        <translation>%1 à la fois</translation>
+    </message>
+    <message>
+        <source>Videos of the games, muted: behind the library and on the game page</source>
+        <translation>Vidéos des jeux, sans le son : derrière la bibliothèque et sur la page du jeu</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Reprendre</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Arrêter</translation>
     </message>
 </context>
 </TS>

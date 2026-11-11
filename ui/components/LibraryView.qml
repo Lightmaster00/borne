@@ -21,11 +21,8 @@ Item {
 
     readonly property int columns: 10    // up / down jump this many games
     property int revision: 0
-    property string homeStyle: "boxes"
-    property bool cases3d: true
     property real boxYaw: 0
-    property real boxPitch: 0   // "boxes" or "arcade"
-    readonly property bool arcade: homeStyle === "arcade"
+    property real boxPitch: 0
 
     function fmtSize(b) {
         return b >= 1073741824 ? qsTr("%1 GB").arg(Number(b / 1073741824).toLocaleString(Qt.locale(), "f", 1))
@@ -49,7 +46,6 @@ Item {
     // ---------- section header (top left) and the selected game (under its case) ----------
     Column {
         x: 96; y: 112
-        visible: !root.arcade
         spacing: 6
         Text {
             text: (root.sectionTitle || qsTr("All games")).toUpperCase()
@@ -71,8 +67,7 @@ Item {
     }
     Column {
         id: info
-        anchors { top: root.arcade ? undefined : boxes.bottom; topMargin: 0; horizontalCenter: parent.horizontalCenter }
-        y: root.arcade ? 926 : 0
+        anchors { top: boxes.bottom; topMargin: 0; horizontalCenter: parent.horizontalCenter }
         width: Math.min(1100, parent.width - 400)
         spacing: 12
         visible: root.game !== null
@@ -128,21 +123,8 @@ Item {
     }
 
     // ---------- the boxes ----------
-    ArcadeRoom {
-        z: -1
-        visible: root.arcade
-        anchors.fill: parent
-        theme: root.theme
-        games: root.games
-        currentIndex: root.currentIndex
-        revision: root.revision
-        pointerActive: root.pointerActive
-        onPicked: (i) => root.picked(i)
-    }
     ShelfView {
         id: boxes
-        prefer3d: root.cases3d
-        visible: !root.arcade
         // The cases stand in the middle; the selected game's name sits under its case.
         x: 0; y: Math.max(170, (root.height - 1000) / 2 + 170)
         width: parent.width; height: 600
