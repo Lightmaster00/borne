@@ -290,7 +290,7 @@ Item {
                     }
                 }
 
-                // The case, turning slowly to show its spine.
+                // The case, rebuilt from its scans, turning round now and then to show its spine and back.
                 BoxShelf {
                     id: caseStage
                     width: 620; height: 640
@@ -299,8 +299,9 @@ Item {
                     theme: page.theme
                     games: boxModel
                     currentIndex: 0
-                    swayAmp: 24
                     showSelection: false
+                    trueSides: true
+                    inspect: true
                     swayPeriod: 7000
                     opacity: page.videoShown ? 0.0 : 1
                     Behavior on opacity { NumberAnimation { duration: 600 } }

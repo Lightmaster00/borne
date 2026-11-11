@@ -23,9 +23,23 @@ Item {
     readonly property real coverAspect: cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
     readonly property bool turned: !!kind.turns && coverAspect > 0 && coverAspect < 1
     readonly property real mm: stage.boxH / Cases.TALLEST
-    readonly property real bw: (turned ? kind.h : kind.w) * mm
+    // Rebuilt from ScreenScraper's case scans (RomM): the front scan gives the width, the spine
+    // scan the thickness; the console's real case size fills in what is missing.
+    function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
+    readonly property bool frontScan: has("front")
+    readonly property real frontAR: frontScan && cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
+    readonly property real sideAR: sideScan.status === Image.Ready && sideScan.implicitHeight > 0
+        ? Math.min(sideScan.implicitWidth, sideScan.implicitHeight) / Math.max(sideScan.implicitWidth, sideScan.implicitHeight) : 0
     readonly property real bh: (turned ? kind.w : kind.h) * mm
-    readonly property real bd: Math.max(6, kind.d * mm)
+    readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * (bh - 2 * rim) + rim + (mat === "jewel" ? bh * 0.075 : rim)
+                                           : (turned ? kind.h : kind.w) * mm
+    readonly property real bd: sideAR > 0 ? Math.max(5, Math.min(bh * 0.3, sideAR * bh)) : Math.max(6, kind.d * mm)
+    Image {
+        id: sideScan
+        visible: false
+        source: box.has("side") ? box.game.art + "side" : ""
+        asynchronous: true
+    }
     readonly property string mat: kind.mat
     readonly property bool plastic: mat !== "card"
     readonly property real rim: mat === "keep" ? 7 : mat === "clam" ? 4 : mat === "jewel" ? 2 : 0
@@ -34,6 +48,7 @@ Item {
     readonly property real frontFacing: stage.facing(place, "front")
     readonly property real leftFacing: stage.facing(place, "left")
     readonly property real rightFacing: stage.facing(place, "right")
+    readonly property real backFacing: stage.facing(place, "back")
     readonly property color tone: theme.tone(game ? game.hue : 0)
     readonly property string dl: game && game.dl_state ? game.dl_state : ""
     readonly property bool busy: dl === "queued" || dl === "downloading" || dl === "verifying" || dl === "extracting"
@@ -91,7 +106,8 @@ Item {
         id: sp
         property string side: "left"
         property real facingValue: 0
-        readonly property bool printed: scan.status === Image.Ready
+        readonly property bool plain: sp.side === "right" && box.stage.trueSides
+        readonly property bool printed: !plain && scan.status === Image.Ready
         width: box.bd; height: box.bh
         visible: facingValue > 0.02
         transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, sp.side, false, box.dims) }
@@ -99,16 +115,21 @@ Item {
             anchors.fill: parent
             color: box.mat === "card" ? Qt.darker(box.tone, 1.6) : box.kind.color
         }
+        // Some spine scans are stored lying down: stand them up.
         Image {
             id: scan
-            anchors.fill: parent
-            source: box.game && box.game.art_kinds && box.game.art_kinds.indexOf(",side,") >= 0 ? box.game.art + "side" : ""
+            readonly property bool lying: implicitWidth > implicitHeight
+            anchors.centerIn: parent
+            width: lying ? parent.height : parent.width
+            height: lying ? parent.width : parent.height
+            rotation: lying ? -90 : 0
+            visible: !sp.plain
+            source: box.has("side") ? box.game.art + "side" : ""
             asynchronous: true
             fillMode: Image.Stretch
-            sourceSize.height: 420
         }
         Text {
-            visible: !sp.printed
+            visible: !sp.printed && !sp.plain
             anchors.centerIn: parent
             width: box.bh - 40
             height: box.bd
@@ -140,6 +161,22 @@ Item {
     Spine { side: "left"; facingValue: box.leftFacing }
     Spine { side: "right"; facingValue: box.rightFacing }
 
+    // ---------- back (seen when the box turns round on the game page) ----------
+    Item {
+        width: box.bw; height: box.bh
+        visible: box.backFacing > 0.02
+        transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, "back", false, box.dims) }
+        Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : 1; color: box.kind.color }
+        Image {
+            anchors { fill: parent; margins: box.rim }
+            source: box.has("back") && box.backFacing > 0.02 ? box.game.art + "back" : ""
+            asynchronous: true
+            fillMode: Image.PreserveAspectCrop
+            sourceSize: Qt.size(420, 620)
+        }
+        Rectangle { anchors.fill: parent; color: "black"; opacity: Math.max(0, 0.6 - box.backFacing * 0.6) }
+    }
+
     // ---------- front ----------
     Item {
         id: front
@@ -168,7 +205,7 @@ Item {
             Image {
                 id: cover
                 anchors.fill: parent
-                source: box.game && box.game.cover ? box.game.cover : ""
+                source: box.frontScan ? box.game.art + "front" : box.game && box.game.cover ? box.game.cover : ""
                 asynchronous: true
                 fillMode: Image.PreserveAspectCrop
                 sourceSize: Qt.size(420, 620)

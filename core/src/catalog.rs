@@ -153,12 +153,13 @@ pub fn extra_of(v: &Value) -> Value {
     })
 }
 
-/// ScreenScraper scans stored by RomM (when enabled in its scan.media): spine, back cover,
+/// ScreenScraper scans stored by RomM (when enabled in its scan.media): front, spine, back cover,
 /// fanart, transparent logo, cartridge or disc. Paths under /assets/romm/resources/.
 pub fn art_of(v: &Value) -> Value {
     let ss = &v["ss_metadata"];
     let mut out = serde_json::Map::new();
     for (kind, field) in [
+        ("front", "box2d_path"),
         ("side", "box2d_side_path"),
         ("back", "box2d_back_path"),
         ("fanart", "fanart_path"),

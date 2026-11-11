@@ -33,6 +33,18 @@ Item {
     // Gentle idle sway of the selected box.
     property real sway: 0
     property bool showSelection: true
+    property bool trueSides: false        // false: both sides show the spine (shelf); true: a real box
+    // Inspect mode (game page): the selected box turns all the way round, pausing on its back.
+    property bool inspect: false
+    property real spin: 0
+    SequentialAnimation on spin {
+        loops: Animation.Infinite
+        running: shelf.inspect && shelf.visible
+        PauseAnimation { duration: 5000 }
+        NumberAnimation { from: 0; to: 180; duration: 2600; easing.type: Easing.InOutCubic }
+        PauseAnimation { duration: 3500 }
+        NumberAnimation { from: 180; to: 360; duration: 2600; easing.type: Easing.InOutCubic }
+    }
     property real swayAmp: 4              // degrees
     property int swayPeriod: 3600
     SequentialAnimation on sway {
@@ -55,7 +67,7 @@ Item {
             z = -60 - (a - 1) * 18
             ang = -s * 64
         }
-        if (a < 0.5) ang += shelf.sway * shelf.swayAmp * (1 - 2 * a)
+        if (a < 0.5) ang += (shelf.inspect ? shelf.spin : shelf.sway * shelf.swayAmp) * (1 - 2 * a)
         return { x: x, y: shelf.baseY + (a < 1 ? -8 * (1 - a) : 0), z: z, ang: ang }
     }
 
@@ -68,6 +80,7 @@ Item {
         let ax, ay, az, bx, by, bz, ox, oy, oz
         if (face === "front") { ax = 1; ay = 0; az = 0; bx = 0; by = 1; bz = 0; ox = -W / 2; oy = -H / 2; oz = D / 2 }
         else if (face === "left") { ax = 0; ay = 0; az = 1; bx = 0; by = 1; bz = 0; ox = -W / 2; oy = -H / 2; oz = -D / 2 }
+        else if (face === "back") { ax = -1; ay = 0; az = 0; bx = 0; by = 1; bz = 0; ox = W / 2; oy = -H / 2; oz = -D / 2 }
         else if (face === "right") { ax = 0; ay = 0; az = -1; bx = 0; by = 1; bz = 0; ox = W / 2; oy = -H / 2; oz = D / 2 }
         else { ax = 1; ay = 0; az = 0; bx = 0; by = 0; bz = -1; ox = -W / 2 - 60; oy = shelf.boxH / 2; oz = D / 2 + 70 }
         if (mirror) { by = -1; oy = H / 2 + H + 6 }   // reflection on the floor, just under the box
@@ -87,8 +100,9 @@ Item {
     // How much a face turns toward the camera (1 = facing it): shading and culling.
     function facing(p, face) {
         const th = p.ang * Math.PI / 180
-        const nx = face === "front" ? Math.sin(th) : face === "left" ? -Math.cos(th) : Math.cos(th)
-        const nz = face === "front" ? Math.cos(th) : face === "left" ? Math.sin(th) : -Math.sin(th)
+        const sg = face === "back" ? -1 : 1
+        const nx = face === "front" || face === "back" ? sg * Math.sin(th) : face === "left" ? -Math.cos(th) : Math.cos(th)
+        const nz = face === "front" || face === "back" ? sg * Math.cos(th) : face === "left" ? Math.sin(th) : -Math.sin(th)
         // Direction from the face toward the camera, roughly from the box center.
         const vx = -p.x, vz = shelf.focal - p.z
         const len = Math.sqrt(vx * vx + vz * vz)

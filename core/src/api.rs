@@ -271,7 +271,7 @@ fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
     out
 }
 
-pub const ART_KINDS: [&str; 7] = ["side", "back", "fanart", "logo", "physical", "title", "backdrop"];
+pub const ART_KINDS: [&str; 8] = ["front", "side", "back", "fanart", "logo", "physical", "title", "backdrop"];
 
 /// A box scan or artwork of the game (any version of it), fetched once from RomM with the
 /// profile's token and kept on disk. "backdrop": the fanart, else the first screenshot.
@@ -532,11 +532,12 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             let mut list = library::groups(rows, &prefs, &lang);
             // Which scans exist (spine, backdrop…), so the UI asks only for those.
             for v in list.iter_mut() {
+                // Every version of the game counts, even those filtered out (Installed, search).
                 let mut ids = vec![v["rom_id"].as_i64().unwrap_or(0)];
-                if v["version_count"].as_i64().unwrap_or(1) > 1 {
-                    if let Some(k) = v["group_key"].as_str() {
-                        ids.extend(app.db.group(k).iter().map(|g| g.rom_id));
-                    }
+                if let Some(k) = v["group_key"].as_str().map(String::from) {
+                    let group = app.db.group(&k);
+                    ids.extend(group.iter().map(|g| g.rom_id));
+                    library::fill_media(v, &group);
                 }
                 v["art_kinds"] = json!(art_kinds(app, &ids));
             }

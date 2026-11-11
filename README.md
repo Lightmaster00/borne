@@ -46,8 +46,8 @@ Since then:
 - **One look, "Halo"**: the games stand as physical cases at the real size and shape of their console's
   retail case (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
-  Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), with the real spine printed from
-  RomM's ScreenScraper scan when there is one. Four backgrounds (Settings → Interface → Background):
+  Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
+  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. Four backgrounds (Settings → Interface → Background):
   the console's own color with slow ribbons of light and a glossy floor (default), the selected game's art, a dim game room with a neon and a shelf, or moving light. An arcade room is
   offered as an alternative home. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The accent color is taken from each game's cover; type is Manrope.
@@ -57,7 +57,7 @@ Since then:
   French, 日本語 → Japan). Below: summary, screenshots, credits and anecdotes from Wikidata and
   Wikipedia (only the game's name and year are sent; answers cached 30 days). For spines, logos,
   artwork and trailers, enable these media in RomM's ScreenScraper settings (`scan.media`:
-  `box2d_side`, `logo`, `fanart`, `video`) and rescan.
+  `box2d`, `box2d_side`, `box2d_back`, `logo`, `fanart`, `video`) and rescan.
 - **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
   writes a shareable text report (versions, settings, server version, recent downloads, log; no
   passwords or tokens) to the data folder and to Downloads.

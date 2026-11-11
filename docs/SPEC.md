@@ -734,7 +734,12 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   against each other (PlayStation jewel case small and nearly square, GameCube case tall, Super
   Nintendo box wide, or upright when its cover is). Logos and printed art
   come only from the user's RomM scans.
-- `GET /api/v1/games/{id}/art/{side|back|fanart|logo|physical|title|backdrop}`: ScreenScraper media
+- Cases are rebuilt from ScreenScraper's case elements stored by RomM: the front scan (`box2d`) is the
+  front and sets the width, the spine scan (`box2d_side`) is printed on the spine and sets the
+  thickness (stood up if stored lying down), the back scan (`box2d_back`) is the back. The console's
+  real case size fills in what is missing. On the game page the case turns all the way round now
+  and then (front, spine, back); on the shelf both sides show the spine.
+- `GET /api/v1/games/{id}/art/{front|side|back|fanart|logo|physical|title|backdrop}`: ScreenScraper media
   stored by RomM (`ss_metadata.*_path`), from any version of the game, fetched once with the profile's
   token and cached in `media/art`. Library entries and the game page list the kinds available
   (`art_kinds`) so the UI asks only for those.
