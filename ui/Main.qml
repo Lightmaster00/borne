@@ -354,6 +354,7 @@ Window {
         else if (id === "trailers") prefs.trailers = payload
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
+        else if (id === "cases") prefs.cases3d = payload === "3d"
         else if (id === "ss-signin") ssSignIn()
         else if (id === "ss-signout") api("DELETE", "/api/v1/screenscraper", null, function () { loadSettings() })
         else if (id === "ss-fetch" || id === "ss-again") api("POST", "/api/v1/screenscraper/fetch", { again: id === "ss-again" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
@@ -973,6 +974,7 @@ Window {
     }
 
     LibraryView {
+        cases3d: prefs.cases3d
         id: libraryView
         anchors.fill: parent
         boxYaw: win.boxYaw
@@ -1188,6 +1190,7 @@ Window {
     }
 
     GamePage {
+        cases3d: prefs.cases3d
         id: gamePage
         anchors.fill: parent
         z: 20
@@ -1227,6 +1230,7 @@ Window {
         sounds: prefs.sounds
         homeStyle: prefs.homeStyle
         backgroundStyle: prefs.backgroundStyle
+        cases3d: prefs.cases3d
         trailers: win.trailers
         pointerActive: win.pointerActive
         onAction: (id, payload) => win.settingsAction(id, payload)
@@ -1380,6 +1384,7 @@ Window {
         property bool trailers: true
         property string homeStyle: "boxes"
         property string backgroundStyle: "pixels"
+        property bool cases3d: true
         property int notifiedBuild: 0
     }
 

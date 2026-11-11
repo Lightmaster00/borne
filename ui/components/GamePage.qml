@@ -21,6 +21,7 @@ Item {
     property real boxYaw: 0
     property real boxPitch: 0
     property bool boxTurning: false
+    property bool cases3d: true
     property string installMode: "download"
     property bool streamAvailable: false
     property string streamError: ""
@@ -285,8 +286,9 @@ Item {
                 }
 
                 // The case, rebuilt from its scans, turning round now and then to show its spine and back.
-                BoxShelf {
+                ShelfView {
                     id: caseStage
+                    prefer3d: page.cases3d
                     width: 620; height: 640
                     x: parent.width - 96 - 520
                     y: (parent.height - height) / 2 + 20

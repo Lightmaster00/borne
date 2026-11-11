@@ -1605,5 +1605,21 @@
         <source>Pixel mosaic</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Game cases</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>3D cases lit in real time, or a lighter flat drawing for slow machines</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>3D</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Flat</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 </TS>

@@ -90,7 +90,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: "6.9.3"
-          modules: "qtmultimedia qtwebsockets"
+          modules: "qtmultimedia qtwebsockets qtquick3d qtshadertools"
           cache: true
       - name: Core tests
         run: cargo test --release --manifest-path core/Cargo.toml

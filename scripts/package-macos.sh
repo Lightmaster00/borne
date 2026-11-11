@@ -40,7 +40,7 @@ for d in "$QT_PREFIX/lib" /opt/homebrew/opt/qt*/lib /usr/local/opt/qt*/lib; do
 done
 "$QT_PREFIX/bin/macdeployqt" "$APP" -qmldir="$UI" -qmlimport="$UI/imports" -always-overwrite "${LIBPATHS[@]}"
 # Check: the required frameworks are bundled.
-for fw in QtCore QtGui QtQml QtQuick QtMultimedia QtWebSockets; do
+for fw in QtCore QtGui QtQml QtQuick QtMultimedia QtWebSockets QtQuick3D; do
   [ -d "$APP/Contents/Frameworks/$fw.framework" ] || { echo "Framework missing from the app: $fw"; exit 1; }
 done
 

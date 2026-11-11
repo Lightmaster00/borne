@@ -22,6 +22,7 @@ Item {
     readonly property int columns: 10    // up / down jump this many games
     property int revision: 0
     property string homeStyle: "boxes"
+    property bool cases3d: true
     property real boxYaw: 0
     property real boxPitch: 0   // "boxes" or "arcade"
     readonly property bool arcade: homeStyle === "arcade"
@@ -138,8 +139,9 @@ Item {
         pointerActive: root.pointerActive
         onPicked: (i) => root.picked(i)
     }
-    BoxShelf {
+    ShelfView {
         id: boxes
+        prefer3d: root.cases3d
         visible: !root.arcade
         // The cases stand in the middle; the selected game's name sits under its case.
         x: 0; y: Math.max(170, (root.height - 1000) / 2 + 170)

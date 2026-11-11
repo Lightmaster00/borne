@@ -1605,5 +1605,21 @@
         <source>Pixel mosaic</source>
         <translation>Mosaïque de pixels</translation>
     </message>
+    <message>
+        <source>Game cases</source>
+        <translation>Boîtes de jeux</translation>
+    </message>
+    <message>
+        <source>3D cases lit in real time, or a lighter flat drawing for slow machines</source>
+        <translation>Boîtes en 3D éclairées en temps réel, ou un dessin plat plus léger pour les machines modestes</translation>
+    </message>
+    <message>
+        <source>3D</source>
+        <translation>3D</translation>
+    </message>
+    <message>
+        <source>Flat</source>
+        <translation>Plat</translation>
+    </message>
 </context>
 </TS>
