@@ -222,7 +222,8 @@ pub fn list(app: &Shared) -> Value {
                     json!({ "id": e.id, "name": e.name, "program": e.program, "ready": core_ok && find(app, &e.program).is_some() })
                 })
                 .collect();
-            json!({ "slug": slug, "name": name, "choices": choices, "chosen": chosen(app, slug).map(|e| e.id) })
+            let available = !choices.is_empty() && engines(slug).iter().any(|e| program(&e.program).map(|p| p.install_spec().is_some() || find(app, &p.id).is_some()).unwrap_or(false));
+            json!({ "slug": slug, "name": name, "choices": choices, "chosen": chosen(app, slug).map(|e| e.id), "known": manifest().consoles.contains_key(slug), "available": available })
         })
         .collect();
     let programs: Vec<Value> = programs()
@@ -450,13 +451,19 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     }
     let g = app.db.game(rom_id).ok_or("unknown game")?;
     let system = g.platform_slug.clone();
-    let e = chosen(app, &system).ok_or_else(|| format!("Borne cannot run {} games yet", g.platform_name))?;
+    let e = chosen(app, &system).ok_or_else(|| {
+        if manifest().consoles.contains_key(&system) {
+            format!("no emulator can run {} games yet", g.platform_name)
+        } else {
+            format!("Borne cannot run {} games yet", g.platform_name)
+        }
+    })?;
     let p = program(&e.program).ok_or("unknown emulator")?;
     let found = find(app, &p.id);
     let core_missing = e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false);
     if found.is_none() || core_missing {
         if found.is_none() && p.install_spec().is_none() {
-            return Err(format!("{} is not installed: choose its program in Settings → Emulators", p.name));
+            return Err(format!("{} is not available for this computer: choose its program in Settings → Emulators", p.name));
         }
         // Installed first; the game starts by itself once it is ready.
         game_file(app, &g)?;
@@ -551,7 +558,7 @@ mod tests {
 
     #[test]
     fn manifest_reads_and_offers_choices_for_the_v1_consoles() {
-        for sys in ["nes", "genesis", "ngc", "ps2", "switch", "nds"] {
+        for sys in ["nes", "genesis", "ngc", "ps2", "switch", "nds", "ps3", "ps4", "xbox360"] {
             let e = engines(sys);
             assert!(!e.is_empty(), "{sys}");
             for x in &e {
@@ -560,6 +567,8 @@ mod tests {
         }
         assert_eq!(engines("nes")[0].core.as_deref(), Some("mesen"));
         assert_eq!(engines("ps2")[0].program, "pcsx2");
+        assert!(engines("xboxone").is_empty());
+        assert!(program("eden").unwrap().install_spec().is_some());
         for p in programs() {
             assert!(p.args.iter().any(|a| a.contains("{rom}")), "{}", p.id);
         }

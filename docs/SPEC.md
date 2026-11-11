@@ -59,7 +59,7 @@ the final decision to the user. Compatibility checks inform and recommend; they 
 ### 1.2 Explicit non-goals
 
 - Developing new emulators or guaranteeing that every game works perfectly.
-- Providing ROMs, BIOS, keys, firmware or protected content, or downloading a Switch emulator from a hard-coded source.
+- Providing ROMs, BIOS, keys, firmware or protected content (Switch emulators are downloaded from their projects' own release pages, as the user decided in Nov 2026).
 - Replacing RomM as the source of truth for the library and user accounts.
 - Building a proprietary cloud service or requiring Syncthing.
 - Imposing a single hardware platform or Linux distribution.
@@ -408,7 +408,9 @@ The RomM account provides identity and remote scope; the local profile provides 
 > starts the game. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
 > messages, no hotkeys, profile saves and states, Borne's cores and BIOS folders); Dolphin with
 > its own user folder per profile (`-u`). Sessions: one at a time, own process group, output in
-> `reports/emulator.log`, `session` events. Switch emulators are user-provided for now.
+> `reports/emulator.log`, `session` events. Sources also include Forgejo (Eden) and GitLab
+> (Ryubing) releases. Switch: Eden, Citron Neo, Ryubing; PS3: RPCS3; PS4: shadPS4; Xbox 360: Xenia
+> Canary (Linux only); Xbox One: no usable emulator exists, the console is listed as unsupported.
 
 ### 8.1 Hybrid strategy
 

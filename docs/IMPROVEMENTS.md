@@ -86,7 +86,10 @@ Next:
   written by Borne for every emulator.
 - BIOS and firmware: taken from RomM's BIOS for the console and placed in Borne's `bios` folder;
   a clear message before launching when one is missing.
-- Switch emulators: decide whether Borne downloads them (see the spec's non-goals).
+- Switch, PS3, PS4: keys, firmware and system files from RomM's BIOS for the console, installed
+  into each emulator's Borne folder before the first game (Eden/Citron `keys`, RPCS3 firmware PUP).
+- Eden and Ryubing release file names are matched by words; check them against the real releases
+  on the first real install (they could not be read from the build machine).
 - Test on the real machines (ChimeraOS, macOS) with real downloads.
 
 ### 3.2 Saves (P1)

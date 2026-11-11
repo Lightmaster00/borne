@@ -1645,5 +1645,17 @@
         <source>One per console</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>No emulator can run these games yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not supported by Borne yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No build of this emulator for this computer</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 </TS>

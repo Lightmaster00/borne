@@ -60,12 +60,7 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
     match spec["type"].as_str() {
         Some("github") => {
             let repo = spec["repo"].as_str().ok_or("no repository")?;
-            let has: Vec<String> = spec["has"].as_array().into_iter().flatten().filter_map(|v| v.as_str()).map(|s| s.to_lowercase()).collect();
-            let ends = spec["ends"].as_str().unwrap_or("").to_lowercase();
-            let fits = |name: &str| {
-                let n = name.to_lowercase();
-                n.ends_with(&ends) && has.iter().all(|h| n.contains(h))
-            };
+            let fits = |name: &str| asset_fits(spec, name);
             let mut releases: Vec<Value> = vec![];
             if let Ok(t) = get_text(&format!("https://api.github.com/repos/{repo}/releases/latest")) {
                 releases.extend(serde_json::from_str::<Value>(&t).ok());
@@ -89,6 +84,34 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
                 }
             }
             Err(format!("no build for this system in {repo}'s releases"))
+        }
+        // Forgejo / Gitea (Eden): same shape as GitHub's API.
+        Some("gitea") => {
+            let base = spec["base"].as_str().ok_or("no server")?;
+            let repo = spec["repo"].as_str().ok_or("no repository")?;
+            let t = get_text(&format!("{base}/api/v1/repos/{repo}/releases?limit=10"))?;
+            let releases: Vec<Value> = serde_json::from_str::<Value>(&t).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
+            for r in releases.iter().filter(|r| spec["prerelease"].as_bool().unwrap_or(false) || r["prerelease"] != true) {
+                if let Some(a) = r["assets"].as_array().into_iter().flatten().find(|a| a["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false)) {
+                    let url = a["browser_download_url"].as_str().ok_or("no download address")?.to_string();
+                    return Ok((r["tag_name"].as_str().unwrap_or("?").to_string(), url, None));
+                }
+            }
+            Err(format!("no build for this system in {repo}'s releases"))
+        }
+        // GitLab (Ryubing): the latest release's links.
+        Some("gitlab") => {
+            let base = spec["base"].as_str().ok_or("no server")?;
+            let project = spec["project"].as_str().ok_or("no project")?.replace('/', "%2F");
+            let t = get_text(&format!("{base}/api/v4/projects/{project}/releases?per_page=10"))?;
+            let releases: Vec<Value> = serde_json::from_str::<Value>(&t).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
+            for r in releases.iter().filter(|r| r["upcoming_release"] != true) {
+                if let Some(l) = r["assets"]["links"].as_array().into_iter().flatten().find(|l| l["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false)) {
+                    let url = l["direct_asset_url"].as_str().or(l["url"].as_str()).ok_or("no download address")?.to_string();
+                    return Ok((r["tag_name"].as_str().unwrap_or("?").to_string(), url, None));
+                }
+            }
+            Err(format!("no build for this system in {project}'s releases"))
         }
         Some("buildbot") => {
             let html = get_text("https://buildbot.libretro.com/stable/")?;
@@ -125,6 +148,25 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
         Some("flatpak") => Ok(("flatpak".into(), String::new(), None)),
         _ => Err("no installation source for this system".into()),
     }
+}
+
+/// Whether a release file is the build for this system: every word of `has` in its name, none of
+/// `not`, and one of the endings in `ends` (case ignored).
+fn asset_fits(spec: &Value, name: &str) -> bool {
+    let n = name.to_lowercase();
+    let list = |k: &str| -> Vec<String> {
+        match &spec[k] {
+            Value::String(s) => vec![s.to_lowercase()],
+            Value::Array(a) => a.iter().filter_map(|v| v.as_str()).map(|s| s.to_lowercase()).collect(),
+            _ => vec![],
+        }
+    };
+    let ends = list("ends");
+    (ends.is_empty() || ends.iter().any(|e| n.ends_with(e)))
+        && list("has").iter().all(|h| n.contains(h))
+        && !list("not").iter().any(|x| n.contains(x))
+        && !n.ends_with(".zsync")
+        && !n.ends_with(".sha256")
 }
 
 // ---------- state ----------
@@ -416,7 +458,8 @@ fn unpack_release(app: &Shared, program: &str, version: &str, url: &str, sha256:
         return Err(format!("unknown kind of download: {name}"));
     }
     let _ = std::fs::remove_file(&file);
-    let exe = find_program(&out)?;
+    let hint = crate::emulators::program(program).and_then(|p| p.install_spec()).and_then(|s| s["exe"].as_str().map(String::from));
+    let exe = find_program(&out, hint.as_deref())?;
     // Move into place: the old version stays until the new one is complete.
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::rename(&staging, &dir).map_err(|e| e.to_string())?;
@@ -465,10 +508,18 @@ fn undmg(_file: &Path, _out: &Path) -> Result<(), String> {
 
 /// The program to start in an unpacked release: an application bundle's executable (macOS), or
 /// an AppImage, extracted once so it runs without FUSE.
-fn find_program(out: &Path) -> Result<PathBuf, String> {
+fn find_program(out: &Path, hint: Option<&str>) -> Result<PathBuf, String> {
     let items = walk(out);
     if os() == "macos" {
-        let app = items.iter().find(|p| p.extension().map(|x| x == "app").unwrap_or(false)).ok_or("no application in the download")?;
+        let Some(app) = items.iter().find(|p| p.extension().map(|x| x == "app").unwrap_or(false)) else {
+            use std::os::unix::fs::PermissionsExt;
+            return items
+                .iter()
+                .filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false))
+                .max_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0))
+                .cloned()
+                .ok_or_else(|| "no application in the download".to_string());
+        };
         let plist = std::fs::read_to_string(app.join("Contents/Info.plist")).unwrap_or_default();
         let exe_name = plist
             .split("<key>CFBundleExecutable</key>")
@@ -484,10 +535,20 @@ fn find_program(out: &Path) -> Result<PathBuf, String> {
         set_exec(&exe);
         return Ok(exe);
     }
-    let appimage = items
-        .iter()
-        .find(|p| p.to_string_lossy().to_lowercase().ends_with(".appimage"))
-        .ok_or("no AppImage in the download")?;
+    let Some(appimage) = items.iter().find(|p| p.to_string_lossy().to_lowercase().ends_with(".appimage")) else {
+        // A plain build (Xenia, Ryubing…): the program named in the manifest, else the largest
+        // executable file.
+        use std::os::unix::fs::PermissionsExt;
+        let exec: Vec<&PathBuf> = items
+            .iter()
+            .filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false))
+            .collect();
+        let pick = hint
+            .and_then(|h| exec.iter().find(|p| p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case(h)).unwrap_or(false)))
+            .or_else(|| exec.iter().max_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0)))
+            .ok_or("no program in the download")?;
+        return Ok((*pick).clone());
+    };
     set_exec(appimage);
     let dir = appimage.parent().unwrap().to_path_buf();
     let st = std::process::Command::new(appimage)
@@ -540,6 +601,19 @@ pub fn start_updates(app: &Shared) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn release_files_are_matched_by_words() {
+        let citron = json!({ "ends": "-linux-x86_64.appimage" });
+        assert!(asset_fits(&citron, "citron_nightly-0237a9b88-linux-x86_64.AppImage"));
+        assert!(!asset_fits(&citron, "citron_nightly-0237a9b88-linux-x86_64_v3.AppImage"));
+        assert!(!asset_fits(&citron, "citron_nightly-0237a9b88-linux-x86_64.AppImage.zsync"));
+        let pcsx2 = json!({ "has": ["linux", "appimage", "x64"], "ends": ".appimage" });
+        assert!(asset_fits(&pcsx2, "pcsx2-v2.8.2-linux-appimage-x64-Qt.AppImage"));
+        let eden = json!({ "has": ["linux"], "not": ["aarch64", "arm64"], "ends": [".appimage"] });
+        assert!(!asset_fits(&eden, "Eden-Linux-aarch64.AppImage"));
+        assert!(asset_fits(&eden, "Eden-Linux-amd64.AppImage"));
+    }
 
     #[test]
     fn mirror_rewrites_addresses() {

@@ -1645,5 +1645,17 @@
         <source>One per console</source>
         <translation>Un par console</translation>
     </message>
+    <message>
+        <source>No emulator can run these games yet</source>
+        <translation>Aucun émulateur ne fait encore tourner ces jeux</translation>
+    </message>
+    <message>
+        <source>Not supported by Borne yet</source>
+        <translation>Pas encore pris en charge par Borne</translation>
+    </message>
+    <message>
+        <source>No build of this emulator for this computer</source>
+        <translation>Cet émulateur n'existe pas pour cet ordinateur</translation>
+    </message>
 </context>
 </TS>

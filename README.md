@@ -71,12 +71,12 @@ Since then:
 
 - **Playing**: you choose one emulator per console in Settings → Emulators (RetroArch cores such
   as Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation; Dolphin; PCSX2; DuckStation;
-  melonDS); Borne downloads it from its official source (GitHub releases, the libretro buildbot,
+  melonDS; Eden, Citron Neo, Ryubing for the Switch; RPCS3 for the PS3; shadPS4 for the PS4;
+  Xenia Canary for the Xbox 360, Linux only — no usable Xbox One emulator exists yet); Borne downloads it from its official source (GitHub releases, the libretro buildbot,
   Dolphin's site, Flathub), installs it in its own folder, configures it and keeps it up to date —
   you never open the emulator. RetroArch runs with Borne's own configuration: no menu, no
   messages, no hotkeys, saves and states in the profile's folder. *Play* starts the game (after
-  installing what is missing); Select then Start quits it. Switch emulators (Eden, Citron Neo,
-  Ryubing) are provided by you for now.
+  installing what is missing); Select then Start quits it.
 
 ## Try it on a Mac (Apple Silicon)
 
