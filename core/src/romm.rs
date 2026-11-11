@@ -362,24 +362,25 @@ impl Client {
         }
     }
 
-    /// The profile's saves of a game on RomM.
-    pub fn saves(&self, rom_id: i64) -> Result<Vec<Value>> {
-        match self.get_json(&format!("/api/saves?rom_id={rom_id}"))? {
+    /// The profile's saves ("saves") or save states ("states") of a game on RomM.
+    pub fn assets(&self, kind: &str, rom_id: i64) -> Result<Vec<Value>> {
+        match self.get_json(&format!("/api/{kind}?rom_id={rom_id}"))? {
             Value::Array(a) => Ok(a),
             other => Err(RommError::Parse(format!("expected a list of saves, got {other}"))),
         }
     }
 
-    /// Sends a save to RomM (multipart), replacing the one of the same name.
-    pub fn upload_save(&self, rom_id: i64, emulator: &str, file_name: &str, data: &[u8]) -> Result<Value> {
+    /// Sends a save or a state to RomM (multipart), replacing the one of the same name.
+    pub fn upload_asset(&self, kind: &str, rom_id: i64, emulator: &str, file_name: &str, data: &[u8]) -> Result<Value> {
+        let field = if kind == "states" { "stateFile" } else { "saveFile" };
         let boundary = format!("borne{:016x}", rand::random::<u64>());
         let safe_name: String = file_name.chars().filter(|c| *c != '"' && *c != '\r' && *c != '\n').collect();
         let mut body = Vec::with_capacity(data.len() + 512);
-        body.extend_from_slice(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"saveFile\"; filename=\"{safe_name}\"\r\nContent-Type: application/octet-stream\r\n\r\n").as_bytes());
+        body.extend_from_slice(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"{field}\"; filename=\"{safe_name}\"\r\nContent-Type: application/octet-stream\r\n\r\n").as_bytes());
         body.extend_from_slice(data);
         body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
         let url = format!(
-            "{}/api/saves?rom_id={rom_id}&emulator={}&overwrite=true",
+            "{}/api/{kind}?rom_id={rom_id}&emulator={}&overwrite=true",
             self.base,
             percent_encode(emulator)
         );

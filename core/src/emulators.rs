@@ -334,8 +334,8 @@ struct Session {
     rom_id: i64,
     name: String,
     emulator: String,
-    /// Battery save to send to RomM afterwards: (profile, console, game file, core).
-    sync: Option<(String, String, PathBuf, String)>,
+    /// What to send to RomM afterwards: (profile, console, program, game file, emulator name).
+    sync: Option<(String, String, String, PathBuf, String)>,
     started: Instant,
     child: Child,
     stopping: bool,
@@ -398,6 +398,15 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     let userdir = app.paths.profiles().join(&profile).join(&p.id);
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     crate::gamesettings::apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &display)?;
+    // Each game its own memory card, so its saves can follow it on RomM.
+    if p.id == "dolphin" {
+        let card = crate::savesync::dolphin_card(app, &profile, rom);
+        let _ = std::fs::create_dir_all(card.parent().unwrap());
+        ini_set(&userdir.join("Config/Dolphin.ini"), &[("Core", "SlotA", "1"), ("Core", "MemcardAPath", &card.to_string_lossy())])?;
+    }
+    if p.id == "duckstation" {
+        ini_set(&data_dir(app, &profile, &p.id).join("data/duckstation/settings.ini"), &[("MemoryCards", "Card1Type", "PerGameFileTitle")])?;
+    }
     let pad = app.pads.lock().unwrap().pads.first().cloned();
     crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, pad.as_deref())?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
@@ -563,15 +572,18 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         .active_profile()
         .and_then(|p| app.db.game_prefs(&p.id).get(&g.group_key).and_then(|(_, l)| l.clone()))
         .unwrap_or_else(|| "auto".into());
-    // The save from RomM when it is newer (RetroArch battery saves), and what is still waiting to go.
+    // Saves and states from RomM when they are newer, and what is still waiting to go.
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
-    let sync = e.core.as_ref().map(|c| (profile.clone(), system.clone(), rom.clone(), c.clone()));
-    if sync.is_some() {
-        crate::savesync::retry_pending(app);
-        match crate::savesync::pull(app, &profile, rom_id, &system, &rom) {
-            Ok(note) => app.db.log("saves", &format!("{}: {note}", g.name)),
-            Err(err) => app.db.log("saves", &format!("{}: no sync before playing ({err})", g.name)),
+    let emu_name = e.core.clone().unwrap_or_else(|| p.id.clone());
+    let sync = Some((profile.clone(), system.clone(), p.id.clone(), rom.clone(), emu_name));
+    crate::savesync::retry_pending(app);
+    match crate::savesync::pull(app, &profile, rom_id, &system, &p.id, &rom) {
+        Ok(notes) => {
+            for n in notes {
+                app.db.log("saves", &format!("{}: {n}", g.name));
+            }
         }
+        Err(err) => app.db.log("saves", &format!("{}: no sync before playing ({err})", g.name)),
     }
     let mut cmd = command(app, &p, &e, &found, &system, &rom, &lang, rom_id)?;
     let log = emulator_log(app);
@@ -610,9 +622,9 @@ fn follow(app: Shared, log: PathBuf) {
                 *g = None;
                 drop(g);
                 // The save to RomM, then the end of the session is announced with the outcome.
-                let saved = sync.map(|(profile, system, rom, core)| crate::savesync::push(&app, &profile, rom_id, &system, &rom, &core));
+                let saved = sync.map(|(profile, system, program, rom, emu)| crate::savesync::push(&app, &profile, rom_id, &system, &program, &rom, &emu));
                 let save_note = match &saved {
-                    Some(Ok(Some(n))) => Some(n.clone()),
+                    Some(Ok(n)) if *n > 0 => Some("save sent to RomM".to_string()),
                     Some(Err(e)) => Some(e.clone()),
                     _ => None,
                 };

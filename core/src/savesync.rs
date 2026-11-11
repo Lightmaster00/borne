@@ -1,17 +1,20 @@
-//! Saves kept in step with RomM, per profile (each profile is a RomM account).
+//! Saves and save states kept in step with RomM, per profile (each profile is a RomM account).
 //!
-//! Before a game starts, the newest save of that game on RomM replaces the local one when it is
-//! newer; after the game, a save that changed goes to RomM. When both sides changed since the last
-//! sync, the newest wins and the other is archived (`profiles/<id>/archive/`), never deleted: a
-//! local file is always copied to the archive before it is replaced.
+//! Before a game starts, what RomM has that is newer replaces the local copy; after the game, what
+//! changed goes to RomM. When both sides changed since the last sync, the newest wins and the other
+//! is archived (`profiles/<id>/archive/`): a local copy is always archived before it is replaced.
 //!
-//! First pass: battery saves of the consoles run by RetroArch (`<game>.srm` in the profile's saves
-//! folder), sent with the core's name as the emulator, as RomM's own player (EmulatorJS) does.
-//! Offline, the game starts with the local save; the change is sent after the next game, or when
-//! RomM is back (pending sends are retried at each start).
+//! What is synced, per emulator (each game has its own files, so nothing is shared between games):
+//! - RetroArch: the battery save `<game>.srm` and the save states `<game>.state*`, sent with the
+//!   core's name as the emulator, as RomM's own player (EmulatorJS) does;
+//! - Dolphin: the game's own memory card (`GC/cards/<game>.raw`, set by Borne);
+//! - DuckStation: the game's own memory card (`memcards/<game>_1.mcd`, cards per game file);
+//! - Eden and Citron: the game's save folder in the emulated console (by its title id), as a zip.
+//! Offline, the game starts with the local copy; sends are retried at the next start.
 
 use crate::state::Shared;
 use serde_json::{json, Value};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -19,30 +22,127 @@ pub fn enabled(app: &Shared) -> bool {
     app.db.setting("save_sync").as_deref() != Some("off")
 }
 
-/// The local battery save of a game run by a RetroArch core.
-pub fn save_path(app: &Shared, profile: &str, system: &str, rom: &Path) -> PathBuf {
-    let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-    app.paths.profiles().join(profile).join("saves").join(system).join(format!("{stem}.srm"))
+/// One thing kept in step: a file, or a folder sent as a zip.
+#[derive(Clone, Debug)]
+pub struct Item {
+    pub kind: &'static str, // "saves" or "states"
+    pub local: PathBuf,
+    pub remote_name: String,
+    pub folder: bool,
 }
 
-fn state_key(profile: &str, rom_id: i64) -> String {
-    format!("savesync.{profile}.{rom_id}")
+fn stem(rom: &Path) -> String {
+    rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
 }
 
-/// What was in step at the last sync: the local file's hash and RomM's save time.
-fn last(app: &Shared, profile: &str, rom_id: i64) -> Value {
-    app.db.setting(&state_key(profile, rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(Value::Null)
-}
-fn remember(app: &Shared, profile: &str, rom_id: i64, v: Value) {
-    app.db.set_setting(&state_key(profile, rom_id), &v.to_string());
+/// The Switch title id in a file name ("Zelda [0100F2C0115B6000][v0].nsp").
+pub fn title_id(rom: &Path) -> Option<String> {
+    let n = rom.file_name()?.to_string_lossy().to_string();
+    n.split('[')
+        .skip(1)
+        .filter_map(|p| p.split(']').next())
+        .find(|t| t.len() == 16 && t.starts_with("01") && t.chars().all(|c| c.is_ascii_hexdigit()))
+        .map(|t| t.to_uppercase())
 }
 
-fn hash(p: &Path) -> Option<String> {
-    std::fs::read(p).ok().map(|b| crate::emuinstall::sha256_bytes(&b))
+/// The game's save folder in Eden / Citron's emulated console, once a console user exists.
+fn switch_save_dir(data: &Path, tid: &str) -> Option<PathBuf> {
+    let base = data.join("nand/user/save/0000000000000000");
+    let users: Vec<PathBuf> = std::fs::read_dir(&base).ok()?.flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect();
+    let real = |u: &&PathBuf| !u.file_name().map(|n| n.to_string_lossy().chars().all(|c| c == '0')).unwrap_or(true);
+    users.iter().find(|u| u.join(tid).is_dir()).or_else(|| users.iter().find(real)).map(|u| u.join(tid))
+}
+
+/// Dolphin's memory card for this game (Borne points slot A to it).
+pub fn dolphin_card(app: &Shared, profile: &str, rom: &Path) -> PathBuf {
+    app.paths.profiles().join(profile).join("dolphin/GC/cards").join(format!("{}.raw", stem(rom)))
+}
+
+/// What is synced for this game with this emulator (save states are listed apart).
+pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Path) -> Vec<Item> {
+    let base = app.paths.profiles().join(profile);
+    let data = crate::emulators::data_dir(app, profile, program);
+    let st = stem(rom);
+    match program {
+        "retroarch" => vec![Item { kind: "saves", local: base.join("saves").join(system).join(format!("{st}.srm")), remote_name: format!("{st}.srm"), folder: false }],
+        "dolphin" => vec![Item { kind: "saves", local: dolphin_card(app, profile, rom), remote_name: format!("{st}.raw"), folder: false }],
+        "duckstation" => {
+            let name = format!("{st}_1.mcd");
+            vec![Item { kind: "saves", local: data.join("data/duckstation/memcards").join(&name), remote_name: name, folder: false }]
+        }
+        "eden" | "citron" => match title_id(rom).and_then(|t| switch_save_dir(&data, &t).map(|d| (t, d))) {
+            Some((tid, dir)) => vec![Item { kind: "saves", local: dir, remote_name: format!("{tid}.zip"), folder: true }],
+            None => vec![],
+        },
+        _ => vec![],
+    }
+}
+
+/// RetroArch's save states of this game, on this device.
+fn local_states(app: &Shared, profile: &str, system: &str, rom: &Path) -> Vec<Item> {
+    let dir = app.paths.profiles().join(profile).join("states").join(system);
+    let prefix = format!("{}.state", stem(rom));
+    std::fs::read_dir(&dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let n = e.file_name().to_string_lossy().into_owned();
+            (n.starts_with(&prefix) && !n.ends_with(".png")).then(|| Item { kind: "states", local: e.path(), remote_name: n, folder: false })
+        })
+        .collect()
+}
+
+fn state_key(profile: &str, rom_id: i64, item: &Item) -> String {
+    format!("savesync.{profile}.{rom_id}.{}.{}", item.kind, item.remote_name)
+}
+
+fn last(app: &Shared, key: &str) -> Value {
+    app.db.setting(key).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(Value::Null)
+}
+
+fn walk(dir: &Path) -> Vec<PathBuf> {
+    let mut out = vec![];
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(d) = stack.pop() {
+        for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                stack.push(p);
+            } else {
+                out.push(p);
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// A file's or a folder's content hash (paths and bytes), to tell a change.
+fn hash(item: &Item) -> Option<String> {
+    if !item.folder {
+        return std::fs::read(&item.local).ok().map(|b| crate::emuinstall::sha256_bytes(&b));
+    }
+    if !item.local.is_dir() {
+        return None;
+    }
+    let mut all = vec![];
+    for f in walk(&item.local) {
+        all.extend_from_slice(f.strip_prefix(&item.local).unwrap().to_string_lossy().as_bytes());
+        all.extend(std::fs::read(&f).unwrap_or_default());
+    }
+    Some(crate::emuinstall::sha256_bytes(&all))
 }
 
 fn mtime(p: &Path) -> i64 {
-    p.metadata().and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_secs() as i64).unwrap_or(0)
+    let files = if p.is_dir() { walk(p) } else { vec![p.to_path_buf()] };
+    files
+        .iter()
+        .filter_map(|f| f.metadata().and_then(|m| m.modified()).ok())
+        .filter_map(|t| t.duration_since(UNIX_EPOCH).ok())
+        .map(|d| d.as_secs() as i64)
+        .max()
+        .unwrap_or(0)
 }
 
 fn now() -> i64 {
@@ -88,102 +188,174 @@ fn parse_time(s: &str) -> i64 {
     days * 86400 + (c[0] as i64) * 3600 + (c[1] as i64) * 60 + c.get(2).copied().unwrap_or(0.0) as i64 - offset
 }
 
-fn archive(app: &Shared, profile: &str, system: &str, file: &Path) {
-    if !file.is_file() {
+/// Copies a local file or folder to the profile's archive before it is replaced.
+fn archive(app: &Shared, profile: &str, item: &Item) {
+    let dir = app.paths.profiles().join(profile).join("archive").join(item.kind);
+    if std::fs::create_dir_all(&dir).is_err() {
         return;
     }
-    let dir = app.paths.profiles().join(profile).join("archive").join(system);
-    if std::fs::create_dir_all(&dir).is_ok() {
-        let name = file.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-        let _ = std::fs::copy(file, dir.join(format!("{name}.{}", now())));
+    let dest = dir.join(format!("{}.{}", item.remote_name, now()));
+    if item.folder {
+        if let Ok(z) = zip_dir(&item.local) {
+            let _ = std::fs::write(dest, z);
+        }
+    } else if item.local.is_file() {
+        let _ = std::fs::copy(&item.local, dest);
     }
 }
 
-/// RomM's newest save of this game for this file name (the .srm of the same name, any core).
-fn newest_remote(saves: &[Value], file_name: &str) -> Option<Value> {
-    saves
-        .iter()
-        .filter(|s| s["file_name"].as_str().map(|n| n.eq_ignore_ascii_case(file_name)).unwrap_or(false) && s["missing_from_fs"] != true)
+fn zip_dir(dir: &Path) -> Result<Vec<u8>, String> {
+    let mut buf = std::io::Cursor::new(vec![]);
+    {
+        let mut z = zip::ZipWriter::new(&mut buf);
+        let opts = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        for f in walk(dir) {
+            let rel = f.strip_prefix(dir).unwrap().to_string_lossy().replace('\\', "/");
+            z.start_file(rel, opts).map_err(|e| e.to_string())?;
+            z.write_all(&std::fs::read(&f).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        }
+        z.finish().map_err(|e| e.to_string())?;
+    }
+    Ok(buf.into_inner())
+}
+
+/// The newest copy on RomM of one file (by name, any emulator).
+fn newest_remote(list: &[Value], name: &str) -> Option<Value> {
+    list.iter()
+        .filter(|s| s["file_name"].as_str().map(|n| n.eq_ignore_ascii_case(name)).unwrap_or(false) && s["missing_from_fs"] != true)
         .max_by_key(|s| parse_time(s["updated_at"].as_str().unwrap_or("")))
         .cloned()
 }
 
-/// Before a game: RomM's save when it is newer. Returns a short note for the log.
-pub fn pull(app: &Shared, profile: &str, rom_id: i64, system: &str, rom: &Path) -> Result<String, String> {
+/// Before a game: RomM's copies when they are newer. Returns notes for the log.
+pub fn pull(app: &Shared, profile: &str, rom_id: i64, system: &str, program: &str, rom: &Path) -> Result<Vec<String>, String> {
     if !enabled(app) {
-        return Ok("save sync off".into());
+        return Ok(vec![]);
     }
     let client = app.client().ok_or("offline")?;
-    let local = save_path(app, profile, system, rom);
-    let name = local.file_name().unwrap().to_string_lossy().into_owned();
-    let saves = client.saves(rom_id).map_err(|e| e.to_string())?;
-    let Some(remote) = newest_remote(&saves, &name) else { return Ok("no save on RomM".into()) };
-    let remote_time = parse_time(remote["updated_at"].as_str().unwrap_or(""));
-    let prev = last(app, profile, rom_id);
-    let local_hash = hash(&local);
-    let local_changed = local_hash.is_some() && local_hash.as_deref() != prev["hash"].as_str();
-    let remote_changed = remote_time > prev["remote"].as_i64().unwrap_or(0);
-    if !remote_changed {
-        return Ok("up to date".into());
+    let mut notes = vec![];
+    let saves = client.assets("saves", rom_id).map_err(|e| e.to_string())?;
+    let mut list: Vec<(Item, Value)> = vec![];
+    for it in items(app, profile, system, program, rom) {
+        if let Some(r) = newest_remote(&saves, &it.remote_name) {
+            list.push((it, r));
+        }
     }
-    if local_changed && mtime(&local) > remote_time {
-        // Both changed: the local one is newer and wins (sent after the game); RomM's is kept by RomM.
-        return Ok("local save newer".into());
+    if program == "retroarch" {
+        let states = client.assets("states", rom_id).unwrap_or_default();
+        let prefix = format!("{}.state", stem(rom));
+        let dir = app.paths.profiles().join(profile).join("states").join(system);
+        let mut names: Vec<String> = states.iter().filter_map(|s| s["file_name"].as_str()).filter(|n| n.starts_with(&prefix)).map(String::from).collect();
+        names.sort();
+        names.dedup();
+        for n in names {
+            if let Some(r) = newest_remote(&states, &n) {
+                list.push((Item { kind: "states", local: dir.join(&n), remote_name: n, folder: false }, r));
+            }
+        }
     }
-    let id = remote["id"].as_i64().ok_or("save without id")?;
-    let tmp = local.with_extension("srm.download");
-    std::fs::create_dir_all(local.parent().unwrap()).map_err(|e| e.to_string())?;
-    client.fetch_to_file(&format!("/api/saves/{id}/content"), &tmp, 64 << 20).map_err(|e| e.to_string())?;
-    archive(app, profile, system, &local);
-    std::fs::rename(&tmp, &local).map_err(|e| e.to_string())?;
-    remember(app, profile, rom_id, json!({ "hash": hash(&local), "remote": remote_time, "pending": false }));
-    Ok("save taken from RomM".into())
+    for (it, remote) in list {
+        let key = state_key(profile, rom_id, &it);
+        let prev = last(app, &key);
+        let remote_time = parse_time(remote["updated_at"].as_str().unwrap_or(""));
+        if remote_time <= prev["remote"].as_i64().unwrap_or(0) {
+            continue;
+        }
+        let local_hash = hash(&it);
+        let local_changed = local_hash.is_some() && local_hash.as_deref() != prev["hash"].as_str();
+        if local_changed && mtime(&it.local) > remote_time {
+            notes.push(format!("{}: the local copy is newer", it.remote_name));
+            continue;
+        }
+        let id = remote["id"].as_i64().ok_or("asset without id")?;
+        let safe: String = it.remote_name.chars().map(|c| if c == '/' || c == '\\' { '_' } else { c }).collect();
+        let tmp = app.paths.profiles().join(profile).join(format!(".download-{safe}"));
+        let _ = std::fs::create_dir_all(tmp.parent().unwrap());
+        client.fetch_to_file(&format!("/api/{}/{id}/content", it.kind), &tmp, 512 << 20).map_err(|e| e.to_string())?;
+        archive(app, profile, &it);
+        if it.folder {
+            let staging = it.local.with_extension("borne-new");
+            let _ = std::fs::remove_dir_all(&staging);
+            crate::downloads::extract_zip(&tmp, &staging, &std::sync::atomic::AtomicBool::new(false))?;
+            let _ = std::fs::remove_dir_all(&it.local);
+            std::fs::rename(&staging, &it.local).map_err(|e| e.to_string())?;
+            let _ = std::fs::remove_file(&tmp);
+        } else {
+            std::fs::create_dir_all(it.local.parent().unwrap()).map_err(|e| e.to_string())?;
+            std::fs::rename(&tmp, &it.local).map_err(|e| e.to_string())?;
+        }
+        app.db.set_setting(&key, &json!({ "hash": hash(&it), "remote": remote_time }).to_string());
+        notes.push(format!("{}: taken from RomM", it.remote_name));
+    }
+    Ok(notes)
 }
 
-/// After a game: the save goes to RomM when it changed (or is still waiting to be sent).
-pub fn push(app: &Shared, profile: &str, rom_id: i64, system: &str, rom: &Path, emulator: &str) -> Result<Option<String>, String> {
+/// After a game: what changed goes to RomM (and what was still waiting). Returns how many files
+/// were sent, or why some wait.
+pub fn push(app: &Shared, profile: &str, rom_id: i64, system: &str, program: &str, rom: &Path, emulator: &str) -> Result<usize, String> {
     if !enabled(app) {
-        return Ok(None);
+        return Ok(0);
     }
-    let local = save_path(app, profile, system, rom);
-    let Some(h) = hash(&local) else { return Ok(None) };
-    let prev = last(app, profile, rom_id);
-    if prev["hash"].as_str() == Some(h.as_str()) && prev["pending"] != true {
-        return Ok(None);
+    let mut list = items(app, profile, system, program, rom);
+    if program == "retroarch" {
+        list.extend(local_states(app, profile, system, rom));
     }
-    let pending = || remember(app, profile, rom_id, json!({ "hash": prev["hash"], "remote": prev["remote"], "pending": true, "system": system, "rom": rom, "emulator": emulator }));
-    let Some(client) = app.client() else {
-        pending();
-        return Err("RomM unreachable: the save will be sent later".into());
-    };
-    let data = std::fs::read(&local).map_err(|e| e.to_string())?;
-    let name = local.file_name().unwrap().to_string_lossy().into_owned();
-    match client.upload_save(rom_id, emulator, &name, &data) {
-        Ok(v) => {
-            let t = parse_time(v["updated_at"].as_str().unwrap_or(""));
-            remember(app, profile, rom_id, json!({ "hash": h, "remote": if t > 0 { t } else { now() }, "pending": false }));
-            Ok(Some("save sent to RomM".into()))
+    let mut sent = 0;
+    let mut waiting: Option<String> = None;
+    for it in list {
+        let Some(h) = hash(&it) else { continue };
+        let key = state_key(profile, rom_id, &it);
+        let prev = last(app, &key);
+        if prev["hash"].as_str() == Some(h.as_str()) && prev["pending"] != true {
+            continue;
         }
-        Err(e) => {
-            pending();
-            Err(format!("the save will be sent later: {e}"))
+        let mark_pending = || {
+            app.db.set_setting(
+                &key,
+                &json!({ "hash": prev["hash"], "remote": prev["remote"], "pending": true, "system": system, "program": program, "rom": rom, "emulator": emulator }).to_string(),
+            );
+        };
+        let Some(client) = app.client() else {
+            mark_pending();
+            waiting = Some("RomM unreachable".into());
+            continue;
+        };
+        let data = if it.folder { zip_dir(&it.local)? } else { std::fs::read(&it.local).map_err(|e| e.to_string())? };
+        match client.upload_asset(it.kind, rom_id, emulator, &it.remote_name, &data) {
+            Ok(v) => {
+                let t = parse_time(v["updated_at"].as_str().unwrap_or(""));
+                app.db.set_setting(&key, &json!({ "hash": h, "remote": if t > 0 { t } else { now() } }).to_string());
+                sent += 1;
+            }
+            Err(e) => {
+                mark_pending();
+                waiting = Some(e.to_string());
+            }
         }
+    }
+    match waiting {
+        Some(w) => Err(format!("sent later: {w}")),
+        None => Ok(sent),
     }
 }
 
-/// Sends the saves still waiting (RomM was unreachable), for the active profile.
+/// Sends what is still waiting (RomM was unreachable), for the active profile.
 pub fn retry_pending(app: &Shared) {
     let Some(p) = app.active_profile() else { return };
     let prefix = format!("savesync.{}.", p.id);
+    let mut done = std::collections::HashSet::new();
     for (k, v) in app.db.settings_with_prefix(&prefix) {
         let Ok(v) = serde_json::from_str::<Value>(&v) else { continue };
         if v["pending"] != true {
             continue;
         }
-        let Some(rom_id) = k.strip_prefix(&prefix).and_then(|r| r.parse::<i64>().ok()) else { continue };
-        let (Some(system), Some(rom), Some(emu)) = (v["system"].as_str(), v["rom"].as_str(), v["emulator"].as_str()) else { continue };
-        match push(app, &p.id, rom_id, system, Path::new(rom), emu) {
-            Ok(Some(_)) => app.db.log("saves", &format!("game {rom_id}: pending save sent")),
+        let Some(rom_id) = k.strip_prefix(&prefix).and_then(|r| r.split('.').next()).and_then(|r| r.parse::<i64>().ok()) else { continue };
+        if !done.insert(rom_id) {
+            continue;
+        }
+        let (Some(system), Some(program), Some(rom), Some(emu)) = (v["system"].as_str(), v["program"].as_str(), v["rom"].as_str(), v["emulator"].as_str()) else { continue };
+        match push(app, &p.id, rom_id, system, program, Path::new(rom), emu) {
+            Ok(n) if n > 0 => app.db.log("saves", &format!("game {rom_id}: {n} waiting file(s) sent")),
             Err(e) => app.db.log("saves", &format!("game {rom_id}: {e}")),
             _ => {}
         }
@@ -204,7 +376,7 @@ mod tests {
     }
 
     #[test]
-    fn the_newest_save_of_the_same_file_is_chosen() {
+    fn the_newest_copy_of_the_same_file_is_chosen() {
         let saves = vec![
             json!({ "id": 1, "file_name": "Game (World).srm", "updated_at": "2026-01-01T00:00:00Z" }),
             json!({ "id": 2, "file_name": "Game (World).srm", "updated_at": "2026-02-01T00:00:00Z" }),
@@ -212,5 +384,23 @@ mod tests {
         ];
         assert_eq!(newest_remote(&saves, "game (world).srm").unwrap()["id"], 2);
         assert!(newest_remote(&saves, "None.srm").is_none());
+    }
+
+    #[test]
+    fn switch_title_ids_and_save_folders() {
+        assert_eq!(title_id(Path::new("/g/Zelda TotK [0100F2C0115B6000][v0].nsp")).as_deref(), Some("0100F2C0115B6000"));
+        assert_eq!(title_id(Path::new("/g/Game.nsp")), None);
+        let d = std::env::temp_dir().join(format!("borne-sw-{}", std::process::id()));
+        let users = d.join("nand/user/save/0000000000000000");
+        std::fs::create_dir_all(users.join("00000000000000000000000000000000")).unwrap();
+        std::fs::create_dir_all(users.join("ABCDEF0123456789ABCDEF0123456789/0100F2C0115B6000")).unwrap();
+        std::fs::write(users.join("ABCDEF0123456789ABCDEF0123456789/0100F2C0115B6000/save.bin"), b"x").unwrap();
+        let dir = switch_save_dir(&d, "0100F2C0115B6000").unwrap();
+        assert!(dir.ends_with("ABCDEF0123456789ABCDEF0123456789/0100F2C0115B6000"));
+        let it = Item { kind: "saves", local: dir.clone(), remote_name: "x.zip".into(), folder: true };
+        assert!(hash(&it).is_some());
+        let z = zip::ZipArchive::new(std::io::Cursor::new(zip_dir(&dir).unwrap())).unwrap();
+        assert_eq!(z.file_names().collect::<Vec<_>>(), vec!["save.bin"]);
+        let _ = std::fs::remove_dir_all(d);
     }
 }

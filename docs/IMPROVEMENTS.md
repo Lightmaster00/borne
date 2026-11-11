@@ -100,10 +100,10 @@ Next:
 
 ### 3.2 Saves (P1 — first pass done)
 
-Done: RetroArch battery saves (`.srm`) synced with RomM per profile (`savesync.rs`): newest wins,
-the replaced copy archived in `profiles/<id>/archive/`, pending sends retried. Still to do: save
-states, Dolphin memory cards / GCI, PCSX2 memory cards, DuckStation, Switch saves (NAND user
-folder per title), PS3 saves; RomM's Device Sync (device id, tracked saves) once Borne registers as
+Done (`savesync.rs`, per profile, newest wins, replaced copies archived, pending sends retried):
+RetroArch battery saves and save states; Dolphin and DuckStation with a memory card per game; Eden
+and Citron save folders per title (zip). Still to do: PCSX2 (a card per game needs a formatted
+blank card), Ryubing, RPCS3 and shadPS4 saves, Xenia; RomM's Device Sync (device id, tracked saves) once Borne registers as
 a device; a conflict screen when both sides changed close together.
 
 ## 4. Library and navigation
