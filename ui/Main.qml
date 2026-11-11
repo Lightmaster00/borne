@@ -234,7 +234,7 @@ Window {
         })
     }
     property int pageTrailerFor: -1
-    // Credits, anecdotes and screenshots: fetched by the core in the background on first view.
+    // Studios, series and screenshots (RomM).
     property var pageFacts: null
     function loadFacts(romId) {
         api("GET", "/api/v1/games/" + romId + "/facts?lang=" + uiLang, null, function (f) {
@@ -292,24 +292,15 @@ Window {
             })
         }
     }
-    // ScreenScraper account: four entries in turn, then the core checks them with ScreenScraper.
+    // ScreenScraper account: user name then password; the core checks them with ScreenScraper.
     function ssSignIn() {
-        const c = {}
         nameEntry.open(qsTr("ScreenScraper user name"), "", function (u) {
-            c.user = u
             nameEntry.open(qsTr("ScreenScraper password"), "", function (p) {
-                c.password = p
-                nameEntry.open(qsTr("Developer id (ScreenScraper)"), "", function (d) {
-                    c.dev_id = d
-                    nameEntry.open(qsTr("Developer password (ScreenScraper)"), "", function (dp) {
-                        c.dev_password = dp
-                        api("POST", "/api/v1/screenscraper", c, function (r, err) {
-                            if (err) toasts.show(qsTr("ScreenScraper: %1").arg(err), "error")
-                            else toasts.show(qsTr("ScreenScraper connected. Fetching the games' media…"), "info")
-                            loadSettings()
-                        })
-                    }, qsTr("Developer password"), true)
-                }, qsTr("Developer id"))
+                api("POST", "/api/v1/screenscraper", { user: u, password: p }, function (r, err) {
+                    if (err) toasts.show(qsTr("ScreenScraper: %1").arg(err), "error")
+                    else toasts.show(qsTr("ScreenScraper connected. Fetching the games' media…"), "info")
+                    loadSettings()
+                })
             }, qsTr("Password"), true)
         }, qsTr("User name"))
     }
@@ -363,8 +354,6 @@ Window {
         else if (id === "trailers") prefs.trailers = payload
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
-        else if (id === "lb-enabled") api("POST", "/api/v1/launchbox", { enabled: payload, fetch: payload }, function () { loadSettings() })
-        else if (id === "lb-fetch" || id === "lb-again") api("POST", "/api/v1/launchbox", { fetch: true, again: id === "lb-again" }, function () { loadSettings() })
         else if (id === "ss-signin") ssSignIn()
         else if (id === "ss-signout") api("DELETE", "/api/v1/screenscraper", null, function () { loadSettings() })
         else if (id === "ss-fetch" || id === "ss-again") api("POST", "/api/v1/screenscraper/fetch", { again: id === "ss-again" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
@@ -552,27 +541,18 @@ Window {
     property var turnKeys: ({})
     readonly property real turnX: Math.max(-1, Math.min(1, padTurnX + (turnKeys.d ? 1 : 0) - (turnKeys.q ? 1 : 0)))
     readonly property real turnY: Math.max(-1, Math.min(1, padTurnY + (turnKeys.s ? 1 : 0) - (turnKeys.z ? 1 : 0)))
-    property real boxYaw: 0          // degrees, free
-    property real boxPitch: 0        // degrees, -70 … 70
-    property bool turning: false     // the player is turning it, or did a moment ago
+    // The stick sets the angle directly (not a speed): the box leans toward where you push, within
+    // limits that keep its front in view (never its back), and comes back as soon as you let go.
+    readonly property real maxYaw: 38
+    readonly property real maxPitch: 22
+    property real boxYaw: turnX * maxYaw
+    property real boxPitch: turnY * maxPitch
+    Behavior on boxYaw { SmoothedAnimation { velocity: 160; reversingMode: SmoothedAnimation.Immediate } }
+    Behavior on boxPitch { SmoothedAnimation { velocity: 110; reversingMode: SmoothedAnimation.Immediate } }
+    readonly property bool turning: turnActive || Math.abs(boxYaw) > 0.5 || Math.abs(boxPitch) > 0.5
     readonly property bool turnActive: Math.abs(turnX) > 0.01 || Math.abs(turnY) > 0.01
     function setTurnKey(k, down) { const t = Object.assign({}, turnKeys); t[k] = down; turnKeys = t }
-    Timer {
-        interval: 16; repeat: true
-        running: win.turnActive
-        onTriggered: {
-            win.boxYaw += win.turnX * 3.2
-            win.boxPitch = Math.max(-70, Math.min(70, win.boxPitch + win.turnY * 2.4))
-            win.turning = true
-            settleTurn.restart()
-        }
-    }
-    // Let go: after a moment the box comes back to rest, facing you.
-    Timer { id: settleTurn; interval: 2600; onTriggered: { win.turning = false; restYaw.restart(); restPitch.restart() } }
-    NumberAnimation { id: restYaw; target: win; property: "boxYaw"; to: 0; duration: 900; easing.type: Easing.OutCubic
-        onStarted: win.boxYaw = ((win.boxYaw % 360) + 540) % 360 - 180 }
-    NumberAnimation { id: restPitch; target: win; property: "boxPitch"; to: 0; duration: 900; easing.type: Easing.OutCubic }
-    function resetTurn() { restYaw.stop(); restPitch.stop(); boxYaw = 0; boxPitch = 0; turning = false }
+    function resetTurn() { turnKeys = ({}) }
     onFocusIndexChanged: resetTurn()
 
     function dispatch(a, source) {
@@ -640,7 +620,6 @@ Window {
             else if (m.type === "library") libReload.restart()
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
-            else if (m.type === "launchbox") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "screenscraper") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "sync") {
                 if (win.status) { const s = win.status; s.sync = m.sync; win.status = s; win.statusChanged() }

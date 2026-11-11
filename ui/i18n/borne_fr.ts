@@ -261,32 +261,8 @@
         <translation>Son de la bande-annonce</translation>
     </message>
     <message>
-        <source>Developer</source>
-        <translation>Développeur</translation>
-    </message>
-    <message>
-        <source>Publisher</source>
-        <translation>Éditeur</translation>
-    </message>
-    <message>
         <source>Studios</source>
         <translation>Studios</translation>
-    </message>
-    <message>
-        <source>Director</source>
-        <translation>Réalisateur</translation>
-    </message>
-    <message>
-        <source>Producer</source>
-        <translation>Producteur</translation>
-    </message>
-    <message>
-        <source>Designer</source>
-        <translation>Game designer</translation>
-    </message>
-    <message>
-        <source>Composer</source>
-        <translation>Compositeur</translation>
     </message>
     <message>
         <source>Series</source>
@@ -311,14 +287,6 @@
     <message>
         <source>Looking up the credits…</source>
         <translation>Recherche des crédits…</translation>
-    </message>
-    <message>
-        <source>Sources: RomM, Wikidata, Wikipedia</source>
-        <translation>Sources : RomM, Wikidata, Wikipédia</translation>
-    </message>
-    <message>
-        <source>Did you know?</source>
-        <translation>Le saviez-vous ?</translation>
     </message>
     <message>
         <source>Screenshots</source>
@@ -347,6 +315,10 @@
     <message>
         <source>About</source>
         <translation>À propos</translation>
+    </message>
+    <message>
+        <source>Source: RomM</source>
+        <translation>Source : RomM</translation>
     </message>
 </context>
 <context>
@@ -948,28 +920,12 @@
         <translation>Mot de passe ScreenScraper</translation>
     </message>
     <message>
-        <source>Developer id (ScreenScraper)</source>
-        <translation>Identifiant développeur (ScreenScraper)</translation>
-    </message>
-    <message>
-        <source>Developer password (ScreenScraper)</source>
-        <translation>Mot de passe développeur (ScreenScraper)</translation>
-    </message>
-    <message>
         <source>ScreenScraper: %1</source>
         <translation>ScreenScraper : %1</translation>
     </message>
     <message>
         <source>ScreenScraper connected. Fetching the games' media…</source>
         <translation>ScreenScraper connecté. Récupération des médias des jeux…</translation>
-    </message>
-    <message>
-        <source>Developer password</source>
-        <translation>Mot de passe développeur</translation>
-    </message>
-    <message>
-        <source>Developer id</source>
-        <translation>Identifiant développeur</translation>
     </message>
     <message>
         <source>Password</source>
@@ -1578,10 +1534,6 @@
         <translation>Récupérer à nouveau</translation>
     </message>
     <message>
-        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. It needs your ScreenScraper account and developer credentials (requested from ScreenScraper on its forum).</source>
-        <translation>Borne demande lui-même à ScreenScraper le boîtier de chaque jeu (face, tranche, dos), sa cartouche, son logo et ses illustrations, sans passer par RomM. Il faut votre compte ScreenScraper et des identifiants développeur (à demander à ScreenScraper sur son forum).</translation>
-    </message>
-    <message>
         <source>Connected as %1</source>
         <translation>Connecté en tant que %1</translation>
     </message>
@@ -1630,48 +1582,24 @@
         <translation>Tout récupérer à nouveau</translation>
     </message>
     <message>
-        <source>Free, no account: case front, spine and back, cartridge or disc, logo and artwork from the LaunchBox community database. Borne downloads its index (a large file) once a month.</source>
-        <translation>Gratuit, sans compte : face, tranche et dos du boîtier, cartouche ou disque, logo et illustrations depuis la base communautaire LaunchBox. Borne télécharge son index (un gros fichier) une fois par mois.</translation>
-    </message>
-    <message>
-        <source>Downloading the LaunchBox index…</source>
-        <translation>Téléchargement de l’index LaunchBox…</translation>
-    </message>
-    <message>
-        <source>Reading the LaunchBox index…</source>
-        <translation>Lecture de l’index LaunchBox…</translation>
-    </message>
-    <message>
-        <source>Fetching images… %1 / %2 games, %3 found</source>
-        <translation>Récupération des images… %1 / %2 jeux, %3 trouvés</translation>
-    </message>
-    <message>
-        <source>%1 of %2 games found on LaunchBox. ScreenScraper's images, when connected, take precedence.</source>
-        <translation>%1 jeux sur %2 trouvés sur LaunchBox. Les images de ScreenScraper, s’il est connecté, priment.</translation>
-    </message>
-    <message>
-        <source>Fetched after each sync.</source>
-        <translation>Récupéré après chaque synchro.</translation>
-    </message>
-    <message>
         <source>Game images</source>
         <translation>Images des jeux</translation>
     </message>
     <message>
-        <source>LaunchBox, ScreenScraper</source>
-        <translation>LaunchBox, ScreenScraper</translation>
-    </message>
-    <message>
-        <source>LaunchBox Games Database</source>
-        <translation>Base LaunchBox Games Database</translation>
-    </message>
-    <message>
-        <source>LaunchBox images</source>
-        <translation>Images LaunchBox</translation>
-    </message>
-    <message>
         <source>ScreenScraper account</source>
         <translation>Compte ScreenScraper</translation>
+    </message>
+    <message>
+        <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
+        <translation>Cette version de Borne n’a pas d’accès développeur ScreenScraper : les versions officielles l’incluent. Les images viennent toujours de RomM.</translation>
+    </message>
+    <message>
+        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. Connect your ScreenScraper account (free on screenscraper.fr).</source>
+        <translation>Borne demande lui-même à ScreenScraper le boîtier de chaque jeu (face, tranche, dos), sa cartouche, son logo et ses illustrations, sans passer par RomM. Connectez votre compte ScreenScraper (gratuit sur screenscraper.fr).</translation>
+    </message>
+    <message>
+        <source>ScreenScraper</source>
+        <translation>ScreenScraper</translation>
     </message>
 </context>
 </TS>

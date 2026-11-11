@@ -37,17 +37,6 @@ Item {
     property real userYaw: 0
     property real userPitch: 0
     readonly property bool userTurned: Math.abs(userYaw) > 0.5 || Math.abs(userPitch) > 0.5
-    // Inspect mode (game page): the selected box turns all the way round, pausing on its back.
-    property bool inspect: false
-    property real spin: 0
-    SequentialAnimation on spin {
-        loops: Animation.Infinite
-        running: shelf.inspect && shelf.visible
-        PauseAnimation { duration: 5000 }
-        NumberAnimation { from: 0; to: 180; duration: 2600; easing.type: Easing.InOutCubic }
-        PauseAnimation { duration: 3500 }
-        NumberAnimation { from: 180; to: 360; duration: 2600; easing.type: Easing.InOutCubic }
-    }
     property real swayAmp: 4              // degrees
     property int swayPeriod: 3600
     SequentialAnimation on sway {
@@ -73,7 +62,7 @@ Item {
         let pitch = 0
         if (a < 0.5) {
             const k = 1 - 2 * a
-            ang += (shelf.userTurned ? shelf.userYaw : shelf.inspect ? shelf.spin : shelf.sway * shelf.swayAmp) * k
+            ang += (shelf.userTurned ? shelf.userYaw : shelf.sway * shelf.swayAmp) * k
             pitch = shelf.userPitch * k
         }
         return { x: x, y: shelf.baseY + (a < 1 ? -8 * (1 - a) : 0), z: z, ang: ang, pitch: pitch }

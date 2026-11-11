@@ -11,6 +11,10 @@ on:
 #   tag vX.Y.Z -> version X.Y.Z (stable channel); otherwise <Cargo version>-dev.<run> (dev channel).
 env:
   BORNE_BUILD: ${{ github.run_number }}
+  # ScreenScraper developer credentials, compiled masked into the official builds (core/build.rs).
+  # Repository secrets only: never in the code, masked in the logs, empty for forks' pull requests.
+  BORNE_SS_DEV_ID: ${{ secrets.SCREENSCRAPER_DEV_ID }}
+  BORNE_SS_DEV_PASSWORD: ${{ secrets.SCREENSCRAPER_DEV_PASSWORD }}
 
 jobs:
   linux:

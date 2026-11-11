@@ -242,8 +242,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   `POST /api/v1/games/{id}/trailer`, cached in `media/videos` and pruned beyond 2 GB; when the shown
   version has none, another version of the same game is used; without a trailer the case stands on the
   right), then the choices and an introduction,
-  the credits and anecdotes (Wikidata, Wikipedia in the UI language, cached 30 days; only the name and
-  year are sent), and the screenshots from RomM (fetched through the core with the profile's token).
+  the studios and series (RomM only), and the screenshots from RomM (fetched through the core with the profile's token).
 - Accent: the cover's dominant hue, lifted to a light tone, colors the eyebrow text, the systems underline,
   halos and the language marks. Panels are glass (translucent white, fine edge).
 - Type: Manrope (static Regular to ExtraBold instances). The scene keeps a 1080-unit height (or 1600
@@ -743,11 +742,10 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   Settings → Server → Game media shows, per console, what is on disk and what RomM lacks;
   *Fetch again* forgets the files and fetches them anew (`POST /api/v1/media/refresh`;
   `GET /api/v1/media/report`).
-- Cases are rebuilt from ScreenScraper's case elements stored by RomM: the front scan (`box2d`) is the
+- Cases are rebuilt from ScreenScraper's case elements (through RomM or Borne's own access): the front scan (`box2d`) is the
   front and sets the width, the spine scan (`box2d_side`) is printed on the spine and sets the
   thickness (stood up if stored lying down), the back scan (`box2d_back`) is the back. The console's
-  real case size fills in what is missing. On the game page the case turns all the way round now
-  and then (front, spine, back); on the shelf both sides show the spine.
+  real case size fills in what is missing.
 - `GET /api/v1/games/{id}/art/{front|side|back|fanart|logo|physical|title|backdrop}`: ScreenScraper media
   stored by RomM (`ss_metadata.*_path`), from any version of the game, fetched once with the profile's
   token and cached in `media/art`. Library entries and the game page list the kinds available
@@ -758,8 +756,9 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 
 ## ScreenScraper (Borne's own access)
 
-- Settings → ScreenScraper: the user's ScreenScraper account and developer credentials (checked with
-  `ssuserInfos.php`, kept in a 0600 file, never logged; media URLs are stored without them).
+- Settings → Game images: the user's ScreenScraper account (user name and password, checked with
+  `ssuserInfos.php`, kept in a 0600 file, never logged). Borne's developer credentials are compiled
+  in (see "External services").
 - After each sync, and on demand, the core asks `jeuInfos.php` for each game not asked yet: by
   ScreenScraper's game id when RomM has it, else by console, file name, size and hashes. One request
   at a time; quota and refusals (403 credentials, 429/430 quota, 401/423 closed) stop the run with a
@@ -771,16 +770,21 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Boxes are real boxes: the spine on the left side only, the opening edge on the right; the front
   takes the exact proportions of its image (scan, else cover), so nothing is cropped.
 
-## LaunchBox Games Database (no account)
+## External services
 
-- On by default (Settings → Game images). The core downloads LaunchBox's public `Metadata.zip`
-  once every 30 days, reads `Metadata.xml` as a stream and keeps only the consoles in the library
-  (platform names from RomM's LaunchBox mapping, `launchbox_platforms.rs`).
-- Games are matched by console and normalized title, then alternate titles. Images: `Box - Front`,
-  `Box - Spine`, `Box - Back` (and reconstructed variants), `Cart - Front` / `Disc`, `Clear Logo`,
-  `Fanart - Background`, from `images.launchbox-app.com`, in the version's region first.
-- Precedence: Borne's ScreenScraper access, then LaunchBox, then RomM's copies.
-  `BORNE_LAUNCHBOX_BASE` points tests at a local stand-in.
+Borne talks to RomM, to ScreenScraper (Borne's own access, optional) and to GitHub (its own
+updates), and to nothing else. Earlier sources (LaunchBox Games Database, Wikidata / Wikipedia) were
+removed; their caches are dropped when the database is opened.
+
+### ScreenScraper developer credentials
+
+ScreenScraper requires the software's developer credentials with every request. They are repository
+secrets (`SCREENSCRAPER_DEV_ID`, `SCREENSCRAPER_DEV_PASSWORD`), passed to the build as
+`BORNE_SS_DEV_ID` / `BORNE_SS_DEV_PASSWORD` and compiled in by `core/build.rs` masked with a key drawn
+for each build: never in the repository, not readable as strings in the binary, masked in CI logs,
+never logged by Borne, never returned by the API (only `developer_access: true/false`), and stripped
+from stored media URLs. Errors from the network never carry the request URL. A build without them
+says so in Settings; development builds can set the same variables in the environment.
 
 ## Game boxes as solids
 
@@ -792,6 +796,7 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   across it as it turns; the clear sleeve of plastic cases adds a sheen band that follows the turn.
   Materials: keep case (rim, rounded edges, moulded ridges on bare edges), jewel case (hinge, black
   tray under a clear lid), clamshell, cardboard (matte, crisp folds).
-- The selected box (library and game page) turns with the right stick (core event `stick`, dead
-  zone 0.18, steps of 0.05) or Z Q S D held; yaw is free, pitch is limited to ±70°. 2.6 s after the
-  last input it comes back to rest. `POST /api/v1/debug/stick?x=&y=` drives it in tests.
+- The selected box (library and game page) leans with the right stick (core event `stick`, dead
+  zone 0.18, steps of 0.05) or Z Q S D held: the stick sets the angle, within ±38° of turn and ±22°
+  of tilt, so the front always stays in view (never the back); released, the box comes straight
+  back. `POST /api/v1/debug/stick?x=&y=` drives it in tests.

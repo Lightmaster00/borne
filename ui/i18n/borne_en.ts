@@ -261,31 +261,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Developer</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Publisher</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Studios</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Director</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Producer</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Designer</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Composer</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -310,14 +286,6 @@
     </message>
     <message>
         <source>Looking up the credits…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Sources: RomM, Wikidata, Wikipedia</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Did you know?</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -346,6 +314,10 @@
     </message>
     <message>
         <source>About</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source: RomM</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -948,27 +920,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Developer id (ScreenScraper)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Developer password (ScreenScraper)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>ScreenScraper: %1</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>ScreenScraper connected. Fetching the games' media…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Developer password</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Developer id</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1578,10 +1534,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. It needs your ScreenScraper account and developer credentials (requested from ScreenScraper on its forum).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Connected as %1</source>
         <translation type="unfinished" />
     </message>
@@ -1630,47 +1582,23 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Free, no account: case front, spine and back, cartridge or disc, logo and artwork from the LaunchBox community database. Borne downloads its index (a large file) once a month.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Downloading the LaunchBox index…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Reading the LaunchBox index…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fetching images… %1 / %2 games, %3 found</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1 of %2 games found on LaunchBox. ScreenScraper's images, when connected, take precedence.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fetched after each sync.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Game images</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>LaunchBox, ScreenScraper</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>LaunchBox Games Database</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>LaunchBox images</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>ScreenScraper account</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. Connect your ScreenScraper account (free on screenscraper.fr).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper</source>
         <translation type="unfinished" />
     </message>
 </context>

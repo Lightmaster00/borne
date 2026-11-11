@@ -110,8 +110,25 @@ fn trim(img: &DynamicImage) -> DynamicImage {
 
 /// Cleans a downloaded image and writes it; returns (path, width, height).
 pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(PathBuf, u32, u32), String> {
-    let img = image::load_from_memory(bytes).map_err(|e| format!("unreadable image ({e})"))?;
-    let mut img = if kind == "logo" || kind == "physical" { img } else { trim(&img) };
+    let img = decode(bytes)?;
+    let img = if kind == "logo" || kind == "physical" { img } else { trim(&img) };
+    finish(app, group_key, kind, img)
+}
+
+/// Decodes an image from the network, refusing absurd sizes before decoding (memory bombs).
+pub fn decode(bytes: &[u8]) -> Result<DynamicImage, String> {
+    let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
+        .with_guessed_format()
+        .map_err(|e| format!("unreadable image ({e})"))?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(12_000);
+    limits.max_image_height = Some(12_000);
+    limits.max_alloc = Some(256 << 20);
+    reader.limits(limits);
+    reader.decode().map_err(|e| format!("unreadable image ({e})"))
+}
+
+fn finish(app: &Shared, group_key: &str, kind: &str, mut img: DynamicImage) -> Result<(PathBuf, u32, u32), String> {
     if kind == "side" && img.width() > img.height() {
         img = img.rotate270();
     }
@@ -141,8 +158,8 @@ pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<
 pub fn ensure(app: &Shared, client: &crate::romm::Client, group_key: &str, kind: &str, src: &(i64, String)) -> Result<(), String> {
     let stamp = format!("{}|{}", src.0, src.1);
     if let Some(m) = app.db.media(group_key, kind) {
-        // ScreenScraper's (Borne's account) and LaunchBox's copies take precedence over RomM's.
-        let ss = m.stamp.starts_with("ss|") || m.stamp.starts_with("lb|");
+        // ScreenScraper's copy (Borne's own access) takes precedence over RomM's.
+        let ss = m.stamp.starts_with("ss|");
         if (ss || m.stamp == stamp) && std::path::Path::new(&m.path).is_file() {
             return Ok(());
         }
@@ -166,7 +183,7 @@ pub fn prefetch(app: &Shared, client: &crate::romm::Client) {
             let fresh = app
                 .db
                 .media(&key, kind)
-                .map(|m| (m.stamp == stamp || m.stamp.starts_with("ss|") || m.stamp.starts_with("lb|")) && std::path::Path::new(&m.path).is_file())
+                .map(|m| (m.stamp == stamp || m.stamp.starts_with("ss|")) && std::path::Path::new(&m.path).is_file())
                 .unwrap_or(false);
             if !fresh {
                 jobs.push((key.clone(), kind, src));

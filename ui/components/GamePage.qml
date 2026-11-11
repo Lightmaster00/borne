@@ -1,8 +1,8 @@
 // Game page, laid out like a film poster: the trailer (or the game's artwork) across the screen,
 // the game's logo, its actions and the languages it really exists in on the left, its case in 3D
 // on the right. Choosing a language chooses the version that is launched (French → the European
-// version that has French, Japanese → the Japanese one…). Below: about, screenshots, credits and
-// anecdotes (RomM, Wikidata, Wikipedia).
+// version that has French, Japanese → the Japanese one…). Below: about, screenshots, studios and
+// series (RomM).
 //
 // Gamepad: up/down between rows (actions, language, then the rest of the page),
 // left/right inside a row, A to activate, B to go back. Mouse and wheel: everything works.
@@ -64,27 +64,18 @@ Item {
     }
     readonly property var allActions: hasTrailer && trailers ? actions.concat([{ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") }]) : actions
 
-    // Credits: Wikidata first; RomM's studios and series when Wikidata has nothing.
+    // Credits: from RomM (studios, series), with the year and the number of players.
     readonly property var credits: {
-        const f = facts && facts.facts && facts.facts.status === "ok" ? facts.facts : null
-        const c = f ? f.credits : {}
         const out = []
         const add = (label, list) => { if (list && list.length) out.push([label, list.join(", ")]) }
-        add(qsTr("Developer"), c.developer)
-        add(qsTr("Publisher"), c.publisher)
-        if (!c.developer && !c.publisher && facts) add(qsTr("Studios"), facts.companies)
-        add(qsTr("Director"), c.director)
-        add(qsTr("Producer"), c.producer)
-        add(qsTr("Designer"), c.designer)
-        add(qsTr("Composer"), c.composer)
-        add(qsTr("Series"), c.series && c.series.length ? c.series : facts ? facts.franchises : [])
-        if (f && f.release_years && f.release_years.length) out.push([qsTr("Released"), Array.from(new Set(f.release_years)).sort().join(", ")])
+        if (facts) add(qsTr("Studios"), facts.companies)
+        if (facts) add(qsTr("Series"), facts.franchises)
+        if (game && game.year > 0) out.push([qsTr("Released"), String(game.year)])
         if (game && game.players) out.push([qsTr("Players"), game.players])
         return out
     }
-    readonly property var anecdotes: facts && facts.facts && facts.facts.anecdotes ? facts.facts.anecdotes : []
-    readonly property string longSummary: facts && facts.facts && facts.facts.summary ? facts.facts.summary : (game && game.summary ? game.summary : "")
-    readonly property bool factsLoading: !!(facts && facts.facts && facts.facts.status === "loading")
+    readonly property string longSummary: game && game.summary ? game.summary : ""
+    readonly property bool factsLoading: false
     // The language played: the stored choice if it matches the shown version, else the UI
     // language, else the version's first language.
     readonly property string currentLang: {
@@ -304,10 +295,10 @@ Item {
                     currentIndex: 0
                     showSelection: false
                     scale: 1.2
-                    inspect: !page.boxTurning
+                    swayAmp: 6
+                    swayPeriod: 5000
                     userYaw: page.boxYaw
                     userPitch: page.boxPitch
-                    swayPeriod: 7000
                     opacity: page.videoShown ? 0.0 : 1
                     Behavior on opacity { NumberAnimation { duration: 600 } }
                 }
@@ -456,7 +447,7 @@ Item {
                 }
             }
 
-            // ---------- below: about and screenshots | credits and anecdotes ----------
+            // ---------- below: about and screenshots | credits ----------
             Rectangle {
                 y: hero.height
                 width: parent.width
@@ -532,23 +523,8 @@ Item {
                         color: theme.fgMuted
                         font { family: theme.fontFamily; pixelSize: 17 }
                     }
-                    Item { width: 1; height: 14; visible: page.anecdotes.length > 0 }
                     Text {
-                        visible: page.anecdotes.length > 0
-                        text: qsTr("Did you know?"); color: theme.fg
-                        font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold }
-                    }
-                    Repeater {
-                        model: page.anecdotes
-                        Row {
-                            required property string modelData
-                            spacing: 14
-                            Rectangle { y: 10; width: 6; height: 6; radius: 3; color: theme.accent }
-                            Text { width: credits.width - 20; text: modelData; wrapMode: Text.WordWrap; lineHeight: 1.45; color: theme.fgSoft; font { family: theme.fontFamily; pixelSize: 18 } }
-                        }
-                    }
-                    Text {
-                        text: qsTr("Sources: RomM, Wikidata, Wikipedia")
+                        text: qsTr("Source: RomM")
                         color: theme.fgFaint
                         font { family: theme.fontFamily; pixelSize: 14 }
                     }

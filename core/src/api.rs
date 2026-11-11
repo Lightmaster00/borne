@@ -38,10 +38,9 @@
 //!   GET    /api/v1/media/report                  per console: games with case scans, cartridge, logo
 //!   POST   /api/v1/media/refresh                 forgets the media files and fetches them again
 //!   GET    /api/v1/screenscraper                 Borne's ScreenScraper account and fetch progress
-//!   POST   /api/v1/screenscraper                 {user,password,dev_id,dev_password}: checks, saves, fetches
+//!   POST   /api/v1/screenscraper                 {user,password}: checks, saves, fetches
 //!   DELETE /api/v1/screenscraper                 forgets the account
 //!   POST   /api/v1/screenscraper/fetch           {"again": bool}: asks ScreenScraper for the games
-//!   POST   /api/v1/launchbox                     {enabled?, fetch?, again?}: LaunchBox Games Database scans
 //!   POST   /api/v1/update/check                  looks for a newer build (event "update");
 //!                                                 {"force": true} offers the latest even if not newer
 //!   POST   /api/v1/update/download               downloads and verifies it
@@ -54,7 +53,7 @@
 //!   POST   /api/v1/debug/stick?x=…&y=…           automated tests: the right stick
 
 use crate::state::Shared;
-use crate::{catalog, diag, downloads, facts, library, pairing, romm, secrets, stream, update};
+use crate::{catalog, diag, downloads, library, pairing, romm, secrets, stream, update};
 use serde_json::{json, Value};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -222,8 +221,7 @@ fn install_mode(app: &Shared) -> String {
 
 fn settings(app: &Shared) -> Value {
     json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app),
-            "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app),
-            "launchbox": crate::launchbox::status(app) })
+            "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -639,7 +637,6 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Get, ["api", "v1", "games", id, "facts"]) => {
             match id.parse::<i64>().ok().filter(|i| app.db.game(*i).is_some()) {
                 Some(rom_id) => {
-                    let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
                     let extra: Value = app
                         .db
                         .game_extra(rom_id)
@@ -652,7 +649,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     ok(
                         req,
                         json!({
-                            "facts": facts::get(app, rom_id, &lang),
+                            // Credits come from RomM only (no third-party lookups).
+                            "facts": Value::Null,
                             "companies": extra["companies"],
                             "franchises": extra["franchises"],
                             "screenshots": shots,
@@ -670,27 +668,15 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "media", "report"]) => ok(req, crate::media::report(app)),
-        (Method::Post, ["api", "v1", "launchbox"]) => {
-            let b = body_json(&mut req);
-            if let Some(on) = b["enabled"].as_bool() {
-                app.db.set_setting("launchbox", if on { "on" } else { "off" });
-            }
-            if b["fetch"].as_bool().unwrap_or(false) || b["again"].as_bool().unwrap_or(false) {
-                crate::launchbox::start(app, b["again"].as_bool().unwrap_or(false));
-            }
-            ok(req, crate::launchbox::status(app))
-        }
         (Method::Get, ["api", "v1", "screenscraper"]) => ok(req, crate::screenscraper::status(app)),
         (Method::Post, ["api", "v1", "screenscraper"]) => {
             let b = body_json(&mut req);
             let c = crate::screenscraper::Credentials {
                 user: b["user"].as_str().unwrap_or_default().trim().to_string(),
                 password: b["password"].as_str().unwrap_or_default().to_string(),
-                dev_id: b["dev_id"].as_str().unwrap_or_default().trim().to_string(),
-                dev_password: b["dev_password"].as_str().unwrap_or_default().to_string(),
             };
-            if c.user.is_empty() || c.password.is_empty() || c.dev_id.is_empty() || c.dev_password.is_empty() {
-                return err(req, 400, "user, password, dev_id and dev_password are required");
+            if c.user.is_empty() || c.password.is_empty() {
+                return err(req, 400, "user and password are required");
             }
             match crate::screenscraper::save(app, &c) {
                 Ok(info) => {

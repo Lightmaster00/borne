@@ -260,10 +260,25 @@ try:
     devices = romm("GET", "/api/devices")
     check(any(d.get("client") == "borne" for d in devices), "Borne device registered in RomM")
 
-    print("Game facts")
+    print("Game details and media")
     rid = call(api, "GET", "/api/v1/library")[1][0]["rom_id"]
     s, f = call(api, "GET", f"/api/v1/games/{rid}/facts?lang=fr")
-    check(s == 200 and f["facts"]["status"] in ("loading", "ok", "none") and "screenshots" in f, "game facts answer (fetched in the background)")
+    check(s == 200 and f["facts"] is None and "screenshots" in f and "companies" in f, "game details come from RomM only")
+    s, _ = call(api, "GET", f"/api/v1/games/{rid}/art/../../etc")
+    check(s in (400, 404), "unknown art kind refused")
+    s, _ = call(api, "GET", f"/api/v1/games/{rid}/art/side")
+    check(s in (200, 404), "case spine served or reported missing")
+    s, rep = call(api, "GET", "/api/v1/media/report")
+    check(s == 200 and set(rep["kinds"]) == {"front", "side", "back", "physical", "logo"} and rep["platforms"], "media report per console")
+    s, st = call(api, "GET", "/api/v1/screenscraper")
+    check(s == 200 and "developer_access" in st and "password" not in json.dumps(st), "ScreenScraper status exposes no secret")
+    if not st["developer_access"]:
+        s, e = call(api, "POST", "/api/v1/screenscraper", {"user": "u", "password": "p"})
+        check(s == 409 and "developer access" in e.get("error", ""), "ScreenScraper refused plainly without developer access")
+    s, _ = call(api, "POST", "/api/v1/screenscraper", {"user": "", "password": ""})
+    check(s == 400, "ScreenScraper account needs a user and a password")
+    s, _ = call(api, "POST", "/api/v1/debug/stick?x=1&y=0")
+    check(s != 200, "debug input closed outside tests")
     s, _ = call(api, "GET", f"/api/v1/games/{rid}/screenshots/9")
     check(s == 400, "screenshot index out of range refused")
 

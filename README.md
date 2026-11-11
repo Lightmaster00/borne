@@ -54,12 +54,12 @@ Since then:
 - **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
   a language chooses the version launched (English → USA, Français → the European version that has
-  French, 日本語 → Japan). Below: summary, screenshots, credits and anecdotes from Wikidata and
-  Wikipedia (only the game's name and year are sent; answers cached 30 days). For spines, logos,
-  artwork and trailers, enable these media in RomM's ScreenScraper settings (`scan.media`:
-  `box2d`, `box2d_side`, `box2d_back`, `logo`, `fanart`, `video`) and rescan, Borne also fetches them, with no account, from the LaunchBox Games Database (Settings → Game images),
-  or connect Borne to ScreenScraper directly (Settings → ScreenScraper, with your account and
-  developer credentials): it then fetches the case front, spine, back, cartridge, logo and artwork itself.
+  French, 日本語 → Japan). Below: summary, screenshots, studios and series (RomM only).
+- **Game images**: the case front, spine and back, cartridge or disc, logo and artwork come from
+  ScreenScraper, either through RomM (`scan.media` with `box2d`, `box2d_side`, `box2d_back`,
+  `physical`, `logo`, `fanart`, `video`, then rescan) or directly from Borne once your ScreenScraper
+  account is connected (Settings → Game images). Borne talks to nothing but RomM, ScreenScraper and
+  GitHub (for its own updates).
 - **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
   writes a shareable text report (versions, settings, server version, recent downloads, log; no
   passwords or tokens) to the data folder and to Downloads.
@@ -121,7 +121,7 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | D-pad | Arrows | Move through the covers |
 | LT / RT | R / C, Home / End | Previous / next letter |
 | LB / RB | Page Up / Page Down, A / E | Previous / next system |
-| Right stick | Z Q S D (held) | Turn the selected game box any way; it comes back to rest when let go |
+| Right stick | Z Q S D (held) | Lean the selected game box (front always in view); it comes back when let go |
 | Start | M or F1 | Settings |
 | Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |
 

@@ -170,6 +170,7 @@ Item {
                     Repeater {
                         model: root.results
                         delegate: Rectangle {
+                            id: row
                             required property var modelData
                             required property int index
                             readonly property bool cur: index === root.selected
@@ -199,7 +200,7 @@ Item {
                                     text: modelData.name
                                     elide: Text.ElideRight
                                     color: root.theme.fg
-                                    font { family: root.theme.fontFamily; pixelSize: 21; weight: cur ? Font.Bold : Font.SemiBold }
+                                    font { family: root.theme.fontFamily; pixelSize: 21; weight: row.cur ? Font.Bold : Font.SemiBold }
                                 }
                                 Text {
                                     width: parent.width

@@ -1,6 +1,10 @@
-//! Borne's own ScreenScraper access (Settings → ScreenScraper), independent of RomM: with the
-//! user's ScreenScraper account and developer credentials, the core asks ScreenScraper for every
-//! game and keeps its case scans (front, spine, back), cartridge or disc, logo and fanart.
+//! Borne's own ScreenScraper access (Settings → Game images), independent of RomM: with the
+//! user's ScreenScraper account, the core asks ScreenScraper for every game and keeps its case
+//! scans (front, spine, back), cartridge or disc, logo and fanart.
+//!
+//! ScreenScraper also requires the software's developer credentials. They are compiled into the
+//! official builds from CI secrets (see build.rs): never in the repository, never readable in the
+//! binary, never logged, never returned by the API. A build without them reports it plainly.
 //!
 //! Games are matched by ScreenScraper's game id when RomM has it, else by the file's hashes,
 //! name and size. Images follow the version's region (Europe → eu, then wor, us…). A spine
@@ -24,12 +28,33 @@ fn api() -> String {
 }
 const SECRET_ID: &str = "screenscraper";
 
+/// The user's ScreenScraper account (the developer credentials are Borne's, compiled in).
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Credentials {
     pub user: String,
     pub password: String,
-    pub dev_id: String,
-    pub dev_password: String,
+}
+
+mod dev {
+    include!(concat!(env!("OUT_DIR"), "/ss_dev.rs"));
+}
+fn unmask((data, key): (&[u8], &[u8])) -> String {
+    String::from_utf8(data.iter().zip(key).map(|(b, k)| b ^ k).collect()).unwrap_or_default()
+}
+/// Borne's developer credentials: compiled in, else (development builds) BORNE_SS_DEV_ID and
+/// BORNE_SS_DEV_PASSWORD in the environment when the core starts.
+fn developer() -> Option<(String, String)> {
+    let (id, pw) = (unmask(dev::SS_DEV_ID), unmask(dev::SS_DEV_PASSWORD));
+    if !id.is_empty() && !pw.is_empty() {
+        return Some((id, pw));
+    }
+    match (std::env::var("BORNE_SS_DEV_ID"), std::env::var("BORNE_SS_DEV_PASSWORD")) {
+        (Ok(i), Ok(p)) if !i.is_empty() && !p.is_empty() => Some((i, p)),
+        _ => None,
+    }
+}
+pub fn developer_access() -> bool {
+    developer().is_some()
 }
 
 #[derive(Serialize, Clone, Default)]
@@ -87,10 +112,11 @@ fn redact(url: &str) -> String {
 }
 
 fn call(c: &Credentials, endpoint: &str, params: &[(&str, String)]) -> Result<Value, String> {
+    let (dev_id, dev_password) = developer().ok_or("this build of Borne has no ScreenScraper developer access")?;
     let mut req = agent()
         .get(format!("{}/{endpoint}", api()))
-        .query("devid", &c.dev_id)
-        .query("devpassword", &c.dev_password)
+        .query("devid", &dev_id)
+        .query("devpassword", &dev_password)
         .query("softname", "borne")
         .query("output", "json")
         .query("ssid", &c.user)
@@ -98,7 +124,8 @@ fn call(c: &Credentials, endpoint: &str, params: &[(&str, String)]) -> Result<Va
     for (k, v) in params {
         req = req.query(*k, v);
     }
-    let mut resp = req.call().map_err(|e| format!("ScreenScraper unreachable ({e})"))?;
+    // The error text is not kept: it could carry the request URL, credentials included.
+    let mut resp = req.call().map_err(|_| "ScreenScraper unreachable (network)".to_string())?;
     let code = resp.status().as_u16();
     let body = resp
         .body_mut()
@@ -152,6 +179,7 @@ pub fn status(app: &Shared) -> Value {
     let c = credentials(app);
     let (asked, found) = app.db.ss_counts();
     json!({
+        "developer_access": developer_access(),
         "configured": c.is_some(),
         "user": c.map(|c| c.user),
         "state": status_get(),
@@ -217,12 +245,13 @@ fn pick<'a>(medias: &'a [Value], types: &[&str], regions: &[&str]) -> Option<&'a
     None
 }
 
+/// Media URLs carry the credentials: errors never include them.
 fn download(url: &str) -> Result<Vec<u8>, String> {
-    let mut resp = agent().get(url).call().map_err(|e| e.to_string())?;
+    let mut resp = agent().get(url).call().map_err(|_| "image unreachable (network)".to_string())?;
     if resp.status().as_u16() != 200 {
         return Err(format!("image answered {}", resp.status().as_u16()));
     }
-    resp.body_mut().with_config().limit(30 << 20).read_to_vec().map_err(|e| e.to_string())
+    resp.body_mut().with_config().limit(30 << 20).read_to_vec().map_err(|_| "image download interrupted".to_string())
 }
 
 /// The game's ScreenScraper record, matched by id, else by hashes, name and size.
@@ -314,7 +343,7 @@ fn fetch_game(app: &Shared, group_key: &str, rec: &Value) -> usize {
     let has_side = app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|")).unwrap_or(false);
     if !has_side {
         if let (Some(ar), Some(url)) = (front_ar, pick(&medias, &["box-texture"], &regions)) {
-            if let Ok(img) = download(url).and_then(|b| image::load_from_memory(&b).map_err(|e| e.to_string())) {
+            if let Ok(img) = download(url).and_then(|b| crate::media::decode(&b)) {
                 let (w, h) = (img.width() as f64, img.height() as f64);
                 let face = h * ar;
                 let spine = w - 2.0 * face;

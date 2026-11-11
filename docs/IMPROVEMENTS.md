@@ -1,0 +1,126 @@
+# Borne: improvements backlog
+
+Findings from a full pass over the application (core API, interface, packaging, updates) on
+2026-11-11, and the work they call for. Each item says why it matters, what "done" means, and its
+priority: **P0** blocks everyday use, **P1** next, **P2** later.
+
+State of the checks at the time of writing:
+
+- Core unit tests: 26 passed.
+- Integration test against a real RomM server: 70 checks passed (pairing, sync, library, versions
+  and languages, downloads with resume and integrity checks, network mount, game details, media,
+  ScreenScraper refusal without developer access, diagnostics with no secret in the report or log).
+- Startup test in English and French, in-app update test (download, verify, swap, keep the previous
+  version): passed.
+- ScreenScraper and the media pipeline: tested end to end against a local stand-in of the API
+  (credentials refused, game found by name, images fetched, spine cut from the box texture,
+  credentials absent from logs and stored URLs). Not yet against the real service: Borne's
+  developer credentials are pending.
+
+## 1. Game boxes
+
+### 1.1 Real 3D boxes with textured faces (P0)
+
+The current boxes are six flat faces projected in perspective with a computed light. They read as
+"a poster on a cube": no bevels, no real material response, no occlusion.
+
+- Render the boxes with Qt Quick 3D (`View3D`, `PrincipledMaterial`): one mesh per case type with
+  rounded edges and the real proportions (keep case with its clear sleeve and rim, jewel case with
+  lid, tray and hinge, cardboard box, clamshell, cartridge box), and UV regions for front, spine,
+  back, top and bottom.
+- Texture: the ScreenScraper front, spine and back scans, or the unfolded box texture when present
+  (one image for back, spine and front).
+- Materials: clear plastic sleeve (low roughness, clearcoat) over the printed insert, coloured
+  plastic for the case, matte cardboard; image-based lighting from a small studio environment map;
+  soft shadow on the floor; reflection on the glossy floor.
+- Keep the current 2D shelf as a fallback for machines without the needed GPU support.
+- Packaging: add `qtquick3d` to the CI Qt modules (Linux wheels and macOS) and to `package.sh`.
+- Done when a box can be turned and reads as a physical object at 4K, a 1 800-game library still
+  scrolls at 60 frames per second on the target PC, and the fallback works.
+
+### 1.2 Spine when no scan exists (P1)
+
+Many games have no spine scan on ScreenScraper. Generate one: a band in the cover's dominant colours,
+the game's logo (wheel) rotated, the title as text when there is no logo. No console trademarks.
+
+### 1.3 Box turning (done in this pass)
+
+The stick sets the angle (±38° turn, ±22° tilt) so the front always stays in view, and the box comes
+back as soon as the stick is released. To check on real hardware: stick sensitivity and dead zone on
+the Xbox, PlayStation and Switch Pro controllers.
+
+## 2. Game images and ScreenScraper
+
+### 2.1 Developer credentials (P0, waiting on ScreenScraper)
+
+Request sent by the project owner. Once granted, add the repository secrets
+`SCREENSCRAPER_DEV_ID` and `SCREENSCRAPER_DEV_PASSWORD`; the next build includes them (see
+SPEC.md, "External services"). Then test against the real service: matching rate per console,
+quota use for 1 800 games, error texts.
+
+### 2.2 Matching quality (P1)
+
+- Report per console in Settings: found, not found, and the list of games not found.
+- Let the user fix a match: search ScreenScraper by name (`jeuRecherche.php`) from the game page and
+  pick the right game.
+- Respect the account's `maxthreads` (several requests at once for members who have it) to shorten
+  the first run.
+
+### 2.3 Image choice (P2)
+
+From the game page: choose another region's box (EU / US / JP) when several exist.
+
+## 3. Playing games
+
+### 3.1 Launching games (P0)
+
+"Play" shows "Launching games arrives with stage 3 (emulators)": games cannot be launched yet. This
+is the main missing feature (spec section on emulators): detect or install the emulators (Flatpak),
+map each console to its emulator and core, launch with the right file (and the chosen language),
+return to Borne when the game ends, show errors clearly.
+
+### 3.2 Saves (P1)
+
+Save sync with RomM (spec: newest wins, previous one archived), per profile.
+
+## 4. Library and navigation
+
+- (P1) Library request time with 1 800 games: the core now looks up each game's media and covers
+  when listing; measure on the real library, cache the result per sync if it exceeds 150 ms.
+- (P1) Sort and filters: by name, recently played, recently added, installed, genre.
+- (P2) Favourites and "continue playing" row once launching exists.
+- (P2) Search: also match alternate titles (Japanese names, subtitles).
+
+## 5. Interface
+
+- (P1) Game page without a trailer and without artwork looks empty: use the screenshots as a slow
+  slideshow behind the hero.
+- (P1) Onscreen keyboard: add a QWERTY / AZERTY switch independent of the system language.
+- (P2) The arcade room home style shares little with the new boxes: either bring it to the same
+  quality or remove it.
+- (P2) Settings pages are long lists of buttons: group them in cards like the install choice.
+
+## 6. Reliability and security
+
+What was checked in this pass: the API listens on 127.0.0.1 only behind a random token in the path;
+file serving is limited to Borne's folders; secrets (RomM tokens, ScreenScraper account) are 0600
+files; the diagnostic report and the log hold no token; network errors from ScreenScraper never
+carry a URL; downloaded images are decoded with size and memory limits; updates are checked by
+SHA-256 and only fetched from this repository's releases.
+
+To do:
+
+- (P1) QML check in CI only verifies syntax: a duplicated property broke the game page and was only
+  caught by the startup test. Add `qmllint` with warnings as errors on the components.
+- (P1) The interface writes many short warnings for missing images (404 on `art/...` when a scan is
+  absent). The library already lists the kinds available; remove the remaining blind requests.
+- (P2) Rate-limit the local API's expensive endpoints (media refresh, sync) against repeated calls.
+- (P2) Signed releases (macOS notarisation, Linux signature) so the update check does not rest on
+  GitHub alone.
+
+## 7. Tests to add
+
+- Real ScreenScraper run in CI (secret-gated, a handful of known games).
+- UI walk-through test driving the debug pad: library, search, letters, game page, language,
+  settings sections, downloads panel, menu (today done by hand with screenshots).
+- Performance test with a generated 2 000-game library.

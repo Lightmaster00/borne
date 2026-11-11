@@ -182,6 +182,8 @@ pub fn art_of(v: &Value) -> Value {
 
 /// Starts a background sync (no effect if one is already running).
 pub fn start_sync(app: &Shared) {
+    // LaunchBox's index from an earlier version (that source was removed).
+    let _ = std::fs::remove_file(app.paths.art().join("launchbox-metadata.zip"));
     {
         let mut s = app.sync.lock().unwrap();
         if s.running {
@@ -292,7 +294,6 @@ fn sync(app: &Shared) -> Result<(), RommError> {
     fetch_covers(app, &client, covers);
     crate::media::prefetch(app, &client);
     crate::screenscraper::start(app, false);
-    crate::launchbox::start(app, false);
     Ok(())
 }
 
