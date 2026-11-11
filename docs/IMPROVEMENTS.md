@@ -19,18 +19,25 @@ State of the checks at the time of writing:
 
 ## 1. Game boxes
 
-### 1.1 Real 3D boxes with textured faces (P0 — first pass done)
+### 1.1 Real 3D boxes with textured faces (P0 — modelled cases done)
 
-Done: the shelf and the game page render the cases with Qt Quick 3D (`Case3D` in `Shelf3D`): shell,
-front scan under a clear sleeve, spine on the left, back, key light with soft shadows on a fading
-floor, fill and rim lights; the 2D shelf stays as a fallback (automatic, or Settings → Interface →
-Game cases). Qt Quick 3D is bundled on Linux (PySide6 wheels) and macOS (`qtquick3d` module).
+Done: the shelf and the game page render the cases with Qt Quick 3D (`Case3D` in `Shelf3D`), each
+built from procedural meshes (`CaseMesh.js`, QtQuick3D.Helpers' `ProceduralMesh`) to the real case of
+its console:
+- keep case: two plastic halves with rounded corners and bevelled edges, the seam groove round the
+  opening edges, the printed insert folded round the spine (back, spine and front scans in one sheet,
+  creases at the folds), the clear sleeve over everything;
+- clamshell: the same in thicker, matte plastic with rounder corners;
+- jewel case: clear case, black tray, booklet under the lid, ribbed hinge strip and its two knuckles,
+  back insert with its two spine labels seen through the base;
+- cardboard: printed on every face, the board showing at worn edges, tuck flaps on top and bottom.
+Lit by a studio light probe (`ui/components/studio.hdr`, from `scripts/gen-studio-hdr.py`): softboxes
+and strips reflected by the screen-blended clear plastic, plus a shadow-casting key light. The 2D
+shelf stays as a fallback.
 
 Still to do:
-- Rounded edges: the shell is a plain cube; a mesh per case type with bevels and the real details
-  (keep case rim and sleeve seam, jewel case hinge and tray, clamshell lid).
-- The unfolded box texture (back, spine and front in one image) mapped by UV regions when present.
-- Image-based lighting from a small studio environment map; reflection on the glossy floor.
+- Compare against photos of real cases (top-edge grip ridges, DS/3DS case windows, Saturn long box).
+- Normal/roughness detail maps (plastic grain, cardboard fibre).
 - Measure: a 1 800-game library scrolling at 60 frames per second on the target PC, at 4K.
 
 ### 1.2 Spine when no scan exists (P1)

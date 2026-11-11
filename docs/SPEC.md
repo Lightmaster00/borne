@@ -239,9 +239,10 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   the stage below (cover inset under a plastic rim with gloss, spines with the system's color band and the
   title, a contact shadow, a faint floor reflection; the case follows the cover's aspect ratio). The
   selected box faces the camera, a little forward, swaying gently; the others turn toward it and recede.
-  Rendered in real 3D with Qt Quick 3D (`Shelf3D`, `Case3D`): each case is a lit solid (shell,
-  printed front under a clear sleeve, spine on the left, plain opening edge on the right, back) with a
-  key light casting soft shadows on a glossy floor that fades out, a fill and a rim light. Only the 13
+  Rendered in real 3D with Qt Quick 3D (`Shelf3D`, `Case3D`): each case is modelled after its console's
+  retail case (`CaseMesh.js` meshes: keep case halves with seam, insert folded round the spine under a
+  clear sleeve; jewel case with tray, booklet, hinge; clamshell; cardboard box with worn edges and flaps),
+  lit by a studio light probe (`studio.hdr`) and a key light casting soft shadows on a floor that fades out. Only the 13
   cases around the selection exist. Fallback: the earlier 2D drawing (`BoxShelf`, six flat faces
   through one perspective matrix), used when Qt Quick 3D cannot load; `ShelfView` picks one and forwards the same properties. A letter index; LT / RT jump between letters and show the letter
   large for a moment. Y opens the search: on-screen keyboard (or the physical keyboard, where typing any

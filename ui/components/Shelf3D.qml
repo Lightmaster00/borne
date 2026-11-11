@@ -24,6 +24,7 @@ Item {
     readonly property real boxH: 420
     readonly property real focal: 1500
     readonly property int slots: 13
+    property real probeYaw: 0
     readonly property bool userTurned: Math.abs(userYaw) > 0.5 || Math.abs(userPitch) > 0.5
 
     property real flow: currentIndex
@@ -71,6 +72,11 @@ Item {
             aoStrength: 40
             aoDistance: 18
             aoSoftness: 40
+            // The photo studio (scripts/gen-studio-hdr.py): its softboxes and strips are what
+            // the clear sleeves, jewel cases and plastic reflect.
+            lightProbe: Texture { source: "studio.hdr"; mappingMode: Texture.LightProbe }
+            probeExposure: 0.9
+            probeOrientation: Qt.vector3d(0, shelf.probeYaw, 0)
         }
 
         PerspectiveCamera {
@@ -103,14 +109,6 @@ Item {
         DirectionalLight {
             eulerRotation: Qt.vector3d(-20, 170, 0)
             brightness: 0.6
-        }
-        // Soft light near the camera so fronts keep their true colours.
-        PointLight {
-            position: Qt.vector3d(0, 120, shelf.focal * 0.6)
-            brightness: 0.4
-            constantFade: 1
-            linearFade: 0
-            quadraticFade: 0
         }
 
         // Floor: dark, faintly glossy, fading out toward the edges so it has no visible border;
