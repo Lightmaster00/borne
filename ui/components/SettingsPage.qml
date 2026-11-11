@@ -11,7 +11,7 @@ Item {
     property bool sounds: true
     property bool trailers: true
     property string homeStyle: "boxes"
-    property string backgroundStyle: "ribbons"
+    property string backgroundStyle: "pixels"
     property bool pointerActive: false
     property string version: ""
     property var reportPaths: []
@@ -133,7 +133,7 @@ Item {
             { id: "home", kind: "chips", title: qsTr("Home"), desc: qsTr("How the library is shown"), selected: homeStyle,
               items: [{ id: "boxes", label: qsTr("Game boxes") }, { id: "arcade", label: qsTr("Arcade room") }] },
             { id: "background", kind: "chips", title: qsTr("Background"), desc: qsTr("Behind the game boxes"), selected: backgroundStyle,
-              items: [{ id: "ribbons", label: qsTr("Console color") }, { id: "game", label: qsTr("The game's art") }, { id: "room", label: qsTr("Game room") }, { id: "light", label: qsTr("Moving light") }] },
+              items: [{ id: "pixels", label: qsTr("Pixel mosaic") }, { id: "ribbons", label: qsTr("Console color") }, { id: "game", label: qsTr("The game's art") }, { id: "room", label: qsTr("Game room") }, { id: "light", label: qsTr("Moving light") }] },
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
             { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Play the selected game's trailer, muted, after two seconds"), selected: trailers ? "on" : "off", items: onOff() }
         ]

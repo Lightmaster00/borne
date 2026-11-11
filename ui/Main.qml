@@ -1379,7 +1379,7 @@ Window {
         property bool sounds: true
         property bool trailers: true
         property string homeStyle: "boxes"
-        property string backgroundStyle: "ribbons"
+        property string backgroundStyle: "pixels"
         property int notifiedBuild: 0
     }
 

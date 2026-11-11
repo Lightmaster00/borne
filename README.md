@@ -48,7 +48,8 @@ Since then:
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
   stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. Four backgrounds (Settings → Interface → Background):
-  the console's own color with slow ribbons of light and a glossy floor (default), the selected game's art, a dim game room with a neon and a shelf, or moving light. An arcade room is
+  the selected game's cover rebuilt as a wall of large pixels that re-colour tile by tile (default),
+  the console's own color with slow ribbons of light, the selected game's art, a dim game room with a neon and a shelf, or moving light. An arcade room is
   offered as an alternative home. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The accent color is taken from each game's cover; type is Manrope.
 - **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,

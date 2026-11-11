@@ -222,7 +222,10 @@ application, client of the Rust core's local API. ES-DE is not used, neither as 
 Since v1.7 Borne has one look, "Halo", instead of interchangeable themes: several themes spread the
 effort thin, and a user QML theme is code that runs with the UI's rights.
 
-- Background (three styles in Settings: the game's art — RomM fanart, else a screenshot, else the
+- Background, Borne's identity by default: the selected game's cover decoded at one pixel per 56-unit
+  tile and drawn unsmoothed as a wall of large dark pixels, re-colouring tile by tile (each tile flashes
+  at its own moment) when the selection settles, a slow diagonal light wave across it, a dark glossy
+  floor under the cases. Other styles (Settings: the game's art — RomM fanart, else a screenshot, else the
   cover — drifting and cross-fading; a game room — wall, neon tinted by the game, wooden shelf, dust;
   moving light — beams, veils, particles). Former default: a sober dark stage (vertical graphite gradient, a soft light tinted by the selected game's
   accent behind the shelf, breathing slowly, and a vignette). No art or video behind the library: the

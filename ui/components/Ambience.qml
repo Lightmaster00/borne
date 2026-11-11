@@ -1,4 +1,7 @@
-// Background, in one of four styles (Settings → Interface → Background):
+// Background, in one of five styles (Settings → Interface → Background):
+//  "pixels"  — Borne's own: the selected game's cover rebuilt as a wall of large dark pixels, which
+//            re-colour one by one when the selection changes, with a slow light wave running across
+//            them and a dark glossy floor under the cases (the default);
 //  "ribbons" — the console's own color, lit from above, with slow ribbons of light across it and
 //            a glossy floor under the cases (the default);
 //  "game"  — the selected game's artwork (RomM fanart, else a screenshot, else the cover), sharp
@@ -15,7 +18,7 @@ Item {
     id: amb
     property QtObject theme
     property var game: null
-    property string style: "ribbons"
+    property string style: "pixels"
     property color tint: Cases.tint(game ? game.platform_slug : "")
     Behavior on tint { ColorAnimation { duration: 700 } }
     property bool trailers: true      // kept for callers; no video plays behind the library
@@ -35,6 +38,84 @@ Item {
             GradientStop { position: 0.0; color: "#121419" }
             GradientStop { position: 1.0; color: "#07080a" }
         }
+    }
+
+    // ---------- "pixels": the cover as a wall of large pixels ----------
+    Item {
+        id: mosaic
+        anchors.fill: parent
+        visible: amb.style === "pixels"
+        readonly property int tile: 56
+        readonly property int cols: Math.ceil(width / tile)
+        readonly property int rows: Math.ceil(height / tile)
+        property real phase: 0
+        Timer {
+            interval: 50; repeat: true
+            running: mosaic.visible && amb.visible && !amb.paused
+            onTriggered: mosaic.phase += 0.05
+        }
+        Rectangle { anchors.fill: parent; color: "#07080a" }
+        // The cover decoded at one pixel per tile and drawn without smoothing: each pixel becomes
+        // a tile. Two layers cross-fade when the selection settles.
+        property bool useA: true
+        Timer { id: settlePix; interval: 300; onTriggered: { mosaic.useA = !mosaic.useA; (mosaic.useA ? pixA : pixB).src = amb.cover; reshuffle.restart() } }
+        Connections { target: amb; function onCoverChanged() { settlePix.restart() } }
+        Component.onCompleted: pixA.src = amb.cover
+        component PixLayer: Image {
+            property string src: ""
+            property bool front: false
+            anchors.fill: parent
+            source: src
+            sourceSize: Qt.size(mosaic.cols, mosaic.rows)
+            fillMode: Image.PreserveAspectCrop
+            smooth: false
+            mipmap: false
+            asynchronous: true
+            cache: false
+            opacity: front && status === Image.Ready ? 0.42 : 0
+            Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
+        }
+        PixLayer { id: pixA; front: mosaic.useA }
+        PixLayer { id: pixB; front: !mosaic.useA }
+        // Re-colouring: each tile flashes dark at its own moment, so the wall seems to rebuild
+        // itself tile by tile; then a slow diagonal wave of light runs across it.
+        property real shuffle: 2
+        NumberAnimation { id: reshuffle; target: mosaic; property: "shuffle"; from: -0.3; to: 1.3; duration: 1100; easing.type: Easing.InOutSine }
+        Repeater {
+            model: mosaic.cols * mosaic.rows
+            Rectangle {
+                id: px
+                required property int index
+                readonly property int cx: index % mosaic.cols
+                readonly property int cy: Math.floor(index / mosaic.cols)
+                readonly property real seed: ((cx * 73 + cy * 151) % 97) / 97
+                x: cx * mosaic.tile; y: cy * mosaic.tile
+                width: mosaic.tile; height: mosaic.tile
+                color: "transparent"
+                // Gaps between tiles.
+                border { width: 2; color: "#07080a" }
+                Rectangle {
+                    anchors { fill: parent; margins: 2 }
+                    radius: 3
+                    color: "black"
+                    opacity: Math.max(0, 0.75 - Math.abs(mosaic.shuffle - px.seed) * 5)
+                             + 0.14 * (1 - Math.sin(mosaic.phase - (px.cx + px.cy) * 0.28)) / 2
+                }
+            }
+        }
+        // Readability: darker toward the edges and on the floor under the cases.
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(0.02, 0.025, 0.03, 0.55) }
+                GradientStop { position: 0.3; color: Qt.rgba(0.02, 0.025, 0.03, 0.1) }
+                GradientStop { position: Math.min(0.99, amb.floorY / amb.height - 0.02); color: Qt.rgba(0.02, 0.025, 0.03, 0.2) }
+                GradientStop { position: Math.min(1, amb.floorY / amb.height + 0.01); color: Qt.rgba(0.02, 0.025, 0.03, 0.82) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.02, 0.025, 0.03, 0.97) }
+            }
+        }
+        // Glossy floor edge.
+        Rectangle { y: amb.floorY; width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.10) }
     }
 
     // ---------- "ribbons": the console's color and flowing light ----------

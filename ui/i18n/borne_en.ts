@@ -1601,5 +1601,9 @@
         <source>ScreenScraper</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Pixel mosaic</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 </TS>
