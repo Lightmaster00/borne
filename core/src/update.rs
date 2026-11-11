@@ -399,13 +399,11 @@ fn fetch_and_extract(app: &Shared, m: &Manifest, asset: &Asset, pkg: &Path) -> R
         Ok(s) if s.success() => {}
         _ => return Err("cannot extract the update".into()),
     }
-    let new_pkg = staging.join(pkg.file_name().unwrap_or_default());
-    let core = if cfg!(target_os = "macos") {
-        new_pkg.join("Contents/MacOS/borne")
-    } else {
-        new_pkg.join("bin/borne")
-    };
-    if !core.is_file() {
+    if find_package(&staging).is_none() {
+        let found: Vec<String> = std::fs::read_dir(&staging)
+            .map(|d| d.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().into_owned()).collect())
+            .unwrap_or_default();
+        app.db.log("update", &format!("no Borne package in the archive (found: {})", found.join(", ")));
         return Err("the update does not contain Borne".into());
     }
     let _ = std::fs::remove_file(&archive);
@@ -414,6 +412,40 @@ fn fetch_and_extract(app: &Shared, m: &Manifest, asset: &Asset, pkg: &Path) -> R
         &format!("build {} ({}) downloaded and verified", m.build, m.version),
     );
     Ok(())
+}
+
+/// The package inside an extracted archive, whatever its folder is called (the installed copy may
+/// have been renamed, e.g. "Borne 2.app" or "Borne-dev"): the folder, at most two levels down,
+/// that holds the core (macOS: `X.app/Contents/MacOS/borne`, Linux: `X/bin/borne`).
+fn find_package(staging: &Path) -> Option<PathBuf> {
+    let core_of = |p: &Path| {
+        if cfg!(target_os = "macos") {
+            p.join("Contents/MacOS/borne")
+        } else {
+            p.join("bin/borne")
+        }
+    };
+    let entries = |d: &Path| -> Vec<PathBuf> {
+        std::fs::read_dir(d)
+            .map(|r| {
+                r.filter_map(|e| e.ok())
+                    .map(|e| e.path())
+                    .filter(|p| p.is_dir() && !p.file_name().map(|n| n.to_string_lossy().starts_with("__MACOSX")).unwrap_or(false))
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    for a in entries(staging) {
+        if core_of(&a).is_file() {
+            return Some(a);
+        }
+        for b in entries(&a) {
+            if core_of(&b).is_file() {
+                return Some(b);
+            }
+        }
+    }
+    None
 }
 
 /// Swaps the installed package for the downloaded one. The restart happens when the UI quits.
@@ -429,7 +461,7 @@ pub fn apply(app: &Shared) -> Result<(), String> {
         .ok_or("installation folder not recognized")?
         .to_path_buf();
     let staging = staging_dir(&pkg, m.build);
-    let new_pkg = staging.join(pkg.file_name().unwrap_or_default());
+    let new_pkg = find_package(&staging).ok_or("the update does not contain Borne")?;
     let previous = parent.join(".borne-previous");
     let _ = std::fs::remove_dir_all(&previous);
     std::fs::rename(&pkg, &previous)
@@ -510,4 +542,23 @@ pub fn start(app: &Shared) {
         }
         std::thread::sleep(Duration::from_secs(6 * 3600));
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finds_the_package_whatever_its_name() {
+        let root = std::env::temp_dir().join(format!("borne-upd-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let core = if cfg!(target_os = "macos") { "Borne.app/Contents/MacOS/borne" } else { "Borne/bin/borne" };
+        let p = root.join("nested").join(core);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(&p, b"").unwrap();
+        let found = find_package(&root).unwrap();
+        assert!(found.ends_with(if cfg!(target_os = "macos") { "Borne.app" } else { "Borne" }));
+        assert!(find_package(&root.join("nested").join("missing")).is_none());
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }
