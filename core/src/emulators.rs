@@ -334,6 +334,8 @@ struct Session {
     rom_id: i64,
     name: String,
     emulator: String,
+    /// Battery save to send to RomM afterwards: (profile, console, game file, core).
+    sync: Option<(String, String, PathBuf, String)>,
     started: Instant,
     child: Child,
     stopping: bool,
@@ -561,6 +563,16 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         .active_profile()
         .and_then(|p| app.db.game_prefs(&p.id).get(&g.group_key).and_then(|(_, l)| l.clone()))
         .unwrap_or_else(|| "auto".into());
+    // The save from RomM when it is newer (RetroArch battery saves), and what is still waiting to go.
+    let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+    let sync = e.core.as_ref().map(|c| (profile.clone(), system.clone(), rom.clone(), c.clone()));
+    if sync.is_some() {
+        crate::savesync::retry_pending(app);
+        match crate::savesync::pull(app, &profile, rom_id, &system, &rom) {
+            Ok(note) => app.db.log("saves", &format!("{}: {note}", g.name)),
+            Err(err) => app.db.log("saves", &format!("{}: no sync before playing ({err})", g.name)),
+        }
+    }
     let mut cmd = command(app, &p, &e, &found, &system, &rom, &lang, rom_id)?;
     let log = emulator_log(app);
     let _ = std::fs::create_dir_all(log.parent().unwrap());
@@ -572,7 +584,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
-    *SESSION.lock().unwrap() = Some(Session { rom_id, name: g.name.clone(), emulator: e.name.clone(), started: Instant::now(), child, stopping: false });
+    *SESSION.lock().unwrap() = Some(Session { rom_id, name: g.name.clone(), emulator: e.name.clone(), started: Instant::now(), child, stopping: false, sync });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
     let app = app.clone();
@@ -594,11 +606,21 @@ fn follow(app: Shared, log: PathBuf) {
                     if t.is_empty() { format!("{} stopped at once ({status})", s.emulator) } else { format!("{} stopped at once: {t}", s.emulator) }
                 });
                 let played = s.started.elapsed().as_secs();
-                let (rom_id, name) = (s.rom_id, s.name.clone());
+                let (rom_id, name, sync) = (s.rom_id, s.name.clone(), s.sync.clone());
                 *g = None;
                 drop(g);
+                // The save to RomM, then the end of the session is announced with the outcome.
+                let saved = sync.map(|(profile, system, rom, core)| crate::savesync::push(&app, &profile, rom_id, &system, &rom, &core));
+                let save_note = match &saved {
+                    Some(Ok(Some(n))) => Some(n.clone()),
+                    Some(Err(e)) => Some(e.clone()),
+                    _ => None,
+                };
+                if let Some(n) = &save_note {
+                    app.db.log("saves", &format!("{name}: {n}"));
+                }
                 app.db.log("play", &format!("{name}: session ended after {played} s ({status})"));
-                app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": rom_id, "seconds": played, "error": error } }));
+                app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": rom_id, "seconds": played, "error": error, "saves": save_note } }));
                 return;
             }
             Err(e) => {

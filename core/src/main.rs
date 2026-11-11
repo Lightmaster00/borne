@@ -28,6 +28,7 @@ mod pad;
 mod pairing;
 mod paths;
 mod romm;
+mod savesync;
 mod screenscraper;
 mod secrets;
 mod state;

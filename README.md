@@ -86,6 +86,9 @@ Since then:
   page (*Display*). Borne writes them into each emulator's own configuration before the game
   starts (RetroArch, Dolphin, PCSX2, DuckStation, Eden, Citron, Ryubing, RPCS3, Xenia), and sets
   the controller of the standalone emulators on their first start (Dolphin, PCSX2, DuckStation).
+- **Saves on RomM**: each profile's battery saves (consoles run by RetroArch) follow it: taken from
+  RomM before a game when newer, sent after it (with the core's name, like RomM's own player);
+  replaced saves are archived, never deleted; offline, they are sent later. Settings → Games.
 - **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
   public databases — the libretro cheat database for the consoles run by RetroArch (matched by
   the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the

@@ -210,6 +210,8 @@ Item {
         const id = sections[section].id
         if (id === "games") return [
             { id: "install", kind: "cards", selected: installMode },
+            { id: "savesync", kind: "chips", title: qsTr("Saves on RomM"), desc: qsTr("Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived."),
+              selected: settings && settings.save_sync === false ? "off" : "on", items: onOff() },
             { id: "cache", kind: "chips", title: qsTr("Mount cache"), desc: qsTr("Space kept for recently played mounted games"),
               selected: settings && settings.stream.cache_limit_mb ? String(Math.round(settings.stream.cache_limit_mb / 1024)) : "20",
               items: cacheSizes.map(g => ({ id: String(g), label: qsTr("%1 GB").arg(g) })) }
@@ -282,6 +284,7 @@ Item {
         else if (r.id === "cache") page.action("cache", Number(item.id) * 1024)
         else if (r.id === "channel") page.action("channel", item.id)
         else if (r.id === "auto") page.action("auto", item.id === "on")
+        else if (r.id === "savesync") page.action("savesync", item.id === "on")
         else if (r.id === "sounds") page.action("sounds", item.id === "on")
         else if (r.id.startsWith("disp:")) page.action("display", { console: page.displayScope, key: r.id.substring(5), value: item.id })
         else if (r.id.startsWith("console:")) page.action("console-emu", { slug: r.id.substring(8), engine: item.id })

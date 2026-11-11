@@ -98,9 +98,13 @@ Next:
   on the first real install (they could not be read from the build machine).
 - Test on the real machines (ChimeraOS, macOS) with real downloads.
 
-### 3.2 Saves (P1)
+### 3.2 Saves (P1 — first pass done)
 
-Save sync with RomM (spec: newest wins, previous one archived), per profile.
+Done: RetroArch battery saves (`.srm`) synced with RomM per profile (`savesync.rs`): newest wins,
+the replaced copy archived in `profiles/<id>/archive/`, pending sends retried. Still to do: save
+states, Dolphin memory cards / GCI, PCSX2 memory cards, DuckStation, Switch saves (NAND user
+folder per title), PS3 saves; RomM's Device Sync (device id, tracked saves) once Borne registers as
+a device; a conflict screen when both sides changed close together.
 
 ## 4. Library and navigation
 

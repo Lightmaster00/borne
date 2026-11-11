@@ -307,6 +307,7 @@ Window {
         else {
             gameMode = false
             if (s && s.error) toasts.show(s.error, "error")
+            else if (s && s.saves) toasts.show(s.saves === "save sent to RomM" ? qsTr("Save sent to RomM.") : qsTr("RomM unreachable: the save will be sent later."), "info")
             reloadGame(); libReload.restart()
         }
     }
@@ -463,6 +464,7 @@ Window {
         else if (id === "cache") post({ stream_cache_mb: payload })
         else if (id === "channel") post({ update_channel: payload })
         else if (id === "auto") post({ update_auto: payload })
+        else if (id === "savesync") post({ save_sync: payload })
         else if (id === "sounds") prefs.sounds = payload
         else if (id === "trailers") prefs.trailers = payload
         else if (id === "sf-all") api("POST", "/api/v1/system-files/from-romm", {}, function (r, err) {

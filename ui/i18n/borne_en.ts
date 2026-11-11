@@ -1110,6 +1110,14 @@
         <source>Display settings for</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Save sent to RomM.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM unreachable: the save will be sent later.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1910,6 +1918,14 @@
     </message>
     <message>
         <source>Change console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saves on RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived.</source>
         <translation type="unfinished" />
     </message>
 </context>

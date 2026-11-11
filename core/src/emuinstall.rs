@@ -410,6 +410,12 @@ pub fn fetch_file(url: &str, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
+pub fn sha256_bytes(b: &[u8]) -> String {
+    let mut h = <sha2::Sha256 as sha2::Digest>::new();
+    sha2::Digest::update(&mut h, b);
+    sha2::Digest::finalize(h).iter().map(|b| format!("{b:02x}")).collect()
+}
+
 pub fn sha256_file(p: &Path) -> String {
     let mut h = <sha2::Sha256 as sha2::Digest>::new();
     if let Ok(mut f) = std::fs::File::open(p) {

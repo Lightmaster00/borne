@@ -50,7 +50,7 @@
 //!   POST   /api/v1/emulators/auto-update {on}     updates installed by themselves (default on)
 //!   POST   /api/v1/games/<rom_id>/gameplay        gameplay video: ScreenScraper's, else the trailer → {path}
 //!   GET    /api/v1/settings                      install mode, virtual mount state
-//!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
+//!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?, save_sync?}
 //! Updates
 //!   GET    /api/v1/update                        current build, channel, state of the update
 //!   GET    /api/v1/media/report                  per console: games with case scans, cartridge, logo
@@ -242,7 +242,8 @@ fn settings(app: &Shared) -> Value {
             "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app),
             "emulators": crate::emulators::list(app),
             "system_files": crate::systemfiles::status(app),
-            "display": crate::gamesettings::view(app, crate::gamesettings::Scope::All, "") })
+            "display": crate::gamesettings::view(app, crate::gamesettings::Scope::All, ""),
+            "save_sync": crate::savesync::enabled(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -975,6 +976,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     return err(req, 400, "update_channel: stable or dev");
                 }
                 app.db.set_setting("update_channel", c);
+            }
+            if let Some(a) = body["save_sync"].as_bool() {
+                app.db.set_setting("save_sync", if a { "on" } else { "off" });
             }
             if let Some(a) = body["update_auto"].as_bool() {
                 app.db.set_setting("update_auto", if a { "1" } else { "0" });

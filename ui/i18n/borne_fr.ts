@@ -1110,6 +1110,14 @@
         <source>Display settings for</source>
         <translation>Réglages d'affichage pour</translation>
     </message>
+    <message>
+        <source>Save sent to RomM.</source>
+        <translation>Sauvegarde envoyée sur RomM.</translation>
+    </message>
+    <message>
+        <source>RomM unreachable: the save will be sent later.</source>
+        <translation>RomM injoignable : la sauvegarde sera envoyée plus tard.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1911,6 +1919,14 @@
     <message>
         <source>Change console</source>
         <translation>Changer de console</translation>
+    </message>
+    <message>
+        <source>Saves on RomM</source>
+        <translation>Sauvegardes sur RomM</translation>
+    </message>
+    <message>
+        <source>Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived.</source>
+        <translation>Les sauvegardes suivent chaque profil : reprises depuis RomM avant une partie si elles sont plus récentes, envoyées après. Les sauvegardes remplacées sont archivées.</translation>
     </message>
 </context>
 </TS>

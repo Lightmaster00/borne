@@ -348,6 +348,11 @@ impl Db {
     }
 
     // ---------- settings ----------
+    pub fn settings_with_prefix(&self, prefix: &str) -> Vec<(String, String)> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT key, value FROM settings WHERE substr(key, 1, length(?1)) = ?1").unwrap();
+        st.query_map([prefix], |r| Ok((r.get(0)?, r.get(1)?))).unwrap().filter_map(Result::ok).collect()
+    }
     pub fn setting(&self, key: &str) -> Option<String> {
         self.c()
             .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
