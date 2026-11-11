@@ -163,11 +163,15 @@ Item {
                      : i.required ? qsTr("Missing — needed to play") : qsTr("Optional")
             if (failed) desc = qsTr("Not added: %1").arg(t.error)
             const key = c.slug + "/" + i.id
-            const b = [{ id: "sf-pick:" + key, label: qsTr("Choose a file"), primary: !i.files.length && i.required, disabled: !!(t && t.running) },
+            const b = [{ id: "sf-romm:" + key, label: qsTr("From RomM"), primary: !i.files.length && i.required, disabled: !!(t && t.running) },
+                       { id: "sf-pick:" + key, label: qsTr("Choose a file"), disabled: !!(t && t.running) },
                        { id: "sf-url:" + key, label: qsTr("From a link"), disabled: !!(t && t.running) }]
             if (i.files.length) b.push({ id: "sf-remove:" + key, label: qsTr("Remove") })
             rows.push({ id: "sf:" + key, kind: "buttons", title: c.name + " · " + i.name, desc: desc, items: b })
         }))
+        if (rows.length) rows.unshift({ id: "sf-all", kind: "buttons", title: qsTr("From RomM"),
+            desc: qsTr("Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask."),
+            items: [{ id: "sf-all", label: qsTr("Take them now"), primary: true, disabled: !!(t && t.running) }] })
         if (!rows.length) rows.push({ id: "sf-none", kind: "buttons", title: qsTr("Nothing needed"), desc: qsTr("No console of the library needs a BIOS, keys or firmware."), items: [] })
         return rows
     }

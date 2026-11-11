@@ -354,6 +354,14 @@ impl Client {
         }
     }
 
+    /// The firmware (BIOS, keys…) RomM keeps for a platform.
+    pub fn firmware(&self, platform_id: i64) -> Result<Vec<Value>> {
+        match self.get_json(&format!("/api/firmware?platform_id={platform_id}"))? {
+            Value::Array(a) => Ok(a),
+            other => Err(RommError::Parse(format!("expected a list of firmware, got {other}"))),
+        }
+    }
+
     /// One catalog page. Returns (games, total).
     /// Accepts both shapes RomM has used: a page object `{items, total}` and a bare list.
     pub fn roms_page(&self, offset: usize, limit: usize) -> Result<(Vec<Value>, usize)> {

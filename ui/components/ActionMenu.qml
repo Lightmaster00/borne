@@ -13,7 +13,7 @@ Rectangle {
     property bool pointerActive: false
     readonly property bool opened: visible
     onIndexChanged: Qt.callLater(listView.follow)
-    onItemsChanged: Qt.callLater(listView.follow)
+    onItemsChanged: { listView.contentY = 0; Qt.callLater(listView.follow) }
 
     visible: false
     anchors.fill: parent
@@ -74,7 +74,8 @@ Rectangle {
                 boundsBehavior: Flickable.StopAtBounds
                 Behavior on contentY { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                 function follow() {
-                    const item = list.children[menu.index]
+                    if (list.height <= height + 1) { contentY = 0; return }
+                    const item = list.rowAt(menu.index)
                     if (!item) return
                     if (item.y < contentY) contentY = item.y
                     else if (item.y + item.height > contentY + height) contentY = item.y + item.height - height

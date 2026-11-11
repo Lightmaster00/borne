@@ -995,6 +995,26 @@
         <source>Link</source>
         <translation type="unfinished" />
     </message>
+    <message numerus="yes">
+        <source>%n file(s) taken from RomM.</source>
+        <translation><numerusform>%n file taken from RomM.</numerusform><numerusform>%n files taken from RomM.</numerusform></translation>
+    </message>
+    <message>
+        <source>Nothing new to take from RomM.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM has no file that fits for this console: add it to RomM's BIOS for the platform, or give it here.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Files RomM keeps for this console</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1823,6 +1843,18 @@
     </message>
     <message>
         <source>BIOS, keys, firmware</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Take them now</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -9,8 +9,10 @@ Column {
     property bool pointerActive: false
     signal clicked(int index)
     spacing: 4
+    function rowAt(i) { return rows.itemAt(i) }
 
     Repeater {
+        id: rows
         model: menu.items
         Rectangle {
             id: row

@@ -24,6 +24,10 @@
   "%n cheat activé. Il s'applique au prochain lancement du jeu.",
   "%n cheats activés. Ils s'appliquent au prochain lancement du jeu."
  ],
+ "%n file(s) taken from RomM.": [
+  "%n fichier récupéré depuis RomM.",
+  "%n fichiers récupérés depuis RomM."
+ ],
  "%n game(s)": [
   "%n jeu",
   "%n jeux"
@@ -80,6 +84,7 @@
  "Borne installs new versions by itself, never during a game": "Borne installe les nouvelles versions tout seul, jamais pendant une partie",
  "Borne is up to date.": "Borne est à jour.",
  "Borne reads the game from RomM while you play. Only games you pick are exposed.": "Borne lit le jeu depuis RomM pendant que vous jouez. Seuls les jeux choisis sont exposés.",
+ "Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask.": "Borne récupère les fichiers manquants dans les BIOS et firmwares de RomM pour chaque console, après chaque synchronisation et à la demande.",
  "Brazil": "Brésil",
  "Canada": "Canada",
  "Cancel": "Annuler",
@@ -181,6 +186,7 @@
  "Fetching images… %1 / %2 games, %3 found": "Récupération des images… %1 / %2 jeux, %3 trouvés",
  "Fetching the game media again.": "Nouvelle récupération des médias des jeux.",
  "Fetching… %1 image(s) left": "Récupération… %1 image(s) restante(s)",
+ "Files RomM keeps for this console": "Fichiers que RomM a pour cette console",
  "Files missing": "Fichiers manquants",
  "Flat": "Plat",
  "Forget the local copy": "Oublier la copie locale",
@@ -188,6 +194,7 @@
  "Found: %1": "Trouvé : %1",
  "France": "France",
  "Free, no account: case front, spine and back, cartridge or disc, logo and artwork from the LaunchBox community database. Borne downloads its index (a large file) once a month.": "Gratuit, sans compte : face, tranche et dos du boîtier, cartouche ou disque, logo et illustrations depuis la base communautaire LaunchBox. Borne télécharge son index (un gros fichier) une fois par mois.",
+ "From RomM": "Depuis RomM",
  "From a link": "Depuis un lien",
  "From the game's Wikipedia article": "D'après l'article Wikipédia du jeu",
  "From the network": "Depuis le réseau",
@@ -304,6 +311,7 @@
  "Not supported by Borne yet": "Pas encore pris en charge par Borne",
  "Nothing is copied; only the games you pick are mounted, read from RomM on demand": "Rien n'est copié : seuls les jeux choisis sont montés, lus depuis RomM à la demande",
  "Nothing needed": "Rien à fournir",
+ "Nothing new to take from RomM.": "Rien de nouveau à récupérer depuis RomM.",
  "Nothing to wait for once installed": "Plus rien à attendre une fois installé",
  "Off": "Non",
  "Offline": "Hors ligne",
@@ -367,6 +375,7 @@
  "Retry download": "Réessayer le téléchargement",
  "Rev. %1": "Rév. %1",
  "RomM account: %1": "Compte RomM : %1",
+ "RomM has no file that fits for this console: add it to RomM's BIOS for the platform, or give it here.": "RomM n'a aucun fichier qui convient pour cette console : ajoute-le aux BIOS de la plateforme dans RomM, ou donne-le ici.",
  "RomM server": "Serveur RomM",
  "RomM, profiles": "RomM, profils",
  "RomM: %1": "RomM : %1",
@@ -435,6 +444,7 @@
  "System": "Système",
  "System files": "Fichiers système",
  "Systems": "Systèmes",
+ "Take them now": "Récupérer maintenant",
  "Test game mode (VRAM freed)": "Tester le mode jeu (VRAM libérée)",
  "The code expired. A to get a new one.": "Le code a expiré. A pour en obtenir un nouveau.",
  "The game": "Le jeu",

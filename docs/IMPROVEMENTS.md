@@ -88,7 +88,7 @@ Next:
   a clear message before launching when one is missing.
 - System files: done (Settings → System files, from a file or a link; placed for RetroArch,
   PCSX2, Eden, Citron, Ryubing keys, RPCS3 firmware). Still to do: Ryubing firmware installation,
-  shadPS4 system modules, picking them straight from RomM's firmware list for the console, and
+  shadPS4 system modules, and
   checking BIOS dumps against known checksums (region shown).
 - Eden and Ryubing release file names are matched by words; check them against the real releases
   on the first real install (they could not be read from the build machine).

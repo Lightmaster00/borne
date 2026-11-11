@@ -8,6 +8,8 @@
 //! (RetroArch's system folder, PCSX2's BIOS folder, the keys and firmware of the Switch emulators,
 //! RPCS3's firmware installation) and a missing required file stops the launch with a clear
 //! message. A link to the RomM server gets the profile's token, so RomM's firmware links work.
+//! RomM's own firmware for the console (its BIOS folder) is offered too, and after each sync the
+//! missing files RomM has without doubt are taken from it.
 
 use crate::state::Shared;
 use serde::Deserialize;
@@ -329,6 +331,115 @@ fn check_and_place(d: &Path, it: &Item, name: &str, tmp: &Path, size: u64) -> Re
     }
 }
 
+// ---------- from RomM ----------
+
+/// Whether a file RomM keeps could be this item (name, extension, size).
+fn fits(it: &Item, name: &str, size: u64) -> bool {
+    let lower = name.to_lowercase();
+    match it.kind.as_str() {
+        "keys" => it.names.iter().any(|n| n.eq_ignore_ascii_case(name)),
+        "firmware-nca" => lower.ends_with(".zip") && !lower.contains("keys"),
+        "pup" => lower.ends_with(".pup"),
+        _ => {
+            let size_ok = it.size.map(|s| s == size).unwrap_or(true);
+            let name_ok = if !it.names.is_empty() {
+                let normalized = lower.replace('-', "");
+                it.names.iter().any(|n| n.to_lowercase() == normalized) || (it.names.len() == 1 && it.size.is_some())
+            } else {
+                it.ext.is_empty() || it.ext.iter().any(|e| lower.ends_with(e))
+            };
+            size_ok && name_ok
+        }
+    }
+}
+
+/// RomM's firmware for this console that fits each item: {item: [{id, file_name, size}]}.
+pub fn romm_candidates(app: &Shared, console: &str) -> Result<Value, String> {
+    let client = app.client().ok_or("no paired profile or server offline")?;
+    let platforms: Vec<i64> = app.db.platforms().into_iter().filter(|p| p.slug == console).map(|p| p.id).collect();
+    let mut found: Vec<Value> = vec![];
+    for pid in platforms {
+        found.extend(client.firmware(pid).map_err(|e| format!("RomM: {e}"))?);
+    }
+    let mut out = serde_json::Map::new();
+    for it in items(console) {
+        let list: Vec<Value> = found
+            .iter()
+            .filter(|f| f["missing_from_fs"] != true)
+            .filter(|f| fits(&it, f["file_name"].as_str().unwrap_or(""), f["file_size_bytes"].as_u64().unwrap_or(0)))
+            .map(|f| json!({ "id": f["id"], "file_name": f["file_name"], "size": f["file_size_bytes"] }))
+            .collect();
+        out.insert(it.id.clone(), json!(list));
+    }
+    Ok(Value::Object(out))
+}
+
+fn add_romm_now(app: &Shared, console: &str, it: &Item, firmware_id: i64, file_name: &str) -> Result<(), String> {
+    let client = app.client().ok_or("no paired profile or server offline")?;
+    let d = dir(app, console, &it.id);
+    std::fs::create_dir_all(&d).map_err(|e| e.to_string())?;
+    let tmp = d.join(".romm.download");
+    client
+        .fetch_to_file(&format!("/api/firmware/{firmware_id}/content/{}", crate::romm::percent_encode(file_name)), &tmp, 8 << 30)
+        .map_err(|e| format!("RomM: {e}"))?;
+    let r = std::fs::File::open(&tmp).map_err(|e| e.to_string()).and_then(|f| store(app, console, it, file_name, f));
+    let _ = std::fs::remove_file(&tmp);
+    r
+}
+
+/// Adds one of RomM's files to an item, in the background.
+pub fn add_romm(app: &Shared, console: &str, item: &str, firmware_id: i64) -> Result<(), String> {
+    let it = items(console).into_iter().find(|i| i.id == item).ok_or("unknown file")?;
+    let cands = romm_candidates(app, console)?;
+    let file_name = cands[item]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|c| c["id"].as_i64() == Some(firmware_id))
+        .and_then(|c| c["file_name"].as_str().map(String::from))
+        .ok_or("RomM has no such file for this console")?;
+    begin(app, console, item)?;
+    let (app, console) = (app.clone(), console.to_string());
+    std::thread::spawn(move || {
+        let r = add_romm_now(&app, &console, &it, firmware_id, &file_name);
+        finish(&app, &console, &it.id, r);
+    });
+    Ok(())
+}
+
+/// Every missing file RomM has without doubt (one fitting file, or all of them for items that
+/// take several, like BIOS of several regions), for every console of the library. Run after each
+/// sync and from Settings. Returns how many files were added.
+pub fn fill_from_romm(app: &Shared) -> usize {
+    if app.client().is_none() {
+        return 0;
+    }
+    let mut added = 0;
+    let consoles: Vec<String> = app.db.platforms().into_iter().map(|p| p.slug).filter(|s| !items(s).is_empty()).collect();
+    for console in consoles {
+        let Ok(cands) = romm_candidates(app, &console) else { continue };
+        for it in items(&console) {
+            if !files(app, &console, &it.id).is_empty() {
+                continue;
+            }
+            let list = cands[&it.id].as_array().cloned().unwrap_or_default();
+            let take: Vec<&Value> = if it.multi { list.iter().collect() } else if list.len() == 1 { vec![&list[0]] } else { vec![] };
+            for c in take {
+                let (Some(id), Some(name)) = (c["id"].as_i64(), c["file_name"].as_str()) else { continue };
+                match add_romm_now(app, &console, &it, id, name) {
+                    Ok(()) => added += 1,
+                    Err(e) => app.db.log("system files", &format!("{console}/{} from RomM ({name}): {e}", it.id)),
+                }
+            }
+        }
+    }
+    if added > 0 {
+        app.db.log("system files", &format!("{added} file(s) taken from RomM"));
+        app.emit(json!({ "type": "systemfiles" }));
+    }
+    added
+}
+
 /// The item's only file becomes this one.
 fn replace(d: &Path, tmp: &Path, target: &str) -> Result<(), String> {
     for e in std::fs::read_dir(d).into_iter().flatten().flatten() {
@@ -496,6 +607,19 @@ mod tests {
         assert_eq!(safe_name("../../etc/passwd"), "passwd");
         assert_eq!(safe_name("..hidden"), "hidden");
         assert_eq!(safe_name("a\\b\\c.bin"), "c.bin");
+    }
+
+    #[test]
+    fn romm_files_fit_their_item() {
+        let ps1 = item("bios", &["scph5501.bin", "scph5502.bin"], Some(524288), true);
+        assert!(fits(&ps1, "SCPH-5502.bin", 524288));
+        assert!(!fits(&ps1, "scph5502.bin", 1000));
+        let keys = item("keys", &["prod.keys"], None, false);
+        assert!(fits(&keys, "prod.keys", 9000) && !fits(&keys, "title.keys", 9000));
+        let fw = item("firmware-nca", &[], None, false);
+        assert!(fits(&fw, "Firmware 19.0.1.zip", 1) && !fits(&fw, "keys.zip", 1));
+        let ds = item("bios", &["bios7.bin"], Some(16384), false);
+        assert!(fits(&ds, "biosnds7.rom", 16384));
     }
 
     #[test]

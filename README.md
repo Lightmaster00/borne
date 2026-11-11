@@ -78,7 +78,8 @@ Since then:
   messages, no hotkeys, saves and states in the profile's folder. *Play* starts the game (after
   installing what is missing); Select then Start quits it.
 - **System files**: BIOS, keys and firmware (PS1, PS2, Saturn, Mega-CD, DS, GBA BIOS; Switch
-  prod.keys, title.keys and firmware; PS3 PUP) are given to Borne in Settings → System files,
+  prod.keys, title.keys and firmware; PS3 PUP) are taken from RomM's BIOS and firmware for each
+  console (after each sync, or chosen in Settings → System files), or given to Borne there
   from a file on the computer (the system's file chooser, or a typed path) or from a link (a link
   to your RomM server is sent with your profile's token). Borne checks them (size, format), keeps
   them, and places them for the chosen emulator before each game; a missing one is reported

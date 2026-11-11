@@ -444,6 +444,25 @@ Window {
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
         else if (id === "cases") prefs.cases3d = payload === "3d"
+        else if (id === "sf-all") api("POST", "/api/v1/system-files/from-romm", {}, function (r, err) {
+            if (err) toasts.show(err, "error")
+            else toasts.show(r.added > 0 ? qsTr("%n file(s) taken from RomM.", "", r.added) : qsTr("Nothing new to take from RomM."), "info")
+            loadSettings()
+        })
+        else if (id.startsWith("sf-romm:")) {
+            const k = id.substring(8).split("/")
+            api("GET", "/api/v1/system-files/" + k[0] + "/romm", null, function (c, err) {
+                if (err) { toasts.show(err, "error"); return }
+                const list = c[k[1]] || []
+                if (!list.length) { toasts.show(qsTr("RomM has no file that fits for this console: add it to RomM's BIOS for the platform, or give it here."), "info"); return }
+                const items = list.map(f => ({ id: String(f.id), label: f.file_name, detail: fmtSize(f.size) }))
+                items.push({ id: "close", label: qsTr("Close") })
+                menu.open(qsTr("From RomM"), qsTr("Files RomM keeps for this console"), items, function (fid) {
+                    if (fid === "close") return
+                    api("POST", "/api/v1/system-files/" + k[0] + "/" + k[1], { romm: Number(fid) }, function (r, err2) { if (err2) toasts.show(err2, "error"); loadSettings() })
+                })
+            })
+        }
         else if (id.startsWith("sf-pick:")) {
             const k = id.substring(8).split("/")
             api("POST", "/api/v1/system-files/" + k[0] + "/" + k[1], { pick: true, title: "Borne" }, function (r, err) {

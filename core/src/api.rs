@@ -35,7 +35,9 @@
 //!   GET    /api/v1/games/<rom_id>/cheats          cheats of this exact version, and which are on
 //!   POST   /api/v1/games/<rom_id>/cheats {on}     the cheats turned on (per profile)
 //!   GET    /api/v1/system-files                   BIOS, keys, firmware per console, and which are here
-//!   POST   /api/v1/system-files/<console>/<item> {path | url | pick}   adds one (checked, in the background)
+//!   POST   /api/v1/system-files/<console>/<item> {path | url | pick | romm}   adds one (checked, in the background)
+//!   GET    /api/v1/system-files/<console>/romm    RomM's files that fit each item
+//!   POST   /api/v1/system-files/from-romm         takes every missing file RomM has without doubt
 //!   DELETE /api/v1/system-files/<console>/<item>  removes it
 //!   GET    /api/v1/session                        the running game, if any
 //!   POST   /api/v1/session/stop                   ends the running game
@@ -737,7 +739,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Get, ["api", "v1", "system-files"]) => ok(req, crate::systemfiles::status(app)),
         (Method::Post, ["api", "v1", "system-files", console, item]) => {
             let b = body_json(&mut req);
-            let r = if let Some(u) = b["url"].as_str() {
+            let r = if let Some(id) = b["romm"].as_i64() {
+                crate::systemfiles::add_romm(app, console, item, id)
+            } else if let Some(u) = b["url"].as_str() {
                 crate::systemfiles::add_url(app, console, item, u)
             } else if let Some(p) = b["path"].as_str() {
                 crate::systemfiles::add_path(app, console, item, p)
@@ -750,6 +754,14 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(()) => ok(req, crate::systemfiles::status(app)),
                 Err(e) => err(req, 400, &e),
             }
+        }
+        (Method::Get, ["api", "v1", "system-files", console, "romm"]) => match crate::systemfiles::romm_candidates(app, console) {
+            Ok(v) => ok(req, v),
+            Err(e) => err(req, 502, &e),
+        },
+        (Method::Post, ["api", "v1", "system-files", "from-romm"]) => {
+            let n = crate::systemfiles::fill_from_romm(app);
+            ok(req, json!({ "added": n, "status": crate::systemfiles::status(app) }))
         }
         (Method::Delete, ["api", "v1", "system-files", console, item]) => match crate::systemfiles::remove(app, console, item) {
             Ok(()) => ok(req, crate::systemfiles::status(app)),

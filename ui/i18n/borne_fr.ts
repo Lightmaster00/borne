@@ -995,6 +995,26 @@
         <source>Link</source>
         <translation>Lien</translation>
     </message>
+    <message numerus="yes">
+        <source>%n file(s) taken from RomM.</source>
+        <translation><numerusform>%n fichier récupéré depuis RomM.</numerusform><numerusform>%n fichiers récupérés depuis RomM.</numerusform></translation>
+    </message>
+    <message>
+        <source>Nothing new to take from RomM.</source>
+        <translation>Rien de nouveau à récupérer depuis RomM.</translation>
+    </message>
+    <message>
+        <source>RomM has no file that fits for this console: add it to RomM's BIOS for the platform, or give it here.</source>
+        <translation>RomM n'a aucun fichier qui convient pour cette console : ajoute-le aux BIOS de la plateforme dans RomM, ou donne-le ici.</translation>
+    </message>
+    <message>
+        <source>From RomM</source>
+        <translation>Depuis RomM</translation>
+    </message>
+    <message>
+        <source>Files RomM keeps for this console</source>
+        <translation>Fichiers que RomM a pour cette console</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1824,6 +1844,18 @@
     <message>
         <source>BIOS, keys, firmware</source>
         <translation>BIOS, clés, firmware</translation>
+    </message>
+    <message>
+        <source>From RomM</source>
+        <translation>Depuis RomM</translation>
+    </message>
+    <message>
+        <source>Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask.</source>
+        <translation>Borne récupère les fichiers manquants dans les BIOS et firmwares de RomM pour chaque console, après chaque synchronisation et à la demande.</translation>
+    </message>
+    <message>
+        <source>Take them now</source>
+        <translation>Récupérer maintenant</translation>
     </message>
 </context>
 </TS>

@@ -294,6 +294,11 @@ fn sync(app: &Shared) -> Result<(), RommError> {
     fetch_covers(app, &client, covers);
     crate::media::prefetch(app, &client);
     crate::screenscraper::start(app, false);
+    // BIOS, keys and firmware RomM keeps, for the consoles that need them.
+    let a = app.clone();
+    std::thread::spawn(move || {
+        crate::systemfiles::fill_from_romm(&a);
+    });
     Ok(())
 }
 
