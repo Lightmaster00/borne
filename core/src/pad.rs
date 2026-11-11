@@ -76,6 +76,11 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
             // held action -> (time of the next repeat, gamepad name)
             let mut held: HashMap<&'static str, (Instant, String)> = HashMap::new();
             let mut stick: HashMap<&'static str, bool> = HashMap::new();
+            // Right stick: turns the selected game box (continuous, not actions).
+            let (mut rx, mut ry) = (0.0f32, 0.0f32);
+            let emit_stick = |x: f32, y: f32| {
+                emit_json(format!(r#"{{"type":"stick","x":{x:.2},"y":{y:.2}}}"#));
+            };
             let emit = |action: &'static str, pad: &str, repeat: bool| {
                 let ev = PadEvent {
                     kind: "pad",
@@ -110,6 +115,16 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
                         EventType::ButtonReleased(b, _) => {
                             if let Some(a) = map_button(b) {
                                 held.remove(a);
+                            }
+                        }
+                        EventType::AxisChanged(axis @ (Axis::RightStickX | Axis::RightStickY), v, _) => {
+                            // Dead zone, then steps of 0.05 so small jitter sends nothing.
+                            let q = if v.abs() < 0.18 { 0.0 } else { (v * 20.0).round() / 20.0 };
+                            let (nx, ny) = if axis == Axis::RightStickX { (q, ry) } else { (rx, -q) };
+                            if (nx, ny) != (rx, ry) {
+                                rx = nx;
+                                ry = ny;
+                                emit_stick(rx, ry);
                             }
                         }
                         EventType::AxisChanged(axis, v, _) => {

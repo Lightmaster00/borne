@@ -119,8 +119,9 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | Y | Y, T, Ctrl+F or / | Search (on the profile screen: profile options) |
 | — | Any letter or digit | Start a search with that letter |
 | D-pad | Arrows | Move through the covers |
-| LT / RT | Z / C, Home / End | Previous / next letter |
-| LB / RB | Page Up / Page Down, Q / E | Previous / next system |
+| LT / RT | R / C, Home / End | Previous / next letter |
+| LB / RB | Page Up / Page Down, A / E | Previous / next system |
+| Right stick | Z Q S D (held) | Turn the selected game box any way; it comes back to rest when let go |
 | Start | M or F1 | Settings |
 | Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |
 

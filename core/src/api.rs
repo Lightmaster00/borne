@@ -51,6 +51,7 @@
 //!   POST   /api/v1/report  ·  GET /file?path=…
 //!   POST   /api/v1/diagnostic-report             writes a shareable report (logs, no secrets)
 //!   POST   /api/v1/debug/pad?action=…            automated tests (BORNE_DEBUG_INPUT=1)
+//!   POST   /api/v1/debug/stick?x=…&y=…           automated tests: the right stick
 
 use crate::state::Shared;
 use crate::{catalog, diag, downloads, facts, library, pairing, romm, secrets, stream, update};
@@ -869,6 +870,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(()) => ok(req, json!({ "path": path })),
                 Err(e) => err(req, 500, &e.to_string()),
             }
+        }
+        (Method::Post, ["api", "v1", "debug", "stick"]) if app.debug_input => {
+            let f = |k: &str| query(&q, k).and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0).clamp(-1.0, 1.0);
+            app.emit(json!({ "type": "stick", "x": f("x"), "y": f("y") }));
+            ok(req, json!({ "ok": true }))
         }
         (Method::Post, ["api", "v1", "debug", "pad"]) if app.debug_input => {
             const OK: [&str; 14] = [

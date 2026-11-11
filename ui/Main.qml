@@ -213,7 +213,7 @@ Window {
             const first = page === null || overlay !== "game"
             page = d
             pageGame = toRow(d.game)
-            if (first) { pageFacts = null; gamePage.reset(); overlay = "game"; sfx.play("accept") }
+            if (first) { pageFacts = null; gamePage.reset(); resetTurn(); overlay = "game"; sfx.play("accept") }
             loadFacts(romId)
             loadTrailer(pageGame)
         })
@@ -546,6 +546,35 @@ Window {
         loadLibrary(true)
     }
 
+    // ---------- turning the selected box (right stick, or Z Q S D) ----------
+    property real padTurnX: 0
+    property real padTurnY: 0
+    property var turnKeys: ({})
+    readonly property real turnX: Math.max(-1, Math.min(1, padTurnX + (turnKeys.d ? 1 : 0) - (turnKeys.q ? 1 : 0)))
+    readonly property real turnY: Math.max(-1, Math.min(1, padTurnY + (turnKeys.s ? 1 : 0) - (turnKeys.z ? 1 : 0)))
+    property real boxYaw: 0          // degrees, free
+    property real boxPitch: 0        // degrees, -70 … 70
+    property bool turning: false     // the player is turning it, or did a moment ago
+    readonly property bool turnActive: Math.abs(turnX) > 0.01 || Math.abs(turnY) > 0.01
+    function setTurnKey(k, down) { const t = Object.assign({}, turnKeys); t[k] = down; turnKeys = t }
+    Timer {
+        interval: 16; repeat: true
+        running: win.turnActive
+        onTriggered: {
+            win.boxYaw += win.turnX * 3.2
+            win.boxPitch = Math.max(-70, Math.min(70, win.boxPitch + win.turnY * 2.4))
+            win.turning = true
+            settleTurn.restart()
+        }
+    }
+    // Let go: after a moment the box comes back to rest, facing you.
+    Timer { id: settleTurn; interval: 2600; onTriggered: { win.turning = false; restYaw.restart(); restPitch.restart() } }
+    NumberAnimation { id: restYaw; target: win; property: "boxYaw"; to: 0; duration: 900; easing.type: Easing.OutCubic
+        onStarted: win.boxYaw = ((win.boxYaw % 360) + 540) % 360 - 180 }
+    NumberAnimation { id: restPitch; target: win; property: "boxPitch"; to: 0; duration: 900; easing.type: Easing.OutCubic }
+    function resetTurn() { restYaw.stop(); restPitch.stop(); boxYaw = 0; boxPitch = 0; turning = false }
+    onFocusIndexChanged: resetTurn()
+
     function dispatch(a, source) {
         inputCounts[source] = (inputCounts[source] || 0) + 1
         inputCountsChanged()
@@ -606,6 +635,7 @@ Window {
             try { m = JSON.parse(msg) } catch (e) { return }
             if (m.type === "hello") win.coreOnline = true
             else if (m.type === "pad") win.dispatch(m.action, "pad")
+            else if (m.type === "stick") { win.padTurnX = m.x; win.padTurnY = m.y }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
@@ -819,20 +849,31 @@ Window {
             if (screen === "library" && overlay === "" && !menu.visible && !nameEntry.visible && !downloadsPanel.visible) {
                 const f = e.key === Qt.Key_Slash || (e.key === Qt.Key_F && (e.modifiers & Qt.ControlModifier))
                 if (f) { e.accepted = true; openSearch("", true); return }
-                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_Q, Qt.Key_E, Qt.Key_Z, Qt.Key_C].indexOf(e.key) >= 0
+                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_A, Qt.Key_E, Qt.Key_R, Qt.Key_C, Qt.Key_Z, Qt.Key_Q, Qt.Key_S, Qt.Key_D].indexOf(e.key) >= 0
                 if (!shortcut && !(e.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && e.text && e.text.length === 1 && (e.text.toLowerCase() !== e.text.toUpperCase() || /[0-9]/.test(e.text))) {
                     e.accepted = true; openSearch(e.text, true); return
                 }
+            }
+            // Z Q S D turn the selected box (held keys, like a stick).
+            const turnKey = { [Qt.Key_Z]: "z", [Qt.Key_Q]: "q", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
+            if (turnKey && !search.visible && !menu.visible && (win.screen === "library" || win.overlay === "game")) {
+                e.accepted = true
+                if (!e.isAutoRepeat) setTurnKey(turnKey, true)
+                return
             }
             const map = {}
             map[Qt.Key_Up] = "up"; map[Qt.Key_Down] = "down"; map[Qt.Key_Left] = "left"; map[Qt.Key_Right] = "right"
             map[Qt.Key_Return] = "a"; map[Qt.Key_Enter] = "a"; map[Qt.Key_Space] = "a"
             map[Qt.Key_Escape] = "b"; map[Qt.Key_Backspace] = "b"
             map[Qt.Key_X] = "x"; map[Qt.Key_T] = "y"; map[Qt.Key_Y] = "y"; map[Qt.Key_F1] = "start"; map[Qt.Key_M] = "start"; map[Qt.Key_F2] = "select"
-            map[Qt.Key_PageUp] = "lb"; map[Qt.Key_Q] = "lb"; map[Qt.Key_PageDown] = "rb"; map[Qt.Key_E] = "rb"
-            map[Qt.Key_Z] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
+            map[Qt.Key_PageUp] = "lb"; map[Qt.Key_A] = "lb"; map[Qt.Key_PageDown] = "rb"; map[Qt.Key_E] = "rb"
+            map[Qt.Key_R] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
             const a = map[e.key]
             if (a) { e.accepted = true; dispatch(a, "keyboard") }
+        }
+        Keys.onReleased: (e) => {
+            const turnKey = { [Qt.Key_Z]: "z", [Qt.Key_Q]: "q", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
+            if (turnKey && !e.isAutoRepeat) { e.accepted = true; setTurnKey(turnKey, false) }
         }
     }
 
@@ -955,6 +996,8 @@ Window {
     LibraryView {
         id: libraryView
         anchors.fill: parent
+        boxYaw: win.boxYaw
+        boxPitch: win.boxPitch
         visible: win.screen === "library" && win.ready && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
         theme: win.theme
         games: libModel
@@ -1175,6 +1218,9 @@ Window {
         versions: win.page ? win.page.versions : []
         emuLanguage: win.page ? win.page.emu_language : "auto"
         gameLanguages: win.page && win.page.languages ? win.page.languages : []
+        boxYaw: win.boxYaw
+        boxPitch: win.boxPitch
+        boxTurning: win.turning
         uiLang: win.uiLang
         installMode: win.page ? win.page.install_mode : "download"
         streamAvailable: win.page ? win.page.stream.available : false

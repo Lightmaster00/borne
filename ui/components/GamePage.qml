@@ -18,6 +18,9 @@ Item {
     property string emuLanguage: "auto"
     property var gameLanguages: []     // [{ code, version }]: the game's real languages
     property string uiLang: "en"
+    property real boxYaw: 0
+    property real boxPitch: 0
+    property bool boxTurning: false
     property string installMode: "download"
     property bool streamAvailable: false
     property string streamError: ""
@@ -300,7 +303,10 @@ Item {
                     games: boxModel
                     currentIndex: 0
                     showSelection: false
-                    inspect: true
+                    scale: 1.2
+                    inspect: !page.boxTurning
+                    userYaw: page.boxYaw
+                    userPitch: page.boxPitch
                     swayPeriod: 7000
                     opacity: page.videoShown ? 0.0 : 1
                     Behavior on opacity { NumberAnimation { duration: 600 } }

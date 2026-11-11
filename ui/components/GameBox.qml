@@ -1,8 +1,11 @@
-// One game box, drawn as a physical case: the cover under clear plastic (rim, gloss, a sharp
-// light along the top edge), spines in dark plastic with a band in the console's color and the
-// title, a soft contact shadow and a faint reflection on the floor. The box takes the shape of
-// its cover: portrait for most consoles, wider and lower for landscape boxes.
-// Every face is a flat item drawn through BoxShelf.faceMatrix.
+// One game box, built as a solid: six faces drawn through BoxShelf.faceMatrix (front, back,
+// spine on the left, opening edge on the right, top, bottom), lit by one key light — each face
+// darkens as it turns from the light and catches a highlight where the light reflects toward
+// the eye, so the box reads as an object as it turns (right stick, Z Q S D).
+// Materials: a plastic keep case (colored rim, clear sleeve with a moving sheen, rounded edges),
+// a clear CD case (hinge, black tray seen through the lid), a hard clamshell, or a cardboard box
+// (matte, sharp folds). Printed faces come from the case scans; nothing is drawn over the art
+// but light.
 import QtQuick
 import QtQuick.Shapes
 import "Cases.js" as Cases
@@ -40,9 +43,10 @@ Item {
     readonly property var dims: ({ w: bw, h: bh, d: bd })
 
     readonly property real frontFacing: stage.facing(place, "front")
-    readonly property real leftFacing: stage.facing(place, "left")
-    readonly property real rightFacing: stage.facing(place, "right")
     readonly property real backFacing: stage.facing(place, "back")
+    // Highlight strength by material: clear plastic shines, cardboard barely.
+    readonly property real gloss: mat === "jewel" ? 0.85 : mat === "card" ? 0.18 : 0.6
+    readonly property color plasticEdge: Qt.lighter(kind.color, 1.35)
     readonly property color tone: theme.tone(game ? game.hue : 0)
     readonly property string dl: game && game.dl_state ? game.dl_state : ""
     readonly property bool busy: dl === "queued" || dl === "downloading" || dl === "verifying" || dl === "extracting"
@@ -73,7 +77,7 @@ Item {
     // ---------- reflection ----------
     Item {
         width: box.bw; height: box.bh
-        visible: box.frontFacing > 0.05
+        visible: box.frontFacing > 0.05 && Math.abs(box.place.pitch || 0) < 4
         opacity: 0.06 * box.frontFacing
         transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, "front", true, box.dims) }
         Image {
@@ -93,34 +97,46 @@ Item {
         }
     }
 
-    // ---------- spines ----------
-    // Both sides show the spine (from RomM's scan when there is one, else the case's material with
-    // the title), so the boxes turned toward the selection always present their spine.
-    component Spine: Item {
-        id: sp
-        property string side: "left"
-        property real facingValue: 0
-        // A real box: the spine is on the left; the right side is the case's opening edge.
-        readonly property bool plain: sp.side === "right"
-        readonly property bool printed: !plain && scan.status === Image.Ready
-        width: box.bd + 1; height: box.bh   // +1: no seam against the front
-        visible: facingValue > 0.02
-        transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, sp.side, false, box.dims) }
+    // ---------- light on a face ----------
+    component Light: Item {
+        id: lt
+        property string face: "front"
+        property real radius: 0
+        readonly property var l: box.stage.lighting(box.place, face)
+        anchors.fill: parent
+        Rectangle { anchors.fill: parent; radius: lt.radius; color: "black"; opacity: (1 - lt.l.diffuse) * 0.92 }
+        Rectangle { anchors.fill: parent; radius: lt.radius; color: "white"; opacity: lt.l.spec * box.gloss * 0.55 }
+    }
+
+    // ---------- spine (left), opening edge (right), top and bottom ----------
+    component Side: Item {
+        id: sd
+        property string face: "left"
+        readonly property real facingValue: box.stage.facing(box.place, face)
+        readonly property bool vertical: face === "left" || face === "right"
+        readonly property bool spine: face === "left"
+        readonly property bool printed: spine && scan.status === Image.Ready
+        // +1: no seam against the front.
+        width: vertical ? box.bd + 1 : box.bw
+        height: vertical ? box.bh : box.bd + 1
+        visible: facingValue > 0.01
+        transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, sd.face, false, box.dims) }
+        // Material: plastic in the case's color, or the box's printed cardboard.
         Rectangle {
             anchors.fill: parent
-            color: box.mat === "card" ? Qt.darker(box.tone, 1.6) : box.kind.color
+            color: box.mat === "card" ? Qt.darker(box.tone, 1.5) : box.mat === "jewel" ? "#101012" : box.kind.color
         }
-        // The core stores spine scans upright and trimmed.
+        // The spine scan (stored upright and trimmed by the core).
         Image {
             id: scan
             anchors.fill: parent
-            visible: !sp.plain
-            source: box.has("side") ? box.game.art + "side" : ""
+            visible: sd.spine
+            source: sd.spine && box.has("side") ? box.game.art + "side" : ""
             asynchronous: true
             fillMode: Image.Stretch
         }
         Text {
-            visible: !sp.printed && !sp.plain
+            visible: sd.spine && !sd.printed
             anchors.centerIn: parent
             width: box.bh - 40
             height: box.bd
@@ -129,43 +145,63 @@ Item {
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
-            color: Qt.colorEqual(box.kind.color, "#e9ebee") || Qt.colorEqual(box.kind.color, "#dfe2e6") ? "#26282d" : "#e8eaef"
+            color: Qt.colorEqual(box.kind.color, "#eceef1") || Qt.colorEqual(box.kind.color, "#dfe2e6") ? "#26282d" : "#e8eaef"
             font { family: box.theme.fontFamily; pixelSize: Math.max(9, Math.min(15, box.bd * 0.42)); weight: Font.Bold; letterSpacing: 0.5 }
         }
-        // Plastic: rounded light along the spine; cardboard: flat with sharp folds.
+        // Keep case: the opening edge, top and bottom are bare plastic with moulded ridges.
+        Repeater {
+            model: box.mat === "keep" && !sd.spine ? 3 : 0
+            Rectangle {
+                required property int index
+                x: sd.vertical ? (parent.width - width) / 2 : parent.width * (0.2 + index * 0.3)
+                y: sd.vertical ? parent.height * (0.2 + index * 0.3) : (parent.height - height) / 2
+                width: sd.vertical ? parent.width * 0.4 : parent.width * 0.12
+                height: sd.vertical ? parent.height * 0.12 : parent.height * 0.4
+                radius: 2
+                color: Qt.rgba(0, 0, 0, 0.18)
+            }
+        }
+        // Jewel case: the clear lid's edge over the black tray.
+        Rectangle {
+            visible: box.mat === "jewel"
+            anchors { fill: parent; margins: 1 }
+            color: "transparent"
+            border { width: 1; color: Qt.rgba(1, 1, 1, 0.35) }
+        }
+        // Rounded plastic: lighter toward the middle of the edge; cardboard: flat with crisp folds.
         Rectangle {
             anchors.fill: parent
             visible: box.plastic
             gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
-                GradientStop { position: 0.4; color: Qt.rgba(1, 1, 1, 0.10) }
-                GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.04) }
-                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.35) }
+                orientation: sd.vertical ? Gradient.Horizontal : Gradient.Vertical
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.28) }
+                GradientStop { position: 0.45; color: Qt.rgba(1, 1, 1, 0.12) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.28) }
             }
         }
-        Rectangle { anchors { left: parent.left; top: parent.top; bottom: parent.bottom } width: 1; color: Qt.rgba(1, 1, 1, box.plastic ? 0.18 : 0.3) }
-        Rectangle { anchors { right: parent.right; top: parent.top; bottom: parent.bottom } width: 1; color: Qt.rgba(1, 1, 1, 0.08) }
-        // Turned away: darker.
-        Rectangle { anchors.fill: parent; color: "black"; opacity: Math.max(0, 0.6 - sp.facingValue * 0.55) }
+        Rectangle { anchors.fill: parent; color: "transparent"; border { width: 1; color: Qt.rgba(1, 1, 1, box.plastic ? 0.14 : 0.22) } }
+        Light { face: sd.face }
     }
-    Spine { side: "left"; facingValue: box.leftFacing }
-    Spine { side: "right"; facingValue: box.rightFacing }
+    Side { face: "left" }
+    Side { face: "right" }
+    Side { face: "top" }
+    Side { face: "bottom" }
 
-    // ---------- back (seen when the box turns round on the game page) ----------
+    // ---------- back ----------
     Item {
         width: box.bw; height: box.bh
-        visible: box.backFacing > 0.02
+        visible: box.backFacing > 0.01
         transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, "back", false, box.dims) }
-        Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : 1; color: box.kind.color }
+        Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : 1; color: box.mat === "card" ? Qt.darker(box.tone, 1.5) : box.kind.color }
         Image {
             anchors { fill: parent; margins: box.rim }
-            source: box.has("back") && box.backFacing > 0.02 ? box.game.art + "back" : ""
+            source: box.has("back") && box.backFacing > 0.01 ? box.game.art + "back" : ""
             asynchronous: true
             fillMode: Image.PreserveAspectCrop
-            sourceSize: Qt.size(420, 620)
+            sourceSize: Qt.size(500, 720)
         }
-        Rectangle { anchors.fill: parent; color: "black"; opacity: Math.max(0, 0.6 - box.backFacing * 0.6) }
+        Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : 1; color: "transparent"; border { width: 1.5; color: Qt.rgba(1, 1, 1, box.plastic ? 0.2 : 0.1) } }
+        Light { face: "back"; radius: box.mat === "keep" ? 6 : 1 }
     }
 
     // ---------- front ----------
@@ -199,7 +235,8 @@ Item {
                 source: box.frontScan ? box.game.art + "front" : box.game && box.game.cover ? box.game.cover : ""
                 asynchronous: true
                 fillMode: Image.PreserveAspectCrop
-                sourceSize: Qt.size(420, 620)
+                sourceSize: Qt.size(600, 900)
+                mipmap: true
             }
         }
         // Jewel case hinge: clear ribbed strip on the left.
@@ -214,17 +251,26 @@ Item {
                 GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.3) }
             }
         }
-        // Gloss: a broad soft reflection that slides as the box turns (strong on clear plastic,
-        // faint on cardboard), and a sharp light along the top edge.
-        Rectangle {
+        // Plastic sleeve over the cover: a soft sheen band that slides as the box turns or tilts,
+        // and a faint inner shadow where the sleeve meets the rim.
+        Item {
             anchors { fill: parent; margins: box.rim }
-            opacity: box.mat === "jewel" ? 0.32 : box.mat === "card" ? 0.07 : 0.22
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: Math.max(0, Math.min(1, 0.05 + box.place.ang / 150)); color: "transparent" }
-                GradientStop { position: Math.max(0, Math.min(1, 0.22 + box.place.ang / 150)); color: Qt.rgba(1, 1, 1, 0.55) }
-                GradientStop { position: Math.max(0, Math.min(1, 0.42 + box.place.ang / 150)); color: "transparent" }
+            visible: box.plastic
+            clip: true
+            Rectangle {
+                width: parent.width * 0.55; height: parent.height * 1.8
+                x: parent.width * (0.5 - (box.place.ang || 0) / 70) - width / 2
+                y: parent.height * (-0.4 + (box.place.pitch || 0) / 90)
+                rotation: 18
+                opacity: box.mat === "jewel" ? 0.22 : 0.13
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.5; color: "white" }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
             }
+            Rectangle { anchors.fill: parent; color: "transparent"; border { width: 2; color: Qt.rgba(0, 0, 0, 0.22) } }
         }
         Rectangle {
             anchors { fill: parent; margins: box.rim }
@@ -235,8 +281,8 @@ Item {
                 GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.18) }
             }
         }
-        Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top; leftMargin: 4; rightMargin: 4 } height: 1; color: Qt.rgba(1, 1, 1, 0.45) }
-        Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : 1; color: "transparent"; border { width: 1; color: Qt.rgba(1, 1, 1, box.plastic ? 0.16 : 0.1) } }
+        // Edges: rounded plastic catches a thin light all around; cardboard has crisp folds.
+        Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : 1; color: "transparent"; border { width: box.plastic ? 1.5 : 1; color: Qt.rgba(1, 1, 1, box.plastic ? 0.22 : 0.12) } }
 
         // State: downloading bar, installed / mounted / failed mark.
         Rectangle {
@@ -258,8 +304,8 @@ Item {
             Icon { anchors.centerIn: parent; size: 14; stroke: 3.2; name: parent.installed ? "check" : parent.mounted ? "link" : "alert"; color: parent.broken ? box.theme.bg : box.theme.fg }
         }
 
-        // Turned away: darker.
-        Rectangle { anchors.fill: parent; color: "black"; opacity: Math.max(0, 0.62 - box.frontFacing * 0.62) }
+        // Light: the face darkens away from the light and catches the highlight.
+        Light { face: "front"; radius: box.mat === "keep" ? 6 : 1 }
 
         // Hover (mouse): a fine white line around the box. The selected box needs none: it stands forward.
         Rectangle {

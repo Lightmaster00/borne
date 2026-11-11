@@ -21,7 +21,9 @@ Item {
 
     readonly property int columns: 10    // up / down jump this many games
     property int revision: 0
-    property string homeStyle: "boxes"   // "boxes" or "arcade"
+    property string homeStyle: "boxes"
+    property real boxYaw: 0
+    property real boxPitch: 0   // "boxes" or "arcade"
     readonly property bool arcade: homeStyle === "arcade"
 
     function fmtSize(b) {
@@ -147,6 +149,8 @@ Item {
         currentIndex: root.currentIndex
         revision: root.revision
         pointerActive: root.pointerActive
+        userYaw: root.boxYaw
+        userPitch: root.boxPitch
         onPicked: (i) => root.picked(i)
     }
 

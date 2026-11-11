@@ -781,3 +781,17 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   `Fanart - Background`, from `images.launchbox-app.com`, in the version's region first.
 - Precedence: Borne's ScreenScraper access, then LaunchBox, then RomM's copies.
   `BORNE_LAUNCHBOX_BASE` points tests at a local stand-in.
+
+## Game boxes as solids
+
+- Six faces (front, back, spine on the left, opening edge on the right, top, bottom), each drawn
+  through one perspective matrix; the box turns about its vertical axis (yaw) and its horizontal
+  axis (pitch). Faces facing away are culled (a box is convex, so no depth sorting is needed).
+- One key light (above, left, in front): each face is shaded by how it faces the light, scaled so a
+  box facing the viewer at rest is fully lit, and catches a specular highlight (Blinn) that slides
+  across it as it turns; the clear sleeve of plastic cases adds a sheen band that follows the turn.
+  Materials: keep case (rim, rounded edges, moulded ridges on bare edges), jewel case (hinge, black
+  tray under a clear lid), clamshell, cardboard (matte, crisp folds).
+- The selected box (library and game page) turns with the right stick (core event `stick`, dead
+  zone 0.18, steps of 0.05) or Z Q S D held; yaw is free, pitch is limited to ±70°. 2.6 s after the
+  last input it comes back to rest. `POST /api/v1/debug/stick?x=&y=` drives it in tests.
