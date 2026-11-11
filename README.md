@@ -66,7 +66,13 @@ Since then:
   writes a shareable text report (versions, settings, server version, recent downloads, log; no
   passwords or tokens) to the data folder and to Downloads.
 
-Launching games arrives with stage 3.
+- **Playing**: *Play* starts the game with the emulator for its console — RetroArch (NES, SNES,
+  Mega Drive, Game Boy, PlayStation… with the first core installed), Dolphin (GameCube, Wii), PCSX2
+  (PS2), DuckStation (PS1) or Eden (Switch, program provided by you). Borne finds them on the PATH,
+  as Flatpaks (and installs them from Flathub, Settings → Emulators) or in /Applications on macOS;
+  you can also point it to a program. RetroArch saves and states go to the profile's folder; the
+  GameCube language follows the language chosen on the game page. Borne steps aside while the game
+  runs and comes back when it ends; Select then Start quits the game.
 
 ## Try it on a Mac (Apple Silicon)
 

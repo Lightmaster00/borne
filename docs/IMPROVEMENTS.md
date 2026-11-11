@@ -67,12 +67,22 @@ From the game page: choose another region's box (EU / US / JP) when several exis
 
 ## 3. Playing games
 
-### 3.1 Launching games (P0)
+### 3.1 Launching games (P0 — first pass done)
 
-"Play" shows "Launching games arrives with stage 3 (emulators)": games cannot be launched yet. This
-is the main missing feature (spec section on emulators): detect or install the emulators (Flatpak),
-map each console to its emulator and core, launch with the right file (and the chosen language),
-return to Borne when the game ends, show errors clearly.
+Done: `core/src/emulators.rs` with the declarative `emulators.json` (RetroArch with cores per
+system, Dolphin, PCSX2, DuckStation, Eden): detection (user path, PATH, Flatpak, /Applications),
+Flathub installation, launch of the downloaded or network-linked file, RetroArch saves and states
+per profile, GameCube language, one session at a time with game mode, Select + Start to quit,
+errors from the emulator's log when it stops at once. Settings → Emulators.
+
+Still to do:
+- Choosing the emulator per console when several are installed (setting `emu_for.<system>`
+  exists, no UI yet); per-game profiles.
+- Separate configuration per profile for Dolphin, PCSX2 and Eden (user folder, memory cards).
+- Languages for PS2 and Wii (BIOS / SYSCONF settings), RetroArch core options per language.
+- BIOS and firmware checks before launching (PS1, PS2, Switch keys) with a clear message.
+- Wayland/X11 focus: bring the emulator to the front and Borne back afterwards on every desktop.
+- Test on the real machines (ChimeraOS, macOS) with each emulator.
 
 ### 3.2 Saves (P1)
 

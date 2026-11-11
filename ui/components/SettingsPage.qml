@@ -52,6 +52,27 @@ Item {
         return manual
     }
     readonly property var ss: settings && settings.screenscraper ? settings.screenscraper : null
+    readonly property var emus: settings && settings.emulators ? settings.emulators : null
+    function emuText(e) {
+        const inst = emus && emus.install && emus.install.id === e.id ? emus.install : null
+        if (inst && inst.running) return qsTr("Installing from Flathub…")
+        let t = e.found ? qsTr("Found: %1").arg(e.found)
+                        : e.user_provided ? qsTr("Not found: choose its program (Borne does not download it)")
+                        : qsTr("Not installed")
+        if (e.found && e.needs_cores)
+            t += " · " + (e.cores_for.length ? qsTr("cores for %1").arg(e.cores_for.join(", ")) : qsTr("no core installed yet: add them from RetroArch's online updater"))
+        else t += " · " + e.systems.join(", ")
+        if (inst && inst.error) t += " · " + qsTr("Installation failed: %1").arg(inst.error)
+        return t
+    }
+    function emuButtons(e) {
+        const b = []
+        const busy = !!(emus && emus.install && emus.install.running)
+        if (e.installable) b.push({ id: "emu-install:" + e.id, label: qsTr("Install"), primary: true, disabled: busy })
+        b.push({ id: "emu-path:" + e.id, label: e.user_path ? qsTr("Change program") : qsTr("Choose program"), primary: !e.found && !e.installable })
+        if (e.user_path) b.push({ id: "emu-forget:" + e.id, label: qsTr("Use the detected one") })
+        return b
+    }
     readonly property bool ssRunning: !!(ss && ss.state && ss.state.running)
     function ssAccountText() {
         if (ss && !ss.developer_access)
@@ -110,6 +131,7 @@ Item {
         { id: "games", name: qsTr("Games"), hint: qsTr("Install, cache") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable") },
         { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, trailers") },
+        { id: "emulators", name: qsTr("Emulators"), hint: emus ? qsTr("%1 of %2 found").arg(emus.emulators.filter(e => !!e.found).length).arg(emus.emulators.length) : "" },
         { id: "screenscraper", name: qsTr("Game images"), hint: ss && ss.configured ? ss.user : qsTr("ScreenScraper") },
         { id: "server", name: qsTr("Server"), hint: qsTr("RomM, profiles") },
         { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostic report") }
@@ -140,6 +162,7 @@ Item {
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
             { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Play the selected game's trailer, muted, after two seconds"), selected: trailers ? "on" : "off", items: onOff() }
         ]
+        if (id === "emulators") return emus ? emus.emulators.map(e => ({ id: "emu:" + e.id, kind: "buttons", title: e.name, desc: emuText(e), items: emuButtons(e) })) : []
         if (id === "screenscraper") return [
             { id: "ss-account", kind: "buttons", title: qsTr("ScreenScraper account"), desc: ssAccountText(),
               items: !(ss && ss.developer_access) ? []
@@ -198,6 +221,7 @@ Item {
         else if (r.id === "sounds") page.action("sounds", item.id === "on")
         else if (r.id === "home") page.action("home", item.id)
         else if (r.id === "background") page.action("background", item.id)
+        else if (r.id === "cases") page.action("cases", item.id)
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
         else if (r.id === "trailers") page.action("trailers", item.id === "on")
         else page.action(item.id, null)

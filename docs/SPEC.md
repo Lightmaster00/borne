@@ -396,6 +396,15 @@ The RomM account provides identity and remote scope; the local profile provides 
 
 ## 8. Centralized emulator management
 
+> Implemented (first pass): `core/src/emulators.rs` reads `core/src/emulators.json` (how to find
+> each emulator, the systems it runs, its command line with `{rom}`, `{core}`, `{config}`,
+> `{lang_dolphin}`). API: `GET /api/v1/emulators`, `POST /api/v1/emulators/<id>/path`,
+> `POST /api/v1/emulators/<id>/install` (Flathub, `--user`), `POST /api/v1/games/<id>/play`,
+> `GET /api/v1/session`, `POST /api/v1/session/stop`; a `session` event announces the start and
+> the end (with an error when the emulator stops within 8 s with a failure). The emulator runs in
+> its own process group, its output in `reports/emulator.log`; Flatpak emulators only see the
+> game's folder (read-only) and the profiles folder. Updates wait while a game runs.
+
 ### 8.1 Hybrid strategy
 
 | Emulator | Systems | Integration rules |

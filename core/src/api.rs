@@ -31,6 +31,12 @@
 //!   DELETE /api/v1/games/<rom_id>/link           removes it from the virtual mount
 //!   POST   /api/v1/games/<rom_id>/prefs  {version?, emu_language?}   active profile's choices
 //!   POST   /api/v1/games/<rom_id>/trailer         fetches the RomM trailer once (token, cache) → {path}
+//!   POST   /api/v1/games/<rom_id>/play            starts the game with its emulator → session
+//!   GET    /api/v1/session                        the running game, if any
+//!   POST   /api/v1/session/stop                   ends the running game
+//!   GET    /api/v1/emulators                      emulators: where found, systems, cores
+//!   POST   /api/v1/emulators/<id>/path {path}     the user's own program for an emulator ("" to forget)
+//!   POST   /api/v1/emulators/<id>/install         installs it from Flathub (Linux, Flatpak)
 //!   POST   /api/v1/games/<rom_id>/gameplay        gameplay video: ScreenScraper's, else the trailer → {path}
 //!   GET    /api/v1/settings                      install mode, virtual mount state
 //!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
@@ -222,7 +228,8 @@ fn install_mode(app: &Shared) -> String {
 
 fn settings(app: &Shared) -> Value {
     json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app),
-            "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app) })
+            "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app),
+            "emulators": crate::emulators::list(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -681,6 +688,27 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Err(e) => err(req, 404, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Post, ["api", "v1", "games", id, "play"]) => match id.parse::<i64>() {
+            Ok(rom_id) => match crate::emulators::play(app, rom_id) {
+                Ok(s) => ok(req, s),
+                Err(e) => err(req, 409, &e),
+            },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Get, ["api", "v1", "session"]) => ok(req, crate::emulators::session()),
+        (Method::Post, ["api", "v1", "session", "stop"]) => ok(req, json!({ "stopped": crate::emulators::stop() })),
+        (Method::Get, ["api", "v1", "emulators"]) => ok(req, crate::emulators::list(app)),
+        (Method::Post, ["api", "v1", "emulators", id, "path"]) => {
+            let b = body_json(&mut req);
+            match crate::emulators::set_path(app, id, b["path"].as_str().unwrap_or_default()) {
+                Ok(()) => ok(req, crate::emulators::list(app)),
+                Err(e) => err(req, 400, &e),
+            }
+        }
+        (Method::Post, ["api", "v1", "emulators", id, "install"]) => match crate::emulators::install(app, id) {
+            Ok(()) => ok(req, json!({ "started": true })),
+            Err(e) => err(req, 409, &e),
         },
         (Method::Post, ["api", "v1", "games", id, "gameplay"]) => match id.parse::<i64>() {
             Ok(rom_id) => match gameplay(app, rom_id) {

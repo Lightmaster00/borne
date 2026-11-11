@@ -460,10 +460,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Launching games arrives with stage 3 (emulators).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Open the game page</source>
         <translation type="unfinished" />
     </message>
@@ -933,6 +929,22 @@
     </message>
     <message>
         <source>User name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Full path of the emulator's program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Path</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is running in %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Select then Start: quit the game</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1623,6 +1635,58 @@
     </message>
     <message>
         <source>Gameplay video</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installing from Flathub…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Found: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not found: choose its program (Borne does not download it)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>cores for %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no core installed yet: add them from RetroArch's online updater</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installation failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Use the detected one</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulators</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 of %2 found</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -450,6 +450,9 @@ fn find_package(staging: &Path) -> Option<PathBuf> {
 
 /// Swaps the installed package for the downloaded one. The restart happens when the UI quits.
 pub fn apply(app: &Shared) -> Result<(), String> {
+    if crate::emulators::playing() {
+        return Err("a game is running: quit it first".into());
+    }
     let state = get_state();
     if state.state != "ready" {
         return Err("no update ready to install".into());
@@ -533,6 +536,7 @@ pub fn start(app: &Shared) {
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_secs(20));
         if auto_check(&app)
+            && !crate::emulators::playing()
             && matches!(
                 get_state().state.as_str(),
                 "idle" | "uptodate" | "error" | "available"

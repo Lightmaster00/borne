@@ -1,0 +1,77 @@
+{
+  "_comment": "Emulators Borne knows: how to find them, which systems they run and how to start a game. Read by core/src/emulators.rs. Placeholders in args: {rom}, {core}, {config}, {lang_dolphin}. The first emulator found for a system is used, unless the user picks another.",
+  "emulators": [
+    {
+      "id": "retroarch",
+      "name": "RetroArch",
+      "flatpak": "org.libretro.RetroArch",
+      "binaries": ["retroarch"],
+      "mac_apps": ["RetroArch.app/Contents/MacOS/RetroArch"],
+      "args": ["-f", "--appendconfig", "{config}", "-L", "{core}", "{rom}"],
+      "cores": {
+        "nes": ["mesen", "nestopia", "fceumm"],
+        "famicom": ["mesen", "nestopia", "fceumm"],
+        "snes": ["snes9x", "bsnes"],
+        "sfam": ["snes9x", "bsnes"],
+        "n64": ["mupen64plus_next", "parallel_n64"],
+        "gb": ["gambatte", "sameboy", "mgba"],
+        "gbc": ["gambatte", "sameboy", "mgba"],
+        "gba": ["mgba", "vba_next"],
+        "nds": ["melonds", "desmume"],
+        "genesis": ["genesis_plus_gx", "picodrive"],
+        "sms": ["genesis_plus_gx", "picodrive"],
+        "gamegear": ["genesis_plus_gx"],
+        "segacd": ["genesis_plus_gx", "picodrive"],
+        "sega32": ["picodrive"],
+        "saturn": ["mednafen_saturn", "yabasanshiro"],
+        "psx": ["swanstation", "mednafen_psx_hw", "pcsx_rearmed"],
+        "tg16": ["mednafen_pce_fast", "mednafen_pce"],
+        "atari2600": ["stella", "stella2014"],
+        "neogeo": ["fbneo"],
+        "arcade": ["fbneo", "mame"],
+        "ngp": ["mednafen_ngp"],
+        "ngpc": ["mednafen_ngp"],
+        "wonderswan": ["mednafen_wswan"],
+        "wonderswan-color": ["mednafen_wswan"],
+        "virtualboy": ["mednafen_vb"],
+        "lynx": ["handy", "mednafen_lynx"]
+      }
+    },
+    {
+      "id": "dolphin",
+      "name": "Dolphin",
+      "flatpak": "org.DolphinEmu.dolphin-emu",
+      "binaries": ["dolphin-emu"],
+      "mac_apps": ["Dolphin.app/Contents/MacOS/Dolphin"],
+      "args": ["-b", "-C", "Dolphin.Core.SelectedLanguage={lang_dolphin}", "-e", "{rom}"],
+      "systems": ["ngc", "wii"]
+    },
+    {
+      "id": "pcsx2",
+      "name": "PCSX2",
+      "flatpak": "net.pcsx2.PCSX2",
+      "binaries": ["pcsx2-qt", "pcsx2"],
+      "mac_apps": ["PCSX2.app/Contents/MacOS/PCSX2"],
+      "args": ["-batch", "-fullscreen", "--", "{rom}"],
+      "systems": ["ps2"]
+    },
+    {
+      "id": "duckstation",
+      "name": "DuckStation",
+      "flatpak": "org.duckstation.DuckStation",
+      "binaries": ["duckstation-qt"],
+      "mac_apps": ["DuckStation.app/Contents/MacOS/DuckStation"],
+      "args": ["-batch", "-fullscreen", "--", "{rom}"],
+      "systems": ["psx"]
+    },
+    {
+      "id": "eden",
+      "name": "Eden",
+      "binaries": ["eden", "citron"],
+      "mac_apps": ["Eden.app/Contents/MacOS/eden"],
+      "args": ["-f", "-g", "{rom}"],
+      "systems": ["switch"],
+      "user_provided": true
+    }
+  ]
+}

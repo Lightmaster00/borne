@@ -289,8 +289,39 @@ Window {
             reloadGame(); libReload.restart()
         })
     }
+    // Playing: the core starts the emulator; Borne steps aside (game mode) until it quits.
+    property var session: null
     function play(g) {
-        toasts.show(qsTr("Launching games arrives with stage 3 (emulators)."), "info")
+        if (session && session.running) return
+        sfx.play("accept")
+        api("POST", "/api/v1/games/" + g.rom_id + "/play", {}, function (r, err) {
+            if (err) { toasts.show(err, "error"); return }
+            onSession(r)
+        })
+    }
+    function onSession(s) {
+        session = s
+        if (s && s.running) { gameMode = true; quitChord.armed = false }
+        else {
+            gameMode = false
+            if (s && s.error) toasts.show(s.error, "error")
+            reloadGame(); libReload.restart()
+        }
+    }
+    // While a game runs, Select then Start (within half a second) quits it.
+    QtObject {
+        id: quitChord
+        property bool armed: false
+        property double at: 0
+        function feed(a) {
+            if (a === "select") { armed = true; at = Date.now(); return }
+            if (a === "start" && armed && Date.now() - at < 500) {
+                armed = false
+                api("POST", "/api/v1/session/stop", {}, function () {})
+                return
+            }
+            armed = false
+        }
     }
     function pageAction(id, payload) {
         const g = pageGame
@@ -380,6 +411,14 @@ Window {
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
         else if (id === "cases") prefs.cases3d = payload === "3d"
+        else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        else if (id.startsWith("emu-forget:")) api("POST", "/api/v1/emulators/" + id.substring(11) + "/path", { path: "" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        else if (id.startsWith("emu-path:")) {
+            const emu = id.substring(9)
+            nameEntry.open(qsTr("Full path of the emulator's program"), "", function (p) {
+                api("POST", "/api/v1/emulators/" + emu + "/path", { path: p }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+            }, qsTr("Path"), false, 600)
+        }
         else if (id === "ss-signin") ssSignIn()
         else if (id === "ss-signout") api("DELETE", "/api/v1/screenscraper", null, function () { loadSettings() })
         else if (id === "ss-fetch" || id === "ss-again") api("POST", "/api/v1/screenscraper/fetch", { again: id === "ss-again" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
@@ -586,6 +625,7 @@ Window {
         inputCountsChanged()
         lastInput = a + " via " + source
         if (source === "pad" && win.pointerActive) pointer.hide()
+        if (session && session.running) { quitChord.feed(a); return }
         if (bench.running && a !== "start") return
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
@@ -644,6 +684,8 @@ Window {
             else if (m.type === "stick") { win.padTurnX = m.x; win.padTurnY = m.y }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
+            else if (m.type === "session") win.onSession(m.session)
+            else if (m.type === "emulators") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
             else if (m.type === "screenscraper") { if (win.overlay === "settings") loadSettings() }
@@ -1135,8 +1177,9 @@ Window {
         property var callback: null
         property string placeholder: qsTr("Profile name")
         property bool secret: false
-        function open(t, initial, cb, hint, hidden) {
-            title = t; nameKb.text = initial; callback = cb
+        property int limit: 80
+        function open(t, initial, cb, hint, hidden, limit) {
+            title = t; nameKb.text = initial; callback = cb; nameEntry.limit = limit || 80
             placeholder = hint || qsTr("Profile name"); secret = !!hidden
             visible = true
         }
@@ -1152,7 +1195,7 @@ Window {
                 id: nameKb
                 width: implicitWidth; height: implicitHeight
                 theme: win.theme
-                maxLength: 80
+                maxLength: nameEntry.limit
                 placeholder: nameEntry.placeholder
                 secret: nameEntry.secret
                 onAccepted: (t) => {
@@ -1208,11 +1251,19 @@ Window {
 
     // Simulated game (game mode): used by the diagnostics VRAM test.
     Rectangle {
-        visible: win.overlay === "launch"
+        visible: win.overlay === "launch" || !!(win.session && win.session.running)
         anchors.fill: parent
         color: "black"
         z: 30
-        Text { anchors.centerIn: parent; text: qsTr("Game mode (test) — B to go back"); color: "#8b97ab"; font { family: theme.fontFamily; pixelSize: 16 } }
+        Text {
+            anchors.centerIn: parent
+            horizontalAlignment: Text.AlignHCenter
+            text: win.session && win.session.running
+                  ? qsTr("%1 is running in %2").arg(win.session.name).arg(win.session.emulator) + "\n" + qsTr("Select then Start: quit the game")
+                  : qsTr("Game mode (test) — B to go back")
+            color: "#8b97ab"; lineHeight: 1.4
+            font { family: theme.fontFamily; pixelSize: 16 }
+        }
     }
 
     GamePage {

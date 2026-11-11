@@ -456,10 +456,6 @@
         <translation>%1 supprimé de cet appareil.</translation>
     </message>
     <message>
-        <source>Launching games arrives with stage 3 (emulators).</source>
-        <translation>Le lancement des jeux arrive à l'étape 3 (émulateurs).</translation>
-    </message>
-    <message>
         <source>Cancel download</source>
         <translation>Annuler le téléchargement</translation>
     </message>
@@ -934,6 +930,22 @@
     <message>
         <source>User name</source>
         <translation>Nom d’utilisateur</translation>
+    </message>
+    <message>
+        <source>Full path of the emulator's program</source>
+        <translation>Chemin complet du programme de l'émulateur</translation>
+    </message>
+    <message>
+        <source>Path</source>
+        <translation>Chemin</translation>
+    </message>
+    <message>
+        <source>%1 is running in %2</source>
+        <translation>%1 tourne dans %2</translation>
+    </message>
+    <message>
+        <source>Select then Start: quit the game</source>
+        <translation>Select puis Start : quitter le jeu</translation>
     </message>
 </context>
 <context>
@@ -1624,6 +1636,58 @@
     <message>
         <source>Gameplay video</source>
         <translation>Vidéo de jeu</translation>
+    </message>
+    <message>
+        <source>Installing from Flathub…</source>
+        <translation>Installation depuis Flathub…</translation>
+    </message>
+    <message>
+        <source>Found: %1</source>
+        <translation>Trouvé : %1</translation>
+    </message>
+    <message>
+        <source>Not found: choose its program (Borne does not download it)</source>
+        <translation>Introuvable : choisis son programme (Borne ne le télécharge pas)</translation>
+    </message>
+    <message>
+        <source>Not installed</source>
+        <translation>Non installé</translation>
+    </message>
+    <message>
+        <source>cores for %1</source>
+        <translation>cœurs pour %1</translation>
+    </message>
+    <message>
+        <source>no core installed yet: add them from RetroArch's online updater</source>
+        <translation>aucun cœur installé : ajoute-les depuis la mise à jour en ligne de RetroArch</translation>
+    </message>
+    <message>
+        <source>Installation failed: %1</source>
+        <translation>Échec de l'installation : %1</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>Installer</translation>
+    </message>
+    <message>
+        <source>Change program</source>
+        <translation>Changer de programme</translation>
+    </message>
+    <message>
+        <source>Choose program</source>
+        <translation>Choisir le programme</translation>
+    </message>
+    <message>
+        <source>Use the detected one</source>
+        <translation>Utiliser celui détecté</translation>
+    </message>
+    <message>
+        <source>Emulators</source>
+        <translation>Émulateurs</translation>
+    </message>
+    <message>
+        <source>%1 of %2 found</source>
+        <translation>%1 sur %2 trouvés</translation>
     </message>
 </context>
 </TS>

@@ -16,6 +16,7 @@ mod catalog;
 mod db;
 mod diag;
 mod downloads;
+mod emulators;
 mod events;
 mod library;
 mod media;
