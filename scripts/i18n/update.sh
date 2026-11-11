@@ -12,7 +12,7 @@ status=0
 for json in "$HERE"/ui/i18n/*.json; do
   lang="$(basename "${json%.json}")"
   ts="$HERE/ui/i18n/borne_$lang.ts"
-  LC_ALL=C.UTF-8 "$LUPDATE" -silent -extensions qml -recursive "$HERE/ui" -ts "$ts" \
+  LC_ALL=C.UTF-8 "$LUPDATE" -silent -extensions qml,js -recursive "$HERE/ui" -ts "$ts" \
     -source-language en -target-language "$lang" -no-obsolete -locations none
   # English is the source language: only its plural forms need a translation.
   partial=""; [ "$lang" = "en" ] && partial="--partial"

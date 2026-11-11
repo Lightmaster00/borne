@@ -9,6 +9,7 @@ import QtWebSockets
 import QtMultimedia
 import Borne.Theme
 import "components"
+import "components/Display.js" as Display
 
 Window {
     id: win
@@ -355,6 +356,28 @@ Window {
             }, at)
         })
     }
+    // A game's own display settings: each line cycles through the values, then back to the one
+    // for all games.
+    function displayMenu(g, at) {
+        api("GET", "/api/v1/games/" + g.rom_id + "/display", null, function (d, err) {
+            if (err || !d) { toasts.show(err || "", "error"); return }
+            const items = Display.KEYS.map(k => ({ id: k, label: qsTr("%1: %2").arg(Display.title(k)).arg(Display.label(k, d.effective[k])),
+                detail: d.game[k] !== undefined ? qsTr("This game only") : qsTr("As for all games") }))
+            items.push({ id: "close", label: qsTr("Close") })
+            menu.open(qsTr("Display · %1").arg(g.name), qsTr("Applied the next time the game starts."), items, function (k) {
+                if (k === "close") return
+                const vals = Display.values(k)
+                const own = d.game[k]
+                // as for all games → the next value → … → the last value → as for all games
+                const next = own === undefined ? vals[(vals.indexOf(d.effective[k]) + 1) % vals.length]
+                           : vals.indexOf(own) + 1 < vals.length ? vals[vals.indexOf(own) + 1] : "default"
+                api("POST", "/api/v1/games/" + g.rom_id + "/display", { key: k, value: next }, function (r, e2) {
+                    if (e2) toasts.show(e2, "error")
+                    displayMenu(g, Display.KEYS.indexOf(k))
+                })
+            }, at)
+        })
+    }
     function pageAction(id, payload) {
         const g = pageGame
         if (id === "back") { sfx.play("back"); closeGame(); return }
@@ -366,6 +389,7 @@ Window {
         else if (id === "cancel") cancelDownload(g)
         else if (id === "play") play(g)
         else if (id === "cheats") cheatsMenu(g)
+        else if (id === "display") displayMenu(g)
         else if (id === "lang") {
             // A language picks the version launched for it.
             api("POST", "/api/v1/games/" + g.rom_id + "/prefs", { version: payload.version, emu_language: payload.code }, function (r, err) {
@@ -481,6 +505,7 @@ Window {
             const k = id.substring(10).split("/")
             api("DELETE", "/api/v1/system-files/" + k[0] + "/" + k[1], null, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         }
+        else if (id === "display") api("POST", "/api/v1/display", payload, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "console-emu") api("POST", "/api/v1/consoles/" + payload.slug + "/emulator", { engine: payload.engine }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })

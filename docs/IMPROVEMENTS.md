@@ -80,8 +80,9 @@ Next:
   Dolphin's own GameSettings), PCSX2 (`.pnach` by serial and CRC), standalone melonDS (`.mch`),
   Switch emulators (`load/<title id>/<name>/cheats`). Check on the real RetroArch that the `.cht`
   written under `cheat_database_path/<core name>/` is loaded with the game.
-- Settings per console and per game in Borne (rendering resolution, aspect ratio, shaders,
-  controller layout), written into each emulator's Borne-owned configuration.
+- Display settings: done for all games and per game (shape, resolution, pixels, integer
+  scaling, frame rate) for RetroArch, Dolphin, PCSX2, DuckStation. Still to do: the Switch, PS3,
+  PS4 and Xbox 360 emulators; per-console defaults; CRT shaders; controller layout.
 - PCSX2, DuckStation and melonDS in portable mode inside Borne's folder; controller mappings
   written by Borne for every emulator.
 - BIOS and firmware: taken from RomM's BIOS for the console and placed in Borne's `bios` folder;

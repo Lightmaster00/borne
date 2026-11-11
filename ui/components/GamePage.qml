@@ -53,8 +53,8 @@ Item {
         if (!g) return []
         if (busy) return [{ id: "cancel", label: qsTr("Cancel download"), primary: true }]
         if (g.dl_state === "failed") return [{ id: "download", label: qsTr("Retry download"), primary: true }, { id: "cancel", label: qsTr("Give up") }]
-        if (g.local_state === "local") return [{ id: "play", label: qsTr("Play"), primary: true }, { id: "cheats", label: qsTr("Cheats") }, { id: "delete", label: qsTr("Delete from this device") }]
-        if (g.linked) return [{ id: "play", label: qsTr("Play"), primary: true }, { id: "cheats", label: qsTr("Cheats") }, { id: "unlink", label: qsTr("Remove from the network mount") }]
+        if (g.local_state === "local") return [{ id: "play", label: qsTr("Play"), primary: true }, { id: "cheats", label: qsTr("Cheats") }, { id: "display", label: qsTr("Display") }, { id: "delete", label: qsTr("Delete from this device") }]
+        if (g.linked) return [{ id: "play", label: qsTr("Play"), primary: true }, { id: "cheats", label: qsTr("Cheats") }, { id: "display", label: qsTr("Display") }, { id: "unlink", label: qsTr("Remove from the network mount") }]
         if (g.local_state === "missing") return [{ id: "download", label: qsTr("Download again"), primary: true }, { id: "delete", label: qsTr("Forget the local copy") }]
         const dl = { id: "download", label: qsTr("Download · %1").arg(fmtSize(g.fs_size)) }
         const net = { id: "link", label: qsTr("Play from the network"), disabled: !streamAvailable }

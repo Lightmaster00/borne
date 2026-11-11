@@ -383,14 +383,18 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
         None => None,
     };
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+    let group = app.db.game(rom_id).map(|g| g.group_key).unwrap_or_default();
+    let display = crate::gamesettings::resolve(app, &group);
     let config = if p.id == "retroarch" {
-        let cheats = crate::cheats::retroarch_settings(app, rom_id, &e.name, rom);
+        let mut cheats = crate::cheats::retroarch_settings(app, rom_id, &e.name, rom);
+        cheats.extend(crate::gamesettings::retroarch(&display));
         Some(retroarch_config(app, &profile, system, cheats)?)
     } else {
         None
     };
     let userdir = app.paths.profiles().join(&profile).join(&p.id);
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
+    crate::gamesettings::apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &display)?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
     let mut args: Vec<String> = vec![];
     for a in &p.args {

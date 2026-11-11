@@ -20,6 +20,7 @@ mod downloads;
 mod emuinstall;
 mod emulators;
 mod events;
+mod gamesettings;
 mod library;
 mod media;
 mod logfile;

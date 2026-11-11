@@ -12,6 +12,73 @@
     </message>
 </context>
 <context>
+    <name>Display</name>
+    <message>
+        <source>Picture shape</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Rendering resolution</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pixels</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Whole-number scaling</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Frame rate on screen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The game's own shape, or forced</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>3D consoles (GameCube, Wii, PS1, PS2): sharper, needs a stronger computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>2D consoles: crisp pixels or smoothed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>2D consoles: even pixels, with borders</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shows the frame rate while playing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game's own</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fill the screen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Smoothed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sharp</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>DownloadsPanel</name>
     <message>
         <source>%1 GB</source>
@@ -322,6 +389,10 @@
     </message>
     <message>
         <source>Cheats</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Display</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1013,6 +1084,22 @@
     </message>
     <message>
         <source>Files RomM keeps for this console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game only</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As for all games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Display · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Applied the next time the game starts.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1791,6 +1878,14 @@
     </message>
     <message>
         <source>Stop</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Display</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>All games</source>
         <translation type="unfinished" />
     </message>
 </context>

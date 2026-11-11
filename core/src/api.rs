@@ -39,6 +39,8 @@
 //!   GET    /api/v1/system-files/<console>/romm    RomM's files that fit each item
 //!   POST   /api/v1/system-files/from-romm         takes every missing file RomM has without doubt
 //!   DELETE /api/v1/system-files/<console>/<item>  removes it
+//!   GET    /api/v1/display  POST {key, value}    display settings for all games
+//!   GET    /api/v1/games/<rom_id>/display  POST {key, value | "default"}   this game's own
 //!   GET    /api/v1/session                        the running game, if any
 //!   POST   /api/v1/session/stop                   ends the running game
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
@@ -239,7 +241,8 @@ fn settings(app: &Shared) -> Value {
     json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app),
             "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app),
             "emulators": crate::emulators::list(app),
-            "system_files": crate::systemfiles::status(app) })
+            "system_files": crate::systemfiles::status(app),
+            "display": crate::gamesettings::view(app, None) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -766,6 +769,28 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Delete, ["api", "v1", "system-files", console, item]) => match crate::systemfiles::remove(app, console, item) {
             Ok(()) => ok(req, crate::systemfiles::status(app)),
             Err(e) => err(req, 400, &e),
+        },
+        (Method::Get, ["api", "v1", "display"]) => ok(req, crate::gamesettings::view(app, None)),
+        (Method::Post, ["api", "v1", "display"]) => {
+            let b = body_json(&mut req);
+            match crate::gamesettings::set(app, None, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                Ok(()) => ok(req, crate::gamesettings::view(app, None)),
+                Err(e) => err(req, 400, &e),
+            }
+        }
+        (Method::Get, ["api", "v1", "games", id, "display"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => ok(req, crate::gamesettings::view(app, Some(&g.group_key))),
+            None => err(req, 404, "unknown game"),
+        },
+        (Method::Post, ["api", "v1", "games", id, "display"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => {
+                let b = body_json(&mut req);
+                match crate::gamesettings::set(app, Some(&g.group_key), b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                    Ok(()) => ok(req, crate::gamesettings::view(app, Some(&g.group_key))),
+                    Err(e) => err(req, 400, &e),
+                }
+            }
+            None => err(req, 404, "unknown game"),
         },
         (Method::Get, ["api", "v1", "session"]) => ok(req, crate::emulators::session()),
         (Method::Post, ["api", "v1", "session", "stop"]) => ok(req, json!({ "stopped": crate::emulators::stop() })),

@@ -12,6 +12,73 @@
     </message>
 </context>
 <context>
+    <name>Display</name>
+    <message>
+        <source>Picture shape</source>
+        <translation>Format de l'image</translation>
+    </message>
+    <message>
+        <source>Rendering resolution</source>
+        <translation>Résolution de rendu</translation>
+    </message>
+    <message>
+        <source>Pixels</source>
+        <translation>Pixels</translation>
+    </message>
+    <message>
+        <source>Whole-number scaling</source>
+        <translation>Mise à l'échelle entière</translation>
+    </message>
+    <message>
+        <source>Frame rate on screen</source>
+        <translation>Images par seconde à l'écran</translation>
+    </message>
+    <message>
+        <source>The game's own shape, or forced</source>
+        <translation>Le format du jeu, ou un format imposé</translation>
+    </message>
+    <message>
+        <source>3D consoles (GameCube, Wii, PS1, PS2): sharper, needs a stronger computer</source>
+        <translation>Consoles 3D (GameCube, Wii, PS1, PS2) : plus net, demande un ordinateur plus puissant</translation>
+    </message>
+    <message>
+        <source>2D consoles: crisp pixels or smoothed</source>
+        <translation>Consoles 2D : pixels nets ou lissés</translation>
+    </message>
+    <message>
+        <source>2D consoles: even pixels, with borders</source>
+        <translation>Consoles 2D : pixels réguliers, avec des bordures</translation>
+    </message>
+    <message>
+        <source>Shows the frame rate while playing</source>
+        <translation>Affiche le nombre d'images par seconde en jeu</translation>
+    </message>
+    <message>
+        <source>Game's own</source>
+        <translation>Celui du jeu</translation>
+    </message>
+    <message>
+        <source>Fill the screen</source>
+        <translation>Plein écran étiré</translation>
+    </message>
+    <message>
+        <source>Smoothed</source>
+        <translation>Lissés</translation>
+    </message>
+    <message>
+        <source>Sharp</source>
+        <translation>Nets</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Oui</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Non</translation>
+    </message>
+</context>
+<context>
     <name>DownloadsPanel</name>
     <message>
         <source>%1 GB</source>
@@ -323,6 +390,10 @@
     <message>
         <source>Cheats</source>
         <translation>Cheats</translation>
+    </message>
+    <message>
+        <source>Display</source>
+        <translation>Affichage</translation>
     </message>
 </context>
 <context>
@@ -1014,6 +1085,22 @@
     <message>
         <source>Files RomM keeps for this console</source>
         <translation>Fichiers que RomM a pour cette console</translation>
+    </message>
+    <message>
+        <source>This game only</source>
+        <translation>Pour ce jeu seulement</translation>
+    </message>
+    <message>
+        <source>As for all games</source>
+        <translation>Comme pour tous les jeux</translation>
+    </message>
+    <message>
+        <source>Display · %1</source>
+        <translation>Affichage · %1</translation>
+    </message>
+    <message>
+        <source>Applied the next time the game starts.</source>
+        <translation>Appliqué au prochain lancement du jeu.</translation>
     </message>
 </context>
 <context>
@@ -1792,6 +1879,14 @@
     <message>
         <source>Stop</source>
         <translation>Arrêter</translation>
+    </message>
+    <message>
+        <source>Display</source>
+        <translation>Affichage</translation>
+    </message>
+    <message>
+        <source>All games</source>
+        <translation>Tous les jeux</translation>
     </message>
 </context>
 </TS>

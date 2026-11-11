@@ -2,6 +2,7 @@
 // Gamepad: up/down moves in the focused column, right enters a section, left goes back to the
 // sections, left/right inside a row of choices, A to choose, B to go back. Mouse: all clickable.
 import QtQuick
+import "Display.js" as Display
 
 Item {
     id: page
@@ -174,10 +175,17 @@ Item {
         if (!rows.length) rows.push({ id: "sf-none", kind: "buttons", title: qsTr("Nothing needed"), desc: qsTr("No console of the library needs a BIOS, keys or firmware."), items: [] })
         return rows
     }
+    readonly property var display: settings && settings.display ? settings.display.global : null
+    function displayRows() {
+        if (!display) return []
+        return Display.KEYS.map(k => ({ id: "disp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k),
+            selected: display[k], items: Display.values(k).map(v => ({ id: v, label: Display.label(k, v) })) }))
+    }
     readonly property var sections: [
         { id: "games", name: qsTr("Games"), hint: qsTr("Install, cache") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable") },
         { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, trailers") },
+        { id: "display", name: qsTr("Display"), hint: qsTr("All games") },
         { id: "emulators", name: qsTr("Emulators"), hint: qsTr("One per console") },
         { id: "systemfiles", name: qsTr("System files"), hint: qsTr("BIOS, keys, firmware") },
         { id: "screenscraper", name: qsTr("Game images"), hint: ss && ss.configured ? ss.user : qsTr("ScreenScraper") },
@@ -204,6 +212,7 @@ Item {
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
             { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Videos of the games, muted: behind the library and on the game page"), selected: trailers ? "on" : "off", items: onOff() }
         ]
+        if (id === "display") return displayRows()
         if (id === "emulators") return emulatorRows()
         if (id === "systemfiles") return sysFileRows()
         if (id === "screenscraper") return [
@@ -261,6 +270,7 @@ Item {
         else if (r.id === "channel") page.action("channel", item.id)
         else if (r.id === "auto") page.action("auto", item.id === "on")
         else if (r.id === "sounds") page.action("sounds", item.id === "on")
+        else if (r.id.startsWith("disp:")) page.action("display", { key: r.id.substring(5), value: item.id })
         else if (r.id.startsWith("console:")) page.action("console-emu", { slug: r.id.substring(8), engine: item.id })
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
