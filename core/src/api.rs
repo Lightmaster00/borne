@@ -31,6 +31,7 @@
 //!   DELETE /api/v1/games/<rom_id>/link           removes it from the virtual mount
 //!   POST   /api/v1/games/<rom_id>/prefs  {version?, emu_language?}   active profile's choices
 //!   POST   /api/v1/games/<rom_id>/trailer         fetches the RomM trailer once (token, cache) → {path}
+//!   POST   /api/v1/games/<rom_id>/gameplay        gameplay video: ScreenScraper's, else the trailer → {path}
 //!   GET    /api/v1/settings                      install mode, virtual mount state
 //!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
 //! Updates
@@ -389,6 +390,20 @@ fn trailer(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// A video of the game being played, for the library's video background: ScreenScraper's
+/// gameplay capture when there is one, else RomM's trailer. Kept on disk like the trailers.
+fn gameplay(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
+    let g = app.db.game(rom_id).ok_or("unknown game")?;
+    let dir = app.paths.videos();
+    match crate::screenscraper::video(app, &g.group_key, &dir) {
+        Ok(p) => {
+            prune_videos(&dir, 2 * 1024 * 1024 * 1024);
+            Ok(p)
+        }
+        Err(ss) => trailer(app, rom_id).map_err(|t| format!("{ss}; {t}")),
+    }
+}
+
 fn prune_videos(dir: &std::path::Path, max: u64) {
     let mut files: Vec<(std::time::SystemTime, u64, PathBuf)> = std::fs::read_dir(dir)
         .into_iter()
@@ -662,6 +677,13 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Post, ["api", "v1", "games", id, "trailer"]) => match id.parse::<i64>() {
             Ok(rom_id) => match trailer(app, rom_id) {
+                Ok(path) => ok(req, json!({ "path": path })),
+                Err(e) => err(req, 404, &e),
+            },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Post, ["api", "v1", "games", id, "gameplay"]) => match id.parse::<i64>() {
+            Ok(rom_id) => match gameplay(app, rom_id) {
                 Ok(path) => ok(req, json!({ "path": path })),
                 Err(e) => err(req, 404, &e),
             },

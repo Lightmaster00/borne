@@ -234,6 +234,31 @@ Window {
         })
     }
     property int pageTrailerFor: -1
+    // Video background: once the selection rests, the core fetches a video of the game being
+    // played (ScreenScraper's gameplay capture, else RomM's trailer) and the library plays it.
+    property string bgVideo: ""
+    property int bgVideoFor: -1
+    readonly property bool bgVideoWanted: prefs.backgroundStyle === "video" && win.trailers
+                                          && win.screen === "library" && win.overlay === ""
+    Timer {
+        id: bgVideoDelay
+        interval: 900
+        onTriggered: {
+            const g = win.focusedGame
+            if (!g || !win.bgVideoWanted || g.rom_id === win.bgVideoFor) return
+            win.bgVideoFor = g.rom_id
+            win.bgVideo = ""
+            api("POST", "/api/v1/games/" + g.rom_id + "/gameplay", {}, function (r) {
+                if (win.bgVideoFor === g.rom_id && r && r.path) win.bgVideo = fileUrl(r.path, 0)
+            })
+        }
+    }
+    onFocusedGameChanged: {
+        if (focusedGame && focusedGame.rom_id === bgVideoFor) return
+        bgVideo = ""; bgVideoFor = -1
+        if (bgVideoWanted) bgVideoDelay.restart()
+    }
+    onBgVideoWantedChanged: if (bgVideoWanted && bgVideoFor === -1) bgVideoDelay.restart()
     // Studios, series and screenshots (RomM).
     property var pageFacts: null
     function loadFacts(romId) {
@@ -789,6 +814,7 @@ Window {
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.focusedGame
             trailers: win.trailers && win.screen === "library" && win.overlay === ""
+            videoUrl: win.bgVideo
             paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible
             scrims: win.overlay === ""
             dim: win.overlay === "settings" || win.overlay === "diag" ? 0.5 : win.overlay === "game" ? 0.55 : 0
@@ -1383,7 +1409,8 @@ Window {
         property bool sounds: true
         property bool trailers: true
         property string homeStyle: "boxes"
-        property string backgroundStyle: "pixels"
+        property string backgroundStyle: "video"
+        property int backgroundRev: 0      // 1: the gameplay video became the default
         property bool cases3d: true
         property int notifiedBuild: 0
     }
@@ -1396,6 +1423,7 @@ Window {
             coreVersion = h.core || ""
             // Safe mode: no video and no sound, the likeliest causes of repeated crashes.
             if (safeMode) { prefs.trailers = false; prefs.sounds = false }
+            if (prefs.backgroundRev < 1) { if (prefs.backgroundStyle === "pixels") prefs.backgroundStyle = "video"; prefs.backgroundRev = 1 }
             refreshStatus(function (s) {
                 if (!s) { fatal = qsTr("Borne core unreachable"); return }
                 if (!s.server_url) showServer()

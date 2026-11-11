@@ -1,7 +1,10 @@
-// Background, in one of five styles (Settings → Interface → Background):
+// Background, in one of six styles (Settings → Interface → Background):
+//  "video"   — a video of the selected game being played (ScreenScraper's gameplay capture, else
+//            RomM's trailer), muted, darkened and looping once the selection rests, over the pixel
+//            mosaic while it loads or when the game has none (the default);
 //  "pixels"  — Borne's own: the selected game's cover rebuilt as a wall of large dark pixels, which
 //            re-colour one by one when the selection changes, with a slow light wave running across
-//            them and a dark glossy floor under the cases (the default);
+//            them and a dark glossy floor under the cases;
 //  "ribbons" — the console's own color, lit from above, with slow ribbons of light across it and
 //            a glossy floor under the cases (the default);
 //  "game"  — the selected game's artwork (RomM fanart, else a screenshot, else the cover), sharp
@@ -12,6 +15,7 @@
 import QtQuick
 import QtQuick.Shapes
 import QtQuick.Particles
+import QtMultimedia
 import "Cases.js" as Cases
 
 Item {
@@ -21,7 +25,8 @@ Item {
     property string style: "pixels"
     property color tint: Cases.tint(game ? game.platform_slug : "")
     Behavior on tint { ColorAnimation { duration: 700 } }
-    property bool trailers: true      // kept for callers; no video plays behind the library
+    property bool trailers: true      // videos may play (the library is on top, trailers allowed)
+    property string videoUrl: ""      // "video" style: local file of the game being played
     property bool paused: false
     property real dim: 0              // extra darkening for pages drawn over it
     property bool scrims: true
@@ -44,7 +49,7 @@ Item {
     Item {
         id: mosaic
         anchors.fill: parent
-        visible: amb.style === "pixels"
+        visible: amb.style === "pixels" || (amb.style === "video" && gameplay.opacity < 1)
         readonly property int tile: 56
         readonly property int cols: Math.ceil(width / tile)
         readonly property int rows: Math.ceil(height / tile)
@@ -426,6 +431,58 @@ Item {
             width: 3; height: 3; radius: 1.5
             color: Qt.lighter(amb.accent, 1.4)
             opacity: 0.35
+        }
+    }
+
+    // ---------- "video": the game being played ----------
+    Item {
+        id: gameplay
+        anchors.fill: parent
+        readonly property bool live: amb.style === "video" && amb.trailers && amb.visible && !amb.paused
+                                     && amb.videoUrl !== ""
+        readonly property bool shown: live && gpPlayer.playbackState === MediaPlayer.PlayingState
+                                      && amb.framesDecoded > 0
+        visible: opacity > 0
+        opacity: shown ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 700; easing.type: Easing.InOutQuad } }
+        onLiveChanged: sync()
+        Connections { target: amb; function onVideoUrlChanged() { gameplay.sync() } }
+        function sync() {
+            if (live) {
+                if (gpPlayer.source.toString() !== amb.videoUrl) {
+                    amb.framesDecoded = 0
+                    gpPlayer.source = amb.videoUrl
+                }
+                gpPlayer.play()
+            } else {
+                gpPlayer.stop()
+                if (amb.videoUrl === "") gpPlayer.source = ""
+            }
+        }
+        MediaPlayer {
+            id: gpPlayer
+            loops: MediaPlayer.Infinite
+            audioOutput: null
+            videoOutput: gpOut
+        }
+        VideoOutput {
+            id: gpOut
+            anchors.fill: parent
+            fillMode: VideoOutput.PreserveAspectCrop
+        }
+        Connections {
+            target: gpOut.videoSink
+            function onVideoFrameChanged() { if (amb.framesDecoded < 3) amb.framesDecoded++ }
+        }
+        // Dark enough for the cases and the text to stay the subject.
+        Rectangle { anchors.fill: parent; color: "#07080a"; opacity: 0.5 }
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: parent.height * 0.45
+            gradient: Gradient {
+                GradientStop { position: 0; color: "transparent" }
+                GradientStop { position: 1; color: Qt.rgba(0.027, 0.031, 0.039, 0.92) }
+            }
         }
     }
 

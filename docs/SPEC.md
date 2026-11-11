@@ -222,7 +222,15 @@ application, client of the Rust core's local API. ES-DE is not used, neither as 
 Since v1.7 Borne has one look, "Halo", instead of interchangeable themes: several themes spread the
 effort thin, and a user QML theme is code that runs with the UI's rights.
 
-- Background, Borne's identity by default: the selected game's cover decoded at one pixel per 56-unit
+- Background by default: a video of the selected game being played. When the selection rests
+  (0.9 s), `POST /api/v1/games/{id}/gameplay` returns a local file: ScreenScraper's gameplay capture
+  (`video-normalized`, else `video`; its address is noted without credentials during the media fetch
+  and downloaded on first use, credentials added only for that request, ScreenScraper hosts only),
+  else RomM's trailer. Stored in `media/videos` with the trailers (pruned beyond 2 GB). Played muted,
+  looping, cropped to fill, darkened by half with a deeper bottom for the text; it fades in on its
+  first frames and stays off with trailers off (and in safe mode), on the game page and in menus.
+  Until it plays, or when the game has no video, the pixel mosaic below shows.
+- Pixel mosaic, Borne's identity: the selected game's cover decoded at one pixel per 56-unit
   tile and drawn unsmoothed as a wall of large dark pixels, re-colouring tile by tile (each tile flashes
   at its own moment) when the selection settles, a slow diagonal light wave across it, a dark glossy
   floor under the cases. Other styles (Settings: the game's art — RomM fanart, else a screenshot, else the

@@ -47,8 +47,9 @@ Since then:
   retail case (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
-  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are real 3D solids (Qt Quick 3D) lit in real time with soft shadows, turnable with the right stick or Z Q S D; a lighter flat drawing is used when 3D is unavailable or chosen in Settings. Four backgrounds (Settings → Interface → Background):
-  the selected game's cover rebuilt as a wall of large pixels that re-colour tile by tile (default),
+  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are real 3D solids (Qt Quick 3D) lit in real time with soft shadows, turnable with the right stick or Z Q S D; a lighter flat drawing is used when 3D is unavailable or chosen in Settings. Backgrounds (Settings → Interface → Background):
+  a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer;
+  default), the selected game's cover rebuilt as a wall of large pixels that re-colour tile by tile,
   the console's own color with slow ribbons of light, the selected game's art, a dim game room with a neon and a shelf, or moving light. An arcade room is
   offered as an alternative home. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The accent color is taken from each game's cover; type is Manrope.

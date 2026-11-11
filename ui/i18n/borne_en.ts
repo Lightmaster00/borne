@@ -1621,5 +1621,9 @@
         <source>Flat</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Gameplay video</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 </TS>

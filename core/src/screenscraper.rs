@@ -254,6 +254,62 @@ fn download(url: &str) -> Result<Vec<u8>, String> {
     resp.body_mut().with_config().limit(30 << 20).read_to_vec().map_err(|_| "image download interrupted".to_string())
 }
 
+/// The game's gameplay video from ScreenScraper, downloaded once into `dir` (the credentials are
+/// added back to the noted address only for the request). Err when the game has none.
+pub fn video(app: &Shared, group_key: &str, dir: &std::path::Path) -> Result<std::path::PathBuf, String> {
+    let m = app.db.media(group_key, "video").ok_or("no gameplay video known for this game")?;
+    if !m.path.is_empty() && std::path::Path::new(&m.path).is_file() {
+        return Ok(m.path.into());
+    }
+    let noted = m.stamp.strip_prefix("ss|").ok_or("no gameplay video on ScreenScraper for this game")?;
+    let c = credentials(app).ok_or("no ScreenScraper account")?;
+    let (dev_id, dev_password) = developer().ok_or("this build of Borne has no ScreenScraper developer access")?;
+    // Only ScreenScraper's own media addresses are asked, whatever the database holds.
+    let host_ok = noted
+        .strip_prefix("https://")
+        .and_then(|r| r.split('/').next())
+        .map(|h| h == "screenscraper.fr" || h.ends_with(".screenscraper.fr"))
+        .unwrap_or(false);
+    if !host_ok && std::env::var("BORNE_SCREENSCRAPER_API").is_err() {
+        return Err("unexpected video address".into());
+    }
+    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let name: String = group_key.chars().map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' }).take(80).collect();
+    let path = dir.join(format!("ss-{name}.mp4"));
+    let tmp = dir.join(format!("ss-{name}.part"));
+    let mut resp = agent()
+        .get(noted)
+        .query("devid", &dev_id)
+        .query("devpassword", &dev_password)
+        .query("softname", "borne")
+        .query("ssid", &c.user)
+        .query("sspassword", &c.password)
+        .config()
+        .timeout_recv_body(Some(Duration::from_secs(180)))
+        .build()
+        .call()
+        .map_err(|_| "video unreachable (network)".to_string())?;
+    if resp.status().as_u16() != 200 {
+        return Err(format!("video answered {}", resp.status().as_u16()));
+    }
+    let ctype = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+    let bytes = resp
+        .body_mut()
+        .with_config()
+        .limit(150 << 20)
+        .read_to_vec()
+        .map_err(|_| "video download interrupted".to_string())?;
+    // ScreenScraper answers a text message (not an error code) when the media is missing.
+    if bytes.len() < 4096 || ctype.starts_with("text") || ctype.contains("json") {
+        app.db.set_media(group_key, "video", "", 0, 0, "none");
+        return Err("no gameplay video on ScreenScraper for this game".into());
+    }
+    std::fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    app.db.set_media(group_key, "video", &path.to_string_lossy(), 0, 0, &m.stamp);
+    Ok(path)
+}
+
 /// The game's ScreenScraper record, matched by id, else by hashes, name and size.
 fn lookup(app: &Shared, c: &Credentials, versions: &[crate::db::GameRow]) -> Result<Option<Value>, String> {
     let systems: Value = app
@@ -339,6 +395,14 @@ fn fetch_game(app: &Shared, group_key: &str, rec: &Value) -> usize {
             Err(e) => app.db.log("screenscraper", &format!("{kind} of {group_key}: {e}")),
         }
     }
+    // The gameplay video is only noted here (redacted address): it is downloaded the first
+    // time the game is shown with the video background, see `video`.
+    let video = pick(&medias, &["video-normalized", "video"], &regions)
+        .map(|u| format!("ss|{}", redact(u)))
+        .unwrap_or_else(|| "none".into());
+    if app.db.media(group_key, "video").map(|m| m.stamp != video).unwrap_or(true) {
+        app.db.set_media(group_key, "video", "", 0, 0, &video);
+    }
     // No spine scan: cut it from the unfolded case texture (back | spine | front).
     let has_side = app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|")).unwrap_or(false);
     if !has_side {
@@ -377,7 +441,14 @@ pub fn start(app: &Shared, again: bool) {
                 .db
                 .group_keys()
                 .into_iter()
-                .filter(|k| again || app.db.media(k, "ss").is_none())
+                .filter(|k| {
+                    again
+                        || match app.db.media(k, "ss") {
+                            None => true,
+                            // Found before gameplay videos were noted: asked once more.
+                            Some(m) => m.stamp.starts_with("found") && app.db.media(k, "video").is_none(),
+                        }
+                })
                 .collect();
             status_set(&app, |s| {
                 s.running = true;

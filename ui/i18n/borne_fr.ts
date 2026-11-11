@@ -1621,5 +1621,9 @@
         <source>Flat</source>
         <translation>Plat</translation>
     </message>
+    <message>
+        <source>Gameplay video</source>
+        <translation>Vidéo de jeu</translation>
+    </message>
 </context>
 </TS>

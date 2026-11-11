@@ -11,7 +11,7 @@ Item {
     property bool sounds: true
     property bool trailers: true
     property string homeStyle: "boxes"
-    property string backgroundStyle: "pixels"
+    property string backgroundStyle: "video"
     property bool cases3d: true
     property bool pointerActive: false
     property string version: ""
@@ -134,7 +134,7 @@ Item {
             { id: "home", kind: "chips", title: qsTr("Home"), desc: qsTr("How the library is shown"), selected: homeStyle,
               items: [{ id: "boxes", label: qsTr("Game boxes") }, { id: "arcade", label: qsTr("Arcade room") }] },
             { id: "background", kind: "chips", title: qsTr("Background"), desc: qsTr("Behind the game boxes"), selected: backgroundStyle,
-              items: [{ id: "pixels", label: qsTr("Pixel mosaic") }, { id: "ribbons", label: qsTr("Console color") }, { id: "game", label: qsTr("The game's art") }, { id: "room", label: qsTr("Game room") }, { id: "light", label: qsTr("Moving light") }] },
+              items: [{ id: "video", label: qsTr("Gameplay video") }, { id: "pixels", label: qsTr("Pixel mosaic") }, { id: "ribbons", label: qsTr("Console color") }, { id: "game", label: qsTr("The game's art") }, { id: "room", label: qsTr("Game room") }, { id: "light", label: qsTr("Moving light") }] },
             { id: "cases", kind: "chips", title: qsTr("Game cases"), desc: qsTr("3D cases lit in real time, or a lighter flat drawing for slow machines"), selected: cases3d ? "3d" : "2d",
               items: [{ id: "3d", label: qsTr("3D") }, { id: "2d", label: qsTr("Flat") }] },
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },

@@ -277,6 +277,11 @@ try:
         check(s == 409 and "developer access" in e.get("error", ""), "ScreenScraper refused plainly without developer access")
     s, _ = call(api, "POST", "/api/v1/screenscraper", {"user": "", "password": ""})
     check(s == 400, "ScreenScraper account needs a user and a password")
+    s, e = call(api, "POST", "/api/v1/games/999999/gameplay", {})
+    check(s == 404, "gameplay video of an unknown game refused")
+    s, e = call(api, "POST", f"/api/v1/games/{rid}/gameplay", {})
+    check((s == 200 and e["path"].endswith((".mp4", ".webm", ".mkv", ".m4v"))) or (s == 404 and "trailer" in e.get("error", "")),
+          "gameplay video served (ScreenScraper, else the trailer) or reported missing")
     s, _ = call(api, "POST", "/api/v1/debug/stick?x=1&y=0")
     check(s != 200, "debug input closed outside tests")
     s, _ = call(api, "GET", f"/api/v1/games/{rid}/screenshots/9")
