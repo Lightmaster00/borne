@@ -50,6 +50,24 @@ Item {
         if (st === "error") return qsTr("Update failed: %1").arg(updState.error || "")
         return manual
     }
+    readonly property var ss: settings && settings.screenscraper ? settings.screenscraper : null
+    readonly property bool ssRunning: !!(ss && ss.state && ss.state.running)
+    function ssAccountText() {
+        if (!ss || !ss.configured)
+            return qsTr("Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. It needs your ScreenScraper account and developer credentials (requested from ScreenScraper on its forum).")
+        const st = ss.state || {}
+        let t = qsTr("Connected as %1").arg(ss.user)
+        if (st.max_requests) t += " · " + qsTr("%1 / %2 requests today").arg(st.requests_today || 0).arg(st.max_requests)
+        return t
+    }
+    function ssFetchText() {
+        const st = ss && ss.state ? ss.state : null
+        if (!st) return ""
+        if (st.running) return qsTr("Asking ScreenScraper… %1 / %2 games, %3 found").arg(st.done).arg(st.total).arg(st.found)
+        if (st.error) return qsTr("Stopped: %1").arg(st.error)
+        if (ss.asked) return qsTr("%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.").arg(ss.found).arg(ss.asked).arg(Math.max(0, ss.games - ss.asked))
+        return qsTr("Fetched after each sync for new games.")
+    }
     // Case scans, cartridges and logos on this device, against the games of the library.
     function mediaText() {
         const m = settings && settings.media ? settings.media : null
@@ -89,6 +107,7 @@ Item {
         { id: "games", name: qsTr("Games"), hint: qsTr("Install, cache") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable") },
         { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, trailers") },
+        { id: "screenscraper", name: qsTr("ScreenScraper"), hint: ss && ss.configured ? ss.user : qsTr("Not connected") },
         { id: "server", name: qsTr("Server"), hint: qsTr("RomM, profiles") },
         { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostic report") }
     ]
@@ -115,6 +134,14 @@ Item {
               items: [{ id: "ribbons", label: qsTr("Console color") }, { id: "game", label: qsTr("The game's art") }, { id: "room", label: qsTr("Game room") }, { id: "light", label: qsTr("Moving light") }] },
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
             { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Play the selected game's trailer, muted, after two seconds"), selected: trailers ? "on" : "off", items: onOff() }
+        ]
+        if (id === "screenscraper") return [
+            { id: "ss-account", kind: "buttons", title: qsTr("Account"), desc: ssAccountText(),
+              items: ss && ss.configured ? [{ id: "ss-signin", label: qsTr("Change") }, { id: "ss-signout", label: qsTr("Sign out") }]
+                                         : [{ id: "ss-signin", label: qsTr("Connect"), primary: true }] },
+            { id: "ss-fetch", kind: "buttons", title: qsTr("Case scans, cartridges, logos"), desc: ssFetchText(),
+              items: [{ id: "ss-fetch", label: qsTr("Fetch missing"), primary: true, disabled: !(ss && ss.configured) || ssRunning },
+                      { id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) || ssRunning }] }
         ]
         if (id === "server") return [
             { id: "media", kind: "buttons", title: qsTr("Game media"), desc: mediaText(),

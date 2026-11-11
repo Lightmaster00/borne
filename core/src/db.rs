@@ -714,6 +714,16 @@ impl Db {
         let _ = c.execute("DELETE FROM media", []);
         paths
     }
+    /// Games asked to ScreenScraper, and found there.
+    pub fn ss_counts(&self) -> (i64, i64) {
+        self.c()
+            .query_row(
+                "SELECT COUNT(*), COALESCE(SUM(stamp LIKE 'found|%'), 0) FROM media WHERE kind = 'ss'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap_or((0, 0))
+    }
     pub fn group_keys(&self) -> Vec<String> {
         let c = self.c();
         let mut st = c.prepare("SELECT DISTINCT group_key FROM games").unwrap();

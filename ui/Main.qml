@@ -114,7 +114,8 @@ Window {
             art_kinds: "," + (g.art_kinds || []).join(",") + ",",
             // Pixel sizes of the case scans: the box is shaped before the images load.
             front_ar: g.media_sizes && g.media_sizes.front ? g.media_sizes.front[0] / g.media_sizes.front[1] : 0,
-            side_ar: g.media_sizes && g.media_sizes.side ? g.media_sizes.side[0] / g.media_sizes.side[1] : 0
+            side_ar: g.media_sizes && g.media_sizes.side ? g.media_sizes.side[0] / g.media_sizes.side[1] : 0,
+            cover_ar: g.cover_ar || 0
         }
     }
     function loadPlatforms() {
@@ -291,6 +292,27 @@ Window {
             })
         }
     }
+    // ScreenScraper account: four entries in turn, then the core checks them with ScreenScraper.
+    function ssSignIn() {
+        const c = {}
+        nameEntry.open(qsTr("ScreenScraper user name"), "", function (u) {
+            c.user = u
+            nameEntry.open(qsTr("ScreenScraper password"), "", function (p) {
+                c.password = p
+                nameEntry.open(qsTr("Developer id (ScreenScraper)"), "", function (d) {
+                    c.dev_id = d
+                    nameEntry.open(qsTr("Developer password (ScreenScraper)"), "", function (dp) {
+                        c.dev_password = dp
+                        api("POST", "/api/v1/screenscraper", c, function (r, err) {
+                            if (err) toasts.show(qsTr("ScreenScraper: %1").arg(err), "error")
+                            else toasts.show(qsTr("ScreenScraper connected. Fetching the games' media…"), "info")
+                            loadSettings()
+                        })
+                    }, qsTr("Developer password"), true)
+                }, qsTr("Developer id"))
+            }, qsTr("Password"), true)
+        }, qsTr("User name"))
+    }
     // Quick menu (Y) on the library: the most common actions without opening the page.
     function gameMenu() {
         const g = focusedGame
@@ -341,6 +363,9 @@ Window {
         else if (id === "trailers") prefs.trailers = payload
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
+        else if (id === "ss-signin") ssSignIn()
+        else if (id === "ss-signout") api("DELETE", "/api/v1/screenscraper", null, function () { loadSettings() })
+        else if (id === "ss-fetch" || id === "ss-again") api("POST", "/api/v1/screenscraper/fetch", { again: id === "ss-again" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "media-refresh") api("POST", "/api/v1/media/refresh", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Fetching the game media again."), "info"); refreshStatus() } })
         else if (id === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Sync started."), "info"); refreshStatus() } })
         else if (id === "server") { overlay = ""; showServer() }
@@ -583,6 +608,7 @@ Window {
             else if (m.type === "library") libReload.restart()
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
+            else if (m.type === "screenscraper") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "sync") {
                 if (win.status) { const s = win.status; s.sync = m.sync; win.status = s; win.statusChanged() }
                 if (!m.sync.running && m.sync.error) toasts.show(qsTr("Sync: %1").arg(m.sync.error), "error")
@@ -1054,7 +1080,13 @@ Window {
         z: 70
         property string title: ""
         property var callback: null
-        function open(t, initial, cb) { title = t; nameKb.text = initial; callback = cb; visible = true }
+        property string placeholder: qsTr("Profile name")
+        property bool secret: false
+        function open(t, initial, cb, hint, hidden) {
+            title = t; nameKb.text = initial; callback = cb
+            placeholder = hint || qsTr("Profile name"); secret = !!hidden
+            visible = true
+        }
         function handle(a) { nameKb.handle(a) }
         function typeText(t) { nameKb.typeText(t) }
         function backspace() { nameKb.backspace() }
@@ -1067,8 +1099,9 @@ Window {
                 id: nameKb
                 width: implicitWidth; height: implicitHeight
                 theme: win.theme
-                maxLength: 40
-                placeholder: qsTr("Profile name")
+                maxLength: 80
+                placeholder: nameEntry.placeholder
+                secret: nameEntry.secret
                 onAccepted: (t) => {
                     const name = t.trim()
                     if (!name) return

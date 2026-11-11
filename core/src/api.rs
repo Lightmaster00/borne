@@ -37,6 +37,10 @@
 //!   GET    /api/v1/update                        current build, channel, state of the update
 //!   GET    /api/v1/media/report                  per console: games with case scans, cartridge, logo
 //!   POST   /api/v1/media/refresh                 forgets the media files and fetches them again
+//!   GET    /api/v1/screenscraper                 Borne's ScreenScraper account and fetch progress
+//!   POST   /api/v1/screenscraper                 {user,password,dev_id,dev_password}: checks, saves, fetches
+//!   DELETE /api/v1/screenscraper                 forgets the account
+//!   POST   /api/v1/screenscraper/fetch           {"again": bool}: asks ScreenScraper for the games
 //!   POST   /api/v1/update/check                  looks for a newer build (event "update");
 //!                                                 {"force": true} offers the latest even if not newer
 //!   POST   /api/v1/update/download               downloads and verifies it
@@ -216,7 +220,7 @@ fn install_mode(app: &Shared) -> String {
 
 fn settings(app: &Shared) -> Value {
     json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app),
-            "media": crate::media::report(app) })
+            "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -257,6 +261,23 @@ fn screenshot(app: &Shared, rom_id: i64, n: usize) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// Width / height of a cover file on disk (header only, remembered).
+fn cover_ratio(path: &str) -> Option<f64> {
+    static CACHE: std::sync::Mutex<Option<std::collections::HashMap<String, (std::time::SystemTime, f64)>>> = std::sync::Mutex::new(None);
+    let mtime = std::fs::metadata(path).and_then(|m| m.modified()).ok()?;
+    let mut g = CACHE.lock().unwrap();
+    let map = g.get_or_insert_with(std::collections::HashMap::new);
+    if let Some((t, r)) = map.get(path) {
+        if *t == mtime {
+            return Some(*r);
+        }
+    }
+    let (w, h) = image::image_dimensions(path).ok()?;
+    let r = w as f64 / h.max(1) as f64;
+    map.insert(path.to_string(), (mtime, r));
+    Some(r)
+}
+
 /// The art kinds RomM has for these versions of a game.
 fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
     let mut out: Vec<String> = vec![];
@@ -289,6 +310,13 @@ fn art(app: &Shared, rom_id: i64, kind: &str) -> Result<PathBuf, String> {
         let client = app.client().ok_or("offline")?;
         crate::media::ensure(app, &client, &g.group_key, kind, &src)?;
         return app.db.media(&g.group_key, kind).map(|m| PathBuf::from(m.path)).ok_or("not stored".into());
+    }
+    if kind == "fanart" || kind == "backdrop" {
+        if let Some(m) = app.db.game(rom_id).and_then(|g| app.db.media(&g.group_key, "fanart")) {
+            if std::path::Path::new(&m.path).is_file() {
+                return Ok(PathBuf::from(m.path));
+            }
+        }
     }
     let dir = app.paths.art();
     let path = dir.join(format!("{rom_id}-{kind}.img"));
@@ -559,6 +587,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 }
                 kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
                 v["art_kinds"] = json!(kinds);
+                if let Some(r) = v["cover_local"].as_str().and_then(cover_ratio) {
+                    v["cover_ar"] = json!(r);
+                }
             }
             ok(req, json!(list))
         }
@@ -579,6 +610,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
                     game["art_kinds"] = json!(kinds);
                     game["media_sizes"] = m["sizes"].clone();
+                    if let Some(r) = game["cover_local"].as_str().and_then(cover_ratio) {
+                        game["cover_ar"] = json!(r);
+                    }
                     ok(
                         req,
                         json!({
@@ -633,6 +667,35 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "media", "report"]) => ok(req, crate::media::report(app)),
+        (Method::Get, ["api", "v1", "screenscraper"]) => ok(req, crate::screenscraper::status(app)),
+        (Method::Post, ["api", "v1", "screenscraper"]) => {
+            let b = body_json(&mut req);
+            let c = crate::screenscraper::Credentials {
+                user: b["user"].as_str().unwrap_or_default().trim().to_string(),
+                password: b["password"].as_str().unwrap_or_default().to_string(),
+                dev_id: b["dev_id"].as_str().unwrap_or_default().trim().to_string(),
+                dev_password: b["dev_password"].as_str().unwrap_or_default().to_string(),
+            };
+            if c.user.is_empty() || c.password.is_empty() || c.dev_id.is_empty() || c.dev_password.is_empty() {
+                return err(req, 400, "user, password, dev_id and dev_password are required");
+            }
+            match crate::screenscraper::save(app, &c) {
+                Ok(info) => {
+                    crate::screenscraper::start(app, false);
+                    ok(req, json!({ "account": info, "status": crate::screenscraper::status(app) }))
+                }
+                Err(e) => err(req, 409, &e),
+            }
+        }
+        (Method::Delete, ["api", "v1", "screenscraper"]) => {
+            crate::screenscraper::forget(app);
+            ok(req, crate::screenscraper::status(app))
+        }
+        (Method::Post, ["api", "v1", "screenscraper", "fetch"]) => {
+            let again = body_json(&mut req)["again"].as_bool().unwrap_or(false);
+            crate::screenscraper::start(app, again);
+            ok(req, crate::screenscraper::status(app))
+        }
         (Method::Post, ["api", "v1", "media", "refresh"]) => {
             for p in app.db.clear_media() {
                 let _ = std::fs::remove_file(p);

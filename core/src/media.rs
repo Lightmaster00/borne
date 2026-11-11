@@ -109,7 +109,7 @@ fn trim(img: &DynamicImage) -> DynamicImage {
 }
 
 /// Cleans a downloaded image and writes it; returns (path, width, height).
-fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(PathBuf, u32, u32), String> {
+pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(PathBuf, u32, u32), String> {
     let img = image::load_from_memory(bytes).map_err(|e| format!("unreadable image ({e})"))?;
     let mut img = if kind == "logo" || kind == "physical" { img } else { trim(&img) };
     if kind == "side" && img.width() > img.height() {
@@ -120,7 +120,7 @@ fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(Pat
         img = img.resize(cap, cap, image::imageops::FilterType::Lanczos3);
     }
     let (w, h) = img.dimensions();
-    let opaque = BOX.contains(&kind);
+    let opaque = BOX.contains(&kind) || kind == "fanart";
     let d = dir(app);
     std::fs::create_dir_all(&d).map_err(|e| e.to_string())?;
     let path = d.join(format!("{}.{}", file_name(group_key, kind), if opaque { "jpg" } else { "png" }));
@@ -141,7 +141,9 @@ fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(Pat
 pub fn ensure(app: &Shared, client: &crate::romm::Client, group_key: &str, kind: &str, src: &(i64, String)) -> Result<(), String> {
     let stamp = format!("{}|{}", src.0, src.1);
     if let Some(m) = app.db.media(group_key, kind) {
-        if m.stamp == stamp && std::path::Path::new(&m.path).is_file() {
+        // ScreenScraper's own copy (Borne's account) takes precedence over RomM's.
+        let ss = m.stamp.starts_with("ss|");
+        if (ss || m.stamp == stamp) && std::path::Path::new(&m.path).is_file() {
             return Ok(());
         }
     }
@@ -164,7 +166,7 @@ pub fn prefetch(app: &Shared, client: &crate::romm::Client) {
             let fresh = app
                 .db
                 .media(&key, kind)
-                .map(|m| m.stamp == stamp && std::path::Path::new(&m.path).is_file())
+                .map(|m| (m.stamp == stamp || m.stamp.starts_with("ss|")) && std::path::Path::new(&m.path).is_file())
                 .unwrap_or(false);
             if !fresh {
                 jobs.push((key.clone(), kind, src));

@@ -300,7 +300,6 @@ Item {
                     games: boxModel
                     currentIndex: 0
                     showSelection: false
-                    trueSides: true
                     inspect: true
                     swayPeriod: 7000
                     opacity: page.videoShown ? 0.0 : 1

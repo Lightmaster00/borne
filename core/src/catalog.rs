@@ -6,7 +6,7 @@
 use crate::db::GameUpsert;
 use crate::romm::RommError;
 use crate::state::Shared;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 
 /// Games per catalog page. Kept modest: RomM serializes a lot per game and slow servers
@@ -149,6 +149,12 @@ pub fn extra_of(v: &Value) -> Value {
         "screenshots": shots,
         "art": art_of(v),
         "igdb_id": v["igdb_id"].as_i64(),
+        // To ask ScreenScraper directly (Borne's own ScreenScraper account, Settings).
+        "ss": {
+            "id": v["ss_id"].as_i64(),
+            "crc": non_empty(&v["crc_hash"]),
+            "md5": non_empty(&v["md5_hash"]),
+        },
         "release": v["metadatum"]["first_release_date"].as_i64(),
     })
 }
@@ -244,6 +250,12 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         })
         .collect();
     app.db.replace_platforms(&list);
+    // ScreenScraper's system id of each console, for Borne's own ScreenScraper lookups.
+    let ss_systems: serde_json::Map<String, Value> = platforms
+        .iter()
+        .filter_map(|p| Some((safe_slug(p["slug"].as_str()?), json!(p["ss_id"].as_i64()?))))
+        .collect();
+    app.db.set_setting("ss_systems", &Value::Object(ss_systems).to_string());
 
     let sync_id = crate::db::now();
     let mut offset = 0;
@@ -279,6 +291,7 @@ fn sync(app: &Shared) -> Result<(), RommError> {
     app.emit(serde_json::json!({ "type": "library" }));
     fetch_covers(app, &client, covers);
     crate::media::prefetch(app, &client);
+    crate::screenscraper::start(app, false);
     Ok(())
 }
 

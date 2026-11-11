@@ -755,3 +755,18 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Game page `languages`: the languages found across the game's versions, each with the version
   launched for it (the region that natively speaks it first, then installed, then the usual score).
   Choosing one stores both the version and the language.
+
+## ScreenScraper (Borne's own access)
+
+- Settings → ScreenScraper: the user's ScreenScraper account and developer credentials (checked with
+  `ssuserInfos.php`, kept in a 0600 file, never logged; media URLs are stored without them).
+- After each sync, and on demand, the core asks `jeuInfos.php` for each game not asked yet: by
+  ScreenScraper's game id when RomM has it, else by console, file name, size and hashes. One request
+  at a time; quota and refusals (403 credentials, 429/430 quota, 401/423 closed) stop the run with a
+  clear message.
+- Kept: `box-2D` (front), `box-2D-side` (spine), `box-2D-back` (back), `support-2D` (cartridge or
+  disc), `wheel-hd` / `wheel` (logo), `fanart`, in the version's region first (Europe → eu, France →
+  fr then eu, then wor, us, ss, jp). No spine scan: the spine is cut from `box-texture` (back | spine |
+  front) using the front's proportions. ScreenScraper's images take precedence over RomM's copies.
+- Boxes are real boxes: the spine on the left side only, the opening edge on the right; the front
+  takes the exact proportions of its image (scan, else cover), so nothing is cropped.

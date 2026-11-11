@@ -9,6 +9,7 @@ Item {
     property QtObject theme
     property string text: ""
     property string placeholder: ""
+    property bool secret: false         // passwords: dots instead of the letters
     property int maxLength: 200
     property bool shift: false
     property int row: 1
@@ -81,7 +82,7 @@ Item {
         Text {
             id: fieldText
             anchors { left: parent.left; leftMargin: 16; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
-            text: kb.text.length ? kb.text : kb.placeholder
+            text: kb.text.length ? (kb.secret ? "•".repeat(kb.text.length) : kb.text) : kb.placeholder
             color: kb.text.length ? theme.fg : theme.fgMuted
             elide: Text.ElideLeft
             font { family: theme.fontFamily; pixelSize: 22 }

@@ -939,6 +939,46 @@
         <source>Fetching the game media again.</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>ScreenScraper user name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper password</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Developer id (ScreenScraper)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Developer password (ScreenScraper)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper connected. Fetching the games' media…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Developer password</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Developer id</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Password</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>User name</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1535,6 +1575,70 @@
     </message>
     <message>
         <source>Fetch again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. It needs your ScreenScraper account and developer credentials (requested from ScreenScraper on its forum).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Connected as %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 / %2 requests today</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Asking ScreenScraper… %1 / %2 games, %3 found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stopped: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetched after each sync for new games.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not connected</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Account</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Connect</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Case scans, cartridges, logos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetch missing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetch everything again</source>
         <translation type="unfinished" />
     </message>
 </context>

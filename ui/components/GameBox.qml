@@ -27,7 +27,8 @@ Item {
     // scan the thickness; the console's real case size fills in what is missing.
     function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
     readonly property bool frontScan: has("front")
-    readonly property real frontAR: frontScan && game.front_ar > 0 ? game.front_ar : 0
+    // The front follows its image exactly (the scan, else the cover): nothing is cropped.
+    readonly property real frontAR: frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0)
     readonly property real sideAR: has("side") && game.side_ar > 0 ? game.side_ar : 0
     readonly property real bh: (turned ? kind.w : kind.h) * mm
     readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * (bh - 2 * rim) + rim + (mat === "jewel" ? bh * 0.075 : rim)
@@ -99,7 +100,8 @@ Item {
         id: sp
         property string side: "left"
         property real facingValue: 0
-        readonly property bool plain: sp.side === "right" && box.stage.trueSides
+        // A real box: the spine is on the left; the right side is the case's opening edge.
+        readonly property bool plain: sp.side === "right"
         readonly property bool printed: !plain && scan.status === Image.Ready
         width: box.bd + 1; height: box.bh   // +1: no seam against the front
         visible: facingValue > 0.02

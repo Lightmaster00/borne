@@ -33,7 +33,6 @@ Item {
     // Gentle idle sway of the selected box.
     property real sway: 0
     property bool showSelection: true
-    property bool trueSides: false        // false: both sides show the spine (shelf); true: a real box
     // Inspect mode (game page): the selected box turns all the way round, pausing on its back.
     property bool inspect: false
     property real spin: 0

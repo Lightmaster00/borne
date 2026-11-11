@@ -939,6 +939,46 @@
         <source>Fetching the game media again.</source>
         <translation>Nouvelle récupération des médias des jeux.</translation>
     </message>
+    <message>
+        <source>ScreenScraper user name</source>
+        <translation>Nom d’utilisateur ScreenScraper</translation>
+    </message>
+    <message>
+        <source>ScreenScraper password</source>
+        <translation>Mot de passe ScreenScraper</translation>
+    </message>
+    <message>
+        <source>Developer id (ScreenScraper)</source>
+        <translation>Identifiant développeur (ScreenScraper)</translation>
+    </message>
+    <message>
+        <source>Developer password (ScreenScraper)</source>
+        <translation>Mot de passe développeur (ScreenScraper)</translation>
+    </message>
+    <message>
+        <source>ScreenScraper: %1</source>
+        <translation>ScreenScraper : %1</translation>
+    </message>
+    <message>
+        <source>ScreenScraper connected. Fetching the games' media…</source>
+        <translation>ScreenScraper connecté. Récupération des médias des jeux…</translation>
+    </message>
+    <message>
+        <source>Developer password</source>
+        <translation>Mot de passe développeur</translation>
+    </message>
+    <message>
+        <source>Developer id</source>
+        <translation>Identifiant développeur</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Mot de passe</translation>
+    </message>
+    <message>
+        <source>User name</source>
+        <translation>Nom d’utilisateur</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1536,6 +1576,70 @@
     <message>
         <source>Fetch again</source>
         <translation>Récupérer à nouveau</translation>
+    </message>
+    <message>
+        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. It needs your ScreenScraper account and developer credentials (requested from ScreenScraper on its forum).</source>
+        <translation>Borne demande lui-même à ScreenScraper le boîtier de chaque jeu (face, tranche, dos), sa cartouche, son logo et ses illustrations, sans passer par RomM. Il faut votre compte ScreenScraper et des identifiants développeur (à demander à ScreenScraper sur son forum).</translation>
+    </message>
+    <message>
+        <source>Connected as %1</source>
+        <translation>Connecté en tant que %1</translation>
+    </message>
+    <message>
+        <source>%1 / %2 requests today</source>
+        <translation>%1 / %2 requêtes aujourd’hui</translation>
+    </message>
+    <message>
+        <source>Asking ScreenScraper… %1 / %2 games, %3 found</source>
+        <translation>Interrogation de ScreenScraper… %1 / %2 jeux, %3 trouvés</translation>
+    </message>
+    <message>
+        <source>Stopped: %1</source>
+        <translation>Arrêté : %1</translation>
+    </message>
+    <message>
+        <source>%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.</source>
+        <translation>%1 jeux sur %2 trouvés sur ScreenScraper (%3 pas encore demandés). Leurs images priment sur celles de RomM ; les nouveaux jeux sont récupérés après chaque synchro.</translation>
+    </message>
+    <message>
+        <source>Fetched after each sync for new games.</source>
+        <translation>Récupéré après chaque synchro pour les nouveaux jeux.</translation>
+    </message>
+    <message>
+        <source>ScreenScraper</source>
+        <translation>ScreenScraper</translation>
+    </message>
+    <message>
+        <source>Not connected</source>
+        <translation>Non connecté</translation>
+    </message>
+    <message>
+        <source>Account</source>
+        <translation>Compte</translation>
+    </message>
+    <message>
+        <source>Change</source>
+        <translation>Modifier</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Se déconnecter</translation>
+    </message>
+    <message>
+        <source>Connect</source>
+        <translation>Connecter</translation>
+    </message>
+    <message>
+        <source>Case scans, cartridges, logos</source>
+        <translation>Boîtiers, cartouches, logos</translation>
+    </message>
+    <message>
+        <source>Fetch missing</source>
+        <translation>Récupérer ce qui manque</translation>
+    </message>
+    <message>
+        <source>Fetch everything again</source>
+        <translation>Tout récupérer à nouveau</translation>
     </message>
 </context>
 </TS>
