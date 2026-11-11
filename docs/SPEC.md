@@ -734,6 +734,15 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   against each other (PlayStation jewel case small and nearly square, GameCube case tall, Super
   Nintendo box wide, or upright when its cover is). Logos and printed art
   come only from the user's RomM scans.
+- Game media (core/src/media.rs): after each sync the core fetches, for every game, the case scans
+  (front `box2d`, spine `box2d_side`, back `box2d_back`), the cartridge or disc (`physical`) and the
+  logo, 4 at a time, into `media/art/sets`. One coherent set per game: the case faces come from the
+  version with the most of them. Each image is cleaned once (white or transparent scan margins
+  trimmed, at most 6% per side; a spine stored lying down stood up; size capped) and its pixel size
+  is stored, so boxes are shaped before images load. A changed source in RomM is fetched again.
+  Settings → Server → Game media shows, per console, what is on disk and what RomM lacks;
+  *Fetch again* forgets the files and fetches them anew (`POST /api/v1/media/refresh`;
+  `GET /api/v1/media/report`).
 - Cases are rebuilt from ScreenScraper's case elements stored by RomM: the front scan (`box2d`) is the
   front and sets the width, the spine scan (`box2d_side`) is printed on the spine and sets the
   thickness (stood up if stored lying down), the back scan (`box2d_back`) is the back. The console's

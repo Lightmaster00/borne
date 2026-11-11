@@ -111,7 +111,10 @@ Window {
             linked: !!g.linked, version_count: g.version_count || 1, other_installed: !!g.other_installed,
             group_key: g.group_key || "",
             art: apiBase + "/api/v1/games/" + g.rom_id + "/art/",
-            art_kinds: "," + (g.art_kinds || []).join(",") + ","
+            art_kinds: "," + (g.art_kinds || []).join(",") + ",",
+            // Pixel sizes of the case scans: the box is shaped before the images load.
+            front_ar: g.media_sizes && g.media_sizes.front ? g.media_sizes.front[0] / g.media_sizes.front[1] : 0,
+            side_ar: g.media_sizes && g.media_sizes.side ? g.media_sizes.side[0] / g.media_sizes.side[1] : 0
         }
     }
     function loadPlatforms() {
@@ -338,6 +341,7 @@ Window {
         else if (id === "trailers") prefs.trailers = payload
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
+        else if (id === "media-refresh") api("POST", "/api/v1/media/refresh", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Fetching the game media again."), "info"); refreshStatus() } })
         else if (id === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Sync started."), "info"); refreshStatus() } })
         else if (id === "server") { overlay = ""; showServer() }
         else if (id === "profile") { overlay = ""; showProfiles() }

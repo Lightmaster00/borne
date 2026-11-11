@@ -35,6 +35,8 @@
 //!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
 //! Updates
 //!   GET    /api/v1/update                        current build, channel, state of the update
+//!   GET    /api/v1/media/report                  per console: games with case scans, cartridge, logo
+//!   POST   /api/v1/media/refresh                 forgets the media files and fetches them again
 //!   POST   /api/v1/update/check                  looks for a newer build (event "update");
 //!                                                 {"force": true} offers the latest even if not newer
 //!   POST   /api/v1/update/download               downloads and verifies it
@@ -213,7 +215,8 @@ fn install_mode(app: &Shared) -> String {
 }
 
 fn settings(app: &Shared) -> Value {
-    json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app) })
+    json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app),
+            "media": crate::media::report(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -260,7 +263,8 @@ fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
     for e in ids.iter().filter_map(|id| app.db.game_extra(*id)) {
         let extra: Value = serde_json::from_str(&e).unwrap_or(Value::Null);
         if let Some(o) = extra["art"].as_object() {
-            out.extend(o.keys().cloned());
+            // Case faces, cartridge and logo are listed once on disk (media::summary).
+            out.extend(o.keys().filter(|k| !crate::media::KINDS.contains(&k.as_str())).cloned());
         }
         if extra["art"]["fanart"].is_string() || extra["screenshots"][0].is_string() {
             out.push("backdrop".into());
@@ -276,6 +280,16 @@ pub const ART_KINDS: [&str; 8] = ["front", "side", "back", "fanart", "logo", "ph
 /// A box scan or artwork of the game (any version of it), fetched once from RomM with the
 /// profile's token and kept on disk. "backdrop": the fanart, else the first screenshot.
 fn art(app: &Shared, rom_id: i64, kind: &str) -> Result<PathBuf, String> {
+    if crate::media::KINDS.contains(&kind) {
+        let g = app.db.game(rom_id).ok_or("unknown game")?;
+        if let Some(m) = app.db.media(&g.group_key, kind).filter(|m| std::path::Path::new(&m.path).is_file()) {
+            return Ok(PathBuf::from(m.path));
+        }
+        let src = crate::media::sources(app, &g.group_key).remove(kind).ok_or("not in RomM")?;
+        let client = app.client().ok_or("offline")?;
+        crate::media::ensure(app, &client, &g.group_key, kind, &src)?;
+        return app.db.media(&g.group_key, kind).map(|m| PathBuf::from(m.path)).ok_or("not stored".into());
+    }
     let dir = app.paths.art();
     let path = dir.join(format!("{rom_id}-{kind}.img"));
     if path.is_file() {
@@ -534,12 +548,17 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             for v in list.iter_mut() {
                 // Every version of the game counts, even those filtered out (Installed, search).
                 let mut ids = vec![v["rom_id"].as_i64().unwrap_or(0)];
+                let mut kinds = vec![];
                 if let Some(k) = v["group_key"].as_str().map(String::from) {
                     let group = app.db.group(&k);
                     ids.extend(group.iter().map(|g| g.rom_id));
                     library::fill_media(v, &group);
+                    let m = crate::media::summary(app, &k);
+                    kinds.extend(m["kinds"].as_array().cloned().unwrap_or_default());
+                    v["media_sizes"] = m["sizes"].clone();
                 }
-                v["art_kinds"] = json!(art_kinds(app, &ids));
+                kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
+                v["art_kinds"] = json!(kinds);
             }
             ok(req, json!(list))
         }
@@ -555,7 +574,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     let all = if versions.is_empty() { vec![g.clone()] } else { versions.clone() };
                     library::fill_media(&mut game, &versions);
                     let ids: Vec<i64> = std::iter::once(g.rom_id).chain(versions.iter().map(|v| v.rom_id)).collect();
-                    game["art_kinds"] = json!(art_kinds(app, &ids));
+                    let m = crate::media::summary(app, &g.group_key);
+                    let mut kinds = m["kinds"].as_array().cloned().unwrap_or_default();
+                    kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
+                    game["art_kinds"] = json!(kinds);
+                    game["media_sizes"] = m["sizes"].clone();
                     ok(
                         req,
                         json!({
@@ -609,6 +632,14 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             },
             Err(_) => err(req, 400, "invalid identifier"),
         },
+        (Method::Get, ["api", "v1", "media", "report"]) => ok(req, crate::media::report(app)),
+        (Method::Post, ["api", "v1", "media", "refresh"]) => {
+            for p in app.db.clear_media() {
+                let _ = std::fs::remove_file(p);
+            }
+            catalog::start_sync(app);
+            ok(req, json!({ "refreshing": true }))
+        }
         (Method::Get, ["api", "v1", "games", id, "art", kind]) => {
             match id.parse::<i64>() {
                 Ok(rom_id) if ART_KINDS.contains(kind) => match art(app, rom_id, kind) {

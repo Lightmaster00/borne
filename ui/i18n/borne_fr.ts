@@ -935,6 +935,10 @@
         <source>Search</source>
         <translation>Rechercher</translation>
     </message>
+    <message>
+        <source>Fetching the game media again.</source>
+        <translation>Nouvelle récupération des médias des jeux.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1508,6 +1512,30 @@
     <message>
         <source>Console color</source>
         <translation>Couleur de la console</translation>
+    </message>
+    <message>
+        <source>%1: %2 without spine</source>
+        <translation>%1 : %2 sans tranche</translation>
+    </message>
+    <message>
+        <source>Fetching… %1 image(s) left</source>
+        <translation>Récupération… %1 image(s) restante(s)</translation>
+    </message>
+    <message>
+        <source>Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6</source>
+        <translation>Face %1/%6 · tranche %2/%6 · dos %3/%6 · cartouche %4/%6 · logo %5/%6</translation>
+    </message>
+    <message>
+        <source>Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.</source>
+        <translation>Les scans manquants ne sont pas dans RomM : ajoutez box2d, box2d_side, box2d_back, physical et logo à scan.media dans les réglages ScreenScraper de RomM, puis relancez une analyse.</translation>
+    </message>
+    <message>
+        <source>Game media</source>
+        <translation>Médias des jeux</translation>
+    </message>
+    <message>
+        <source>Fetch again</source>
+        <translation>Récupérer à nouveau</translation>
     </message>
 </context>
 </TS>

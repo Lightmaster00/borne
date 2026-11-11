@@ -98,6 +98,15 @@ CREATE TABLE IF NOT EXISTS facts (
     json TEXT NOT NULL,
     fetched_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS media (
+    group_key TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    path TEXT NOT NULL,
+    w INTEGER NOT NULL,
+    h INTEGER NOT NULL,
+    stamp TEXT NOT NULL,
+    PRIMARY KEY (group_key, kind)
+);
 CREATE TABLE IF NOT EXISTS oplog (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts INTEGER NOT NULL,
@@ -155,6 +164,18 @@ pub struct Platform {
     pub name: String,
     pub rom_count: i64,
     pub local_count: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct MediaRow {
+    pub kind: String,
+    pub path: String,
+    pub w: u32,
+    pub h: u32,
+    pub stamp: String,
+}
+fn media_from_row(r: &rusqlite::Row) -> rusqlite::Result<MediaRow> {
+    Ok(MediaRow { kind: r.get(0)?, path: r.get(1)?, w: r.get(2)?, h: r.get(3)?, stamp: r.get(4)? })
 }
 
 #[derive(Serialize, Clone, Debug, Default)]
@@ -647,6 +668,64 @@ impl Db {
             ))
             .unwrap();
         st.query_map([group_key], game_from_row)
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect()
+    }
+
+    // ---------- game media (case scans, cartridge, logo) ----------
+    pub fn media(&self, group_key: &str, kind: &str) -> Option<MediaRow> {
+        self.c()
+            .query_row(
+                "SELECT kind, path, w, h, stamp FROM media WHERE group_key = ?1 AND kind = ?2",
+                [group_key, kind],
+                media_from_row,
+            )
+            .optional()
+            .ok()
+            .flatten()
+    }
+    pub fn media_of(&self, group_key: &str) -> Vec<MediaRow> {
+        let c = self.c();
+        let mut st = c
+            .prepare("SELECT kind, path, w, h, stamp FROM media WHERE group_key = ?1")
+            .unwrap();
+        st.query_map([group_key], media_from_row)
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect()
+    }
+    pub fn set_media(&self, group_key: &str, kind: &str, path: &str, w: u32, h: u32, stamp: &str) {
+        let _ = self.c().execute(
+            "INSERT OR REPLACE INTO media (group_key, kind, path, w, h, stamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            rusqlite::params![group_key, kind, path, w, h, stamp],
+        );
+    }
+    /// Forgets every media file (they are fetched again at the next sync).
+    pub fn clear_media(&self) -> Vec<String> {
+        let c = self.c();
+        let paths: Vec<String> = c
+            .prepare("SELECT path FROM media")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect();
+        let _ = c.execute("DELETE FROM media", []);
+        paths
+    }
+    pub fn group_keys(&self) -> Vec<String> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT DISTINCT group_key FROM games").unwrap();
+        st.query_map([], |r| r.get(0)).unwrap().filter_map(Result::ok).collect()
+    }
+    /// One row per game (group): its key, console slug and console name.
+    pub fn groups_with_platform(&self) -> Vec<(String, String, String)> {
+        let c = self.c();
+        let mut st = c
+            .prepare("SELECT group_key, MIN(platform_slug), MIN(platform_name) FROM games GROUP BY group_key")
+            .unwrap();
+        st.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
             .unwrap()
             .filter_map(Result::ok)
             .collect()

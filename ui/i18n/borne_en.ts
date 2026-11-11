@@ -935,6 +935,10 @@
         <source>Search</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Fetching the game media again.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1507,6 +1511,30 @@
     </message>
     <message>
         <source>Console color</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1: %2 without spine</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetching… %1 image(s) left</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game media</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetch again</source>
         <translation type="unfinished" />
     </message>
 </context>

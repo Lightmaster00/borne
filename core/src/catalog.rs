@@ -278,6 +278,7 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         .log("sync", &format!("{offset} games synced, {removed} removed"));
     app.emit(serde_json::json!({ "type": "library" }));
     fetch_covers(app, &client, covers);
+    crate::media::prefetch(app, &client);
     Ok(())
 }
 

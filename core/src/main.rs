@@ -19,6 +19,7 @@ mod downloads;
 mod events;
 mod facts;
 mod library;
+mod media;
 mod logfile;
 mod pad;
 mod pairing;

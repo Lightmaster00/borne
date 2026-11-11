@@ -29,6 +29,7 @@ pub struct SyncState {
     pub done: usize,
     pub total: usize,
     pub covers_pending: usize,
+    pub media_pending: usize,
     pub last_sync: Option<i64>,
     pub error: Option<String>,
 }
