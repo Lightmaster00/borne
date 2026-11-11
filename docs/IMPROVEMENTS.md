@@ -80,9 +80,12 @@ Next:
   Dolphin's own GameSettings), PCSX2 (`.pnach` by serial and CRC), standalone melonDS (`.mch`),
   Switch emulators (`load/<title id>/<name>/cheats`). Check on the real RetroArch that the `.cht`
   written under `cheat_database_path/<core name>/` is loaded with the game.
-- Display settings: done for all games and per game (shape, resolution, pixels, integer
-  scaling, frame rate) for RetroArch, Dolphin, PCSX2, DuckStation. Still to do: the Switch, PS3,
-  PS4 and Xbox 360 emulators; per-console defaults; CRT shaders; controller layout.
+- Display settings: done for all games, per console and per game (shape, resolution, pixels with
+  a CRT look, integer scaling, frame rate) for RetroArch, Dolphin, PCSX2, DuckStation, Eden,
+  Citron, Ryubing (once its Config.json exists), RPCS3, Xenia. shadPS4 renders at native size.
+  Controllers: Dolphin, PCSX2, DuckStation mapped to the first gamepad on their first start;
+  the Switch and PS3 emulators' own controller formats still to write. All of these formats must
+  be checked on the real emulators.
 - PCSX2, DuckStation and melonDS in portable mode inside Borne's folder; controller mappings
   written by Borne for every emulator.
 - BIOS and firmware: taken from RomM's BIOS for the console and placed in Borne's `bios` folder;

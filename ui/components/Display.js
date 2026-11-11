@@ -3,7 +3,7 @@
 .pragma library
 
 var KEYS = ["aspect", "upscale", "smooth", "integer", "fps"]
-var VALUES = { aspect: ["auto", "4:3", "16:9", "stretch"], upscale: ["1", "2", "3", "4"], smooth: ["sharp", "smooth"], integer: ["off", "on"], fps: ["off", "on"] }
+var VALUES = { aspect: ["auto", "4:3", "16:9", "stretch"], upscale: ["1", "2", "3", "4"], smooth: ["sharp", "smooth", "crt"], integer: ["off", "on"], fps: ["off", "on"] }
 
 function values(k) { return VALUES[k] || [] }
 function title(k) {
@@ -12,12 +12,12 @@ function title(k) {
 }
 function desc(k) {
     return { aspect: qsTr("The game's own shape, or forced"), upscale: qsTr("3D consoles (GameCube, Wii, PS1, PS2): sharper, needs a stronger computer"),
-             smooth: qsTr("2D consoles: crisp pixels or smoothed"), integer: qsTr("2D consoles: even pixels, with borders"),
+             smooth: qsTr("2D consoles: crisp pixels, smoothed, or the look of an old TV"), integer: qsTr("2D consoles: even pixels, with borders"),
              fps: qsTr("Shows the frame rate while playing") }[k] || ""
 }
 function label(k, v) {
     if (k === "aspect") return { auto: qsTr("Game's own"), "4:3": "4:3", "16:9": "16:9", stretch: qsTr("Fill the screen") }[v]
     if (k === "upscale") return v + "×"
-    if (k === "smooth") return v === "smooth" ? qsTr("Smoothed") : qsTr("Sharp")
+    if (k === "smooth") return v === "smooth" ? qsTr("Smoothed") : v === "crt" ? qsTr("CRT TV") : qsTr("Sharp")
     return v === "on" ? qsTr("On") : qsTr("Off")
 }

@@ -384,10 +384,11 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     };
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
     let group = app.db.game(rom_id).map(|g| g.group_key).unwrap_or_default();
-    let display = crate::gamesettings::resolve(app, &group);
+    let display = crate::gamesettings::resolve(app, system, &group);
     let config = if p.id == "retroarch" {
         let mut cheats = crate::cheats::retroarch_settings(app, rom_id, &e.name, rom);
-        cheats.extend(crate::gamesettings::retroarch(&display));
+        let crt = crate::emuinstall::crt_shader(app);
+        cheats.extend(crate::gamesettings::retroarch(&display, crt.as_deref()));
         Some(retroarch_config(app, &profile, system, cheats)?)
     } else {
         None
@@ -395,6 +396,8 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     let userdir = app.paths.profiles().join(&profile).join(&p.id);
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     crate::gamesettings::apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &display)?;
+    let pad = app.pads.lock().unwrap().pads.first().cloned();
+    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, pad.as_deref())?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
     let mut args: Vec<String> = vec![];
     for a in &p.args {
@@ -403,7 +406,8 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
             .replace("{core}", &core.as_ref().map(|c| c.to_string_lossy().into_owned()).unwrap_or_default())
             .replace("{config}", &config.as_ref().map(|c| c.to_string_lossy().into_owned()).unwrap_or_default())
             .replace("{userdir}", &userdir.to_string_lossy())
-            .replace("{lang_dolphin}", lang_dolphin);
+            .replace("{lang_dolphin}", lang_dolphin)
+            .replace("{upscale3}", &display.get("upscale").and_then(|v| v.as_str()).and_then(|v| v.parse::<u32>().ok()).unwrap_or(1).min(3).to_string());
         // An option left without its value (no language chosen…) goes with its flag.
         if v.ends_with('=') || v.is_empty() {
             if args.last().map(|l| l.starts_with('-')).unwrap_or(false) {

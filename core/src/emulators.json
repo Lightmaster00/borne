@@ -266,6 +266,8 @@
       "name": "Xenia Canary",
       "args": [
         "--fullscreen=true",
+        "--draw_resolution_scale_x={upscale3}",
+        "--draw_resolution_scale_y={upscale3}",
         "{rom}"
       ],
       "install": {

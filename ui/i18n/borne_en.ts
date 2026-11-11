@@ -42,10 +42,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>2D consoles: crisp pixels or smoothed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>2D consoles: even pixels, with borders</source>
         <translation type="unfinished" />
     </message>
@@ -75,6 +71,14 @@
     </message>
     <message>
         <source>Off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>2D consoles: crisp pixels, smoothed, or the look of an old TV</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>CRT TV</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1091,15 +1095,19 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>As for all games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Display · %1</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Applied the next time the game starts.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As for its console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Display settings for</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1325,18 +1333,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Checking…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Stable</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Development</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>On</source>
         <translation type="unfinished" />
     </message>
@@ -1345,55 +1341,15 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Back</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Settings</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Linux only</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Unavailable here: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Updates</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Check automatically</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne is up to date.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Update failed: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Interface</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Interface sounds</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Trailers</source>
+        <source>Borne cannot install it itself here (%1): download it from GitHub.</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Version %1 is available.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Latest build of this channel: %1 (the one installed).</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1405,255 +1361,15 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Install, cache</source>
+        <source>Checking…</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Sounds, trailers</source>
+        <source>Borne is up to date.</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Server</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>RomM, profiles</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Help</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Diagnostic report</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Mount cache</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Space kept for recently played mounted games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Update channel</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Stable gets tested releases; Development gets every build</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Every 6 hours, never while you play</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Short, quiet sounds when moving and choosing</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Library</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Sync now</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>RomM server</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>offline</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>not configured</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Change server</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Profile</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Switch profile</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Saved: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Saves the log and settings, without passwords or tokens, to share when something goes wrong</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Export the report</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Quit Borne</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Quit</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Syncing %1 of %2…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Last sync failed: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Synced at %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Back to the library</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>How games are installed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Choose once; you can switch at any time. Games already on this device stay where they are.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Download</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Current</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The whole game is copied to this device before you play.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Plays offline, even if the server is down</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fastest loading, no network during play</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Uses disk space for every installed game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Mount</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne reads the game from RomM while you play. Only games you pick are exposed.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Starts in seconds, even for large games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Keeps the disk free; a small cache speeds up replays</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Needs the server reachable during play</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Choose</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Change value</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne cannot install it itself here (%1): download it from GitHub.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Latest build of this channel: %1 (the one installed).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Change</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Sign out</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Connect</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Case scans, cartridges, logos</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fetch missing</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fetch everything again</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game images</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>ScreenScraper account</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>ScreenScraper</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Found: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Not found: choose its program (Borne does not download it)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Installation failed: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Install</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Change program</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Choose program</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Emulators</source>
+        <source>Update failed: %1</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1673,11 +1389,23 @@
         <translation type="unfinished" />
     </message>
     <message>
+        <source>Installation failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Installed by Borne (Flathub), kept up to date</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Version %1, installed by Borne and kept up to date</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Found: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not found: choose its program (Borne does not download it)</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1689,23 +1417,19 @@
         <translation type="unfinished" />
     </message>
     <message>
+        <source>Install</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Forget this program</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Emulator used for this console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Emulator updates</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne installs new versions by itself, never during a game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>One per console</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1718,6 +1442,18 @@
     </message>
     <message>
         <source>No build of this emulator for this computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulator used for this console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulator updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne installs new versions by itself, never during a game</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1737,7 +1473,15 @@
         <translation type="unfinished" />
     </message>
     <message>
+        <source>Paused: %1 / %2 games, %3 found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Asking ScreenScraper… %1 / %2 games, %3 found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 at a time</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1817,6 +1561,10 @@
         <translation type="unfinished" />
     </message>
     <message>
+        <source>From RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Choose a file</source>
         <translation type="unfinished" />
     </message>
@@ -1829,11 +1577,75 @@
         <translation type="unfinished" />
     </message>
     <message>
+        <source>Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Take them now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Nothing needed</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>No console of the library needs a BIOS, keys or firmware.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This console's own values; the others follow all games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Every game, unless its console or the game has its own</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>All games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As for all games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install, cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Development</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sounds, trailers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Display</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulators</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>One per console</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1845,27 +1657,91 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>From RomM</source>
+        <source>Game images</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask.</source>
+        <source>ScreenScraper</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Take them now</source>
+        <source>Server</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Paused: %1 / %2 games, %3 found</source>
+        <source>RomM, profiles</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>%1 at a time</source>
+        <source>Help</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Diagnostic report</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mount cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Space kept for recently played mounted games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Update channel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stable gets tested releases; Development gets every build</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Check automatically</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Every 6 hours, never while you play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Interface sounds</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Short, quiet sounds when moving and choosing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trailers</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Videos of the games, muted: behind the library and on the game page</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper account</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Connect</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Case scans, cartridges, logos</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1881,11 +1757,159 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Display</source>
+        <source>Fetch missing</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>All games</source>
+        <source>Fetch everything again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sync now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>offline</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>not configured</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Switch profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saved: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saves the log and settings, without passwords or tokens, to share when something goes wrong</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Export the report</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit Borne</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Syncing %1 of %2…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Last sync failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Synced at %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How games are installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose once; you can switch at any time. Games already on this device stay where they are.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Current</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The whole game is copied to this device before you play.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Plays offline, even if the server is down</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fastest loading, no network during play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Uses disk space for every installed game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mount</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Linux only</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne reads the game from RomM while you play. Only games you pick are exposed.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Starts in seconds, even for large games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Keeps the disk free; a small cache speeds up replays</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Needs the server reachable during play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Unavailable here: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change value</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change console</source>
         <translation type="unfinished" />
     </message>
 </context>

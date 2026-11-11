@@ -362,12 +362,12 @@ Window {
         api("GET", "/api/v1/games/" + g.rom_id + "/display", null, function (d, err) {
             if (err || !d) { toasts.show(err || "", "error"); return }
             const items = Display.KEYS.map(k => ({ id: k, label: qsTr("%1: %2").arg(Display.title(k)).arg(Display.label(k, d.effective[k])),
-                detail: d.game[k] !== undefined ? qsTr("This game only") : qsTr("As for all games") }))
+                detail: d.own[k] !== undefined ? qsTr("This game only") : qsTr("As for its console") }))
             items.push({ id: "close", label: qsTr("Close") })
             menu.open(qsTr("Display · %1").arg(g.name), qsTr("Applied the next time the game starts."), items, function (k) {
                 if (k === "close") return
                 const vals = Display.values(k)
-                const own = d.game[k]
+                const own = d.own[k]
                 // as for all games → the next value → … → the last value → as for all games
                 const next = own === undefined ? vals[(vals.indexOf(d.effective[k]) + 1) % vals.length]
                            : vals.indexOf(own) + 1 < vals.length ? vals[vals.indexOf(own) + 1] : "default"
@@ -505,7 +505,21 @@ Window {
             const k = id.substring(10).split("/")
             api("DELETE", "/api/v1/system-files/" + k[0] + "/" + k[1], null, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         }
-        else if (id === "display") api("POST", "/api/v1/display", payload, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        else if (id === "display") api("POST", "/api/v1/display", payload, function (r, err) {
+            if (err) toasts.show(err, "error")
+            if (payload.console) settingsPage.displayView = r; else loadSettings()
+        })
+        else if (id === "display-scope-menu") {
+            const consoles = settings && settings.emulators ? settings.emulators.consoles : []
+            const items = [{ id: "", label: qsTr("All games") }].concat(consoles.map(c => ({ id: c.slug, label: c.name })))
+            menu.open(qsTr("Display settings for"), "", items, function (slug) { settingsAction("display-scope", slug) },
+                      Math.max(0, items.findIndex(i => i.id === settingsPage.displayScope)))
+        }
+        else if (id === "display-scope") {
+            settingsPage.displayScope = payload
+            settingsPage.displayView = null
+            if (payload) api("GET", "/api/v1/display?console=" + encodeURIComponent(payload), null, function (r) { if (settingsPage.displayScope === payload) settingsPage.displayView = r })
+        }
         else if (id === "console-emu") api("POST", "/api/v1/consoles/" + payload.slug + "/emulator", { engine: payload.engine }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })

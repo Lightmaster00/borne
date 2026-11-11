@@ -214,6 +214,40 @@ pub fn core_path(app: &Shared, core: &str) -> PathBuf {
     cores_dir(app).join(format!("{core}_libretro.{ext}"))
 }
 
+/// RetroArch's CRT look (the slang shader preset), once the shaders are here; fetched in the
+/// background the first time it is asked for.
+pub fn crt_shader(app: &Shared) -> Option<PathBuf> {
+    let dir = root(app).join("retroarch-shaders");
+    let preset = dir.join("crt/crt-easymode.slangp");
+    if preset.is_file() {
+        return Some(preset);
+    }
+    static FETCHING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if !FETCHING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            let zip = root(&app).join("shaders_slang.zip.part");
+            let out = root(&app).join("retroarch-shaders.part");
+            let r = fetch_file("https://buildbot.libretro.com/assets/frontend/shaders_slang.zip", &zip).and_then(|_| {
+                let _ = std::fs::remove_dir_all(&out);
+                unzip(&zip, &out)?;
+                // The archive holds the shaders either at its root or in a shaders_slang folder.
+                let inner = if out.join("shaders_slang").is_dir() { out.join("shaders_slang") } else { out.clone() };
+                let dest = root(&app).join("retroarch-shaders");
+                let _ = std::fs::remove_dir_all(&dest);
+                std::fs::rename(&inner, &dest).map_err(|e| e.to_string())
+            });
+            let _ = std::fs::remove_file(&zip);
+            let _ = std::fs::remove_dir_all(&out);
+            if let Err(e) = r {
+                app.db.log("emulators", &format!("CRT shaders: {e}"));
+            }
+            FETCHING.store(false, std::sync::atomic::Ordering::SeqCst);
+        });
+    }
+    None
+}
+
 /// Installs (or updates) a program, and the RetroArch cores in `cores`, in the background.
 pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), String> {
     let p = crate::emulators::program(program).ok_or("unknown emulator")?;

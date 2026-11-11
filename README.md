@@ -81,10 +81,11 @@ Since then:
   them, and places them for the chosen emulator before each game; a missing one is reported
   before launching. Borne never downloads such files by itself.
 - **Display settings in Borne**: picture shape (the game's own, 4:3, 16:9, fill), rendering
-  resolution for 3D consoles (1× to 4×), sharp or smoothed pixels, whole-number scaling, frame rate
-  on screen — for all games in Settings → Display, and per game on its page (*Display*). Borne
-  writes them into each emulator's own configuration before the game starts (RetroArch, Dolphin,
-  PCSX2, DuckStation).
+  resolution for 3D consoles (1× to 4×), sharp, smoothed or CRT-TV pixels, whole-number scaling,
+  frame rate on screen — for all games or one console in Settings → Display, and per game on its
+  page (*Display*). Borne writes them into each emulator's own configuration before the game
+  starts (RetroArch, Dolphin, PCSX2, DuckStation, Eden, Citron, Ryubing, RPCS3, Xenia), and sets
+  the controller of the standalone emulators on their first start (Dolphin, PCSX2, DuckStation).
 - **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
   public databases — the libretro cheat database for the consoles run by RetroArch (matched by
   the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the

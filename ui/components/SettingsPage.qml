@@ -175,11 +175,24 @@ Item {
         if (!rows.length) rows.push({ id: "sf-none", kind: "buttons", title: qsTr("Nothing needed"), desc: qsTr("No console of the library needs a BIOS, keys or firmware."), items: [] })
         return rows
     }
-    readonly property var display: settings && settings.display ? settings.display.global : null
+    // Display: for all games, or for one console (its own values over those for all games).
+    property string displayScope: ""
+    property var displayView: null       // GET /api/v1/display?console=… for the console shown
+    readonly property var displayData: displayScope !== "" && displayView ? displayView : (settings && settings.display ? settings.display : null)
     function displayRows() {
-        if (!display) return []
-        return Display.KEYS.map(k => ({ id: "disp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k),
-            selected: display[k], items: Display.values(k).map(v => ({ id: v, label: Display.label(k, v) })) }))
+        if (!displayData) return []
+        const consoles = settings && settings.emulators ? settings.emulators.consoles : []
+        const cur = consoles.find(c => c.slug === displayScope)
+        const rows = [{ id: "disp-scope", kind: "buttons", title: cur ? cur.name : qsTr("All games"),
+            desc: displayScope ? qsTr("This console's own values; the others follow all games") : qsTr("Every game, unless its console or the game has its own"),
+            items: [{ id: "display-scope-menu", label: qsTr("Change console"), primary: false }] }]
+        return rows.concat(Display.KEYS.map(k => {
+            const items = Display.values(k).map(v => ({ id: v, label: Display.label(k, v) }))
+            if (displayScope) items.unshift({ id: "default", label: qsTr("As for all games") })
+            const own = displayData.own ? displayData.own[k] : undefined
+            return { id: "disp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k),
+                     selected: displayScope ? (own !== undefined ? own : "default") : displayData.effective[k], items: items }
+        }))
     }
     readonly property var sections: [
         { id: "games", name: qsTr("Games"), hint: qsTr("Install, cache") },
@@ -261,7 +274,7 @@ Item {
         for (const r of rows) c[r.id] = Math.max(0, itemsOf(r).findIndex(x => x.id === r.selected))
         cols = c
     }
-    function reset() { inRows = false; selectSection(0) }
+    function reset() { displayScope = ""; displayView = null; inRows = false; selectSection(0) }
     function activate(r, i) {
         const item = itemsOf(r)[i]
         if (!item || item.disabled || item.id === "none") return
@@ -270,7 +283,7 @@ Item {
         else if (r.id === "channel") page.action("channel", item.id)
         else if (r.id === "auto") page.action("auto", item.id === "on")
         else if (r.id === "sounds") page.action("sounds", item.id === "on")
-        else if (r.id.startsWith("disp:")) page.action("display", { key: r.id.substring(5), value: item.id })
+        else if (r.id.startsWith("disp:")) page.action("display", { console: page.displayScope, key: r.id.substring(5), value: item.id })
         else if (r.id.startsWith("console:")) page.action("console-emu", { slug: r.id.substring(8), engine: item.id })
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
