@@ -57,6 +57,9 @@ Since then:
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
   a language chooses the version launched (English → USA, Français → the European version that has
   French, 日本語 → Japan). Below: summary, screenshots, studios and series (RomM only).
+- **Titles and covers in your language**: with ScreenScraper, each game shows the title and the case
+  of the language Borne is displayed in (French → the French case and title, else the European one;
+  Japanese → the Japanese ones; English → the US ones), and the library is sorted on those titles.
 - **Game images**: the case front, spine and back, cartridge or disc, logo and artwork come from
   ScreenScraper, either through RomM (`scan.media` with `box2d`, `box2d_side`, `box2d_back`,
   `physical`, `logo`, `fanart`, `video`, then rescan) or directly from Borne once your ScreenScraper

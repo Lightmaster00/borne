@@ -594,7 +594,21 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 .active_profile()
                 .map(|p| app.db.game_prefs(&p.id))
                 .unwrap_or_default();
+            crate::screenscraper::set_ui_lang(app, &lang);
             let mut list = library::groups(rows, &prefs, &lang);
+            // Titles in the interface language (ScreenScraper), the list sorted on them.
+            let mut renamed = false;
+            for v in list.iter_mut() {
+                if let Some(t) = v["group_key"].as_str().and_then(|k| crate::screenscraper::title(app, k, &lang)) {
+                    if v["name"].as_str() != Some(t.as_str()) {
+                        v["name"] = json!(t);
+                        renamed = true;
+                    }
+                }
+            }
+            if renamed {
+                list.sort_by_cached_key(|v| library::title_sort_key(v["name"].as_str().unwrap_or("")));
+            }
             // Which scans exist (spine, backdrop…), so the UI asks only for those.
             for v in list.iter_mut() {
                 // Every version of the game counts, even those filtered out (Installed, search).
@@ -625,6 +639,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         .and_then(|p| app.db.game_prefs(&p.id).remove(&g.group_key))
                         .unwrap_or((None, None));
                     let mut game = library::version_json(&g);
+                    let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
+                    if let Some(t) = crate::screenscraper::title(app, &g.group_key, &lang) {
+                        game["name"] = json!(t);
+                    }
                     let all = if versions.is_empty() { vec![g.clone()] } else { versions.clone() };
                     library::fill_media(&mut game, &versions);
                     let ids: Vec<i64> = std::iter::once(g.rom_id).chain(versions.iter().map(|v| v.rom_id)).collect();

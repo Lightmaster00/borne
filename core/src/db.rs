@@ -102,6 +102,12 @@ CREATE TABLE IF NOT EXISTS media (
     stamp TEXT NOT NULL,
     PRIMARY KEY (group_key, kind)
 );
+-- ScreenScraper's record of a game (titles per region, media addresses without credentials), kept
+-- so that a change of interface language picks other titles and scans without asking again.
+CREATE TABLE IF NOT EXISTS ss_records (
+    group_key TEXT PRIMARY KEY,
+    json TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS oplog (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ts INTEGER NOT NULL,
@@ -683,6 +689,24 @@ impl Db {
             "INSERT OR REPLACE INTO media (group_key, kind, path, w, h, stamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             rusqlite::params![group_key, kind, path, w, h, stamp],
         );
+    }
+    pub fn ss_record(&self, group_key: &str) -> Option<String> {
+        self.c()
+            .query_row("SELECT json FROM ss_records WHERE group_key = ?1", [group_key], |r| r.get(0))
+            .optional()
+            .ok()
+            .flatten()
+    }
+    pub fn set_ss_record(&self, group_key: &str, json: &str) {
+        let _ = self.c().execute(
+            "INSERT OR REPLACE INTO ss_records (group_key, json) VALUES (?1, ?2)",
+            rusqlite::params![group_key, json],
+        );
+    }
+    pub fn ss_record_keys(&self) -> Vec<String> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT group_key FROM ss_records").unwrap();
+        st.query_map([], |r| r.get(0)).unwrap().filter_map(Result::ok).collect()
     }
     /// Forgets every media file (they are fetched again at the next sync).
     pub fn clear_media(&self) -> Vec<String> {

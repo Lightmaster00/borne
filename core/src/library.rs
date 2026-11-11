@@ -170,6 +170,31 @@ pub fn groups(
         .collect()
 }
 
+/// Sort key for a title: case and accents ignored, a leading article set aside
+/// ("The Legend of Zelda" sorts under L, "La Légende de Zelda" too).
+pub fn title_sort_key(name: &str) -> String {
+    let lower: String = name
+        .to_lowercase()
+        .chars()
+        .map(|c| match c {
+            'à' | 'â' | 'ä' | 'á' | 'ã' => 'a',
+            'é' | 'è' | 'ê' | 'ë' => 'e',
+            'î' | 'ï' | 'í' => 'i',
+            'ô' | 'ö' | 'ó' | 'õ' => 'o',
+            'ù' | 'û' | 'ü' | 'ú' => 'u',
+            'ç' => 'c',
+            'ñ' => 'n',
+            c => c,
+        })
+        .collect();
+    for a in ["the ", "a ", "an ", "le ", "la ", "les ", "l'", "l’", "der ", "die ", "das ", "el ", "los ", "las ", "il ", "lo ", "gli "] {
+        if let Some(rest) = lower.strip_prefix(a) {
+            return rest.trim_start().to_string();
+        }
+    }
+    lower
+}
+
 /// The shown version, plus what the library needs to know about the others.
 pub fn entry(shown: &GameRow, versions: &[GameRow]) -> Value {
     let mut v = version_json(shown);
@@ -239,6 +264,13 @@ pub fn game_languages(versions: &[GameRow]) -> Vec<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn titles_sort_without_articles_and_accents() {
+        assert_eq!(title_sort_key("The Legend of Zelda"), "legend of zelda");
+        assert_eq!(title_sort_key("La Légende de Zelda"), "legende de zelda");
+        assert_eq!(title_sort_key("L'Odyssée"), "odyssee");
+    }
 
     fn rom(id: i64, regions: &str, languages: &str, rev: &str) -> GameRow {
         GameRow {

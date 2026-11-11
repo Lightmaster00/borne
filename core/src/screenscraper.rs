@@ -7,7 +7,9 @@
 //! binary, never logged, never returned by the API. A build without them reports it plainly.
 //!
 //! Games are matched by ScreenScraper's game id when RomM has it, else by the file's hashes,
-//! name and size. Images follow the version's region (Europe → eu, then wor, us…). A spine
+//! name and size. Titles and images follow the interface language (French → fr, then eu, wor…;
+//! Japanese → jp…); the record is kept (without credentials) so a new language needs no new
+//! lookup. A spine
 //! missing on ScreenScraper is cut from the unfolded case texture ("box-texture": back, spine,
 //! front) when there is one. What comes from ScreenScraper takes precedence over RomM's copies.
 //!
@@ -189,43 +191,6 @@ pub fn status(app: &Shared) -> Value {
     })
 }
 
-/// ScreenScraper region codes for a version's regions, then the usual fallbacks.
-fn regions(version_regions: &str) -> Vec<&'static str> {
-    let mut out = vec![];
-    for r in version_regions.split(',').map(str::trim) {
-        let code = match r {
-            "Europe" => "eu",
-            "USA" => "us",
-            "Japan" => "jp",
-            "World" => "wor",
-            "France" => "fr",
-            "Germany" => "de",
-            "Spain" => "sp",
-            "Italy" => "it",
-            "UK" => "uk",
-            "Australia" => "au",
-            "Brazil" => "br",
-            "Korea" => "kr",
-            "China" => "cn",
-            "Canada" => "us",
-            "Netherlands" => "nl",
-            _ => continue,
-        };
-        if !out.contains(&code) {
-            out.push(code);
-        }
-        if ["fr", "de", "sp", "it", "uk", "nl"].contains(&code) && !out.contains(&"eu") {
-            out.push("eu");
-        }
-    }
-    for c in ["wor", "eu", "us", "ss", "jp", "unk"] {
-        if !out.contains(&c) {
-            out.push(c);
-        }
-    }
-    out
-}
-
 /// The URL of one media type, in the order of the regions.
 fn pick<'a>(medias: &'a [Value], types: &[&str], regions: &[&str]) -> Option<&'a str> {
     for t in types {
@@ -245,13 +210,132 @@ fn pick<'a>(medias: &'a [Value], types: &[&str], regions: &[&str]) -> Option<&'a
     None
 }
 
-/// Media URLs carry the credentials: errors never include them.
-fn download(url: &str) -> Result<Vec<u8>, String> {
-    let mut resp = agent().get(url).call().map_err(|_| "image unreachable (network)".to_string())?;
+/// A media request: the address is kept without credentials, they are added for the request only.
+fn media_get(c: &Credentials, noted: &str) -> Result<ureq::RequestBuilder<ureq::typestate::WithoutBody>, String> {
+    let (dev_id, dev_password) = developer().ok_or("this build of Borne has no ScreenScraper developer access")?;
+    // Only ScreenScraper's own hosts get the credentials, whatever the database holds.
+    let host_ok = noted
+        .strip_prefix("https://")
+        .and_then(|r| r.split('/').next())
+        .map(|h| h == "screenscraper.fr" || h.ends_with(".screenscraper.fr"))
+        .unwrap_or(false);
+    if !host_ok && std::env::var("BORNE_SCREENSCRAPER_API").is_err() {
+        return Err("unexpected media address".into());
+    }
+    Ok(agent()
+        .get(noted)
+        .query("devid", &dev_id)
+        .query("devpassword", &dev_password)
+        .query("softname", "borne")
+        .query("ssid", &c.user)
+        .query("sspassword", &c.password))
+}
+
+/// Errors never include the address (it carries the credentials).
+fn download(c: &Credentials, noted: &str) -> Result<Vec<u8>, String> {
+    let mut resp = media_get(c, noted)?.call().map_err(|_| "image unreachable (network)".to_string())?;
     if resp.status().as_u16() != 200 {
         return Err(format!("image answered {}", resp.status().as_u16()));
     }
     resp.body_mut().with_config().limit(30 << 20).read_to_vec().map_err(|_| "image download interrupted".to_string())
+}
+
+/// The record without the credentials ScreenScraper puts in its media addresses.
+fn redact_record(rec: &Value) -> Value {
+    let mut r = rec.clone();
+    if let Some(ms) = r["jeu"]["medias"].as_array_mut() {
+        for m in ms {
+            if let Some(u) = m["url"].as_str().map(redact) {
+                m["url"] = json!(u);
+            }
+        }
+    }
+    r
+}
+
+/// ScreenScraper regions for the interface language: the title and the case scans shown are
+/// those of the language Borne is displayed in (French → fr, then European…; Japanese → jp…).
+pub fn ui_regions(lang: &str) -> Vec<&'static str> {
+    let first: &[&str] = match lang {
+        "fr" => &["fr", "eu"],
+        "de" => &["de", "eu"],
+        "es" => &["sp", "eu"],
+        "it" => &["it", "eu"],
+        "nl" => &["nl", "eu"],
+        "pt" => &["pt", "br", "eu"],
+        "sv" => &["se", "eu"],
+        "da" => &["dk", "eu"],
+        "no" => &["no", "eu"],
+        "fi" => &["fi", "eu"],
+        "pl" => &["pl", "eu"],
+        "ru" => &["ru", "eu"],
+        "ja" => &["jp"],
+        "ko" => &["kr", "jp"],
+        "zh" => &["cn", "tw", "jp"],
+        _ => &["us", "wor", "uk", "eu"],
+    };
+    let mut out: Vec<&'static str> = first.to_vec();
+    for c in ["wor", "eu", "us", "uk", "ss", "jp", "unk"] {
+        if !out.contains(&c) {
+            out.push(c);
+        }
+    }
+    out
+}
+
+fn ui_lang(app: &Shared) -> String {
+    app.db.setting("ui_lang").unwrap_or_else(|| "en".into())
+}
+
+/// The game's title in the interface language, from its ScreenScraper record.
+pub fn title(app: &Shared, group_key: &str, lang: &str) -> Option<String> {
+    let rec: Value = serde_json::from_str(&app.db.ss_record(group_key)?).ok()?;
+    let names = rec["jeu"]["noms"].as_array()?;
+    for r in ui_regions(lang) {
+        if let Some(t) = names.iter().find(|n| n["region"].as_str() == Some(r)).and_then(|n| n["text"].as_str()) {
+            let t = t.trim();
+            if !t.is_empty() {
+                return Some(t.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// The interface language changed: titles follow at once, and the scans of that language are
+/// fetched from the kept records (no new lookup), in the background.
+pub fn set_ui_lang(app: &Shared, lang: &str) {
+    if app.db.setting("ui_lang").as_deref() == Some(lang) {
+        return;
+    }
+    app.db.set_setting("ui_lang", lang);
+    RELOCALIZE.store(true, Ordering::SeqCst);
+    relocalize(app);
+}
+
+/// Set when the scans must follow a new language; done as soon as ScreenScraper is free.
+static RELOCALIZE: AtomicBool = AtomicBool::new(false);
+
+fn relocalize(app: &Shared) {
+    let Some(c) = credentials(app) else { return };
+    if developer().is_none() || !RELOCALIZE.load(Ordering::SeqCst) || RUNNING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        while RELOCALIZE.swap(false, Ordering::SeqCst) {
+            for (i, key) in app.db.ss_record_keys().iter().enumerate() {
+                if let Some(rec) = app.db.ss_record(key).and_then(|j| serde_json::from_str::<Value>(&j).ok()) {
+                    fetch_game(&app, &c, key, &rec);
+                }
+                if i % 20 == 19 {
+                    app.emit(json!({ "type": "library" }));
+                }
+            }
+        }
+        RUNNING.store(false, Ordering::SeqCst);
+        app.emit(json!({ "type": "library" }));
+    });
 }
 
 /// The game's gameplay video from ScreenScraper, downloaded once into `dir` (the credentials are
@@ -263,27 +347,11 @@ pub fn video(app: &Shared, group_key: &str, dir: &std::path::Path) -> Result<std
     }
     let noted = m.stamp.strip_prefix("ss|").ok_or("no gameplay video on ScreenScraper for this game")?;
     let c = credentials(app).ok_or("no ScreenScraper account")?;
-    let (dev_id, dev_password) = developer().ok_or("this build of Borne has no ScreenScraper developer access")?;
-    // Only ScreenScraper's own media addresses are asked, whatever the database holds.
-    let host_ok = noted
-        .strip_prefix("https://")
-        .and_then(|r| r.split('/').next())
-        .map(|h| h == "screenscraper.fr" || h.ends_with(".screenscraper.fr"))
-        .unwrap_or(false);
-    if !host_ok && std::env::var("BORNE_SCREENSCRAPER_API").is_err() {
-        return Err("unexpected video address".into());
-    }
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     let name: String = group_key.chars().map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' }).take(80).collect();
     let path = dir.join(format!("ss-{name}.mp4"));
     let tmp = dir.join(format!("ss-{name}.part"));
-    let mut resp = agent()
-        .get(noted)
-        .query("devid", &dev_id)
-        .query("devpassword", &dev_password)
-        .query("softname", "borne")
-        .query("ssid", &c.user)
-        .query("sspassword", &c.password)
+    let mut resp = media_get(&c, noted)?
         .config()
         .timeout_recv_body(Some(Duration::from_secs(180)))
         .build()
@@ -361,9 +429,10 @@ fn lookup(app: &Shared, c: &Credentials, versions: &[crate::db::GameRow]) -> Res
 }
 
 /// Fetches and stores one game's media from its ScreenScraper record.
-fn fetch_game(app: &Shared, group_key: &str, rec: &Value) -> usize {
+/// `rec` is the redacted record; the scans follow the interface language.
+fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> usize {
     let medias: Vec<Value> = rec["jeu"]["medias"].as_array().cloned().unwrap_or_default();
-    let regions = regions(rec["regions"].as_str().unwrap_or(""));
+    let regions = ui_regions(&ui_lang(app));
     let mut stored = 0;
     let wanted: [(&str, &[&str]); 6] = [
         ("front", &["box-2D"]),
@@ -384,7 +453,7 @@ fn fetch_game(app: &Shared, group_key: &str, rec: &Value) -> usize {
             }
             continue;
         }
-        match download(url).and_then(|b| crate::media::store(app, group_key, kind, &b)) {
+        match download(c, url).and_then(|b| crate::media::store(app, group_key, kind, &b)) {
             Ok((path, w, h)) => {
                 app.db.set_media(group_key, kind, &path.to_string_lossy(), w, h, &stamp);
                 if kind == "front" {
@@ -407,7 +476,7 @@ fn fetch_game(app: &Shared, group_key: &str, rec: &Value) -> usize {
     let has_side = app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|")).unwrap_or(false);
     if !has_side {
         if let (Some(ar), Some(url)) = (front_ar, pick(&medias, &["box-texture"], &regions)) {
-            if let Ok(img) = download(url).and_then(|b| crate::media::decode(&b)) {
+            if let Ok(img) = download(c, url).and_then(|b| crate::media::decode(&b)) {
                 let (w, h) = (img.width() as f64, img.height() as f64);
                 let face = h * ar;
                 let spine = w - 2.0 * face;
@@ -445,8 +514,8 @@ pub fn start(app: &Shared, again: bool) {
                     again
                         || match app.db.media(k, "ss") {
                             None => true,
-                            // Found before gameplay videos were noted: asked once more.
-                            Some(m) => m.stamp.starts_with("found") && app.db.media(k, "video").is_none(),
+                            // Found before the record was kept (titles, videos): asked once more.
+                            Some(m) => m.stamp.starts_with("found") && app.db.ss_record(k).is_none(),
                         }
                 })
                 .collect();
@@ -461,7 +530,9 @@ pub fn start(app: &Shared, again: bool) {
                 let versions = app.db.group(key);
                 match lookup(&app, &c, &versions) {
                     Ok(Some(rec)) => {
-                        fetch_game(&app, key, &rec);
+                        let rec = redact_record(&rec);
+                        app.db.set_ss_record(key, &rec.to_string());
+                        fetch_game(&app, &c, key, &rec);
                         app.db.set_media(key, "ss", "", 0, 0, &format!("found|{}", rec["jeu"]["id"]));
                         status_set(&app, |s| s.found += 1);
                     }
@@ -483,6 +554,8 @@ pub fn start(app: &Shared, again: bool) {
             let st = status_get();
             app.db.log("screenscraper", &format!("{} of {} game(s) found", st.found, st.done));
             RUNNING.store(false, Ordering::SeqCst);
+            // The language changed during the run: its scans now.
+            relocalize(&app);
         })
         .expect("screenscraper thread");
 }
@@ -492,10 +565,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn regions_follow_the_version() {
-        assert_eq!(regions("France")[..3], ["fr", "eu", "wor"]);
-        assert_eq!(regions("USA")[0], "us");
-        assert_eq!(regions("")[0], "wor");
+    fn regions_follow_the_interface_language() {
+        assert_eq!(ui_regions("fr")[..3], ["fr", "eu", "wor"]);
+        assert_eq!(ui_regions("en")[0], "us");
+        assert_eq!(ui_regions("ja")[0], "jp");
     }
 
     #[test]
@@ -511,7 +584,7 @@ mod tests {
             json!({"type": "box-2D", "region": "eu", "url": "E", "parent": "jeu"}),
             json!({"type": "wheel", "region": "jp", "url": "W", "parent": "jeu"}),
         ];
-        assert_eq!(pick(&m, &["box-2D"], &regions("Europe")), Some("E"));
-        assert_eq!(pick(&m, &["wheel-hd", "wheel"], &regions("Europe")), Some("W"));
+        assert_eq!(pick(&m, &["box-2D"], &ui_regions("fr")), Some("E"));
+        assert_eq!(pick(&m, &["wheel-hd", "wheel"], &ui_regions("fr")), Some("W"));
     }
 }
