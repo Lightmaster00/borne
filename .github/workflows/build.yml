@@ -33,20 +33,14 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: core
+      - uses: actions/cache@v4
+        with:
+          path: ~/apt-cache
+          key: apt-${{ runner.os }}-${{ hashFiles('scripts/ci/linux-deps.sh') }}
+          restore-keys: apt-${{ runner.os }}-
       - name: Build dependencies
-        timeout-minutes: 15
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          # Short network timeouts and retries: a stalled mirror once held this step for 40 min.
-          APT="-o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=30 -o Dpkg::Use-Pty=0"
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-          deps() { sudo apt-get $APT update && sudo timeout 300 apt-get $APT install -y --no-install-recommends cmake g++ qt6-base-dev qt6-declarative-dev qt6-l10n-tools libudev-dev libxcb-cursor0 libgl-dev libpulse0; }
-          # The runner's Azure mirror sometimes stalls: fall back to the main Ubuntu archive.
-          deps || {
-            sudo sed -i 's#http://azure.archive.ubuntu.com#http://archive.ubuntu.com#g' /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null
-            deps
-          }
+        timeout-minutes: 20
+        run: scripts/ci/linux-deps.sh cmake g++ qt6-base-dev qt6-declarative-dev qt6-l10n-tools libudev-dev libxcb-cursor0 libgl-dev libpulse0
       - name: Core tests
         run: cargo test --release --manifest-path core/Cargo.toml
       - name: Qt 6.8 to bundle (PySide6 wheels)
