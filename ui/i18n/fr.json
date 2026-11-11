@@ -20,6 +20,10 @@
  "%1%": "%1 %",
  "%1: %2": "%1 : %2",
  "%1: %2 without spine": "%1 : %2 sans tranche",
+ "%n cheat(s) on. They apply the next time the game starts.": [
+  "%n cheat activé. Il s'applique au prochain lancement du jeu.",
+  "%n cheats activés. Ils s'appliquent au prochain lancement du jeu."
+ ],
  "%n game(s)": [
   "%n jeu",
   "%n jeux"
@@ -87,6 +91,9 @@
  "Change server": "Changer de serveur",
  "Change value": "Changer la valeur",
  "Channel": "Canal",
+ "Cheats": "Cheats",
+ "Cheats unavailable": "Cheats indisponibles",
+ "Cheats · %1": "Cheats · %1",
  "Check automatically": "Vérifier automatiquement",
  "Check for updates": "Rechercher une mise à jour",
  "Check now": "Vérifier maintenant",
@@ -142,6 +149,7 @@
  "Downloading %1 (%2).": "Téléchargement de %1 lancé (%2).",
  "Downloading %1%": "Téléchargement %1 %",
  "Downloading the LaunchBox index…": "Téléchargement de l’index LaunchBox…",
+ "Downloading the cheat databases… try again in a moment.": "Téléchargement des bases de cheats… réessaie dans un instant.",
  "Downloading the update… %1%": "Téléchargement de la mise à jour… %1 %",
  "Downloading…": "Téléchargement…",
  "Downloading… %1%": "Téléchargement… %1 %",
@@ -267,6 +275,7 @@
  "Network cache": "Cache réseau",
  "New profile": "Nouveau profil",
  "No build of this emulator for this computer": "Cet émulateur n'existe pas pour cet ordinateur",
+ "No cheats for this version of the game in the public databases.": "Aucun cheat pour cette version du jeu dans les bases publiques.",
  "No emulator can run these games yet": "Aucun émulateur ne fait encore tourner ces jeux",
  "No game found": "Aucun jeu trouvé",
  "No game installed yet. Open a game in “All games” to download it or play it from the network.": "Aucun jeu installé pour l'instant. Ouvre un jeu dans « Tous les jeux » pour le télécharger ou y jouer depuis le réseau.",
@@ -429,6 +438,7 @@
  "Trailers": "Trailers",
  "Trailers: off": "Trailers : désactivés",
  "Trailers: on": "Trailers : activés",
+ "Turn all off": "Tout désactiver",
  "Type a game title": "Tapez le titre d’un jeu",
  "USA": "États-Unis",
  "Unavailable here: %1": "Indisponible ici : %1",

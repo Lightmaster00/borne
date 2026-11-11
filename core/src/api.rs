@@ -32,6 +32,8 @@
 //!   POST   /api/v1/games/<rom_id>/prefs  {version?, emu_language?}   active profile's choices
 //!   POST   /api/v1/games/<rom_id>/trailer         fetches the RomM trailer once (token, cache) → {path}
 //!   POST   /api/v1/games/<rom_id>/play            starts the game with its emulator → session
+//!   GET    /api/v1/games/<rom_id>/cheats          cheats of this exact version, and which are on
+//!   POST   /api/v1/games/<rom_id>/cheats {on}     the cheats turned on (per profile)
 //!   GET    /api/v1/session                        the running game, if any
 //!   POST   /api/v1/session/stop                   ends the running game
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
@@ -714,6 +716,18 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(s) => ok(req, s),
                 Err(e) => err(req, 409, &e),
             },
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Get, ["api", "v1", "games", id, "cheats"]) => match id.parse::<i64>() {
+            Ok(rom_id) => ok(req, crate::cheats::list(app, rom_id)),
+            Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Post, ["api", "v1", "games", id, "cheats"]) => match id.parse::<i64>() {
+            Ok(rom_id) => {
+                let b = body_json(&mut req);
+                let on: Vec<String> = b["on"].as_array().into_iter().flatten().filter_map(|v| v.as_str().map(String::from)).take(500).collect();
+                ok(req, crate::cheats::set(app, rom_id, &on))
+            }
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "session"]) => ok(req, crate::emulators::session()),

@@ -13,6 +13,7 @@
 
 mod api;
 mod catalog;
+mod cheats;
 mod db;
 mod diag;
 mod downloads;

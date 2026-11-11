@@ -309,7 +309,8 @@ fn game_file(app: &Shared, g: &GameRow) -> Result<PathBuf, String> {
 }
 
 /// The command that starts `rom` with the chosen engine.
-fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, rom: &Path, lang: &str) -> Result<Command, String> {
+#[allow(clippy::too_many_arguments)]
+fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, rom: &Path, lang: &str, rom_id: i64) -> Result<Command, String> {
     let core = match &e.core {
         Some(c) => {
             let path = crate::emuinstall::core_path(app, c);
@@ -321,7 +322,12 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
         None => None,
     };
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
-    let config = if p.id == "retroarch" { Some(retroarch_config(app, &profile, system)?) } else { None };
+    let config = if p.id == "retroarch" {
+        let cheats = crate::cheats::retroarch_settings(app, rom_id, &e.name, rom);
+        Some(retroarch_config(app, &profile, system, cheats)?)
+    } else {
+        None
+    };
     let userdir = app.paths.profiles().join(&profile).join(&p.id);
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
@@ -368,7 +374,7 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
 /// RetroArch's whole configuration for Borne (given with --config, so the user's own is never
 /// read): fullscreen, no menu, no messages, no hotkeys, the profile's saves and states, Borne's
 /// cores and BIOS folders. Written before each game from Borne's settings.
-fn retroarch_config(app: &Shared, profile: &str, system: &str) -> Result<PathBuf, String> {
+fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(String, String)>) -> Result<PathBuf, String> {
     let base = app.paths.profiles().join(profile);
     let saves = base.join("saves").join(system);
     let states = base.join("states").join(system);
@@ -418,7 +424,7 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str) -> Result<PathBuf
         ("check_firmware_before_loading".into(), "true".into()),
     ];
     // Per-console and per-game settings chosen in Borne come on top (see game_settings).
-    for (k, v) in crate::emulators::extra_retroarch(app, system) {
+    for (k, v) in crate::emulators::extra_retroarch(app, system).into_iter().chain(cheats) {
         lines.retain(|(key, _)| key != &k);
         lines.push((k, v));
     }
@@ -479,7 +485,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         .active_profile()
         .and_then(|p| app.db.game_prefs(&p.id).get(&g.group_key).and_then(|(_, l)| l.clone()))
         .unwrap_or_else(|| "auto".into());
-    let mut cmd = command(app, &p, &e, &found, &system, &rom, &lang)?;
+    let mut cmd = command(app, &p, &e, &found, &system, &rom, &lang, rom_id)?;
     let log = emulator_log(app);
     let _ = std::fs::create_dir_all(log.parent().unwrap());
     let out = std::fs::File::create(&log).map_err(|e| e.to_string())?;

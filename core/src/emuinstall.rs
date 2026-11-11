@@ -353,6 +353,37 @@ fn download(app: &Shared, program: &str, url: &str, dest: &Path, sha256: Option<
     Ok(())
 }
 
+/// A plain download (databases): https only, at most 512 MB.
+pub fn fetch_file(url: &str, dest: &Path) -> Result<(), String> {
+    if !url.starts_with("https://") {
+        return Err("refused: not an https address".into());
+    }
+    let mut r = agent()
+        .get(net(url))
+        .config()
+        .timeout_recv_body(Some(Duration::from_secs(600)))
+        .build()
+        .call()
+        .map_err(|e| format!("download failed: {e}"))?;
+    if r.status().as_u16() != 200 {
+        return Err(format!("download answered {}", r.status().as_u16()));
+    }
+    if let Some(p) = dest.parent() {
+        std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
+    }
+    let mut out = std::fs::File::create(dest).map_err(|e| e.to_string())?;
+    std::io::copy(&mut r.body_mut().with_config().limit(512 << 20).reader(), &mut out).map_err(|e| format!("download interrupted: {e}"))?;
+    Ok(())
+}
+
+pub fn sha256_file(p: &Path) -> String {
+    let mut h = <sha2::Sha256 as sha2::Digest>::new();
+    if let Ok(mut f) = std::fs::File::open(p) {
+        let _ = std::io::copy(&mut f, &mut h);
+    }
+    sha2::Digest::finalize(h).iter().map(|b| format!("{b:02x}")).collect()
+}
+
 fn walk(dir: &Path) -> Vec<PathBuf> {
     let mut out = vec![];
     let mut stack = vec![dir.to_path_buf()];

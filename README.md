@@ -77,6 +77,11 @@ Since then:
   you never open the emulator. RetroArch runs with Borne's own configuration: no menu, no
   messages, no hotkeys, saves and states in the profile's folder. *Play* starts the game (after
   installing what is missing); Select then Start quits it.
+- **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
+  public databases — the libretro cheat database for the consoles run by RetroArch (matched by
+  the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the
+  DS (matched by the game ID read from the cartridge header: game code and header CRC). Turn them
+  on per profile; they apply the next time the game starts.
 
 ## Try it on a Mac (Apple Silicon)
 

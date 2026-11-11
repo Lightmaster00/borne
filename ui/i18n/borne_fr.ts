@@ -320,6 +320,10 @@
         <source>Source: RomM</source>
         <translation>Source : RomM</translation>
     </message>
+    <message>
+        <source>Cheats</source>
+        <translation>Cheats</translation>
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -950,6 +954,34 @@
     <message>
         <source>Installing %1… the game starts as soon as it is ready.</source>
         <translation>Installation de %1… le jeu se lance dès que c'est prêt.</translation>
+    </message>
+    <message>
+        <source>Cheats unavailable</source>
+        <translation>Cheats indisponibles</translation>
+    </message>
+    <message>
+        <source>Downloading the cheat databases… try again in a moment.</source>
+        <translation>Téléchargement des bases de cheats… réessaie dans un instant.</translation>
+    </message>
+    <message>
+        <source>No cheats for this version of the game in the public databases.</source>
+        <translation>Aucun cheat pour cette version du jeu dans les bases publiques.</translation>
+    </message>
+    <message>
+        <source>Cheats</source>
+        <translation>Cheats</translation>
+    </message>
+    <message>
+        <source>Turn all off</source>
+        <translation>Tout désactiver</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n cheat(s) on. They apply the next time the game starts.</source>
+        <translation><numerusform>%n cheat activé. Il s'applique au prochain lancement du jeu.</numerusform><numerusform>%n cheats activés. Ils s'appliquent au prochain lancement du jeu.</numerusform></translation>
+    </message>
+    <message>
+        <source>Cheats · %1</source>
+        <translation>Cheats · %1</translation>
     </message>
 </context>
 <context>
@@ -1656,6 +1688,82 @@
     <message>
         <source>No build of this emulator for this computer</source>
         <translation>Cet émulateur n'existe pas pour cet ordinateur</translation>
+    </message>
+    <message>
+        <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
+        <translation>Cette version de Borne n’a pas d’accès développeur ScreenScraper : les versions officielles l’incluent. Les images viennent toujours de RomM.</translation>
+    </message>
+    <message>
+        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. Connect your ScreenScraper account (free on screenscraper.fr).</source>
+        <translation>Borne demande lui-même à ScreenScraper le boîtier de chaque jeu (face, tranche, dos), sa cartouche, son logo et ses illustrations, sans passer par RomM. Connectez votre compte ScreenScraper (gratuit sur screenscraper.fr).</translation>
+    </message>
+    <message>
+        <source>Connected as %1</source>
+        <translation>Connecté en tant que %1</translation>
+    </message>
+    <message>
+        <source>%1 / %2 requests today</source>
+        <translation>%1 / %2 requêtes aujourd’hui</translation>
+    </message>
+    <message>
+        <source>Asking ScreenScraper… %1 / %2 games, %3 found</source>
+        <translation>Interrogation de ScreenScraper… %1 / %2 jeux, %3 trouvés</translation>
+    </message>
+    <message>
+        <source>Stopped: %1</source>
+        <translation>Arrêté : %1</translation>
+    </message>
+    <message>
+        <source>%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.</source>
+        <translation>%1 jeux sur %2 trouvés sur ScreenScraper (%3 pas encore demandés). Leurs images priment sur celles de RomM ; les nouveaux jeux sont récupérés après chaque synchro.</translation>
+    </message>
+    <message>
+        <source>Fetched after each sync for new games.</source>
+        <translation>Récupéré après chaque synchro pour les nouveaux jeux.</translation>
+    </message>
+    <message>
+        <source>%1: %2 without spine</source>
+        <translation>%1 : %2 sans tranche</translation>
+    </message>
+    <message>
+        <source>Fetching… %1 image(s) left</source>
+        <translation>Récupération… %1 image(s) restante(s)</translation>
+    </message>
+    <message>
+        <source>Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6</source>
+        <translation>Face %1/%6 · tranche %2/%6 · dos %3/%6 · cartouche %4/%6 · logo %5/%6</translation>
+    </message>
+    <message>
+        <source>Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.</source>
+        <translation>Les scans manquants ne sont pas dans RomM : ajoutez box2d, box2d_side, box2d_back, physical et logo à scan.media dans les réglages ScreenScraper de RomM, puis relancez une analyse.</translation>
+    </message>
+    <message>
+        <source>Open on GitHub</source>
+        <translation>Ouvrir sur GitHub</translation>
+    </message>
+    <message>
+        <source>Please wait…</source>
+        <translation>Patientez…</translation>
+    </message>
+    <message>
+        <source>Restart and install</source>
+        <translation>Redémarrer et installer</translation>
+    </message>
+    <message>
+        <source>Download from GitHub</source>
+        <translation>Télécharger depuis GitHub</translation>
+    </message>
+    <message>
+        <source>Install · %1</source>
+        <translation>Installer · %1</translation>
+    </message>
+    <message>
+        <source>Check now</source>
+        <translation>Vérifier maintenant</translation>
+    </message>
+    <message>
+        <source>Reinstall the latest build</source>
+        <translation>Réinstaller la dernière build</translation>
     </message>
 </context>
 </TS>

@@ -324,6 +324,37 @@ Window {
             armed = false
         }
     }
+    // Cheats of the shown version: a list to turn them on and off (kept per profile).
+    function cheatsMenu(g, at) {
+        api("GET", "/api/v1/games/" + g.rom_id + "/cheats", null, function (c, err) {
+            if (err || !c) { toasts.show(err || qsTr("Cheats unavailable"), "error"); return }
+            if (!c.cheats.length) {
+                const why = c.updating ? qsTr("Downloading the cheat databases… try again in a moment.")
+                          : c.error ? c.error : qsTr("No cheats for this version of the game in the public databases.")
+                menu.open(qsTr("Cheats"), why, [{ id: "close", label: qsTr("Close") }], function () {})
+                return
+            }
+            const on = c.cheats.filter(x => x.on).map(x => x.name)
+            const items = c.cheats.map((x, i) => ({ id: String(i), label: (x.on ? "● " : "○ ") + x.name }))
+            items.push({ id: "none", label: qsTr("Turn all off"), disabled: on.length === 0 })
+            items.push({ id: "close", label: qsTr("Close") })
+            const sub = qsTr("%n cheat(s) on. They apply the next time the game starts.", "", on.length)
+            menu.open(qsTr("Cheats · %1").arg(g.name), sub, items, function (id) {
+                if (id === "close") return
+                let next = on.slice()
+                let idx = items.findIndex(x => x.id === id)
+                if (id === "none") next = []
+                else {
+                    const name = c.cheats[Number(id)].name
+                    next = next.indexOf(name) >= 0 ? next.filter(n => n !== name) : next.concat([name])
+                }
+                api("POST", "/api/v1/games/" + g.rom_id + "/cheats", { on: next }, function (r, err2) {
+                    if (err2) toasts.show(err2, "error")
+                    cheatsMenu(g, idx)
+                })
+            }, at)
+        })
+    }
     function pageAction(id, payload) {
         const g = pageGame
         if (id === "back") { sfx.play("back"); closeGame(); return }
@@ -334,6 +365,7 @@ Window {
         else if (id === "delete") deleteLocal(g)
         else if (id === "cancel") cancelDownload(g)
         else if (id === "play") play(g)
+        else if (id === "cheats") cheatsMenu(g)
         else if (id === "lang") {
             // A language picks the version launched for it.
             api("POST", "/api/v1/games/" + g.rom_id + "/prefs", { version: payload.version, emu_language: payload.code }, function (r, err) {

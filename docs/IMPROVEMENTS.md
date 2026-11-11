@@ -74,12 +74,12 @@ by Borne (`emuinstall.rs`); RetroArch hidden behind Borne's own configuration; l
 Select + Start to quit.
 
 Next:
-- Cheats (P0, asked): public databases — libretro-database `.cht` files matched by the game's
-  No-Intro name (region and revision included) for RetroArch consoles; for the DS, the
-  usrcheat.dat / cheats.xml database (DeadSkullzJr) matched by the game ID read from the ROM
-  header (game code + header CRC32), so each version gets its own codes; Dolphin Gecko/Action
-  Replay codes in the per-game INI of Borne's Dolphin folder; PCSX2 `.pnach` by serial and CRC.
-  A cheats list on the game page, enabled per profile and per game.
+- Cheats: done for RetroArch consoles (libretro database, exact dump name) and the DS
+  (DeadSkullzJr's cheats.xml, game ID from the header) through RetroArch cores. Still to do:
+  Dolphin (Gecko/Action Replay codes in the per-game INI of Borne's Dolphin folder, e.g. from
+  Dolphin's own GameSettings), PCSX2 (`.pnach` by serial and CRC), standalone melonDS (`.mch`),
+  Switch emulators (`load/<title id>/<name>/cheats`). Check on the real RetroArch that the `.cht`
+  written under `cheat_database_path/<core name>/` is loaded with the game.
 - Settings per console and per game in Borne (rendering resolution, aspect ratio, shaders,
   controller layout), written into each emulator's Borne-owned configuration.
 - PCSX2, DuckStation and melonDS in portable mode inside Borne's folder; controller mappings

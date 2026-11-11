@@ -320,6 +320,10 @@
         <source>Source: RomM</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Cheats</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -949,6 +953,34 @@
     </message>
     <message>
         <source>Installing %1… the game starts as soon as it is ready.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cheats unavailable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading the cheat databases… try again in a moment.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No cheats for this version of the game in the public databases.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cheats</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Turn all off</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n cheat(s) on. They apply the next time the game starts.</source>
+        <translation><numerusform>%n cheat on. It applies the next time the game starts.</numerusform><numerusform>%n cheats on. They apply the next time the game starts.</numerusform></translation>
+    </message>
+    <message>
+        <source>Cheats · %1</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1655,6 +1687,82 @@
     </message>
     <message>
         <source>No build of this emulator for this computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. Connect your ScreenScraper account (free on screenscraper.fr).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Connected as %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 / %2 requests today</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Asking ScreenScraper… %1 / %2 games, %3 found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stopped: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetched after each sync for new games.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1: %2 without spine</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fetching… %1 image(s) left</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open on GitHub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Please wait…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Restart and install</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download from GitHub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Check now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reinstall the latest build</source>
         <translation type="unfinished" />
     </message>
 </context>
