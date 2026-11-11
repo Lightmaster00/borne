@@ -1,0 +1,36 @@
+{
+  "_comment": "System files the emulators need (BIOS, keys, firmware), per console. The user provides them in Settings -> System files, from a file or a link. 'names': accepted file names (the first one is used when a file has another name and the size fits); 'size': expected size in bytes when it is fixed; 'kind': bios (copied for RetroArch and the standalone emulators), keys, firmware-nca (archive of .nca files), pup (PS3 update file). Read by core/src/systemfiles.rs.",
+  "consoles": {
+    "psx": [
+      { "id": "bios", "name": "PlayStation BIOS", "kind": "bios", "required": true, "multi": true,
+        "names": ["scph5501.bin", "scph5500.bin", "scph5502.bin", "scph1001.bin", "scph7001.bin", "scph101.bin"], "size": 524288 }
+    ],
+    "ps2": [
+      { "id": "bios", "name": "PlayStation 2 BIOS", "kind": "bios", "required": true, "multi": true, "ext": [".bin"], "size": 4194304 }
+    ],
+    "saturn": [
+      { "id": "bios", "name": "Saturn BIOS", "kind": "bios", "required": true, "multi": true,
+        "names": ["sega_101.bin", "mpr-17933.bin", "saturn_bios.bin"], "size": 524288 }
+    ],
+    "segacd": [
+      { "id": "bios", "name": "Mega-CD / Sega CD BIOS", "kind": "bios", "required": true, "multi": true,
+        "names": ["bios_CD_E.bin", "bios_CD_U.bin", "bios_CD_J.bin"], "size": 131072 }
+    ],
+    "nds": [
+      { "id": "bios7", "name": "DS ARM7 BIOS", "kind": "bios", "required": false, "names": ["bios7.bin"], "size": 16384 },
+      { "id": "bios9", "name": "DS ARM9 BIOS", "kind": "bios", "required": false, "names": ["bios9.bin"], "size": 4096 },
+      { "id": "firmware", "name": "DS firmware", "kind": "bios", "required": false, "names": ["firmware.bin"], "size": 262144 }
+    ],
+    "gba": [
+      { "id": "bios", "name": "Game Boy Advance BIOS", "kind": "bios", "required": false, "names": ["gba_bios.bin"], "size": 16384 }
+    ],
+    "switch": [
+      { "id": "prod-keys", "name": "Switch keys (prod.keys)", "kind": "keys", "required": true, "names": ["prod.keys"] },
+      { "id": "title-keys", "name": "Switch title keys (title.keys)", "kind": "keys", "required": false, "names": ["title.keys"] },
+      { "id": "firmware", "name": "Switch firmware (archive of .nca files)", "kind": "firmware-nca", "required": true, "ext": [".zip"] }
+    ],
+    "ps3": [
+      { "id": "firmware", "name": "PS3 firmware (PS3UPDAT.PUP)", "kind": "pup", "required": true, "names": ["PS3UPDAT.PUP"] }
+    ]
+  }
+}

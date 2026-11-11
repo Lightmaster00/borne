@@ -15,7 +15,7 @@ pad rb rb rb rb rb rb lb lb lb lb lb lb lt rt   # tabs, letters
 pad right right left a sleep:2 down down up up b sleep:1   # game page
 pad y sleep:1 b select sleep:1 b              # search, quick menu
 pad start sleep:2                                # settings
-for section in 1 2 3 4 5 6 7 8; do
+for section in 1 2 3 4 5 6 7 8 9 10; do
   pad right; for _ in $(seq 1 14); do pad down; done; pad b down sleep:0.5
 done
 pad b sleep:1

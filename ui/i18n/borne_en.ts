@@ -983,6 +983,18 @@
         <source>Cheats · %1</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Full path of the file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Link to the file (http or https)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Link</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1763,6 +1775,54 @@
     </message>
     <message>
         <source>Reinstall the latest build</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adding…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Here: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Missing — needed to play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not added: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose a file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From a link</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nothing needed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No console of the library needs a BIOS, keys or firmware.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>System files</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>BIOS, keys, firmware</source>
         <translation type="unfinished" />
     </message>
 </context>

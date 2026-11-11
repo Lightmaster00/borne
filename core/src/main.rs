@@ -31,6 +31,7 @@ mod screenscraper;
 mod secrets;
 mod state;
 mod stream;
+mod systemfiles;
 mod update;
 
 use std::path::PathBuf;

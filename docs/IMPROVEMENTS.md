@@ -86,8 +86,10 @@ Next:
   written by Borne for every emulator.
 - BIOS and firmware: taken from RomM's BIOS for the console and placed in Borne's `bios` folder;
   a clear message before launching when one is missing.
-- Switch, PS3, PS4: keys, firmware and system files from RomM's BIOS for the console, installed
-  into each emulator's Borne folder before the first game (Eden/Citron `keys`, RPCS3 firmware PUP).
+- System files: done (Settings → System files, from a file or a link; placed for RetroArch,
+  PCSX2, Eden, Citron, Ryubing keys, RPCS3 firmware). Still to do: Ryubing firmware installation,
+  shadPS4 system modules, picking them straight from RomM's firmware list for the console, and
+  checking BIOS dumps against known checksums (region shown).
 - Eden and Ryubing release file names are matched by words; check them against the real releases
   on the first real install (they could not be read from the build machine).
 - Test on the real machines (ChimeraOS, macOS) with real downloads.

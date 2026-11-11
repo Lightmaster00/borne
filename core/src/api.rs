@@ -34,6 +34,9 @@
 //!   POST   /api/v1/games/<rom_id>/play            starts the game with its emulator → session
 //!   GET    /api/v1/games/<rom_id>/cheats          cheats of this exact version, and which are on
 //!   POST   /api/v1/games/<rom_id>/cheats {on}     the cheats turned on (per profile)
+//!   GET    /api/v1/system-files                   BIOS, keys, firmware per console, and which are here
+//!   POST   /api/v1/system-files/<console>/<item> {path | url | pick}   adds one (checked, in the background)
+//!   DELETE /api/v1/system-files/<console>/<item>  removes it
 //!   GET    /api/v1/session                        the running game, if any
 //!   POST   /api/v1/session/stop                   ends the running game
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
@@ -233,7 +236,8 @@ fn install_mode(app: &Shared) -> String {
 fn settings(app: &Shared) -> Value {
     json!({ "install_mode": install_mode(app), "stream": stream::status(app), "update": update::status(app),
             "media": crate::media::report(app), "screenscraper": crate::screenscraper::status(app),
-            "emulators": crate::emulators::list(app) })
+            "emulators": crate::emulators::list(app),
+            "system_files": crate::systemfiles::status(app) })
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -729,6 +733,27 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 ok(req, crate::cheats::set(app, rom_id, &on))
             }
             Err(_) => err(req, 400, "invalid identifier"),
+        },
+        (Method::Get, ["api", "v1", "system-files"]) => ok(req, crate::systemfiles::status(app)),
+        (Method::Post, ["api", "v1", "system-files", console, item]) => {
+            let b = body_json(&mut req);
+            let r = if let Some(u) = b["url"].as_str() {
+                crate::systemfiles::add_url(app, console, item, u)
+            } else if let Some(p) = b["path"].as_str() {
+                crate::systemfiles::add_path(app, console, item, p)
+            } else if b["pick"].as_bool().unwrap_or(false) {
+                crate::systemfiles::pick_file(b["title"].as_str().unwrap_or("Borne")).and_then(|p| crate::systemfiles::add_path(app, console, item, &p))
+            } else {
+                Err("a path, a link or pick expected".into())
+            };
+            match r {
+                Ok(()) => ok(req, crate::systemfiles::status(app)),
+                Err(e) => err(req, 400, &e),
+            }
+        }
+        (Method::Delete, ["api", "v1", "system-files", console, item]) => match crate::systemfiles::remove(app, console, item) {
+            Ok(()) => ok(req, crate::systemfiles::status(app)),
+            Err(e) => err(req, 400, &e),
         },
         (Method::Get, ["api", "v1", "session"]) => ok(req, crate::emulators::session()),
         (Method::Post, ["api", "v1", "session", "stop"]) => ok(req, json!({ "stopped": crate::emulators::stop() })),

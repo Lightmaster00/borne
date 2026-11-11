@@ -983,6 +983,18 @@
         <source>Cheats · %1</source>
         <translation>Cheats · %1</translation>
     </message>
+    <message>
+        <source>Full path of the file</source>
+        <translation>Chemin complet du fichier</translation>
+    </message>
+    <message>
+        <source>Link to the file (http or https)</source>
+        <translation>Lien vers le fichier (http ou https)</translation>
+    </message>
+    <message>
+        <source>Link</source>
+        <translation>Lien</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1764,6 +1776,54 @@
     <message>
         <source>Reinstall the latest build</source>
         <translation>Réinstaller la dernière build</translation>
+    </message>
+    <message>
+        <source>Adding…</source>
+        <translation>Ajout…</translation>
+    </message>
+    <message>
+        <source>Here: %1</source>
+        <translation>Présent : %1</translation>
+    </message>
+    <message>
+        <source>Missing — needed to play</source>
+        <translation>Manquant — nécessaire pour jouer</translation>
+    </message>
+    <message>
+        <source>Optional</source>
+        <translation>Facultatif</translation>
+    </message>
+    <message>
+        <source>Not added: %1</source>
+        <translation>Non ajouté : %1</translation>
+    </message>
+    <message>
+        <source>Choose a file</source>
+        <translation>Choisir un fichier</translation>
+    </message>
+    <message>
+        <source>From a link</source>
+        <translation>Depuis un lien</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Retirer</translation>
+    </message>
+    <message>
+        <source>Nothing needed</source>
+        <translation>Rien à fournir</translation>
+    </message>
+    <message>
+        <source>No console of the library needs a BIOS, keys or firmware.</source>
+        <translation>Aucune console de la bibliothèque n'a besoin de BIOS, de clés ou de firmware.</translation>
+    </message>
+    <message>
+        <source>System files</source>
+        <translation>Fichiers système</translation>
+    </message>
+    <message>
+        <source>BIOS, keys, firmware</source>
+        <translation>BIOS, clés, firmware</translation>
     </message>
 </context>
 </TS>

@@ -195,6 +195,67 @@ pub fn find(app: &Shared, id: &str) -> Option<Found> {
     None
 }
 
+/// Where an emulator keeps its configuration, saves and system files for a profile. On Linux it is
+/// Borne's own per-profile folder (the XDG variables point there, see `xdg_env`); on macOS,
+/// where those variables are not read, the emulator's usual folder.
+pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
+    let base = app.paths.profiles().join(profile).join(program);
+    let (xdg_data, xdg_config) = (base.join("data"), base.join("config"));
+    let mac = home().join("Library/Application Support");
+    let mac_os = cfg!(target_os = "macos");
+    match program {
+        "eden" => if mac_os { mac.join("eden") } else { xdg_data.join("eden") },
+        "citron" => if mac_os { mac.join("citron") } else { xdg_data.join("citron") },
+        "ryubing" => if mac_os { mac.join("Ryujinx") } else { xdg_config.join("Ryujinx") },
+        "rpcs3" => if mac_os { mac.join("rpcs3") } else { xdg_config.join("rpcs3") },
+        "pcsx2" => if mac_os { mac } else { xdg_config },
+        _ => base,
+    }
+}
+
+/// Linux: the emulator's data and configuration in Borne's per-profile folder.
+pub fn xdg_env(app: &Shared, profile: &str, program: &str) -> Vec<(String, String)> {
+    if cfg!(target_os = "macos") || program == "retroarch" || program == "dolphin" {
+        return vec![];
+    }
+    let base = app.paths.profiles().join(profile).join(program);
+    vec![
+        ("XDG_DATA_HOME".into(), base.join("data").to_string_lossy().into_owned()),
+        ("XDG_CONFIG_HOME".into(), base.join("config").to_string_lossy().into_owned()),
+        ("XDG_CACHE_HOME".into(), base.join("cache").to_string_lossy().into_owned()),
+    ]
+}
+
+/// Sets keys in an INI file, keeping everything else (created when missing).
+pub fn ini_set(path: &Path, values: &[(&str, &str, &str)]) -> Result<(), String> {
+    let text = std::fs::read_to_string(path).unwrap_or_default();
+    let mut lines: Vec<String> = text.lines().map(String::from).collect();
+    for (section, key, value) in values {
+        let header = format!("[{section}]");
+        let start = lines.iter().position(|l| l.trim() == header);
+        let start = match start {
+            Some(i) => i,
+            None => {
+                if !lines.is_empty() && !lines.last().map(|l| l.is_empty()).unwrap_or(true) {
+                    lines.push(String::new());
+                }
+                lines.push(header.clone());
+                lines.len() - 1
+            }
+        };
+        let end = lines[start + 1..].iter().position(|l| l.trim_start().starts_with('[')).map(|i| start + 1 + i).unwrap_or(lines.len());
+        let line = format!("{key} = {value}");
+        match lines[start + 1..end].iter().position(|l| l.split('=').next().map(|k| k.trim() == *key).unwrap_or(false)) {
+            Some(i) => lines[start + 1 + i] = line,
+            None => lines.insert(end, line),
+        }
+    }
+    if let Some(p) = path.parent() {
+        std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
+    }
+    std::fs::write(path, lines.join("\n") + "\n").map_err(|e| e.to_string())
+}
+
 /// Dolphin's GameCube language numbers.
 fn dolphin_language(code: &str) -> Option<&'static str> {
     Some(match code {
@@ -368,6 +429,13 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     };
     // AppImages extracted by Borne find their own libraries this way.
     cmd.env("APPIMAGE_EXTRACT_AND_RUN", "1");
+    cmd.envs(xdg_env(app, &profile, &p.id));
+    // BIOS, keys and firmware where this emulator reads them.
+    let exe = match found {
+        Found::Program(x) => Some(x.as_path()),
+        Found::Flatpak(_) => None,
+    };
+    crate::systemfiles::prepare(app, system, &p.id, &data_dir(app, &profile, &p.id), exe, &xdg_env(app, &profile, &p.id))?;
     Ok(cmd)
 }
 
@@ -378,8 +446,7 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
     let base = app.paths.profiles().join(profile);
     let saves = base.join("saves").join(system);
     let states = base.join("states").join(system);
-    let bios = app.paths.root.join("bios");
-    for d in [&saves, &states, &bios] {
+    for d in [&saves, &states] {
         std::fs::create_dir_all(d).map_err(|e| e.to_string())?;
     }
     let q = |p: &Path| p.to_string_lossy().replace('"', "");
@@ -387,7 +454,7 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
         ("video_fullscreen".into(), "true".into()),
         ("video_windowed_fullscreen".into(), "true".into()),
         ("libretro_directory".into(), q(&crate::emuinstall::cores_dir(app))),
-        ("system_directory".into(), q(&bios)),
+        ("system_directory".into(), q(&crate::systemfiles::bios_dir(app))),
         ("savefile_directory".into(), q(&saves)),
         ("savestate_directory".into(), q(&states)),
         ("sort_savefiles_enable".into(), "false".into()),
@@ -465,6 +532,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         }
     })?;
     let p = program(&e.program).ok_or("unknown emulator")?;
+    crate::systemfiles::check(app, &system)?;
     let found = find(app, &p.id);
     let core_missing = e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false);
     if found.is_none() || core_missing {
@@ -578,6 +646,16 @@ mod tests {
         for p in programs() {
             assert!(p.args.iter().any(|a| a.contains("{rom}")), "{}", p.id);
         }
+    }
+
+    #[test]
+    fn ini_values_are_set_in_place() {
+        let p = std::env::temp_dir().join(format!("borne-ini-{}.ini", std::process::id()));
+        std::fs::write(&p, "[UI]\nTheme = dark\nSetupWizardIncomplete = true\n\n[Other]\nA = 1\n").unwrap();
+        ini_set(&p, &[("UI", "SetupWizardIncomplete", "false"), ("Folders", "Bios", "/x")]).unwrap();
+        let t = std::fs::read_to_string(&p).unwrap();
+        assert!(t.contains("Theme = dark") && t.contains("SetupWizardIncomplete = false") && t.contains("[Folders]\nBios = /x") && t.contains("A = 1"));
+        let _ = std::fs::remove_file(p);
     }
 
     #[test]

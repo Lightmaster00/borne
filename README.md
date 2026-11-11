@@ -77,6 +77,12 @@ Since then:
   you never open the emulator. RetroArch runs with Borne's own configuration: no menu, no
   messages, no hotkeys, saves and states in the profile's folder. *Play* starts the game (after
   installing what is missing); Select then Start quits it.
+- **System files**: BIOS, keys and firmware (PS1, PS2, Saturn, Mega-CD, DS, GBA BIOS; Switch
+  prod.keys, title.keys and firmware; PS3 PUP) are given to Borne in Settings → System files,
+  from a file on the computer (the system's file chooser, or a typed path) or from a link (a link
+  to your RomM server is sent with your profile's token). Borne checks them (size, format), keeps
+  them, and places them for the chosen emulator before each game; a missing one is reported
+  before launching. Borne never downloads such files by itself.
 - **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
   public databases — the libretro cheat database for the consoles run by RetroArch (matched by
   the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the

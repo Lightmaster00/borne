@@ -150,11 +150,33 @@ Item {
                 { id: "update-force", label: qsTr("Reinstall the latest build") }, github]
     }
 
+    readonly property var sysFiles: settings && settings.system_files ? settings.system_files : null
+    function sysFileRows() {
+        if (!sysFiles) return []
+        const rows = []
+        const t = sysFiles.task
+        sysFiles.consoles.forEach(c => c.items.forEach(i => {
+            const busy = t && t.running && t.console === c.slug && t.item === i.id
+            const failed = t && !t.running && t.error && t.console === c.slug && t.item === i.id
+            let desc = busy ? qsTr("Adding…")
+                     : i.files.length ? qsTr("Here: %1").arg(i.files.join(", "))
+                     : i.required ? qsTr("Missing — needed to play") : qsTr("Optional")
+            if (failed) desc = qsTr("Not added: %1").arg(t.error)
+            const key = c.slug + "/" + i.id
+            const b = [{ id: "sf-pick:" + key, label: qsTr("Choose a file"), primary: !i.files.length && i.required, disabled: !!(t && t.running) },
+                       { id: "sf-url:" + key, label: qsTr("From a link"), disabled: !!(t && t.running) }]
+            if (i.files.length) b.push({ id: "sf-remove:" + key, label: qsTr("Remove") })
+            rows.push({ id: "sf:" + key, kind: "buttons", title: c.name + " · " + i.name, desc: desc, items: b })
+        }))
+        if (!rows.length) rows.push({ id: "sf-none", kind: "buttons", title: qsTr("Nothing needed"), desc: qsTr("No console of the library needs a BIOS, keys or firmware."), items: [] })
+        return rows
+    }
     readonly property var sections: [
         { id: "games", name: qsTr("Games"), hint: qsTr("Install, cache") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable") },
         { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, trailers") },
         { id: "emulators", name: qsTr("Emulators"), hint: qsTr("One per console") },
+        { id: "systemfiles", name: qsTr("System files"), hint: qsTr("BIOS, keys, firmware") },
         { id: "screenscraper", name: qsTr("Game images"), hint: ss && ss.configured ? ss.user : qsTr("ScreenScraper") },
         { id: "server", name: qsTr("Server"), hint: qsTr("RomM, profiles") },
         { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostic report") }
@@ -186,6 +208,7 @@ Item {
             { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Play the selected game's trailer, muted, after two seconds"), selected: trailers ? "on" : "off", items: onOff() }
         ]
         if (id === "emulators") return emulatorRows()
+        if (id === "systemfiles") return sysFileRows()
         if (id === "screenscraper") return [
             { id: "ss-account", kind: "buttons", title: qsTr("ScreenScraper account"), desc: ssAccountText(),
               items: !(ss && ss.developer_access) ? []

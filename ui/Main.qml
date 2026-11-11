@@ -444,6 +444,27 @@ Window {
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
         else if (id === "cases") prefs.cases3d = payload === "3d"
+        else if (id.startsWith("sf-pick:")) {
+            const k = id.substring(8).split("/")
+            api("POST", "/api/v1/system-files/" + k[0] + "/" + k[1], { pick: true, title: "Borne" }, function (r, err) {
+                if (!err) { loadSettings(); return }
+                if (err.indexOf("no file chosen") >= 0) return
+                // No file chooser here (game mode…): the path is typed.
+                nameEntry.open(qsTr("Full path of the file"), "", function (p) {
+                    api("POST", "/api/v1/system-files/" + k[0] + "/" + k[1], { path: p }, function (r2, err2) { if (err2) toasts.show(err2, "error"); loadSettings() })
+                }, qsTr("Path"), false, 600)
+            })
+        }
+        else if (id.startsWith("sf-url:")) {
+            const k = id.substring(7).split("/")
+            nameEntry.open(qsTr("Link to the file (http or https)"), "https://", function (u) {
+                api("POST", "/api/v1/system-files/" + k[0] + "/" + k[1], { url: u }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+            }, qsTr("Link"), false, 1000)
+        }
+        else if (id.startsWith("sf-remove:")) {
+            const k = id.substring(10).split("/")
+            api("DELETE", "/api/v1/system-files/" + k[0] + "/" + k[1], null, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        }
         else if (id === "console-emu") api("POST", "/api/v1/consoles/" + payload.slug + "/emulator", { engine: payload.engine }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
@@ -720,7 +741,7 @@ Window {
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
             else if (m.type === "session") win.onSession(m.session)
-            else if (m.type === "emulators") { if (win.overlay === "settings") loadSettings() }
+            else if (m.type === "emulators" || m.type === "systemfiles") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
             else if (m.type === "screenscraper") { if (win.overlay === "settings") loadSettings() }
