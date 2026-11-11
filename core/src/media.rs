@@ -111,7 +111,7 @@ fn trim(img: &DynamicImage) -> DynamicImage {
 /// Cleans a downloaded image and writes it; returns (path, width, height).
 pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(PathBuf, u32, u32), String> {
     let img = decode(bytes)?;
-    let img = if kind == "logo" || kind == "physical" { img } else { trim(&img) };
+    let img = if matches!(kind, "logo" | "logo-mono" | "physical" | "steamgrid" | "marquee" | "fanart") { img } else { trim(&img) };
     finish(app, group_key, kind, img)
 }
 
@@ -132,12 +132,17 @@ fn finish(app: &Shared, group_key: &str, kind: &str, mut img: DynamicImage) -> R
     if kind == "side" && img.width() > img.height() {
         img = img.rotate270();
     }
-    let cap = if kind == "logo" { 900 } else { 1000 };
+    // Pictures shown full screen keep a screen's width.
+    let cap = match kind {
+        "logo" | "logo-mono" => 900,
+        "steamgrid" | "marquee" | "fanart" | "photo" => 1920,
+        _ => 1000,
+    };
     if img.width().max(img.height()) > cap {
         img = img.resize(cap, cap, image::imageops::FilterType::Lanczos3);
     }
     let (w, h) = img.dimensions();
-    let opaque = BOX.contains(&kind) || kind == "fanart";
+    let opaque = BOX.contains(&kind) || matches!(kind, "fanart" | "steamgrid" | "marquee");
     let d = dir(app);
     std::fs::create_dir_all(&d).map_err(|e| e.to_string())?;
     let path = d.join(format!("{}.{}", file_name(group_key, kind), if opaque { "jpg" } else { "png" }));

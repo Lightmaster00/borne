@@ -284,6 +284,10 @@ try:
     check(nes and nes[0]["chosen"] == "mesen" and len(nes[0]["choices"]) >= 2, "a choice of emulators per console, the first one by default")
     s, e = call(api, "POST", "/api/v1/consoles/nes/emulator", {"engine": "unknown"})
     check(s == 400, "an emulator unknown for the console refused")
+    s, pl = call(api, "GET", "/api/v1/platforms")
+    check(s == 200 and all("art_kinds" in p for p in pl), "consoles listed with their images")
+    s, _ = call(api, "GET", "/api/v1/systems/nes/art/nothing")
+    check(s == 404, "a missing console image reported plainly")
     s, sf = call(api, "GET", "/api/v1/system-files")
     check(s == 200 and any(c["slug"] == "switch" and any(i["id"] == "prod-keys" for i in c["items"]) for c in sf["consoles"]),
           "system files listed per console of the library")

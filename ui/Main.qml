@@ -129,7 +129,9 @@ Window {
                             "gba": "Game Boy Advance", "nds": "Nintendo DS", "genesis": "Mega Drive", "sms": "Master System",
                             "ngc": "GameCube", "wii": "Wii", "wiiu": "Wii U", "switch": "Switch", "ps": "PlayStation", "psx": "PlayStation",
                             "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "dc": "Dreamcast", "saturn": "Saturn", "arcade": "Arcade" }
-            for (const p of list) sys.push({ id: p.slug, name: shortNames[p.slug] || p.name })
+            // The console's logo from ScreenScraper when there is one, else its name.
+            for (const p of list) sys.push({ id: p.slug, name: shortNames[p.slug] || p.name,
+                logo: p.art_kinds && p.art_kinds.indexOf("logo") >= 0 ? apiBase + "/api/v1/systems/" + p.slug + "/art/logo" : "" })
             systems = sys
             systemIndex = Math.max(0, sys.findIndex(s => s.id === current))
         })
@@ -799,6 +801,7 @@ Window {
             else if (m.type === "stick") { win.padTurnX = m.x; win.padTurnY = m.y }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
+            else if (m.type === "platforms") win.loadPlatforms()
             else if (m.type === "session") win.onSession(m.session)
             else if (m.type === "emulators" || m.type === "systemfiles") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
@@ -1067,7 +1070,7 @@ Window {
                 required property var modelData
                 required property int index
                 readonly property bool cur: index === win.systemIndex
-                width: lbl.implicitWidth; height: 44
+                width: sysLogo.visible ? sysLogo.paintedWidth : lbl.implicitWidth; height: 44
                 Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width; height: 2; radius: 1
@@ -1084,8 +1087,21 @@ Window {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: if (!parent.cur) { win.systemIndex = parent.index; win.loadLibrary(true) }
                 }
+                Image {
+                    id: sysLogo
+                    anchors.centerIn: parent
+                    visible: status === Image.Ready
+                    source: modelData.logo || ""
+                    height: 28; width: Math.min(150, implicitWidth * 28 / Math.max(1, implicitHeight))
+                    sourceSize.height: 56
+                    fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    opacity: parent.cur || sysMouse.containsMouse ? 1 : 0.5
+                    Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
+                }
                 Text {
                     id: lbl; anchors.centerIn: parent
+                    visible: !sysLogo.visible
                     text: modelData.name
                     color: parent.cur || sysMouse.containsMouse ? theme.fg : theme.fgFaint
                     font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }

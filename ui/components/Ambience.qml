@@ -1,5 +1,6 @@
 // Background: a video of the selected game being played (ScreenScraper's gameplay capture, else
-// RomM's trailer), muted, darkened and looping once the selection rests, over Borne's pixel
+// RomM's trailer), muted, darkened and looping once the selection rests, over the game's art
+// without text (ScreenScraper's blank Steam grid, else its blank marquee), else Borne's pixel
 // mosaic (the selected game's cover rebuilt as a wall of large dark pixels that re-colour one by
 // one, with a slow light wave), which shows while the video loads or when a game has none.
 import QtQuick
@@ -34,11 +35,45 @@ Item {
         }
     }
 
+    // ---------- the game's art without text (ScreenScraper's blank Steam grid or marquee) ----------
+    function hasArt(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
+    readonly property string still: hasArt("steamgrid") ? game.art + "steamgrid" : hasArt("marquee") ? game.art + "marquee" : ""
+    Item {
+        id: stillLayer
+        anchors.fill: parent
+        visible: gameplay.opacity < 1 && amb.still !== ""
+        property bool useA: true
+        property string shown: ""
+        Timer { id: stillDelay; interval: 350; onTriggered: stillLayer.swap() }
+        Connections { target: amb; function onStillChanged() { stillDelay.restart() } }
+        Component.onCompleted: swap()
+        function swap() {
+            if (amb.still === shown) return
+            shown = amb.still
+            if (useA) stillB.source = amb.still; else stillA.source = amb.still
+            useA = !useA
+        }
+        Image { id: stillA; anchors.fill: parent; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1920
+                opacity: stillLayer.useA && status === Image.Ready ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 600 } } }
+        Image { id: stillB; anchors.fill: parent; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1920
+                opacity: !stillLayer.useA && status === Image.Ready ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 600 } } }
+        // Dark enough for the cases and the text.
+        Rectangle { anchors.fill: parent; color: "#07080a"; opacity: 0.55 }
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: parent.height * 0.45
+            gradient: Gradient {
+                GradientStop { position: 0; color: "transparent" }
+                GradientStop { position: 1; color: Qt.rgba(0.027, 0.031, 0.039, 0.92) }
+            }
+        }
+    }
+
     // ---------- "pixels": the cover as a wall of large pixels ----------
     Item {
         id: mosaic
         anchors.fill: parent
-        visible: gameplay.opacity < 1
+        visible: gameplay.opacity < 1 && amb.still === ""
         readonly property int tile: 56
         readonly property int cols: Math.ceil(width / tile)
         readonly property int rows: Math.ceil(height / tile)

@@ -53,6 +53,10 @@ Since then:
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
   a language chooses the version launched (English → USA, Français → the European version that has
   French, 日本語 → Japan). Below: summary, screenshots, studios and series (RomM only).
+- **Console logos and pictures**: the systems bar shows each console's logo from ScreenScraper
+  (its name until the logo is fetched); the console's photo is kept for later use. Behind the
+  shelf and on the game page, the game's art without any text (ScreenScraper's blank Steam grid
+  and blank screen marquee) is used under the video, before RomM's artwork or the pixel mosaic.
 - **Titles and covers in your language**: with ScreenScraper, each game shows the title and the case
   of the language Borne is displayed in (French → the French case and title, else the European one;
   Japanese → the Japanese ones; English → the US ones), and the library is sorted on those titles.

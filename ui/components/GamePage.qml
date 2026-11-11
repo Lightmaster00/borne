@@ -241,7 +241,9 @@ Item {
                 Image {
                     id: backdrop
                     anchors.fill: parent
-                    source: page.has("backdrop") ? page.game.art + "backdrop" : ""
+                    // The game's art without text first (ScreenScraper), else RomM's artwork.
+                    source: page.has("marquee") ? page.game.art + "marquee" : page.has("steamgrid") ? page.game.art + "steamgrid"
+                          : page.has("backdrop") ? page.game.art + "backdrop" : ""
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
                     sourceSize: Qt.size(1920, 1080)

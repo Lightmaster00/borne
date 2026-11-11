@@ -449,23 +449,109 @@ fn lookup(app: &Shared, c: &Credentials, versions: &[crate::db::GameRow]) -> Res
     Ok(None)
 }
 
+/// ScreenScraper's media types for the art without any text ("Steam Grid Vierge", "ScreenMarquee
+/// Vierge"), found by their French names in the list of media types (kept a week), then the
+/// usual types as a fallback.
+fn blank_types(app: &Shared, c: &Credentials) -> (Vec<String>, Vec<String>) {
+    let cached: Option<Value> = app.db.setting("ss_media_types").and_then(|s| serde_json::from_str(&s).ok());
+    let list = match cached.filter(|v| v["at"].as_i64().unwrap_or(0) > now() - 7 * 86400) {
+        Some(v) => v["types"].clone(),
+        None => match call(c, "mediasJeuListe.php", &[]) {
+            Ok(v) => {
+                let types = json!(v["response"]["medias"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .map(|m| json!({ "short": m["nomcourt"], "name": m["nom"] }))
+                    .collect::<Vec<_>>());
+                app.db.set_setting("ss_media_types", &json!({ "at": now(), "types": types }).to_string());
+                types
+            }
+            Err(_) => Value::Null,
+        },
+    };
+    let find = |words: &[&str]| -> Vec<String> {
+        list.as_array()
+            .into_iter()
+            .flatten()
+            .filter(|m| {
+                let n = m["name"].as_str().unwrap_or("").to_lowercase();
+                n.contains("vierge") && words.iter().all(|w| n.contains(w))
+            })
+            .filter_map(|m| m["short"].as_str().map(String::from))
+            .collect()
+    };
+    let mut steam = find(&["steam"]);
+    steam.push("steamgrid".into());
+    let mut marquee = find(&["marquee"]);
+    marquee.push("screenmarquee".into());
+    (steam, marquee)
+}
+
+fn now() -> i64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
+}
+
+/// The consoles' own images (logo, monochrome logo, photo), from ScreenScraper's list of systems,
+/// for the consoles of the library. Kept as media of "system:<slug>".
+fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
+    let ids: Value = app.db.setting("ss_systems").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(Value::Null);
+    let slugs: Vec<(String, i64)> = app.db.platforms().into_iter().filter_map(|p| ids[&p.slug].as_i64().map(|id| (p.slug, id))).collect();
+    let missing = |slug: &str| app.db.media(&format!("system:{slug}"), "logo").is_none();
+    if slugs.is_empty() || !(again || slugs.iter().any(|(s, _)| missing(s))) {
+        return;
+    }
+    let Ok(v) = call(c, "systemesListe.php", &[]) else { return };
+    let systems = v["response"]["systemes"].as_array().cloned().unwrap_or_default();
+    let regions = ui_regions(&ui_lang(app));
+    for (slug, id) in slugs {
+        let Some(sys) = systems.iter().find(|s| s["id"].as_i64() == Some(id) || s["id"].as_str() == Some(&id.to_string())) else { continue };
+        let medias: Vec<Value> = sys["medias"].as_array().cloned().unwrap_or_default().into_iter().map(|mut m| {
+            // System media carry no "parent": treat them as the game's own for `pick`.
+            m["parent"] = json!("jeu");
+            if let Some(u) = m["url"].as_str().map(redact) {
+                m["url"] = json!(u);
+            }
+            m
+        }).collect();
+        let key = format!("system:{slug}");
+        for (kind, types) in [("logo", &["wheel", "wheel-hd"][..]), ("logo-mono", &["logo-monochrome", "wheel-carbon"][..]), ("photo", &["photo", "illustration"][..])] {
+            let Some(url) = pick(&medias, types, &regions) else { continue };
+            let stamp = format!("ss|{url}");
+            if !again && app.db.media(&key, kind).map(|m| m.stamp == stamp && std::path::Path::new(&m.path).is_file()).unwrap_or(false) {
+                continue;
+            }
+            match download(c, url).and_then(|b| crate::media::store(app, &key, kind, &b)) {
+                Ok((path, w, h)) => app.db.set_media(&key, kind, &path.to_string_lossy(), w, h, &stamp),
+                Err(e) => app.db.log("screenscraper", &format!("{kind} of {slug}: {e}")),
+            }
+        }
+    }
+    app.emit(json!({ "type": "platforms" }));
+}
+
 /// Fetches and stores one game's media from its ScreenScraper record.
 /// `rec` is the redacted record; the scans follow the interface language.
 fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> usize {
     let medias: Vec<Value> = rec["jeu"]["medias"].as_array().cloned().unwrap_or_default();
     let regions = ui_regions(&ui_lang(app));
     let mut stored = 0;
-    let wanted: [(&str, &[&str]); 6] = [
-        ("front", &["box-2D"]),
-        ("side", &["box-2D-side"]),
-        ("back", &["box-2D-back"]),
-        ("physical", &["support-2D"]),
-        ("logo", &["wheel-hd", "wheel"]),
-        ("fanart", &["fanart"]),
+    let (steam, marquee) = blank_types(app, c);
+    let wanted: Vec<(&str, Vec<String>)> = vec![
+        ("front", vec!["box-2D".into()]),
+        ("side", vec!["box-2D-side".into()]),
+        ("back", vec!["box-2D-back".into()]),
+        ("physical", vec!["support-2D".into()]),
+        ("logo", vec!["wheel-hd".into(), "wheel".into()]),
+        ("fanart", vec!["fanart".into()]),
+        // Art without any title on it: the library's background and the game page's picture.
+        ("steamgrid", steam),
+        ("marquee", marquee),
     ];
     let mut front_ar = None;
     for (kind, types) in wanted {
-        let Some(url) = pick(&medias, types, &regions) else { continue };
+        let types: Vec<&str> = types.iter().map(String::as_str).collect();
+        let Some(url) = pick(&medias, &types, &regions) else { continue };
         let stamp = format!("ss|{}", redact(url));
         if app.db.media(group_key, kind).map(|m| m.stamp == stamp && std::path::Path::new(&m.path).is_file()).unwrap_or(false) {
             stored += 1;
@@ -554,6 +640,7 @@ pub fn start(app: &Shared, again: bool) {
                 .and_then(|_| status_get().max_threads)
                 .map(|n| n.clamp(1, 4) as usize)
                 .unwrap_or(1);
+            fetch_systems(&app, &c, again);
             STOP.store(false, Ordering::SeqCst);
             PAUSED.store(false, Ordering::SeqCst);
             status_set(&app, |s| {

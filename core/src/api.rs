@@ -41,6 +41,7 @@
 //!   DELETE /api/v1/system-files/<console>/<item>  removes it
 //!   GET    /api/v1/display[?console=]  POST {console?, key, value | "default"}   for all games or a console
 //!   GET    /api/v1/games/<rom_id>/display  POST {key, value | "default"}   this game's own
+//!   GET    /api/v1/systems/<slug>/art/<kind>      a console's logo, logo-mono or photo (ScreenScraper)
 //!   GET    /api/v1/session                        the running game, if any
 //!   POST   /api/v1/session/stop                   ends the running game
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
@@ -319,7 +320,7 @@ fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
     out
 }
 
-pub const ART_KINDS: [&str; 8] = ["front", "side", "back", "fanart", "logo", "physical", "title", "backdrop"];
+pub const ART_KINDS: [&str; 10] = ["front", "side", "back", "fanart", "logo", "physical", "title", "backdrop", "steamgrid", "marquee"];
 
 /// A box scan or artwork of the game (any version of it), fetched once from RomM with the
 /// profile's token and kept on disk. "backdrop": the fanart, else the first screenshot.
@@ -333,6 +334,11 @@ fn art(app: &Shared, rom_id: i64, kind: &str) -> Result<PathBuf, String> {
         let client = app.client().ok_or("offline")?;
         crate::media::ensure(app, &client, &g.group_key, kind, &src)?;
         return app.db.media(&g.group_key, kind).map(|m| PathBuf::from(m.path)).ok_or("not stored".into());
+    }
+    // ScreenScraper's art without text, kept only in the media table.
+    if kind == "steamgrid" || kind == "marquee" {
+        let g = app.db.game(rom_id).ok_or("unknown game")?;
+        return app.db.media(&g.group_key, kind).filter(|m| std::path::Path::new(&m.path).is_file()).map(|m| PathBuf::from(m.path)).ok_or_else(|| "not fetched".into());
     }
     if kind == "fanart" || kind == "backdrop" {
         if let Some(m) = app.db.game(rom_id).and_then(|g| app.db.media(&g.group_key, "fanart")) {
@@ -597,7 +603,27 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             catalog::start_sync(app);
             ok(req, json!(*app.sync.lock().unwrap()))
         }
-        (Method::Get, ["api", "v1", "platforms"]) => ok(req, json!(app.db.platforms())),
+        (Method::Get, ["api", "v1", "platforms"]) => {
+            // With the console images ScreenScraper gave (logo, monochrome logo, photo).
+            let list: Vec<Value> = app
+                .db
+                .platforms()
+                .into_iter()
+                .map(|p| {
+                    let mut v = json!(p);
+                    let kinds: Vec<String> = app.db.media_of(&format!("system:{}", p.slug)).into_iter().filter(|m| std::path::Path::new(&m.path).is_file()).map(|m| m.kind).collect();
+                    v["art_kinds"] = json!(kinds);
+                    v
+                })
+                .collect();
+            ok(req, json!(list))
+        }
+        (Method::Get, ["api", "v1", "systems", slug, "art", kind]) => {
+            match app.db.media(&format!("system:{slug}"), kind).filter(|m| std::path::Path::new(&m.path).is_file()) {
+                Some(m) => serve_file(req, &m.path, roots),
+                None => err(req, 404, "no such image for this console"),
+            }
+        }
         (Method::Get, ["api", "v1", "library"]) => {
             let platform = query(&q, "platform");
             let search = query(&q, "q");
