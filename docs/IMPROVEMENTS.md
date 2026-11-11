@@ -101,9 +101,9 @@ Next:
 ### 3.2 Saves (P1 — first pass done)
 
 Done (`savesync.rs`, per profile, newest wins, replaced copies archived, pending sends retried):
-RetroArch battery saves and save states; Dolphin and DuckStation with a memory card per game; Eden
-and Citron save folders per title (zip). Still to do: PCSX2 (a card per game needs a formatted
-blank card), Ryubing, RPCS3 and shadPS4 saves, Xenia; RomM's Device Sync (device id, tracked saves) once Borne registers as
+RetroArch battery saves and save states; Dolphin, PCSX2 and DuckStation with a memory card per
+game; Eden and Citron save folders per title (zip); RPCS3 save folders by serial. Still to do:
+check that PCSX2 creates a missing card itself; Ryubing, shadPS4 and Xenia saves; RomM's Device Sync (device id, tracked saves) once Borne registers as
 a device; a conflict screen when both sides changed close together.
 
 ## 4. Library and navigation

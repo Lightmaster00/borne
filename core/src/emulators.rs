@@ -404,6 +404,12 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
         let _ = std::fs::create_dir_all(card.parent().unwrap());
         ini_set(&userdir.join("Config/Dolphin.ini"), &[("Core", "SlotA", "1"), ("Core", "MemcardAPath", &card.to_string_lossy())])?;
     }
+    if p.id == "pcsx2" {
+        let name = format!("{}.ps2", rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default());
+        let data = data_dir(app, &profile, &p.id);
+        let _ = std::fs::create_dir_all(data.join("PCSX2/memcards"));
+        ini_set(&data.join("PCSX2/inis/PCSX2.ini"), &[("MemoryCards", "Slot1_Enable", "true"), ("MemoryCards", "Slot1_Filename", &name)])?;
+    }
     if p.id == "duckstation" {
         ini_set(&data_dir(app, &profile, &p.id).join("data/duckstation/settings.ini"), &[("MemoryCards", "Card1Type", "PerGameFileTitle")])?;
     }

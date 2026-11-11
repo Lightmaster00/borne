@@ -89,8 +89,9 @@ Since then:
 - **Saves on RomM**: each profile's saves follow it: taken from RomM before a game when newer,
   sent after it; replaced copies are archived, never deleted; offline, they are sent later
   (Settings → Games). Covered: RetroArch battery saves and save states (with the core's name,
-  like RomM's own player), a memory card per game for Dolphin and DuckStation, and the Switch
-  save folder of each game (Eden, Citron).
+  like RomM's own player), a memory card per game for Dolphin, PCSX2 and DuckStation, the Switch
+  save folder of each game (Eden, Citron) and the PS3 save folders (RPCS3, by the serial in the
+  game's name).
 - **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
   public databases — the libretro cheat database for the consoles run by RetroArch (matched by
   the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the

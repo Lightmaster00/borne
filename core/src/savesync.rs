@@ -9,7 +9,9 @@
 //!   core's name as the emulator, as RomM's own player (EmulatorJS) does;
 //! - Dolphin: the game's own memory card (`GC/cards/<game>.raw`, set by Borne);
 //! - DuckStation: the game's own memory card (`memcards/<game>_1.mcd`, cards per game file);
-//! - Eden and Citron: the game's save folder in the emulated console (by its title id), as a zip.
+//! - PCSX2: a memory card per game (`memcards/<game>.ps2`, set by Borne);
+//! - Eden and Citron: the game's save folder in the emulated console (by its title id), as a zip;
+//! - RPCS3: the game's save folders (by the serial in its name), as zips.
 //! Offline, the game starts with the local copy; sends are retried at the next start.
 
 use crate::state::Shared;
@@ -45,6 +47,17 @@ pub fn title_id(rom: &Path) -> Option<String> {
         .map(|t| t.to_uppercase())
 }
 
+/// The PS3 serial in a file or folder name ("Demon's Souls [BLES00932]").
+pub fn ps3_serial(rom: &Path) -> Option<String> {
+    let n = rom.to_string_lossy().to_uppercase();
+    let b = n.as_bytes();
+    (0..b.len().saturating_sub(8)).find_map(|i| {
+        let w = &n[i..i + 9];
+        let ok = w[..4].chars().all(|c| c.is_ascii_uppercase()) && w[4..].chars().all(|c| c.is_ascii_digit()) && matches!(&w[..2], "BL" | "BC" | "NP");
+        ok.then(|| w.to_string())
+    })
+}
+
 /// The game's save folder in Eden / Citron's emulated console, once a console user exists.
 fn switch_save_dir(data: &Path, tid: &str) -> Option<PathBuf> {
     let base = data.join("nand/user/save/0000000000000000");
@@ -70,6 +83,21 @@ pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Pat
             let name = format!("{st}_1.mcd");
             vec![Item { kind: "saves", local: data.join("data/duckstation/memcards").join(&name), remote_name: name, folder: false }]
         }
+        "pcsx2" => {
+            let name = format!("{st}.ps2");
+            vec![Item { kind: "saves", local: data.join("PCSX2/memcards").join(&name), remote_name: name, folder: false }]
+        }
+        // RPCS3: the game's save folders, named after its serial ("BLES01807…").
+        "rpcs3" => match ps3_serial(rom) {
+            Some(serial) => std::fs::read_dir(data.join("dev_hdd0/home/00000001/savedata"))
+                .into_iter()
+                .flatten()
+                .flatten()
+                .filter(|e| e.path().is_dir() && e.file_name().to_string_lossy().starts_with(&serial))
+                .map(|e| Item { kind: "saves", local: e.path(), remote_name: format!("{}.zip", e.file_name().to_string_lossy()), folder: true })
+                .collect(),
+            None => vec![],
+        },
         "eden" | "citron" => match title_id(rom).and_then(|t| switch_save_dir(&data, &t).map(|d| (t, d))) {
             Some((tid, dir)) => vec![Item { kind: "saves", local: dir, remote_name: format!("{tid}.zip"), folder: true }],
             None => vec![],
@@ -384,6 +412,12 @@ mod tests {
         ];
         assert_eq!(newest_remote(&saves, "game (world).srm").unwrap()["id"], 2);
         assert!(newest_remote(&saves, "None.srm").is_none());
+    }
+
+    #[test]
+    fn ps3_serials() {
+        assert_eq!(ps3_serial(Path::new("/g/Demon's Souls [BLES00932]/PS3_GAME")).as_deref(), Some("BLES00932"));
+        assert_eq!(ps3_serial(Path::new("/g/Game.iso")), None);
     }
 
     #[test]
