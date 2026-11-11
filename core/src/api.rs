@@ -36,7 +36,9 @@
 //!   POST   /api/v1/session/stop                   ends the running game
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
 //!   POST   /api/v1/emulators/<id>/path {path}     the user's own program for an emulator ("" to forget)
-//!   POST   /api/v1/emulators/<id>/install         installs it from Flathub (Linux, Flatpak)
+//!   POST   /api/v1/emulators/<id>/install         installs or updates it (Borne's own copy)
+//!   POST   /api/v1/consoles/<slug>/emulator {engine}  the emulator chosen for a console
+//!   POST   /api/v1/emulators/auto-update {on}     updates installed by themselves (default on)
 //!   POST   /api/v1/games/<rom_id>/gameplay        gameplay video: ScreenScraper's, else the trailer → {path}
 //!   GET    /api/v1/settings                      install mode, virtual mount state
 //!   POST   /api/v1/settings  {install_mode?, stream_cache_mb?, update_channel?, update_auto?}
@@ -724,10 +726,22 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Err(e) => err(req, 400, &e),
             }
         }
-        (Method::Post, ["api", "v1", "emulators", id, "install"]) => match crate::emulators::install(app, id) {
+        (Method::Post, ["api", "v1", "emulators", id, "install"]) => match crate::emuinstall::start(app, id, vec![]) {
             Ok(()) => ok(req, json!({ "started": true })),
             Err(e) => err(req, 409, &e),
         },
+        (Method::Post, ["api", "v1", "consoles", slug, "emulator"]) => {
+            let b = body_json(&mut req);
+            match crate::emulators::choose(app, slug, b["engine"].as_str().unwrap_or_default()) {
+                Ok(()) => ok(req, crate::emulators::list(app)),
+                Err(e) => err(req, 400, &e),
+            }
+        }
+        (Method::Post, ["api", "v1", "emulators", "auto-update"]) => {
+            let b = body_json(&mut req);
+            app.db.set_setting("emu_auto_update", if b["on"].as_bool().unwrap_or(true) { "on" } else { "off" });
+            ok(req, crate::emulators::list(app))
+        }
         (Method::Post, ["api", "v1", "games", id, "gameplay"]) => match id.parse::<i64>() {
             Ok(rom_id) => match gameplay(app, rom_id) {
                 Ok(path) => ok(req, json!({ "path": path })),

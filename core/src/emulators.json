@@ -1,77 +1,111 @@
 {
-  "_comment": "Emulators Borne knows: how to find them, which systems they run and how to start a game. Read by core/src/emulators.rs. Placeholders in args: {rom}, {core}, {config}, {lang_dolphin}. The first emulator found for a system is used, unless the user picks another.",
-  "emulators": [
+  "_comment": "Emulators Borne installs, configures and starts. 'programs' says where each program comes from on each system and how it is started ({rom}, {core}, {config}, {lang_dolphin}); 'consoles' lists, per console, the choices offered in Settings -> Emulators (the first one is the default). Read by core/src/emulators.rs and core/src/emuinstall.rs.",
+  "programs": [
     {
       "id": "retroarch",
       "name": "RetroArch",
-      "flatpak": "org.libretro.RetroArch",
-      "binaries": ["retroarch"],
-      "mac_apps": ["RetroArch.app/Contents/MacOS/RetroArch"],
-      "args": ["-f", "--appendconfig", "{config}", "-L", "{core}", "{rom}"],
+      "args": ["--config", "{config}", "-L", "{core}", "{rom}"],
+      "install": {
+        "linux": { "type": "buildbot", "file": "linux/x86_64/RetroArch.7z" },
+        "macos": { "type": "buildbot", "file": "apple/osx/universal/RetroArch_Metal.dmg" }
+      },
       "cores": {
-        "nes": ["mesen", "nestopia", "fceumm"],
-        "famicom": ["mesen", "nestopia", "fceumm"],
-        "snes": ["snes9x", "bsnes"],
-        "sfam": ["snes9x", "bsnes"],
-        "n64": ["mupen64plus_next", "parallel_n64"],
-        "gb": ["gambatte", "sameboy", "mgba"],
-        "gbc": ["gambatte", "sameboy", "mgba"],
-        "gba": ["mgba", "vba_next"],
-        "nds": ["melonds", "desmume"],
-        "genesis": ["genesis_plus_gx", "picodrive"],
-        "sms": ["genesis_plus_gx", "picodrive"],
-        "gamegear": ["genesis_plus_gx"],
-        "segacd": ["genesis_plus_gx", "picodrive"],
-        "sega32": ["picodrive"],
-        "saturn": ["mednafen_saturn", "yabasanshiro"],
-        "psx": ["swanstation", "mednafen_psx_hw", "pcsx_rearmed"],
-        "tg16": ["mednafen_pce_fast", "mednafen_pce"],
-        "atari2600": ["stella", "stella2014"],
-        "neogeo": ["fbneo"],
-        "arcade": ["fbneo", "mame"],
-        "ngp": ["mednafen_ngp"],
-        "ngpc": ["mednafen_ngp"],
-        "wonderswan": ["mednafen_wswan"],
-        "wonderswan-color": ["mednafen_wswan"],
-        "virtualboy": ["mednafen_vb"],
-        "lynx": ["handy", "mednafen_lynx"]
+        "linux": "https://buildbot.libretro.com/nightly/linux/x86_64/latest/{core}_libretro.so.zip",
+        "macos": "https://buildbot.libretro.com/nightly/apple/osx/arm64/latest/{core}_libretro.dylib.zip"
       }
     },
     {
       "id": "dolphin",
       "name": "Dolphin",
-      "flatpak": "org.DolphinEmu.dolphin-emu",
-      "binaries": ["dolphin-emu"],
-      "mac_apps": ["Dolphin.app/Contents/MacOS/Dolphin"],
-      "args": ["-b", "-C", "Dolphin.Core.SelectedLanguage={lang_dolphin}", "-e", "{rom}"],
-      "systems": ["ngc", "wii"]
+      "args": ["-b", "-u", "{userdir}", "-C", "Dolphin.Core.SelectedLanguage={lang_dolphin}", "-e", "{rom}"],
+      "install": {
+        "linux": { "type": "flatpak", "id": "org.DolphinEmu.dolphin-emu" },
+        "macos": { "type": "page", "url": "https://dolphin-emu.org/download/", "link": "https://dl.dolphin-emu.org/releases/", "ends": "-universal.dmg" }
+      }
     },
     {
       "id": "pcsx2",
       "name": "PCSX2",
-      "flatpak": "net.pcsx2.PCSX2",
-      "binaries": ["pcsx2-qt", "pcsx2"],
-      "mac_apps": ["PCSX2.app/Contents/MacOS/PCSX2"],
-      "args": ["-batch", "-fullscreen", "--", "{rom}"],
-      "systems": ["ps2"]
+      "args": ["-batch", "-fullscreen", "-nogui", "--", "{rom}"],
+      "install": {
+        "linux": { "type": "github", "repo": "PCSX2/pcsx2", "has": ["linux", "appimage", "x64"], "ends": ".appimage" },
+        "macos": { "type": "github", "repo": "PCSX2/pcsx2", "has": ["macos"], "ends": ".tar.xz" }
+      }
     },
     {
       "id": "duckstation",
       "name": "DuckStation",
-      "flatpak": "org.duckstation.DuckStation",
-      "binaries": ["duckstation-qt"],
-      "mac_apps": ["DuckStation.app/Contents/MacOS/DuckStation"],
-      "args": ["-batch", "-fullscreen", "--", "{rom}"],
-      "systems": ["psx"]
+      "args": ["-batch", "-fullscreen", "-nogui", "--", "{rom}"],
+      "install": {
+        "linux": { "type": "github", "repo": "stenzek/duckstation", "has": ["x64"], "ends": ".appimage", "prerelease": true },
+        "macos": { "type": "github", "repo": "stenzek/duckstation", "has": ["mac"], "ends": ".zip", "prerelease": true }
+      }
+    },
+    {
+      "id": "melonds",
+      "name": "melonDS",
+      "args": ["-f", "{rom}"],
+      "install": {
+        "linux": { "type": "github", "repo": "melonDS-emu/melonDS", "has": ["appimage", "x86_64"], "ends": ".zip" },
+        "macos": { "type": "github", "repo": "melonDS-emu/melonDS", "has": ["macos"], "ends": ".zip" }
+      }
     },
     {
       "id": "eden",
       "name": "Eden",
-      "binaries": ["eden", "citron"],
-      "mac_apps": ["Eden.app/Contents/MacOS/eden"],
       "args": ["-f", "-g", "{rom}"],
-      "systems": ["switch"],
+      "binaries": ["eden"],
+      "mac_apps": ["Eden.app/Contents/MacOS/eden"],
+      "user_provided": true
+    },
+    {
+      "id": "citron",
+      "name": "Citron Neo",
+      "args": ["-f", "-g", "{rom}"],
+      "binaries": ["citron"],
+      "mac_apps": ["Citron.app/Contents/MacOS/citron"],
+      "user_provided": true
+    },
+    {
+      "id": "ryubing",
+      "name": "Ryubing",
+      "args": ["--fullscreen", "{rom}"],
+      "binaries": ["Ryujinx"],
+      "mac_apps": ["Ryujinx.app/Contents/MacOS/Ryujinx"],
       "user_provided": true
     }
-  ]
+  ],
+  "consoles": {
+    "nes": [["mesen", "Mesen"], ["nestopia", "Nestopia UE"], ["fceumm", "FCEUmm"]],
+    "famicom": [["mesen", "Mesen"], ["nestopia", "Nestopia UE"], ["fceumm", "FCEUmm"]],
+    "fds": [["mesen", "Mesen"], ["fceumm", "FCEUmm"]],
+    "snes": [["snes9x", "Snes9x"], ["bsnes", "bsnes"]],
+    "sfam": [["snes9x", "Snes9x"], ["bsnes", "bsnes"]],
+    "n64": [["mupen64plus_next", "Mupen64Plus-Next"], ["parallel_n64", "ParaLLEl N64"]],
+    "gb": [["gambatte", "Gambatte"], ["sameboy", "SameBoy"], ["mgba", "mGBA"]],
+    "gbc": [["gambatte", "Gambatte"], ["sameboy", "SameBoy"], ["mgba", "mGBA"]],
+    "gba": [["mgba", "mGBA"], ["vba_next", "VBA Next"]],
+    "nds": [["melondsds", "melonDS DS"], ["!melonds", "melonDS (standalone)"], ["desmume", "DeSmuME"]],
+    "genesis": [["genesis_plus_gx", "Genesis Plus GX"], ["picodrive", "PicoDrive"]],
+    "sms": [["genesis_plus_gx", "Genesis Plus GX"], ["picodrive", "PicoDrive"]],
+    "gamegear": [["genesis_plus_gx", "Genesis Plus GX"]],
+    "segacd": [["genesis_plus_gx", "Genesis Plus GX"], ["picodrive", "PicoDrive"]],
+    "sega32": [["picodrive", "PicoDrive"]],
+    "saturn": [["mednafen_saturn", "Beetle Saturn"], ["yabasanshiro", "YabaSanshiro"]],
+    "psx": [["swanstation", "SwanStation"], ["mednafen_psx_hw", "Beetle PSX HW"], ["!duckstation", "DuckStation (standalone)"]],
+    "tg16": [["mednafen_pce_fast", "Beetle PCE Fast"]],
+    "atari2600": [["stella", "Stella"]],
+    "neogeo": [["fbneo", "FinalBurn Neo"]],
+    "arcade": [["fbneo", "FinalBurn Neo"], ["mame", "MAME"]],
+    "ngp": [["mednafen_ngp", "Beetle NeoPop"]],
+    "ngpc": [["mednafen_ngp", "Beetle NeoPop"]],
+    "wonderswan": [["mednafen_wswan", "Beetle Cygne"]],
+    "wonderswan-color": [["mednafen_wswan", "Beetle Cygne"]],
+    "virtualboy": [["mednafen_vb", "Beetle VB"]],
+    "lynx": [["handy", "Handy"]],
+    "ngc": [["!dolphin", "Dolphin"]],
+    "wii": [["!dolphin", "Dolphin"]],
+    "ps2": [["!pcsx2", "PCSX2"]],
+    "switch": [["!eden", "Eden"], ["!citron", "Citron Neo"], ["!ryubing", "Ryubing"]]
+  }
 }

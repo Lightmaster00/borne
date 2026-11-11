@@ -67,22 +67,27 @@ From the game page: choose another region's box (EU / US / JP) when several exis
 
 ## 3. Playing games
 
-### 3.1 Launching games (P0 — first pass done)
+### 3.1 Emulators managed by Borne (P0 — second pass done)
 
-Done: `core/src/emulators.rs` with the declarative `emulators.json` (RetroArch with cores per
-system, Dolphin, PCSX2, DuckStation, Eden): detection (user path, PATH, Flatpak, /Applications),
-Flathub installation, launch of the downloaded or network-linked file, RetroArch saves and states
-per profile, GameCube language, one session at a time with game mode, Select + Start to quit,
-errors from the emulator's log when it stops at once. Settings → Emulators.
+Done: one emulator per console chosen in Settings, downloaded, installed, configured and updated
+by Borne (`emuinstall.rs`); RetroArch hidden behind Borne's own configuration; launch, game mode,
+Select + Start to quit.
 
-Still to do:
-- Choosing the emulator per console when several are installed (setting `emu_for.<system>`
-  exists, no UI yet); per-game profiles.
-- Separate configuration per profile for Dolphin, PCSX2 and Eden (user folder, memory cards).
-- Languages for PS2 and Wii (BIOS / SYSCONF settings), RetroArch core options per language.
-- BIOS and firmware checks before launching (PS1, PS2, Switch keys) with a clear message.
-- Wayland/X11 focus: bring the emulator to the front and Borne back afterwards on every desktop.
-- Test on the real machines (ChimeraOS, macOS) with each emulator.
+Next:
+- Cheats (P0, asked): public databases — libretro-database `.cht` files matched by the game's
+  No-Intro name (region and revision included) for RetroArch consoles; for the DS, the
+  usrcheat.dat / cheats.xml database (DeadSkullzJr) matched by the game ID read from the ROM
+  header (game code + header CRC32), so each version gets its own codes; Dolphin Gecko/Action
+  Replay codes in the per-game INI of Borne's Dolphin folder; PCSX2 `.pnach` by serial and CRC.
+  A cheats list on the game page, enabled per profile and per game.
+- Settings per console and per game in Borne (rendering resolution, aspect ratio, shaders,
+  controller layout), written into each emulator's Borne-owned configuration.
+- PCSX2, DuckStation and melonDS in portable mode inside Borne's folder; controller mappings
+  written by Borne for every emulator.
+- BIOS and firmware: taken from RomM's BIOS for the console and placed in Borne's `bios` folder;
+  a clear message before launching when one is missing.
+- Switch emulators: decide whether Borne downloads them (see the spec's non-goals).
+- Test on the real machines (ChimeraOS, macOS) with real downloads.
 
 ### 3.2 Saves (P1)
 

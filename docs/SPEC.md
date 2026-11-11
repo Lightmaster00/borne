@@ -396,14 +396,19 @@ The RomM account provides identity and remote scope; the local profile provides 
 
 ## 8. Centralized emulator management
 
-> Implemented (first pass): `core/src/emulators.rs` reads `core/src/emulators.json` (how to find
-> each emulator, the systems it runs, its command line with `{rom}`, `{core}`, `{config}`,
-> `{lang_dolphin}`). API: `GET /api/v1/emulators`, `POST /api/v1/emulators/<id>/path`,
-> `POST /api/v1/emulators/<id>/install` (Flathub, `--user`), `POST /api/v1/games/<id>/play`,
-> `GET /api/v1/session`, `POST /api/v1/session/stop`; a `session` event announces the start and
-> the end (with an error when the emulator stops within 8 s with a failure). The emulator runs in
-> its own process group, its output in `reports/emulator.log`; Flatpak emulators only see the
-> game's folder (read-only) and the profiles folder. Updates wait while a game runs.
+> Implemented: `core/src/emulators.json` lists the programs (official source per system, command
+> line) and, per console, the emulators offered (RetroArch cores or standalone programs; the first
+> is the default). The user picks one per console (`POST /api/v1/consoles/<slug>/emulator`);
+> `core/src/emuinstall.rs` downloads it into `emulators/<id>/<version>/` (GitHub release assets
+> checked against their published SHA-256, RetroArch from the libretro buildbot with cores one by
+> one, Dolphin's macOS image from its download page, Flathub on Linux where that is the only
+> source), unpacks .zip/.7z/.tar.xz/.dmg, extracts AppImages once (no FUSE), replaces the old
+> version only when the new one is complete, and checks for updates every 6 hours (installed when
+> no game runs; Settings → Emulators → Emulator updates). *Play* installs what is missing then
+> starts the game. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
+> messages, no hotkeys, profile saves and states, Borne's cores and BIOS folders); Dolphin with
+> its own user folder per profile (`-u`). Sessions: one at a time, own process group, output in
+> `reports/emulator.log`, `session` events. Switch emulators are user-provided for now.
 
 ### 8.1 Hybrid strategy
 

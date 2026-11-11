@@ -1,68 +1,115 @@
-//! Emulators: finding them, starting a game, following the session.
+//! Emulators: the choice per console, finding the program, starting a game, following the session.
 //!
-//! What Borne knows about each emulator (where to look, the systems it runs, its command line) is
-//! declarative, in `emulators.json`. An emulator is found, in this order, at the path the user
-//! chose, as a program on the PATH, as a Flatpak (Linux) or as an application in /Applications or
-//! ~/Applications (macOS). RetroArch also needs a core for the system: the first one installed,
-//! in RetroArch's own cores folder (native or Flatpak) or the system's libretro folder.
+//! `emulators.json` lists the programs (where they come from, how they start) and, per console, the
+//! choices offered in Settings → Emulators: a RetroArch core by name, or `!program` for a
+//! standalone emulator. The user picks one per console; Borne installs it (emuinstall.rs),
+//! configures it and starts it. A program is used, in this order: as installed by Borne, at the
+//! path the user chose, on the PATH, as a Flatpak (Linux) or in /Applications (macOS).
 //!
-//! One game runs at a time, as a child process of the core. RetroArch gets an extra configuration
-//! file per profile (fullscreen; saves and states in the profile's folder), appended to the user's
-//! own so their settings stay theirs. The session's output goes to `logs/emulator.log`; an
-//! emulator that quits with an error within seconds is reported with the end of that log.
+//! RetroArch runs with Borne's own configuration (`--config`), written from Borne's settings
+//! before each game: fullscreen, no menu, no on-screen messages, no hotkeys, the profile's saves
+//! and states. The user's own RetroArch settings are never read nor changed, and the user never
+//! has to open RetroArch. Dolphin gets its own user folder per profile.
+//!
+//! One game runs at a time, as a child process of the core in its own process group. The session's
+//! output goes to `reports/emulator.log`; an emulator that quits with an error within seconds is
+//! reported with the end of that log.
 
 use crate::db::GameRow;
 use crate::state::Shared;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 #[derive(Deserialize, Clone)]
-pub struct Emulator {
+pub struct Program {
     pub id: String,
     pub name: String,
-    #[serde(default)]
-    pub flatpak: Option<String>,
-    #[serde(default)]
-    pub binaries: Vec<String>,
-    #[serde(default)]
-    pub mac_apps: Vec<String>,
     pub args: Vec<String>,
     #[serde(default)]
-    pub systems: Vec<String>,
+    install: BTreeMap<String, Value>,
     #[serde(default)]
-    pub cores: std::collections::BTreeMap<String, Vec<String>>,
+    cores: BTreeMap<String, String>,
+    #[serde(default)]
+    binaries: Vec<String>,
+    #[serde(default)]
+    mac_apps: Vec<String>,
     #[serde(default)]
     pub user_provided: bool,
 }
 
-impl Emulator {
-    fn runs(&self, system: &str) -> bool {
-        self.systems.iter().any(|s| s == system) || self.cores.contains_key(system)
+impl Program {
+    pub fn install_spec(&self) -> Option<Value> {
+        self.install.get(crate::emuinstall::os()).cloned()
     }
-    fn all_systems(&self) -> Vec<String> {
-        let mut v: Vec<String> = self.systems.iter().cloned().chain(self.cores.keys().cloned()).collect();
-        v.sort();
-        v.dedup();
-        v
+    pub fn cores_url(&self) -> Option<String> {
+        self.cores.get(crate::emuinstall::os()).cloned()
     }
 }
 
 #[derive(Deserialize)]
 struct Manifest {
-    emulators: Vec<Emulator>,
+    programs: Vec<Program>,
+    consoles: BTreeMap<String, Vec<(String, String)>>,
 }
 
-pub fn all() -> Vec<Emulator> {
-    serde_json::from_str::<Manifest>(include_str!("emulators.json"))
-        .map(|m| m.emulators)
-        .unwrap_or_default()
+fn manifest() -> Manifest {
+    serde_json::from_str(include_str!("emulators.json")).expect("emulators.json")
 }
 
-/// How an emulator was found.
+pub fn programs() -> Vec<Program> {
+    manifest().programs
+}
+pub fn program(id: &str) -> Option<Program> {
+    programs().into_iter().find(|p| p.id == id)
+}
+
+/// One choice for a console: a RetroArch core, or a standalone program.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Engine {
+    pub id: String,
+    pub name: String,
+    pub program: String,
+    pub core: Option<String>,
+}
+
+fn engine(id: &str, name: &str) -> Engine {
+    match id.strip_prefix('!') {
+        Some(p) => Engine { id: id.into(), name: name.into(), program: p.into(), core: None },
+        None => Engine { id: id.into(), name: name.into(), program: "retroarch".into(), core: Some(id.into()) },
+    }
+}
+
+pub fn engines(system: &str) -> Vec<Engine> {
+    manifest().consoles.get(system).map(|v| v.iter().map(|(i, n)| engine(i, n)).collect()).unwrap_or_default()
+}
+
+/// The engine chosen for a console (the user's choice, else the first one).
+pub fn chosen(app: &Shared, system: &str) -> Option<Engine> {
+    let list = engines(system);
+    let pref = app.db.setting(&format!("emu_for.{system}"));
+    list.iter().find(|e| Some(&e.id) == pref.as_ref()).cloned().or_else(|| list.into_iter().next())
+}
+
+pub fn choose(app: &Shared, system: &str, engine_id: &str) -> Result<(), String> {
+    let e = engines(system).into_iter().find(|e| e.id == engine_id).ok_or("unknown emulator for this console")?;
+    app.db.set_setting(&format!("emu_for.{system}"), &e.id);
+    // Installed at once, so the first game starts without waiting.
+    if program(&e.program).map(|p| p.install_spec().is_some()).unwrap_or(false) || e.core.is_some() {
+        let missing_program = find(app, &e.program).is_none();
+        let missing_core = e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false);
+        if missing_program || missing_core {
+            let _ = crate::emuinstall::start(app, &e.program, e.core.into_iter().collect());
+        }
+    }
+    Ok(())
+}
+
+/// How a program was found.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Found {
     Program(PathBuf),
@@ -82,11 +129,9 @@ fn home() -> PathBuf {
     std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/"))
 }
 
-fn on_path(name: &str) -> Option<PathBuf> {
+pub fn which(name: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
-    std::env::split_paths(&path)
-        .map(|d| d.join(name))
-        .find(|p| is_executable(p))
+    std::env::split_paths(&path).map(|d| d.join(name)).find(|p| is_executable(p))
 }
 
 fn is_executable(p: &Path) -> bool {
@@ -104,68 +149,46 @@ fn user_path_key(id: &str) -> String {
     format!("emu_path.{id}")
 }
 
-/// Where an emulator is, if it is installed.
-pub fn find(app: &Shared, e: &Emulator) -> Option<Found> {
-    if let Some(p) = app.db.setting(&user_path_key(&e.id)).filter(|s| !s.is_empty()) {
-        let p = PathBuf::from(p);
-        // A macOS application chosen as a whole: its main program.
-        if p.extension().map(|x| x == "app").unwrap_or(false) {
-            let macos = p.join("Contents/MacOS");
-            if let Some(exe) = std::fs::read_dir(&macos).ok()?.flatten().map(|f| f.path()).find(|f| is_executable(f)) {
-                return Some(Found::Program(exe));
+/// Where a program is, if it is available.
+pub fn find(app: &Shared, id: &str) -> Option<Found> {
+    let p = program(id)?;
+    if let Some(v) = crate::emuinstall::installed(app, id) {
+        if let Some(exe) = v["exe"].as_str() {
+            return Some(Found::Program(PathBuf::from(exe)));
+        }
+        if let Some(f) = v["flatpak"].as_str() {
+            if flatpak_installed(f) {
+                return Some(Found::Flatpak(f.to_string()));
             }
         }
-        return is_executable(&p).then_some(Found::Program(p));
     }
-    for b in &e.binaries {
-        if let Some(p) = on_path(b) {
-            return Some(Found::Program(p));
+    if let Some(path) = app.db.setting(&user_path_key(id)).filter(|s| !s.is_empty()) {
+        let path = PathBuf::from(path);
+        if path.extension().map(|x| x == "app").unwrap_or(false) {
+            let macos = path.join("Contents/MacOS");
+            return std::fs::read_dir(&macos).ok()?.flatten().map(|f| f.path()).find(|f| is_executable(f)).map(Found::Program);
+        }
+        return is_executable(&path).then_some(Found::Program(path));
+    }
+    for b in &p.binaries {
+        if let Some(found) = which(b) {
+            return Some(Found::Program(found));
         }
     }
     if cfg!(target_os = "linux") {
-        if let Some(id) = &e.flatpak {
-            if flatpak_installed(id) && on_path("flatpak").is_some() {
-                return Some(Found::Flatpak(id.clone()));
+        if let Some(f) = p.install_spec().filter(|s| s["type"] == "flatpak").and_then(|s| s["id"].as_str().map(String::from)) {
+            if flatpak_installed(&f) && which("flatpak").is_some() {
+                return Some(Found::Flatpak(f));
             }
         }
     }
     if cfg!(target_os = "macos") {
         for dir in [PathBuf::from("/Applications"), home().join("Applications")] {
-            for a in &e.mac_apps {
-                let p = dir.join(a);
-                if is_executable(&p) {
-                    return Some(Found::Program(p));
+            for a in &p.mac_apps {
+                let f = dir.join(a);
+                if is_executable(&f) {
+                    return Some(Found::Program(f));
                 }
-            }
-        }
-    }
-    None
-}
-
-/// RetroArch's cores folders, native and Flatpak.
-fn core_dirs(found: &Found) -> Vec<PathBuf> {
-    let h = home();
-    let mut v = vec![];
-    if cfg!(target_os = "macos") {
-        v.push(h.join("Library/Application Support/RetroArch/cores"));
-    }
-    if let Found::Flatpak(id) = found {
-        v.push(h.join(".var/app").join(id).join("config/retroarch/cores"));
-    }
-    v.push(h.join(".config/retroarch/cores"));
-    v.push(PathBuf::from("/usr/lib/x86_64-linux-gnu/libretro"));
-    v.push(PathBuf::from("/usr/lib/libretro"));
-    v.push(PathBuf::from("/usr/lib64/libretro"));
-    v
-}
-
-fn find_core(found: &Found, names: &[String]) -> Option<PathBuf> {
-    let ext = if cfg!(target_os = "macos") { "dylib" } else { "so" };
-    for n in names {
-        for d in core_dirs(found) {
-            let p = d.join(format!("{n}_libretro.{ext}"));
-            if p.is_file() {
-                return Some(p);
             }
         }
     }
@@ -185,113 +208,61 @@ fn dolphin_language(code: &str) -> Option<&'static str> {
     })
 }
 
-/// The emulator chosen for a system: the user's choice when it is installed, else the first one
-/// installed, else the first one known (reported as missing).
-fn choose(app: &Shared, system: &str) -> Option<(Emulator, Option<Found>)> {
-    let list: Vec<Emulator> = all().into_iter().filter(|e| e.runs(system)).collect();
-    if let Some(pref) = app.db.setting(&format!("emu_for.{system}")) {
-        if let Some(e) = list.iter().find(|e| e.id == pref) {
-            if let Some(f) = find(app, e) {
-                return Some((e.clone(), Some(f)));
-            }
-        }
-    }
-    for e in &list {
-        if let Some(f) = find(app, e) {
-            if e.cores.is_empty() || find_core(&f, e.cores.get(system).map(|v| &v[..]).unwrap_or(&[])).is_some() {
-                return Some((e.clone(), Some(f)));
-            }
-        }
-    }
-    list.into_iter().next().map(|e| {
-        let f = find(app, &e);
-        (e, f)
-    })
-}
-
-/// Settings view: every emulator, where it was found, the systems it runs.
+/// Settings view: per console of the library, the choices and the one chosen; per program, what
+/// is installed.
 pub fn list(app: &Shared) -> Value {
-    let flatpak = cfg!(target_os = "linux") && on_path("flatpak").is_some();
-    let items: Vec<Value> = all()
+    let systems: Vec<(String, String)> = app.db.platforms().into_iter().map(|p| (p.slug.clone(), p.name.clone())).collect();
+    let consoles: Vec<Value> = systems
         .iter()
-        .map(|e| {
-            let f = find(app, e);
-            let cores: Vec<String> = match &f {
-                Some(f) => e
-                    .cores
-                    .iter()
-                    .filter_map(|(sys, names)| find_core(f, names).map(|_| sys.clone()))
-                    .collect(),
-                None => vec![],
-            };
+        .map(|(slug, name)| {
+            let choices: Vec<Value> = engines(slug)
+                .iter()
+                .map(|e| {
+                    let core_ok = e.core.as_ref().map(|c| crate::emuinstall::core_path(app, c).is_file()).unwrap_or(true);
+                    json!({ "id": e.id, "name": e.name, "program": e.program, "ready": core_ok && find(app, &e.program).is_some() })
+                })
+                .collect();
+            json!({ "slug": slug, "name": name, "choices": choices, "chosen": chosen(app, slug).map(|e| e.id) })
+        })
+        .collect();
+    let programs: Vec<Value> = programs()
+        .iter()
+        .map(|p| {
+            let found = find(app, &p.id);
+            let inst = crate::emuinstall::installed(app, &p.id);
             json!({
-                "id": e.id,
-                "name": e.name,
-                "found": f.as_ref().map(|f| f.describe()),
-                "systems": e.all_systems(),
-                "cores_for": cores,
-                "needs_cores": !e.cores.is_empty(),
-                "user_path": app.db.setting(&user_path_key(&e.id)).filter(|s| !s.is_empty()),
-                "installable": flatpak && e.flatpak.is_some() && f.is_none(),
-                "user_provided": e.user_provided,
+                "id": p.id,
+                "name": p.name,
+                "found": found.as_ref().map(|f| f.describe()),
+                "managed": inst.is_some(),
+                "version": inst.as_ref().and_then(|v| v["version"].as_str().map(String::from)),
+                "installable": p.install_spec().is_some(),
+                "user_provided": p.user_provided,
+                "user_path": app.db.setting(&user_path_key(&p.id)).filter(|s| !s.is_empty()),
             })
         })
         .collect();
-    json!({ "emulators": items, "flatpak": flatpak, "install": install_state(), "session": session() })
+    json!({
+        "consoles": consoles,
+        "programs": programs,
+        "task": crate::emuinstall::task(),
+        "auto_update": app.db.setting("emu_auto_update").as_deref() != Some("off"),
+        "session": session(),
+    })
 }
 
 pub fn set_path(app: &Shared, id: &str, path: &str) -> Result<(), String> {
-    let e = all().into_iter().find(|e| e.id == id).ok_or("unknown emulator")?;
+    let p = program(id).ok_or("unknown emulator")?;
     let path = path.trim();
     if path.is_empty() {
-        app.db.set_setting(&user_path_key(&e.id), "");
+        app.db.set_setting(&user_path_key(&p.id), "");
         return Ok(());
     }
-    let p = Path::new(path);
-    if !p.is_absolute() || !(is_executable(p) || (p.extension().map(|x| x == "app").unwrap_or(false) && p.is_dir())) {
+    let f = Path::new(path);
+    if !f.is_absolute() || !(is_executable(f) || (f.extension().map(|x| x == "app").unwrap_or(false) && f.is_dir())) {
         return Err("this path is not a program".into());
     }
-    app.db.set_setting(&user_path_key(&e.id), path);
-    Ok(())
-}
-
-// ---------- Flatpak installation ----------
-
-static INSTALL: Mutex<Option<Value>> = Mutex::new(None);
-
-fn install_state() -> Value {
-    INSTALL.lock().unwrap().clone().unwrap_or(Value::Null)
-}
-
-pub fn install(app: &Shared, id: &str) -> Result<(), String> {
-    let e = all().into_iter().find(|e| e.id == id).ok_or("unknown emulator")?;
-    let fid = e.flatpak.clone().ok_or("no Flatpak for this emulator")?;
-    if !(cfg!(target_os = "linux") && on_path("flatpak").is_some()) {
-        return Err("Flatpak is not available on this system".into());
-    }
-    {
-        let mut g = INSTALL.lock().unwrap();
-        if g.as_ref().map(|v| v["running"] == true).unwrap_or(false) {
-            return Err("an installation is already running".into());
-        }
-        *g = Some(json!({ "id": e.id, "running": true, "error": null }));
-    }
-    app.emit(json!({ "type": "emulators" }));
-    let app = app.clone();
-    std::thread::spawn(move || {
-        let out = Command::new("flatpak")
-            .args(["install", "--user", "--noninteractive", "-y", "flathub", &fid])
-            .stdin(Stdio::null())
-            .output();
-        let error = match out {
-            Ok(o) if o.status.success() => None,
-            Ok(o) => Some(String::from_utf8_lossy(&o.stderr).lines().last().unwrap_or("installation failed").to_string()),
-            Err(e) => Some(e.to_string()),
-        };
-        app.db.log("emulators", &format!("install {fid}: {}", error.as_deref().unwrap_or("ok")));
-        *INSTALL.lock().unwrap() = Some(json!({ "id": e.id, "running": false, "error": error }));
-        app.emit(json!({ "type": "emulators" }));
-    });
+    app.db.set_setting(&user_path_key(&p.id), path);
     Ok(())
 }
 
@@ -336,23 +307,30 @@ fn game_file(app: &Shared, g: &GameRow) -> Result<PathBuf, String> {
     Err("download the game or play it from the network first".into())
 }
 
-/// The command that starts `rom` with the emulator.
-fn command(app: &Shared, e: &Emulator, found: &Found, system: &str, rom: &Path, lang: &str) -> Result<Command, String> {
-    let mut core = None;
-    if !e.cores.is_empty() {
-        let names = e.cores.get(system).cloned().unwrap_or_default();
-        core = Some(find_core(found, &names).ok_or_else(|| {
-            format!("{} has no core for this console: install one of {} in RetroArch", e.name, names.join(", "))
-        })?);
-    }
-    let config = if e.id == "retroarch" { Some(retroarch_config(app, system)?) } else { None };
+/// The command that starts `rom` with the chosen engine.
+fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, rom: &Path, lang: &str) -> Result<Command, String> {
+    let core = match &e.core {
+        Some(c) => {
+            let path = crate::emuinstall::core_path(app, c);
+            if !path.is_file() {
+                return Err(format!("the {} core is missing", e.name));
+            }
+            Some(path)
+        }
+        None => None,
+    };
+    let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+    let config = if p.id == "retroarch" { Some(retroarch_config(app, &profile, system)?) } else { None };
+    let userdir = app.paths.profiles().join(&profile).join(&p.id);
+    std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
     let mut args: Vec<String> = vec![];
-    for a in &e.args {
+    for a in &p.args {
         let v = a
             .replace("{rom}", &rom.to_string_lossy())
             .replace("{core}", &core.as_ref().map(|c| c.to_string_lossy().into_owned()).unwrap_or_default())
             .replace("{config}", &config.as_ref().map(|c| c.to_string_lossy().into_owned()).unwrap_or_default())
+            .replace("{userdir}", &userdir.to_string_lossy())
             .replace("{lang_dolphin}", lang_dolphin);
         // An option left without its value (no language chosen…) goes with its flag.
         if v.ends_with('=') || v.is_empty() {
@@ -363,9 +341,9 @@ fn command(app: &Shared, e: &Emulator, found: &Found, system: &str, rom: &Path, 
         }
         args.push(v);
     }
-    let cmd = match found {
-        Found::Program(p) => {
-            let mut c = Command::new(p);
+    let mut cmd = match found {
+        Found::Program(exe) => {
+            let mut c = Command::new(exe);
             c.args(&args);
             c
         }
@@ -381,26 +359,77 @@ fn command(app: &Shared, e: &Emulator, found: &Found, system: &str, rom: &Path, 
             c
         }
     };
+    // AppImages extracted by Borne find their own libraries this way.
+    cmd.env("APPIMAGE_EXTRACT_AND_RUN", "1");
     Ok(cmd)
 }
 
-/// RetroArch settings appended for Borne: fullscreen, the profile's saves and states.
-fn retroarch_config(app: &Shared, system: &str) -> Result<PathBuf, String> {
-    let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
-    let base = app.paths.profiles().join(&profile);
+/// RetroArch's whole configuration for Borne (given with --config, so the user's own is never
+/// read): fullscreen, no menu, no messages, no hotkeys, the profile's saves and states, Borne's
+/// cores and BIOS folders. Written before each game from Borne's settings.
+fn retroarch_config(app: &Shared, profile: &str, system: &str) -> Result<PathBuf, String> {
+    let base = app.paths.profiles().join(profile);
     let saves = base.join("saves").join(system);
     let states = base.join("states").join(system);
-    for d in [&saves, &states] {
+    let bios = app.paths.root.join("bios");
+    for d in [&saves, &states, &bios] {
         std::fs::create_dir_all(d).map_err(|e| e.to_string())?;
     }
-    let path = base.join("retroarch-borne.cfg");
-    let text = format!(
-        "video_fullscreen = \"true\"\nsavefile_directory = \"{}\"\nsavestate_directory = \"{}\"\nsort_savefiles_enable = \"false\"\nsort_savestates_enable = \"false\"\nconfig_save_on_exit = \"false\"\npause_nonactive = \"false\"\n",
-        saves.to_string_lossy(),
-        states.to_string_lossy()
-    );
+    let q = |p: &Path| p.to_string_lossy().replace('"', "");
+    let mut lines: Vec<(String, String)> = vec![
+        ("video_fullscreen".into(), "true".into()),
+        ("video_windowed_fullscreen".into(), "true".into()),
+        ("libretro_directory".into(), q(&crate::emuinstall::cores_dir(app))),
+        ("system_directory".into(), q(&bios)),
+        ("savefile_directory".into(), q(&saves)),
+        ("savestate_directory".into(), q(&states)),
+        ("sort_savefiles_enable".into(), "false".into()),
+        ("sort_savestates_enable".into(), "false".into()),
+        ("config_save_on_exit".into(), "false".into()),
+        ("pause_nonactive".into(), "false".into()),
+        // No RetroArch interface: no menu, no on-screen messages, no hotkeys.
+        ("menu_enable_widgets".into(), "false".into()),
+        ("video_font_enable".into(), "false".into()),
+        ("notification_show_autoconfig".into(), "false".into()),
+        ("notification_show_cheats_applied".into(), "false".into()),
+        ("notification_show_config_override_load".into(), "false".into()),
+        ("notification_show_remap_load".into(), "false".into()),
+        ("notification_show_fast_forward".into(), "false".into()),
+        ("notification_show_patch_applied".into(), "false".into()),
+        ("notification_show_refresh_rate".into(), "false".into()),
+        ("notification_show_set_initial_disk".into(), "false".into()),
+        ("notification_show_save_state".into(), "false".into()),
+        ("notification_show_screenshot".into(), "false".into()),
+        ("menu_show_load_content_animation".into(), "false".into()),
+        ("input_menu_toggle_gamepad_combo".into(), "0".into()),
+        ("input_quit_gamepad_combo".into(), "0".into()),
+        ("input_menu_toggle".into(), "nul".into()),
+        ("input_exit_emulator".into(), "nul".into()),
+        ("input_enable_hotkey".into(), "nul".into()),
+        ("input_hotkey_block_delay".into(), "0".into()),
+        ("quit_press_twice".into(), "false".into()),
+        ("confirm_quit".into(), "false".into()),
+        ("input_autodetect_enable".into(), "true".into()),
+        ("auto_overrides_enable".into(), "false".into()),
+        ("auto_remaps_enable".into(), "false".into()),
+        ("game_specific_options".into(), "false".into()),
+        ("network_cmd_enable".into(), "false".into()),
+        ("check_firmware_before_loading".into(), "true".into()),
+    ];
+    // Per-console and per-game settings chosen in Borne come on top (see game_settings).
+    for (k, v) in crate::emulators::extra_retroarch(app, system) {
+        lines.retain(|(key, _)| key != &k);
+        lines.push((k, v));
+    }
+    let text: String = lines.iter().map(|(k, v)| format!("{k} = \"{v}\"\n")).collect();
+    let path = base.join("retroarch.cfg");
     std::fs::write(&path, text).map_err(|e| e.to_string())?;
     Ok(path)
+}
+
+/// Settings for RetroArch set in Borne (none yet beyond the defaults above).
+pub fn extra_retroarch(_app: &Shared, _system: &str) -> Vec<(String, String)> {
+    vec![]
 }
 
 fn emulator_log(app: &Shared) -> PathBuf {
@@ -421,20 +450,29 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     }
     let g = app.db.game(rom_id).ok_or("unknown game")?;
     let system = g.platform_slug.clone();
-    let (e, found) = choose(app, &system).ok_or_else(|| format!("Borne cannot run {} games yet", g.platform_name))?;
-    let found = found.ok_or_else(|| {
-        if e.user_provided {
-            format!("{} is not installed: choose its program in Settings → Emulators", e.name)
-        } else {
-            format!("{} is not installed: install it from Settings → Emulators", e.name)
+    let e = chosen(app, &system).ok_or_else(|| format!("Borne cannot run {} games yet", g.platform_name))?;
+    let p = program(&e.program).ok_or("unknown emulator")?;
+    let found = find(app, &p.id);
+    let core_missing = e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false);
+    if found.is_none() || core_missing {
+        if found.is_none() && p.install_spec().is_none() {
+            return Err(format!("{} is not installed: choose its program in Settings → Emulators", p.name));
         }
-    })?;
+        // Installed first; the game starts by itself once it is ready.
+        game_file(app, &g)?;
+        crate::emuinstall::play_after(rom_id);
+        if !crate::emuinstall::busy() {
+            crate::emuinstall::start(app, &p.id, e.core.clone().into_iter().collect())?;
+        }
+        return Ok(json!({ "running": false, "installing": p.name }));
+    }
+    let found = found.unwrap();
     let rom = game_file(app, &g)?;
     let lang = app
         .active_profile()
         .and_then(|p| app.db.game_prefs(&p.id).get(&g.group_key).and_then(|(_, l)| l.clone()))
         .unwrap_or_else(|| "auto".into());
-    let mut cmd = command(app, &e, &found, &system, &rom, &lang)?;
+    let mut cmd = command(app, &p, &e, &found, &system, &rom, &lang)?;
     let log = emulator_log(app);
     let _ = std::fs::create_dir_all(log.parent().unwrap());
     let out = std::fs::File::create(&log).map_err(|e| e.to_string())?;
@@ -443,7 +481,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     // Its own process group, so that stopping the game also stops what the emulator started
     // (Flatpak's sandbox, helper processes).
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
-    let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", e.name))?;
+    let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
     *SESSION.lock().unwrap() = Some(Session { rom_id, name: g.name.clone(), emulator: e.name.clone(), started: Instant::now(), child, stopping: false });
     let s = session();
@@ -512,14 +550,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn manifest_reads_and_covers_the_v1_systems() {
-        let list = all();
-        assert!(list.len() >= 4);
-        for sys in ["nes", "genesis", "ngc", "ps2", "switch"] {
-            assert!(list.iter().any(|e| e.runs(sys)), "{sys}");
+    fn manifest_reads_and_offers_choices_for_the_v1_consoles() {
+        for sys in ["nes", "genesis", "ngc", "ps2", "switch", "nds"] {
+            let e = engines(sys);
+            assert!(!e.is_empty(), "{sys}");
+            for x in &e {
+                assert!(program(&x.program).is_some(), "{sys}: {}", x.program);
+            }
         }
-        for e in &list {
-            assert!(e.args.iter().any(|a| a.contains("{rom}")), "{}", e.id);
+        assert_eq!(engines("nes")[0].core.as_deref(), Some("mesen"));
+        assert_eq!(engines("ps2")[0].program, "pcsx2");
+        for p in programs() {
+            assert!(p.args.iter().any(|a| a.contains("{rom}")), "{}", p.id);
         }
     }
 

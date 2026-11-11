@@ -16,6 +16,7 @@ mod catalog;
 mod db;
 mod diag;
 mod downloads;
+mod emuinstall;
 mod emulators;
 mod events;
 mod library;
@@ -143,6 +144,7 @@ fn main() {
     downloads::spawn_worker(app.clone());
     stream::start(&app);
     update::start(&app);
+    emuinstall::start_updates(&app);
     if app.client().is_some() {
         catalog::start_sync(&app);
     }

@@ -278,8 +278,12 @@ try:
     s, _ = call(api, "POST", "/api/v1/screenscraper", {"user": "", "password": ""})
     check(s == 400, "ScreenScraper account needs a user and a password")
     s, em = call(api, "GET", "/api/v1/emulators")
-    check(s == 200 and {"retroarch", "dolphin", "pcsx2"} <= {e["id"] for e in em["emulators"]} and not em["session"]["running"],
+    check(s == 200 and {"retroarch", "dolphin", "pcsx2"} <= {e["id"] for e in em["programs"]} and not em["session"]["running"],
           "emulators listed, no game running")
+    nes = [c for c in em["consoles"] if c["slug"] == "nes"]
+    check(nes and nes[0]["chosen"] == "mesen" and len(nes[0]["choices"]) >= 2, "a choice of emulators per console, the first one by default")
+    s, e = call(api, "POST", "/api/v1/consoles/nes/emulator", {"engine": "unknown"})
+    check(s == 400, "an emulator unknown for the console refused")
     s, e = call(api, "POST", "/api/v1/games/999999/play", {})
     check(s == 409 and "unknown game" in e.get("error", ""), "playing an unknown game refused")
     s, e = call(api, "POST", "/api/v1/emulators/dolphin/path", {"path": "relative/dolphin"})

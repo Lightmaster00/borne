@@ -296,6 +296,7 @@ Window {
         sfx.play("accept")
         api("POST", "/api/v1/games/" + g.rom_id + "/play", {}, function (r, err) {
             if (err) { toasts.show(err, "error"); return }
+            if (r && r.installing) { toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(r.installing), "info"); return }
             onSession(r)
         })
     }
@@ -411,6 +412,8 @@ Window {
         else if (id === "home") prefs.homeStyle = payload
         else if (id === "background") prefs.backgroundStyle = payload
         else if (id === "cases") prefs.cases3d = payload === "3d"
+        else if (id === "console-emu") api("POST", "/api/v1/consoles/" + payload.slug + "/emulator", { engine: payload.engine }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-forget:")) api("POST", "/api/v1/emulators/" + id.substring(11) + "/path", { path: "" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-path:")) {

@@ -947,6 +947,10 @@
         <source>Select then Start: quit the game</source>
         <translation>Select puis Start : quitter le jeu</translation>
     </message>
+    <message>
+        <source>Installing %1… the game starts as soon as it is ready.</source>
+        <translation>Installation de %1… le jeu se lance dès que c'est prêt.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1170,10 +1174,6 @@
         <translation>%1 Ko</translation>
     </message>
     <message>
-        <source>Restart and install</source>
-        <translation>Redémarrer et installer</translation>
-    </message>
-    <message>
         <source>Checking…</source>
         <translation>Recherche…</translation>
     </message>
@@ -1252,14 +1252,6 @@
     <message>
         <source>Downloaded and verified. Borne restarts to install it.</source>
         <translation>Téléchargée et vérifiée. Borne redémarre pour l'installer.</translation>
-    </message>
-    <message>
-        <source>Please wait…</source>
-        <translation>Patientez…</translation>
-    </message>
-    <message>
-        <source>Check now</source>
-        <translation>Vérifier maintenant</translation>
     </message>
     <message>
         <source>Install, cache</source>
@@ -1502,40 +1494,8 @@
         <translation>Dernière build de ce canal : %1 (celle qui est installée).</translation>
     </message>
     <message>
-        <source>Open on GitHub</source>
-        <translation>Ouvrir sur GitHub</translation>
-    </message>
-    <message>
-        <source>Download from GitHub</source>
-        <translation>Télécharger depuis GitHub</translation>
-    </message>
-    <message>
-        <source>Install · %1</source>
-        <translation>Installer · %1</translation>
-    </message>
-    <message>
-        <source>Reinstall the latest build</source>
-        <translation>Réinstaller la dernière build</translation>
-    </message>
-    <message>
         <source>Console color</source>
         <translation>Couleur de la console</translation>
-    </message>
-    <message>
-        <source>%1: %2 without spine</source>
-        <translation>%1 : %2 sans tranche</translation>
-    </message>
-    <message>
-        <source>Fetching… %1 image(s) left</source>
-        <translation>Récupération… %1 image(s) restante(s)</translation>
-    </message>
-    <message>
-        <source>Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6</source>
-        <translation>Face %1/%6 · tranche %2/%6 · dos %3/%6 · cartouche %4/%6 · logo %5/%6</translation>
-    </message>
-    <message>
-        <source>Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.</source>
-        <translation>Les scans manquants ne sont pas dans RomM : ajoutez box2d, box2d_side, box2d_back, physical et logo à scan.media dans les réglages ScreenScraper de RomM, puis relancez une analyse.</translation>
     </message>
     <message>
         <source>Game media</source>
@@ -1544,30 +1504,6 @@
     <message>
         <source>Fetch again</source>
         <translation>Récupérer à nouveau</translation>
-    </message>
-    <message>
-        <source>Connected as %1</source>
-        <translation>Connecté en tant que %1</translation>
-    </message>
-    <message>
-        <source>%1 / %2 requests today</source>
-        <translation>%1 / %2 requêtes aujourd’hui</translation>
-    </message>
-    <message>
-        <source>Asking ScreenScraper… %1 / %2 games, %3 found</source>
-        <translation>Interrogation de ScreenScraper… %1 / %2 jeux, %3 trouvés</translation>
-    </message>
-    <message>
-        <source>Stopped: %1</source>
-        <translation>Arrêté : %1</translation>
-    </message>
-    <message>
-        <source>%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.</source>
-        <translation>%1 jeux sur %2 trouvés sur ScreenScraper (%3 pas encore demandés). Leurs images priment sur celles de RomM ; les nouveaux jeux sont récupérés après chaque synchro.</translation>
-    </message>
-    <message>
-        <source>Fetched after each sync for new games.</source>
-        <translation>Récupéré après chaque synchro pour les nouveaux jeux.</translation>
     </message>
     <message>
         <source>Change</source>
@@ -1602,14 +1538,6 @@
         <translation>Compte ScreenScraper</translation>
     </message>
     <message>
-        <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
-        <translation>Cette version de Borne n’a pas d’accès développeur ScreenScraper : les versions officielles l’incluent. Les images viennent toujours de RomM.</translation>
-    </message>
-    <message>
-        <source>Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. Connect your ScreenScraper account (free on screenscraper.fr).</source>
-        <translation>Borne demande lui-même à ScreenScraper le boîtier de chaque jeu (face, tranche, dos), sa cartouche, son logo et ses illustrations, sans passer par RomM. Connectez votre compte ScreenScraper (gratuit sur screenscraper.fr).</translation>
-    </message>
-    <message>
         <source>ScreenScraper</source>
         <translation>ScreenScraper</translation>
     </message>
@@ -1638,28 +1566,12 @@
         <translation>Vidéo de jeu</translation>
     </message>
     <message>
-        <source>Installing from Flathub…</source>
-        <translation>Installation depuis Flathub…</translation>
-    </message>
-    <message>
         <source>Found: %1</source>
         <translation>Trouvé : %1</translation>
     </message>
     <message>
         <source>Not found: choose its program (Borne does not download it)</source>
         <translation>Introuvable : choisis son programme (Borne ne le télécharge pas)</translation>
-    </message>
-    <message>
-        <source>Not installed</source>
-        <translation>Non installé</translation>
-    </message>
-    <message>
-        <source>cores for %1</source>
-        <translation>cœurs pour %1</translation>
-    </message>
-    <message>
-        <source>no core installed yet: add them from RetroArch's online updater</source>
-        <translation>aucun cœur installé : ajoute-les depuis la mise à jour en ligne de RetroArch</translation>
     </message>
     <message>
         <source>Installation failed: %1</source>
@@ -1678,16 +1590,60 @@
         <translation>Choisir le programme</translation>
     </message>
     <message>
-        <source>Use the detected one</source>
-        <translation>Utiliser celui détecté</translation>
-    </message>
-    <message>
         <source>Emulators</source>
         <translation>Émulateurs</translation>
     </message>
     <message>
-        <source>%1 of %2 found</source>
-        <translation>%1 sur %2 trouvés</translation>
+        <source>Downloading… %1%</source>
+        <translation>Téléchargement… %1 %</translation>
+    </message>
+    <message>
+        <source>Adding the %1 core…</source>
+        <translation>Ajout du cœur %1…</translation>
+    </message>
+    <message>
+        <source>Installing…</source>
+        <translation>Installation…</translation>
+    </message>
+    <message>
+        <source>Preparing…</source>
+        <translation>Préparation…</translation>
+    </message>
+    <message>
+        <source>Installed by Borne (Flathub), kept up to date</source>
+        <translation>Installé par Borne (Flathub), tenu à jour</translation>
+    </message>
+    <message>
+        <source>Version %1, installed by Borne and kept up to date</source>
+        <translation>Version %1, installée par Borne et tenue à jour</translation>
+    </message>
+    <message>
+        <source>Downloaded by Borne when a console needs it</source>
+        <translation>Téléchargé par Borne quand une console en a besoin</translation>
+    </message>
+    <message>
+        <source>Update now</source>
+        <translation>Mettre à jour</translation>
+    </message>
+    <message>
+        <source>Forget this program</source>
+        <translation>Oublier ce programme</translation>
+    </message>
+    <message>
+        <source>Emulator used for this console</source>
+        <translation>Émulateur utilisé pour cette console</translation>
+    </message>
+    <message>
+        <source>Emulator updates</source>
+        <translation>Mises à jour des émulateurs</translation>
+    </message>
+    <message>
+        <source>Borne installs new versions by itself, never during a game</source>
+        <translation>Borne installe les nouvelles versions tout seul, jamais pendant une partie</translation>
+    </message>
+    <message>
+        <source>One per console</source>
+        <translation>Un par console</translation>
     </message>
 </context>
 </TS>

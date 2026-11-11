@@ -53,85 +53,51 @@ Item {
     }
     readonly property var ss: settings && settings.screenscraper ? settings.screenscraper : null
     readonly property var emus: settings && settings.emulators ? settings.emulators : null
-    function emuText(e) {
-        const inst = emus && emus.install && emus.install.id === e.id ? emus.install : null
-        if (inst && inst.running) return qsTr("Installing from Flathub…")
-        let t = e.found ? qsTr("Found: %1").arg(e.found)
-                        : e.user_provided ? qsTr("Not found: choose its program (Borne does not download it)")
-                        : qsTr("Not installed")
-        if (e.found && e.needs_cores)
-            t += " · " + (e.cores_for.length ? qsTr("cores for %1").arg(e.cores_for.join(", ")) : qsTr("no core installed yet: add them from RetroArch's online updater"))
-        else t += " · " + e.systems.join(", ")
-        if (inst && inst.error) t += " · " + qsTr("Installation failed: %1").arg(inst.error)
-        return t
+    function emuTaskText(id) {
+        const t = emus ? emus.task : null
+        if (!t || t.id !== id) return ""
+        if (t.running) {
+            if (t.step === "download" && t.total > 0) return qsTr("Downloading… %1%").arg(Math.round(100 * t.received / t.total))
+            if (t.step === "core") return qsTr("Adding the %1 core…").arg(t.core)
+            if (t.step === "unpack") return qsTr("Installing…")
+            return qsTr("Preparing…")
+        }
+        return t.error ? qsTr("Installation failed: %1").arg(t.error) : ""
     }
-    function emuButtons(e) {
+    function programText(p) {
+        const t = emuTaskText(p.id)
+        if (t) return t
+        if (p.managed) return p.version === "flatpak" ? qsTr("Installed by Borne (Flathub), kept up to date") : qsTr("Version %1, installed by Borne and kept up to date").arg(p.version)
+        if (p.found) return qsTr("Found: %1").arg(p.found)
+        if (p.user_provided) return qsTr("Not found: choose its program (Borne does not download it)")
+        return qsTr("Downloaded by Borne when a console needs it")
+    }
+    function programButtons(p) {
+        const busy = !!(emus && emus.task && emus.task.running)
         const b = []
-        const busy = !!(emus && emus.install && emus.install.running)
-        if (e.installable) b.push({ id: "emu-install:" + e.id, label: qsTr("Install"), primary: true, disabled: busy })
-        b.push({ id: "emu-path:" + e.id, label: e.user_path ? qsTr("Change program") : qsTr("Choose program"), primary: !e.found && !e.installable })
-        if (e.user_path) b.push({ id: "emu-forget:" + e.id, label: qsTr("Use the detected one") })
+        if (p.installable) b.push({ id: "emu-install:" + p.id, label: p.managed ? qsTr("Update now") : qsTr("Install"), primary: !p.found, disabled: busy })
+        if (p.user_provided || p.user_path) b.push({ id: "emu-path:" + p.id, label: p.user_path ? qsTr("Change program") : qsTr("Choose program"), primary: !p.found && !p.installable })
+        if (p.user_path) b.push({ id: "emu-forget:" + p.id, label: qsTr("Forget this program") })
         return b
     }
-    readonly property bool ssRunning: !!(ss && ss.state && ss.state.running)
-    function ssAccountText() {
-        if (ss && !ss.developer_access)
-            return qsTr("This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.")
-        if (!ss || !ss.configured)
-            return qsTr("Borne asks ScreenScraper itself for each game's case (front, spine, back), cartridge, logo and artwork, without going through RomM. Connect your ScreenScraper account (free on screenscraper.fr).")
-        const st = ss.state || {}
-        let t = qsTr("Connected as %1").arg(ss.user)
-        if (st.max_requests) t += " · " + qsTr("%1 / %2 requests today").arg(st.requests_today || 0).arg(st.max_requests)
-        return t
+    function emulatorRows() {
+        if (!emus) return []
+        const rows = emus.consoles.map(c => ({ id: "console:" + c.slug, kind: "chips", title: c.name,
+            desc: qsTr("Emulator used for this console"), selected: c.chosen,
+            items: c.choices.map(x => ({ id: x.id, label: x.name })) }))
+        rows.push({ id: "emu-auto", kind: "chips", title: qsTr("Emulator updates"), desc: qsTr("Borne installs new versions by itself, never during a game"),
+                    selected: emus.auto_update ? "on" : "off", items: onOff() })
+        const used = {}
+        emus.consoles.forEach(c => c.choices.forEach(x => { if (x.id === c.chosen) used[x.program] = true }))
+        emus.programs.filter(p => used[p.id] || p.managed || p.user_path).forEach(p =>
+            rows.push({ id: "prog:" + p.id, kind: "buttons", title: p.name, desc: programText(p), items: programButtons(p) }))
+        return rows
     }
-    function ssFetchText() {
-        const st = ss && ss.state ? ss.state : null
-        if (!st) return ""
-        if (st.running) return qsTr("Asking ScreenScraper… %1 / %2 games, %3 found").arg(st.done).arg(st.total).arg(st.found)
-        if (st.error) return qsTr("Stopped: %1").arg(st.error)
-        if (ss.asked) return qsTr("%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.").arg(ss.found).arg(ss.asked).arg(Math.max(0, ss.games - ss.asked))
-        return qsTr("Fetched after each sync for new games.")
-    }
-    // Case scans, cartridges and logos on this device, against the games of the library.
-    function mediaText() {
-        const m = settings && settings.media ? settings.media : null
-        if (!m || !m.platforms.length) return ""
-        let games = 0
-        const have = { front: 0, side: 0, back: 0, physical: 0, logo: 0 }
-        const gaps = []
-        for (const p of m.platforms) {
-            games += p.games
-            for (const k in have) have[k] += p.have[k] || 0
-            const missing = p.games - Math.min(p.games, p.have.side || 0)
-            if (missing > 0) gaps.push(qsTr("%1: %2 without spine").arg(p.name).arg(missing))
-        }
-        if (status && status.sync && status.sync.media_pending > 0) return qsTr("Fetching… %1 image(s) left").arg(status.sync.media_pending)
-        let t = qsTr("Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6")
-                .arg(have.front).arg(have.side).arg(have.back).arg(have.physical).arg(have.logo).arg(games)
-        if (gaps.length) t += "\n" + gaps.slice(0, 4).join(" · ") + (gaps.length > 4 ? " …" : "")
-              + "\n" + qsTr("Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.")
-        return t
-    }
-    readonly property var updateButtons: {
-        if (!upd) return []
-        const st = updState ? updState.state : "idle"
-        const github = { id: "update-github", label: qsTr("Open on GitHub") }
-        if (st === "downloading" || st === "checking") return [{ id: "none", label: qsTr("Please wait…"), disabled: true }]
-        if (st === "ready") return [{ id: "update-apply", label: qsTr("Restart and install"), primary: true }]
-        if (st === "available") {
-            const a = updState.available.assets[upd.current.platform]
-            if (upd.unsupported) return [{ id: "update-github", label: qsTr("Download from GitHub"), primary: true }]
-            return [{ id: "update-download", label: qsTr("Install · %1").arg(fmtSize(a ? a.size : 0)), primary: true }, github]
-        }
-        return [{ id: "update-check", label: qsTr("Check now"), primary: true },
-                { id: "update-force", label: qsTr("Reinstall the latest build") }, github]
-    }
-
     readonly property var sections: [
         { id: "games", name: qsTr("Games"), hint: qsTr("Install, cache") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable") },
         { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, trailers") },
-        { id: "emulators", name: qsTr("Emulators"), hint: emus ? qsTr("%1 of %2 found").arg(emus.emulators.filter(e => !!e.found).length).arg(emus.emulators.length) : "" },
+        { id: "emulators", name: qsTr("Emulators"), hint: qsTr("One per console") },
         { id: "screenscraper", name: qsTr("Game images"), hint: ss && ss.configured ? ss.user : qsTr("ScreenScraper") },
         { id: "server", name: qsTr("Server"), hint: qsTr("RomM, profiles") },
         { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostic report") }
@@ -162,7 +128,7 @@ Item {
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
             { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Play the selected game's trailer, muted, after two seconds"), selected: trailers ? "on" : "off", items: onOff() }
         ]
-        if (id === "emulators") return emus ? emus.emulators.map(e => ({ id: "emu:" + e.id, kind: "buttons", title: e.name, desc: emuText(e), items: emuButtons(e) })) : []
+        if (id === "emulators") return emulatorRows()
         if (id === "screenscraper") return [
             { id: "ss-account", kind: "buttons", title: qsTr("ScreenScraper account"), desc: ssAccountText(),
               items: !(ss && ss.developer_access) ? []
@@ -222,6 +188,8 @@ Item {
         else if (r.id === "home") page.action("home", item.id)
         else if (r.id === "background") page.action("background", item.id)
         else if (r.id === "cases") page.action("cases", item.id)
+        else if (r.id.startsWith("console:")) page.action("console-emu", { slug: r.id.substring(8), engine: item.id })
+        else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
         else if (r.id === "trailers") page.action("trailers", item.id === "on")
         else page.action(item.id, null)
@@ -331,10 +299,25 @@ Item {
         }
     }
 
-    // ---------- rows ----------
-    Column {
+    // ---------- rows (scroll to follow the selection when there are many) ----------
+    Flickable {
+        id: rowsView
         x: side.width + 80; y: 64
         width: Math.min(1500, parent.width - x - 96)
+        height: parent.height - y - 110
+        contentHeight: rowsCol.height + 40
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        Behavior on contentY { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        function ensure(item) {
+            const top = item.y, bottom = item.y + item.height
+            if (top - 24 < contentY) contentY = Math.max(0, top - 24)
+            else if (bottom + 24 > contentY + height) contentY = Math.min(contentHeight - height, bottom + 24 - height)
+        }
+        Connections { target: page; function onSectionChanged() { rowsView.contentY = 0 } }
+    Column {
+        id: rowsCol
+        width: parent.width
         spacing: 32
 
         Column {
@@ -356,6 +339,9 @@ Item {
             Item {
                 id: rowItem
                 required property var modelData
+                required property int index
+                readonly property bool current: page.row === index
+                onCurrentChanged: if (current) rowsView.ensure(rowItem)
                 width: parent.width
                 height: modelData.kind === "cards" ? cards.height : Math.max(88, line.height + 24)
 
@@ -460,6 +446,7 @@ Item {
                 }
             }
         }
+    }
     }
 
     // ---------- hints ----------
