@@ -24,7 +24,7 @@ sha2 = "0.10"
 md-5 = "0.10"
 zip = { version = "4", default-features = false, features = ["deflate"] }
 sevenz-rust2 = { version = "0.25", default-features = false, features = ["util"] }
-quick-xml = "0.37"
+quick-xml = "0.42"
 crc32fast = "1"
 qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 libc = "0.2"
