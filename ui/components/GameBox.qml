@@ -22,7 +22,7 @@ Item {
     // (Super Nintendo: wide in America, upright in Europe) follow their cover.
     readonly property var kind: Cases.of(game ? game.platform_slug : "")
     readonly property real coverAspect: cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
-    readonly property var shape: Cases.shape(game ? game.platform_slug : "", coverAspect)
+    readonly property var shape: Cases.shape(game ? game.platform_slug : "", coverAspect, has("front"))
     readonly property bool turned: shape.turned
     readonly property real mm: Cases.scale(kind, stage.boxH)
     // Every case of a console has the same size (its real case's proportions); the scans are
@@ -31,7 +31,7 @@ Item {
     readonly property bool frontScan: has("front")
     readonly property real bh: shape.h * mm
     readonly property real bw: shape.w * mm
-    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, kind.d * mm)
+    readonly property real bd: Cases.depth(kind, mm, bh, has("side") && game.side_ar > 0 ? game.side_ar : 0)
     readonly property string mat: kind.mat
     readonly property bool plastic: mat !== "card"
     // The jewel case's ribbed hinge on the left (not on PlayStation cases: the cover insert alone).

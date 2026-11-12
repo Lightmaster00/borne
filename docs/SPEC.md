@@ -781,7 +781,11 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   is), and every case of a console has the same size: its shape is the one its front scans show
   (media::case_ratios, `case_ar` in `/platforms`: the median of the console's scans, or two shapes
   when it was sold in two kinds of case, a Japanese Saturn jewel case and an American long box, a
-  Super Nintendo box wide or upright; a game takes the closer one), the scans are fitted to the case (the front
+  Super Nintendo box wide or upright; a game takes the closer one). A front scan still more than 3 %
+  off that shape (regional editions: N64, Super Nintendo) gives its case its own proportions, the
+  longest side kept, so the print is never stretched; a case's thickness follows its spine scan's
+  proportions when they are between 9 % and 40 % of its height (Cases.depth), else its kind's.
+  Otherwise the scans are fitted to the case (the front
   fills its face: fitted whole when its proportions are within 22 % of the case's, so no title or
   logo is cut at the edges, trimmed evenly beyond; CD cases trim from the right so
   the console's band on the left of the insert stays whole; the spine scan covers the whole spine).

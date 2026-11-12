@@ -28,13 +28,14 @@ Node {
     readonly property real frontAR: game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0)
     // A spine scan lying on its side (wider than tall) is stood up.
     readonly property bool sideLying: has("side") && game.side_ar > 1
-    // Every case of a console has the same size (Cases.shape: its scans' usual proportions): the
-    // scans are fitted to it, never the other way round.
-    readonly property var shape: Cases.shape(game ? game.platform_slug : "", frontAR)
+    // Every case of a console has the same size (Cases.shape: its scans' usual proportions, or the
+    // game's own front scan's when an edition differs, so it is never stretched): the
+    // other scans are fitted to it.
+    readonly property var shape: Cases.shape(game ? game.platform_slug : "", frontAR, frontScan)
     readonly property bool turned: shape.turned
     readonly property real bh: shape.h * mm
     readonly property real bw: shape.w * mm
-    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, kind.d * mm)
+    readonly property real bd: Cases.depth(kind, mm, bh, has("side") && game.side_ar > 0 ? game.side_ar : 0)
     // Rounded corners and edges, a little more on plastic than on cardboard. The prints stay on
     // the flat part (CaseMesh), so the curve never takes any of them; on a thin case the curve
     // keeps a flat strip in the middle of the spine for its print.
