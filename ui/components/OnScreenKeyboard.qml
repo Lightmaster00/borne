@@ -1,8 +1,10 @@
 // Gamepad-driven on-screen keyboard (RomM server address, profile names).
 // D-pad: move · A: key · B: erase · X: shift · Y: space · Start: confirm.
 // A physical keyboard works too (see typeText / Main.qml).
-// Letter layout follows the system language: AZERTY for French, QWERTY otherwise.
+// Letter layout: AZERTY for French, QWERTY otherwise, unless switched with the "AZERTY / QWERTY"
+// key (remembered).
 import QtQuick
+import QtCore
 
 Item {
     id: kb
@@ -17,7 +19,8 @@ Item {
     signal accepted(string text)
     signal cancelled()
 
-    readonly property bool azerty: Qt.locale().name.startsWith("fr")
+    Settings { id: kbPrefs; category: "keyboard"; property string layout: "" }
+    readonly property bool azerty: kbPrefs.layout === "" ? Qt.locale().name.startsWith("fr") : kbPrefs.layout === "azerty"
     readonly property var letters: [
         ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
         ...(azerty ? [["a", "z", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -27,7 +30,7 @@ Item {
                       ["a", "s", "d", "f", "g", "h", "j", "k", "l", "-"],
                       ["z", "x", "c", "v", "b", "n", "m", ".", ":", "/"]]),
         ["_", "@", "?", "=", "&", "%", "#", "~", "é", "è"],
-        [qsTr("⇧ Shift"), qsTr("Space"), qsTr("⌫ Erase"), qsTr("Confirm ✓")]
+        [qsTr("⇧ Shift"), azerty ? "QWERTY" : "AZERTY", qsTr("Space"), qsTr("⌫ Erase"), qsTr("Confirm ✓")]
     ]
     readonly property int keyW: 64
     readonly property int keyH: 54
@@ -47,8 +50,9 @@ Item {
     function press() {
         if (row === 5) {
             if (col === 0) shift = !shift
-            else if (col === 1) typeText(" ")
-            else if (col === 2) backspace()
+            else if (col === 1) kbPrefs.layout = azerty ? "qwerty" : "azerty"
+            else if (col === 2) typeText(" ")
+            else if (col === 3) backspace()
             else accepted(text)
             return
         }
@@ -61,7 +65,7 @@ Item {
         else if (a === "right") col = (col + 1) % n
         else if (a === "up" || a === "down") {
             const next = a === "up" ? Math.max(0, row - 1) : Math.min(5, row + 1)
-            // Keep the horizontal position between the action row (4 keys) and the others (10).
+            // Keep the horizontal position between the action row (5 keys) and the others (10).
             const ratio = (col + 0.5) / letters[row].length
             row = next
             col = Math.min(letters[row].length - 1, Math.floor(ratio * letters[row].length))
@@ -112,7 +116,7 @@ Item {
                         required property int index
                         readonly property bool cur: keyRow.r === kb.row && index === kb.col
                         readonly property bool wide: keyRow.r === 5
-                        width: wide ? (kb.width - 3 * kb.gap) / 4 : kb.keyW
+                        width: wide ? (kb.width - 4 * kb.gap) / 5 : kb.keyW
                         height: kb.keyH
                         radius: 8
                         color: cur ? theme.accent : (wide ? theme.bg2 : Qt.rgba(1, 1, 1, 0.06))

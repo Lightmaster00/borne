@@ -20,10 +20,15 @@ Specification: [`docs/SPEC.md`](docs/SPEC.md).
 ### What stage 1 does
 
 - **First launch**: the RomM server address is typed with the gamepad on-screen keyboard and checked before it is saved.
-- **Console-style profiles** ("Who's playing?"), each bound to a RomM account.
+- **Console-style profiles** ("Who's playing?"), each bound to a RomM account. To add one, pick the
+  RomM account in the server's list (shown once an administrator's profile has signed in with its
+  password) and type its password; or type the account's name; or approve a code from the phone.
+  The password is never kept: Borne uses it once to approve its own pairing code.
 - **Keyboard-free pairing**: Borne shows a code and a QR code; you approve it from your phone in RomM,
   which creates a "Borne device". The token is stored outside the database (`secrets/`, 0600).
-- **Catalog** synced (platforms, games, metadata, cached covers), browsable **offline**.
+- **Catalog** synced (platforms, games, metadata, cached covers), browsable **offline**. Favourites
+  and Recent tabs per profile; sort by name, recently played, recently added or most played, and
+  filter by genre (Select → Sort and filter); the search also matches other regions' titles.
 - **Downloads**: persistent queue, **resume after interruption** (Range requests), **SHA-1** verification
   (including archive contents), safe zip extraction, atomic install, live progress on the poster,
   cancellation, local deletion that never touches RomM.
@@ -63,7 +68,9 @@ Since then:
 - **Game images**: the case front, spine and back, cartridge or disc, logo and artwork come from
   ScreenScraper, either through RomM (`scan.media` with `box2d`, `box2d_side`, `box2d_back`,
   `physical`, `logo`, `fanart`, `video`, then rescan) or directly from Borne once your ScreenScraper
-  account is connected (Settings → Game images). Borne talks to nothing but RomM, ScreenScraper and
+  account is connected (Settings → Game images, with a per-console report of the games found and
+  not found). On the game page, *Images* corrects a wrong match (search ScreenScraper by name) or
+  picks another region's box. Borne talks to nothing but RomM, ScreenScraper and
   GitHub (for its own updates).
 - **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
   writes a shareable text report (versions, settings, server version, recent downloads, log; no
@@ -82,7 +89,8 @@ Since then:
   console (after each sync, or chosen in Settings → System files), or given to Borne there
   from a file on the computer (the system's file chooser, or a typed path) or from a link (a link
   to your RomM server is sent with your profile's token). Borne checks them (size, format), keeps
-  them, and places them for the chosen emulator before each game; a missing one is reported
+  them (a BIOS against known dumps: model and region shown), and places them for the chosen
+  emulator before each game (shadPS4 system modules and Ryujinx firmware included); a missing one is reported
   before launching. Borne never downloads such files by itself.
 - **Display settings in Borne**: picture shape (the game's own, 4:3, 16:9, fill), rendering
   resolution for 3D consoles (1× to 4×), sharp, smoothed or CRT-TV pixels, whole-number scaling,
@@ -94,12 +102,14 @@ Since then:
   sent after it; replaced copies are archived, never deleted; offline, they are sent later
   (Settings → Games). Covered: RetroArch battery saves and save states (with the core's name,
   like RomM's own player), a memory card per game for Dolphin, PCSX2 and DuckStation, the Switch
-  save folder of each game (Eden, Citron) and the PS3 save folders (RPCS3, by the serial in the
-  game's name).
+  save folder of each game (Eden, Citron), the PS3 save folders (RPCS3, by the serial in the
+  game's name) and the PS4 save folders (shadPS4, by title id). Profiles never share saves, even
+  where an emulator keeps one save folder for the whole computer.
 - **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
   public databases — the libretro cheat database for the consoles run by RetroArch (matched by
   the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the
-  DS (matched by the game ID read from the cartridge header: game code and header CRC). Turn them
+  DS (matched by the game ID read from the cartridge header: game code and header CRC), and for
+  GameCube and Wii the Action Replay and Gecko codes Dolphin ships (matched by the disc's game ID). Turn them
   on per profile; they apply the next time the game starts.
 
 ## Try it on a Mac (Apple Silicon)

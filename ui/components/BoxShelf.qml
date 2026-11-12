@@ -32,7 +32,7 @@ Item {
     Behavior on flow { NumberAnimation { duration: 460; easing.type: Easing.OutCubic } }
 
     // Gentle idle sway of the selected box.
-    property real sway: 0
+    property real sway        // driven by the animation below (0 when it does not run)
     property bool showSelection: true
     // Turned by the player (right stick, Z Q S D): applied to the selected box.
     property real userYaw: 0

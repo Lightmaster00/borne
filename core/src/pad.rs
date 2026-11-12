@@ -23,6 +23,8 @@ pub struct PadState {
     pub available: bool,
     pub error: Option<String>,
     pub pads: Vec<String>,
+    /// SDL-style GUID of each pad (same order), for emulators that bind a device by it.
+    pub guids: Vec<String>,
 }
 
 pub type SharedPadState = Arc<Mutex<PadState>>;
@@ -99,6 +101,10 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
                     s.pads = gilrs
                         .gamepads()
                         .map(|(_, g)| g.name().to_string())
+                        .collect();
+                    s.guids = gilrs
+                        .gamepads()
+                        .map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect())
                         .collect();
                 }
                 while let Some(ev) = gilrs.next_event() {

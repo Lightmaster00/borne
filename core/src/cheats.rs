@@ -9,6 +9,10 @@
 //!   CRC32 of the 512-byte header, so each version (Europe, USA, Japan, revisions) has its own
 //!   codes. Borne reads the same ID from the game file.
 //!
+//! - GameCube and Wii: the Action Replay and Gecko codes Dolphin ships with (its own
+//!   `Sys/GameSettings/<game ID>.ini`), matched by the disc's 6-character game ID read from the
+//!   game file (ISO, GCM, RVZ, WIA, CISO, WBFS).
+//!
 //! The databases are downloaded the first time cheats are asked for, then refreshed weekly. The
 //! cheats chosen are kept per profile and per version, and written for the emulator before each
 //! game (RetroArch: a `.cht` file loaded with the game).
@@ -295,6 +299,12 @@ fn game_cheats(app: &Shared, rom_id: i64) -> Result<(Vec<Cheat>, &'static str), 
         let xml = std::fs::read_to_string(root(app).join("nds-cheats.xml")).map_err(|_| "the DS cheat database is not here yet".to_string())?;
         return Ok((ds_cheats(&xml, &code, crc).unwrap_or_default(), "ds"));
     }
+    if g.platform_slug == "ngc" || g.platform_slug == "wii" {
+        let rom = g.local_main.clone().filter(|m| Path::new(m).is_file()).ok_or("download the game first: its exact version is read from the file")?;
+        let id = disc_id(Path::new(&rom)).ok_or("the game ID could not be read from this file")?;
+        let dir = dolphin_codes_dir(app).ok_or("install Dolphin first (Settings → Emulators): its own code list is used")?;
+        return Ok((dolphin_cheats(&dir, &id), "dolphin"));
+    }
     let Some(f) = libretro_file(app, &g.platform_slug, &g.fs_name) else { return Ok((vec![], "libretro")) };
     Ok((parse_cht(&std::fs::read_to_string(f).unwrap_or_default()), "libretro"))
 }
@@ -350,9 +360,105 @@ pub fn retroarch_settings(app: &Shared, rom_id: i64, core_name: &str, rom: &Path
     out
 }
 
+// ---------- Dolphin ----------
+
+/// The 6-character game ID of a GameCube or Wii disc image.
+pub fn disc_id(rom: &Path) -> Option<String> {
+    let mut f = std::fs::File::open(rom).ok()?;
+    let mut head = vec![0u8; 0x8008];
+    let n = f.read(&mut head).ok()?;
+    head.truncate(n);
+    let at = match head.get(0..4)? {
+        b"RVZ\x01" | b"WIA\x01" => 0x58,
+        b"CISO" => 0x8000,
+        b"WBFS" => 0x200,
+        _ => 0,
+    };
+    let id = head.get(at..at + 6)?;
+    id.iter().all(|c| c.is_ascii_alphanumeric()).then(|| String::from_utf8_lossy(id).into_owned())
+}
+
+/// Where the installed Dolphin keeps its game settings and codes.
+fn dolphin_codes_dir(app: &Shared) -> Option<PathBuf> {
+    let exe = PathBuf::from(crate::emuinstall::installed(app, "dolphin")?["exe"].as_str()?);
+    for base in exe.ancestors().take(5) {
+        for rel in ["Sys/GameSettings", "Resources/Sys/GameSettings", "usr/share/dolphin-emu/sys/GameSettings", "sys/GameSettings"] {
+            let d = base.join(rel);
+            if d.is_dir() {
+                return Some(d);
+            }
+        }
+    }
+    None
+}
+
+/// The codes in Dolphin's files for this game: the 6-character ID's, then the 3-character
+/// one's (all regions). Each cheat's code says its kind ("ActionReplay" or "Gecko").
+pub fn dolphin_cheats(dir: &Path, id: &str) -> Vec<Cheat> {
+    let mut out: Vec<Cheat> = vec![];
+    for file in [format!("{id}.ini"), format!("{}.ini", &id[..3.min(id.len())])] {
+        let text = std::fs::read_to_string(dir.join(&file)).unwrap_or_default();
+        let mut section = String::new();
+        for line in text.lines() {
+            let l = line.trim();
+            if l.starts_with('[') && l.ends_with(']') {
+                section = l[1..l.len() - 1].to_string();
+            } else if (section == "ActionReplay" || section == "Gecko") && l.starts_with('$') {
+                let name = l[1..].trim().to_string();
+                if !name.is_empty() && !out.iter().any(|c| c.name == name) {
+                    out.push(Cheat { name, code: section.clone() });
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Dolphin: the chosen codes enabled in the game's settings of Borne's Dolphin folder, and
+/// cheats turned on (or off when none is chosen).
+pub fn dolphin_settings(app: &Shared, rom_id: i64, userdir: &Path, rom: &Path) -> Result<(), String> {
+    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    crate::emulators::ini_set(&userdir.join("Config/Dolphin.ini"), &[("Core", "EnableCheats", if on.is_empty() { "False" } else { "True" })])?;
+    let Some(id) = disc_id(rom) else { return Ok(()) };
+    let list = dolphin_codes_dir(app).map(|d| dolphin_cheats(&d, &id)).unwrap_or_default();
+    let file = userdir.join("GameSettings").join(format!("{id}.ini"));
+    let mut text = String::new();
+    for section in ["ActionReplay", "Gecko"] {
+        let names: Vec<&Cheat> = list.iter().filter(|c| c.code == section && on.contains(&c.name)).collect();
+        text += &format!("[{section}_Enabled]\n");
+        for c in names {
+            text += &format!("${}\n", c.name);
+        }
+    }
+    std::fs::create_dir_all(file.parent().unwrap()).map_err(|e| e.to_string())?;
+    std::fs::write(&file, text).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dolphin_codes_and_disc_ids() {
+        let d = std::env::temp_dir().join(format!("borne-dolphin-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        std::fs::write(d.join("GALE01.ini"), "[OnFrame]\n[ActionReplay]\n$Infinite health\n0000 0000\n[Gecko]\n$Moon jump [someone]\nC2000000 00000000\n").unwrap();
+        std::fs::write(d.join("GAL.ini"), "[ActionReplay]\n$Infinite health\n$All trophies\n").unwrap();
+        let c = dolphin_cheats(&d, "GALE01");
+        assert_eq!(c.iter().map(|c| (c.name.as_str(), c.code.as_str())).collect::<Vec<_>>(),
+                   vec![("Infinite health", "ActionReplay"), ("Moon jump [someone]", "Gecko"), ("All trophies", "ActionReplay")]);
+        let mut iso = b"GALE01".to_vec();
+        iso.resize(0x100, 0);
+        std::fs::write(d.join("g.iso"), &iso).unwrap();
+        assert_eq!(disc_id(&d.join("g.iso")).as_deref(), Some("GALE01"));
+        let mut rvz = b"RVZ\x01".to_vec();
+        rvz.resize(0x58, 0);
+        rvz.extend(b"RMCP01");
+        rvz.resize(0x200, 0);
+        std::fs::write(d.join("g.rvz"), &rvz).unwrap();
+        assert_eq!(disc_id(&d.join("g.rvz")).as_deref(), Some("RMCP01"));
+        let _ = std::fs::remove_dir_all(&d);
+    }
 
     #[test]
     fn reads_libretro_cheat_files() {

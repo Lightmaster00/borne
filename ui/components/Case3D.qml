@@ -97,8 +97,21 @@ Node {
             fillMode: Image.Stretch
             sourceSize: Qt.size(Math.max(32, parent.width), parent.height)
         }
+        // No spine scan: the game's logo turned along the spine (ScreenScraper's wheel), on a band
+        // in the console's colour; else its title.
+        Image {
+            id: sLogo
+            visible: (box.sideUrl === "" || sImg.status === Image.Error) && status === Image.Ready
+            anchors.centerIn: parent
+            width: parent.height * 0.7; height: parent.width * 0.78
+            rotation: -90
+            source: box.has("logo") ? box.game.art + "logo" : ""
+            sourceSize.width: 512
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+        }
         Text {
-            visible: box.sideUrl === "" || sImg.status === Image.Error
+            visible: (box.sideUrl === "" || sImg.status === Image.Error) && !sLogo.visible
             anchors.centerIn: parent
             width: parent.height * 0.86; height: parent.width
             rotation: -90

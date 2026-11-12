@@ -37,8 +37,11 @@ Item {
                 const g = model.get(i)
                 const n = fold(g.name)
                 const at = n.indexOf(q)
-                if (at < 0) continue
-                const score = at === 0 ? 0 : (n.charAt(at - 1) === " " || n.charAt(at - 1) === ":" || n.charAt(at - 1) === "-") ? 1 : 2
+                let score
+                if (at >= 0) score = at === 0 ? 0 : (n.charAt(at - 1) === " " || n.charAt(at - 1) === ":" || n.charAt(at - 1) === "-") ? 1 : 2
+                // Also the game's other titles (other regions, Japanese names, subtitles), ranked after.
+                else if (g.alt_names && fold(g.alt_names).indexOf(q) >= 0) score = 3
+                else continue
                 out.push({ index: i, score: score, name: g.name, cover: g.cover,
                            sub: [g.platform_name, g.year > 0 ? g.year : ""].filter(x => x).join(" · ") })
             }

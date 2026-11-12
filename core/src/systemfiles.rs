@@ -35,6 +35,9 @@ pub struct Item {
     ext: Vec<String>,
     #[serde(default)]
     size: Option<u64>,
+    /// Known good dumps: MD5 → what it is (region, model).
+    #[serde(default)]
+    known: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize)]
@@ -83,7 +86,20 @@ pub fn status(app: &Shared) -> Value {
             let list: Vec<Value> = items(slug)
                 .iter()
                 .map(|i| {
-                    let f: Vec<String> = files(app, slug, &i.id).iter().filter_map(|p| p.file_name().map(|n| n.to_string_lossy().into_owned())).collect();
+                    // Each BIOS with what its checksum says: a known dump (and which), or not known.
+                    let f: Vec<String> = files(app, slug, &i.id)
+                        .iter()
+                        .filter_map(|p| {
+                            let name = p.file_name()?.to_string_lossy().into_owned();
+                            if i.known.is_empty() {
+                                return Some(name);
+                            }
+                            Some(match md5_of(p).and_then(|m| i.known.get(&m).cloned()) {
+                                Some(what) => format!("{name} ✓ {what}"),
+                                None => format!("{name} (?)"),
+                            })
+                        })
+                        .collect();
                     let shown = if i.kind == "firmware-nca" && !f.is_empty() { vec![format!("{} .nca", f.len())] } else { f };
                     json!({ "id": i.id, "name": i.name, "required": i.required, "files": shown })
                 })
@@ -92,6 +108,31 @@ pub fn status(app: &Shared) -> Value {
         })
         .collect();
     json!({ "consoles": consoles, "task": TASK.lock().unwrap().clone().unwrap_or(Value::Null) })
+}
+
+/// MD5 of a file, remembered while its size and date stay the same.
+fn md5_of(p: &Path) -> Option<String> {
+    use md5::Digest;
+    static CACHE: Mutex<BTreeMap<(PathBuf, u64, i64), String>> = Mutex::new(BTreeMap::new());
+    let meta = std::fs::metadata(p).ok()?;
+    let mtime = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs() as i64).unwrap_or(0);
+    let key = (p.to_path_buf(), meta.len(), mtime);
+    if let Some(m) = CACHE.lock().unwrap().get(&key) {
+        return Some(m.clone());
+    }
+    let mut h = md5::Md5::new();
+    let mut f = std::fs::File::open(p).ok()?;
+    let mut buf = [0u8; 65536];
+    loop {
+        let n = f.read(&mut buf).ok()?;
+        if n == 0 {
+            break;
+        }
+        h.update(&buf[..n]);
+    }
+    let m: String = h.finalize().iter().map(|b| format!("{b:02x}")).collect();
+    CACHE.lock().unwrap().insert(key, m.clone());
+    Some(m)
 }
 
 /// A missing required file for this console, said plainly.
@@ -529,6 +570,18 @@ pub fn prepare(app: &Shared, console: &str, program: &str, data: &Path, exe: Opt
                     copy_if_changed(f, &reg.join(f.file_name().unwrap()))?;
                 }
             }
+            // Ryujinx keeps each firmware NCA as a folder of that name holding a file "00".
+            ("firmware-nca", "ryubing") => {
+                let reg = data.join("bis/system/Contents/registered");
+                for f in &fs {
+                    copy_if_changed(f, &reg.join(f.file_name().unwrap()).join("00"))?;
+                }
+            }
+            ("ps4-modules", "shadps4") => {
+                for f in &fs {
+                    copy_if_changed(f, &data.join("sys_modules").join(f.file_name().unwrap()))?;
+                }
+            }
             ("pup", "rpcs3") => {
                 let marker = data.join(".borne-firmware");
                 let stamp = fs[0].metadata().map(|m| m.len().to_string()).unwrap_or_default();
@@ -565,7 +618,7 @@ mod tests {
     use super::*;
 
     fn item(kind: &str, names: &[&str], size: Option<u64>, multi: bool) -> Item {
-        Item { id: "x".into(), name: "x".into(), kind: kind.into(), required: true, multi, names: names.iter().map(|s| s.to_string()).collect(), ext: vec![], size }
+        Item { id: "x".into(), name: "x".into(), kind: kind.into(), required: true, multi, names: names.iter().map(|s| s.to_string()).collect(), ext: vec![], size, known: Default::default() }
     }
 
     fn tmpdir(tag: &str) -> PathBuf {

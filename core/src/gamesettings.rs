@@ -266,7 +266,7 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
 
 /// First start of an emulator: its controller set to the gamepad Borne sees (SDL), so it plays at
 /// once. A mapping already there (changed by the user) is kept.
-pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>) -> Result<(), String> {
+pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>, guid: Option<&str>) -> Result<(), String> {
     let has_section = |p: &Path, sec: &str| std::fs::read_to_string(p).map(|t| t.lines().any(|l| l.trim() == format!("[{sec}]"))).unwrap_or(false);
     let ini = crate::emulators::ini_set;
     match program {
@@ -345,6 +345,48 @@ pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>
             v.push(("InputSources", "SDL", "true"));
             ini(&path, &v)
         }
+        // Eden / Citron: player 1 as a Pro Controller on the SDL gamepad (by its GUID), buttons by
+        // position like the Switch (its A on the right).
+        "eden" | "citron" => {
+            let (Some(_), Some(guid)) = (pad, guid) else { return Ok(()) };
+            let path = if cfg!(target_os = "macos") { data.join("config/qt-config.ini") } else { userdir.join("config").join(program).join("qt-config.ini") };
+            let text = std::fs::read_to_string(&path).unwrap_or_default();
+            // Already on a gamepad (ours, or the user's own mapping): kept.
+            if text.lines().any(|l| l.split('=').next().map(|k| k.trim() == "player_0_button_a").unwrap_or(false) && l.contains("engine:sdl")) {
+                return Ok(());
+            }
+            let p = |extra: &str| format!("\"{extra},guid:{guid},port:0,engine:sdl\"");
+            let buttons: [(&str, &str); 16] = [
+                ("a", "button:1"), ("b", "button:0"), ("x", "button:3"), ("y", "button:2"),
+                ("lstick", "button:7"), ("rstick", "button:8"), ("l", "button:9"), ("r", "button:10"),
+                ("zl", "axis:4,threshold:0.500000,invert:+"), ("zr", "axis:5,threshold:0.500000,invert:+"),
+                ("plus", "button:6"), ("minus", "button:4"),
+                ("dleft", "button:13"), ("dup", "button:11"), ("dright", "button:14"), ("ddown", "button:12"),
+            ];
+            let mut pairs: Vec<(String, String)> = buttons.iter().map(|(k, v)| (format!("player_0_button_{k}"), p(v))).collect();
+            pairs.push(("player_0_lstick".into(), p("axis_x:0,axis_y:1,deadzone:0.150000,range:1.000000")));
+            pairs.push(("player_0_rstick".into(), p("axis_x:2,axis_y:3,deadzone:0.150000,range:1.000000")));
+            pairs.push(("player_0_type".into(), "0".into()));
+            pairs.push(("player_0_connected".into(), "true".into()));
+            let mut v: Vec<(String, String)> = vec![];
+            for (k, x) in pairs {
+                v.push((format!("{k}\\default"), "false".into()));
+                v.push((k, x));
+            }
+            let refs: Vec<(&str, &str, &str)> = v.iter().map(|(k, x)| ("Controls", k.as_str(), x.as_str())).collect();
+            ini(&path, &refs)
+        }
+        // RPCS3: player 1 on the SDL handler, its default mapping for that pad.
+        "rpcs3" => {
+            let Some(pad) = pad else { return Ok(()) };
+            let path = data.join("input_configs/global/Default.yml");
+            if path.exists() {
+                return Ok(());
+            }
+            let _ = std::fs::create_dir_all(path.parent().unwrap());
+            let yml = format!("Player 1 Input:\n  Handler: SDL\n  Device: {pad} 1\n  Profile: Default\n  Config: {{}}\n  Buddy Device: \"\"\n");
+            std::fs::write(&path, yml).map_err(|e| e.to_string())
+        }
         _ => Ok(()),
     }
 }
@@ -383,13 +425,27 @@ mod tests {
     }
 
     #[test]
+    fn switch_and_ps3_pads() {
+        let d = std::env::temp_dir().join(format!("borne-pads-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        controllers("eden", &d, &d, Some("Pad"), Some("030000005e0400008e02000014010000")).unwrap();
+        let ini = if cfg!(target_os = "macos") { d.join("config/qt-config.ini") } else { d.join("config/eden/qt-config.ini") };
+        let t = std::fs::read_to_string(&ini).unwrap();
+        assert!(t.contains("player_0_button_a = \"button:1,guid:030000005e0400008e02000014010000,port:0,engine:sdl\""));
+        assert!(t.contains("player_0_button_a\\default = false"));
+        controllers("rpcs3", &d, &d, Some("Pad"), None).unwrap();
+        assert!(std::fs::read_to_string(d.join("input_configs/global/Default.yml")).unwrap().contains("Handler: SDL"));
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
     fn controllers_written_once() {
         let d = std::env::temp_dir().join(format!("borne-pad-{}", std::process::id()));
-        controllers("dolphin", &d, &d, Some("Xbox Series X Controller")).unwrap();
+        controllers("dolphin", &d, &d, Some("Xbox Series X Controller"), None).unwrap();
         let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
         assert!(t.contains("Device = SDL/0/Xbox Series X Controller") && t.contains("Buttons/A = `Button S`"));
         std::fs::write(d.join("Config/GCPadNew.ini"), "[GCPad1]\nDevice = mine\n").unwrap();
-        controllers("dolphin", &d, &d, Some("Other")).unwrap();
+        controllers("dolphin", &d, &d, Some("Other"), None).unwrap();
         assert!(std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap().contains("Device = mine"));
         let _ = std::fs::remove_dir_all(d);
     }

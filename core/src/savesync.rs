@@ -58,6 +58,37 @@ pub fn ps3_serial(rom: &Path) -> Option<String> {
     })
 }
 
+/// A PS4 game's title id (CUSA…), from its param.sfo (the game folder, or the folder of its
+/// eboot.bin).
+pub fn ps4_title_id(rom: &Path) -> Option<String> {
+    let root = if rom.is_dir() { rom.to_path_buf() } else { rom.parent()?.to_path_buf() };
+    let sfo = std::fs::read(root.join("sce_sys/param.sfo")).ok()?;
+    sfo_value(&sfo, "TITLE_ID")
+}
+
+/// A text value of a PlayStation SFO file.
+pub fn sfo_value(sfo: &[u8], key: &str) -> Option<String> {
+    let u32_at = |o: usize| sfo.get(o..o + 4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]) as usize);
+    let u16_at = |o: usize| sfo.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]) as usize);
+    if sfo.get(0..4)? != b"\0PSF" {
+        return None;
+    }
+    let (keys, data, count) = (u32_at(8)?, u32_at(12)?, u32_at(16)?);
+    for i in 0..count.min(256) {
+        let e = 20 + i * 16;
+        let k = keys + u16_at(e)?;
+        let name_end = sfo.get(k..)?.iter().position(|&b| b == 0)? + k;
+        if &sfo[k..name_end] == key.as_bytes() {
+            let len = u32_at(e + 4)?;
+            let off = data + u32_at(e + 12)?;
+            let raw = sfo.get(off..off + len)?;
+            let text = String::from_utf8_lossy(raw).trim_end_matches('\0').trim().to_string();
+            return (!text.is_empty()).then_some(text);
+        }
+    }
+    None
+}
+
 /// The game's save folder in Eden / Citron's emulated console, once a console user exists.
 fn switch_save_dir(data: &Path, tid: &str) -> Option<PathBuf> {
     let base = data.join("nand/user/save/0000000000000000");
@@ -98,6 +129,14 @@ pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Pat
                 .collect(),
             None => vec![],
         },
+        // shadPS4: the game's save folder, named after its title id (CUSA…).
+        "shadps4" => match ps4_title_id(rom) {
+            Some(id) => {
+                let dir = data.join("savedata/1").join(&id);
+                vec![Item { kind: "saves", local: dir, remote_name: format!("{id}.zip"), folder: true }]
+            }
+            None => vec![],
+        },
         "eden" | "citron" => match title_id(rom).and_then(|t| switch_save_dir(&data, &t).map(|d| (t, d))) {
             Some((tid, dir)) => vec![Item { kind: "saves", local: dir, remote_name: format!("{tid}.zip"), folder: true }],
             None => vec![],
@@ -114,6 +153,7 @@ fn save_root(program: &str) -> Option<&'static str> {
         "rpcs3" => "dev_hdd0/home/00000001/savedata",
         "eden" | "citron" => "nand/user/save",
         "ryubing" => "bis/user/save",
+        "shadps4" => "savedata",
         _ => return None,
     })
 }
@@ -488,6 +528,25 @@ mod tests {
         ];
         assert_eq!(newest_remote(&saves, "game (world).srm").unwrap()["id"], 2);
         assert!(newest_remote(&saves, "None.srm").is_none());
+    }
+
+    #[test]
+    fn sfo_title_id() {
+        // A minimal SFO with one key, TITLE_ID = CUSA00001.
+        let mut sfo = b"\0PSF".to_vec();
+        sfo.extend(1u32.to_le_bytes()); // version
+        sfo.extend(36u32.to_le_bytes()); // key table
+        sfo.extend(48u32.to_le_bytes()); // data table
+        sfo.extend(1u32.to_le_bytes()); // entries
+        sfo.extend(0u16.to_le_bytes());
+        sfo.extend(0x0204u16.to_le_bytes());
+        sfo.extend(10u32.to_le_bytes());
+        sfo.extend(12u32.to_le_bytes());
+        sfo.extend(0u32.to_le_bytes());
+        sfo.extend(b"TITLE_ID\0\0\0\0");
+        sfo.extend(b"CUSA00001\0\0\0");
+        assert_eq!(super::sfo_value(&sfo, "TITLE_ID").as_deref(), Some("CUSA00001"));
+        assert_eq!(super::sfo_value(&sfo, "TITLE"), None);
     }
 
     #[test]

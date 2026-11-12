@@ -15,5 +15,19 @@ while IFS= read -r f; do
     echo "✗ ${f#$HERE/}"; echo "$out" | grep -v "locale" | head -5; status=1
   fi
 done < <(find "$HERE/ui" -name '*.qml' -not -path '*/launcher/*')
-[ $status -eq 0 ] && echo "QML: no syntax errors"
+# Second pass: mistakes that parse but break a component (a property declared twice, two
+# bindings on one property, alias or inheritance cycles) fail too.
+OFF=""
+for c in required unresolved-alias import with deprecated signal-handler-parameters missing-type unresolved-type \
+         restricted-type prefixed-import-type incompatible-type missing-property non-list-property read-only-property \
+         unqualified unused-imports multiline-strings var-used-before-declaration invalid-lint-directive \
+         use-proper-function access-singleton-via-object top-level-component uncreatable-type compiler; do
+  OFF="$OFF --$c disable"
+done
+while IFS= read -r f; do
+  if ! out=$(LC_ALL=C.UTF-8 "$LINT" -I "$HERE/ui/imports" -I "$QT/qml" $OFF -W 0 "$f" 2>&1); then
+    echo "✗ ${f#$HERE/}"; echo "$out" | grep -v "locale" | head -5; status=1
+  fi
+done < <(find "$HERE/ui" -name '*.qml' -not -path '*/launcher/*')
+[ $status -eq 0 ] && echo "QML: no syntax errors, no duplicated properties or bindings"
 exit $status

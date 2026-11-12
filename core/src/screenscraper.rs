@@ -323,6 +323,21 @@ pub fn title(app: &Shared, group_key: &str, lang: &str) -> Option<String> {
     None
 }
 
+/// Every title ScreenScraper knows for the game (each region's), for the search.
+pub fn all_titles(app: &Shared, group_key: &str) -> Vec<String> {
+    let Some(rec) = app.db.ss_record(group_key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return vec![] };
+    let mut out: Vec<String> = rec["jeu"]["noms"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|n| n["text"].as_str().map(|t| t.trim().to_string()))
+        .filter(|t| !t.is_empty())
+        .collect();
+    out.sort();
+    out.dedup();
+    out
+}
+
 /// The interface language changed: titles follow at once, and the scans of that language are
 /// fetched from the kept records (no new lookup), in the background.
 pub fn set_ui_lang(app: &Shared, lang: &str) {
@@ -406,11 +421,13 @@ fn lookup(app: &Shared, c: &Credentials, versions: &[crate::db::GameRow]) -> Res
         .setting("ss_systems")
         .and_then(|s| serde_json::from_str(&s).ok())
         .unwrap_or(Value::Null);
+    // A match the user chose by hand wins over everything.
+    let chosen = versions.first().and_then(|g| app.db.setting(&format!("ss_match.{}", g.group_key))).and_then(|v| v.parse::<i64>().ok());
     for g in versions {
         let extra: Value = app.db.game_extra(g.rom_id).and_then(|e| serde_json::from_str(&e).ok()).unwrap_or(Value::Null);
         let ss = &extra["ss"];
         let mut params: Vec<(&str, String)> = vec![];
-        if let Some(id) = ss["id"].as_i64() {
+        if let Some(id) = chosen.or_else(|| ss["id"].as_i64()) {
             params.push(("gameid", id.to_string()));
         } else {
             if let Some(sys) = systems[&g.platform_slug].as_i64() {
@@ -557,7 +574,10 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
 /// `rec` is the redacted record; the scans follow the interface language.
 fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> usize {
     let medias: Vec<Value> = rec["jeu"]["medias"].as_array().cloned().unwrap_or_default();
-    let regions = ui_regions(&ui_lang(app));
+    // The box region the user chose for this game comes first, then the interface language's.
+    let chosen = app.db.setting(&format!("ss_region.{group_key}"));
+    let mut regions: Vec<&str> = chosen.as_deref().into_iter().collect();
+    regions.extend(ui_regions(&ui_lang(app)));
     let mut stored = 0;
     let (steam, marquee) = blank_types(app, c);
     let wanted: Vec<(&str, Vec<String>)> = vec![
@@ -756,4 +776,129 @@ mod tests {
         assert_eq!(pick(&m, &["box-2D"], &ui_regions("fr")), Some("E"));
         assert_eq!(pick(&m, &["wheel-hd", "wheel"], &ui_regions("fr")), Some("W"));
     }
+}
+
+// ---------- the user's corrections ----------
+
+/// Per console: games found on ScreenScraper, not found, not looked up yet, and the names of
+/// those not found (for Settings → Game images).
+pub fn report(app: &Shared) -> Value {
+    let mut by: std::collections::BTreeMap<String, (String, Vec<(String, i64, String)>)> = Default::default();
+    let mut seen = std::collections::HashSet::new();
+    for g in app.db.games(None, None, false) {
+        if !seen.insert(g.group_key.clone()) {
+            continue;
+        }
+        let state = app.db.media(&g.group_key, "ss").map(|m| m.stamp).unwrap_or_default();
+        let e = by.entry(g.platform_slug.clone()).or_insert_with(|| (g.platform_name.clone(), vec![]));
+        e.1.push((g.name.clone(), g.rom_id, state));
+    }
+    json!(by
+        .into_iter()
+        .map(|(slug, (name, games))| {
+            let found = games.iter().filter(|g| g.2.starts_with("found")).count();
+            let missing: Vec<Value> = games.iter().filter(|g| g.2 == "not found").map(|g| json!({ "name": g.0, "rom_id": g.1 })).collect();
+            json!({ "slug": slug, "name": name, "total": games.len(), "found": found, "not_found": missing.len(),
+                    "pending": games.len() - found - missing.len(), "missing": missing })
+        })
+        .collect::<Vec<_>>())
+}
+
+/// Searches ScreenScraper by name (and console), to correct a match: id, title, year, console.
+pub fn search(app: &Shared, name: &str, platform: &str) -> Result<Value, String> {
+    let c = credentials(app).ok_or("no ScreenScraper account")?;
+    let systems: Value = app.db.setting("ss_systems").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(Value::Null);
+    let mut params = vec![("recherche", name.to_string())];
+    if let Some(sys) = systems[platform].as_i64() {
+        params.push(("systemeid", sys.to_string()));
+    }
+    let v = call(&c, "jeuRecherche.php", &params)?;
+    let regions = ui_regions(&ui_lang(app));
+    let list: Vec<Value> = v["response"]["jeux"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|j| j["id"].as_str().map(|s| !s.is_empty() && s != "0").unwrap_or(j["id"].is_number()))
+        .map(|j| {
+            let names = j["noms"].as_array().cloned().unwrap_or_default();
+            let title = regions
+                .iter()
+                .find_map(|r| names.iter().find(|n| n["region"].as_str() == Some(r)).and_then(|n| n["text"].as_str()))
+                .or_else(|| names.first().and_then(|n| n["text"].as_str()))
+                .unwrap_or("?");
+            let year = j["dates"].as_array().and_then(|d| d.first()).and_then(|d| d["text"].as_str()).map(|t| t.chars().take(4).collect::<String>());
+            json!({
+                "id": j["id"].as_str().and_then(|s| s.parse::<i64>().ok()).or_else(|| j["id"].as_i64()),
+                "name": title,
+                "year": year,
+                "system": j["systeme"]["text"],
+                "publisher": j["editeur"]["text"],
+            })
+        })
+        .take(12)
+        .collect();
+    Ok(json!(list))
+}
+
+/// The user picked the right ScreenScraper game (Some) or the box region (region): kept, and the
+/// game's media fetched again at once, in the background.
+pub fn correct(app: &Shared, group_key: &str, ss_id: Option<i64>, region: Option<&str>) -> Result<(), String> {
+    let c = credentials(app).ok_or("no ScreenScraper account")?;
+    if let Some(id) = ss_id {
+        app.db.set_setting(&format!("ss_match.{group_key}"), &id.to_string());
+    }
+    if let Some(r) = region {
+        if r.is_empty() {
+            app.db.delete_setting(&format!("ss_region.{group_key}"));
+        } else {
+            app.db.set_setting(&format!("ss_region.{group_key}"), r);
+        }
+    }
+    let (app, key) = (app.clone(), group_key.to_string());
+    std::thread::spawn(move || {
+        let versions = app.db.group(&key);
+        // The region alone: the record already kept is enough.
+        let rec = if ss_id.is_none() {
+            app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok())
+        } else {
+            None
+        };
+        let rec = match rec {
+            Some(r) => Some(r),
+            None => match lookup(&app, &c, &versions) {
+                Ok(Some(r)) => {
+                    let r = redact_record(&r);
+                    app.db.set_ss_record(&key, &r.to_string());
+                    app.db.set_media(&key, "ss", "", 0, 0, &format!("found|{}", r["jeu"]["id"]));
+                    Some(r)
+                }
+                Ok(None) => None,
+                Err(e) => {
+                    app.db.log("screenscraper", &e);
+                    None
+                }
+            },
+        };
+        if let Some(r) = rec {
+            fetch_game(&app, &c, &key, &r);
+        }
+        app.emit(json!({ "type": "library" }));
+        app.emit(json!({ "type": "media", "group_key": key }));
+    });
+    Ok(())
+}
+
+/// Box regions ScreenScraper has for this game (from the kept record), and the one chosen.
+pub fn regions(app: &Shared, group_key: &str) -> Value {
+    let rec: Value = app.db.ss_record(group_key).and_then(|r| serde_json::from_str(&r).ok()).unwrap_or(Value::Null);
+    let mut list: Vec<String> = rec["jeu"]["medias"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|m| m["type"].as_str() == Some("box-2D"))
+        .filter_map(|m| m["region"].as_str().map(String::from))
+        .collect();
+    list.sort();
+    list.dedup();
+    json!({ "regions": list, "chosen": app.db.setting(&format!("ss_region.{group_key}")) })
 }

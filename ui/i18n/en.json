@@ -15,6 +15,10 @@
   "%n player",
   "%n players"
  ],
+ "%n result(s) for “%1”": [
+  "%n result for “%1”",
+  "%n results for “%1”"
+ ],
  "%n version(s)": [
   "%n version",
   "%n versions"

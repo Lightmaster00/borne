@@ -16,13 +16,18 @@
 //!   DELETE /api/v1/profiles/<id>
 //!   POST   /api/v1/profiles/<id>/activate
 //!   POST   /api/v1/profiles/<id>/pair            starts RomM pairing (code approved from the phone)
+//!   GET    /api/v1/screenscraper/report          per console: found, not found (names), not looked up
+//!   GET    /api/v1/screenscraper/search?q=&platform=   ScreenScraper games by name, to correct a match
+//!   GET|POST /api/v1/games/<id>/screenscraper     box regions available / correct {ss_id} or {region}
+//!   POST   /api/v1/games/<id>/favourite             {on}: in or out of the profile's favourites
 //!   POST   /api/v1/profiles/login                adds or signs in a profile: {username, password}
 //!   GET    /api/v1/romm/accounts                 the server's accounts (needs an administrator's profile)
 //!   GET    /api/v1/pairing  ·  DELETE /api/v1/pairing  ·  GET /api/v1/pairing/qr.svg
 //! Library
 //!   POST   /api/v1/sync                          syncs the catalog
 //!   GET    /api/v1/platforms
-//!   GET    /api/v1/library?platform=&q=&local=1&lang=fr   one entry per game, versions grouped
+//!   GET    /api/v1/library?platform=&q=&local=1&fav=1&recent=1&genre=&sort=name|played|added|time&lang=fr
+//!                                                 one entry per game, versions grouped
 //!   GET    /api/v1/games/<rom_id>?lang=fr        game page: shown version, all versions, choices
 //!   GET    /api/v1/games/<rom_id>/facts?lang=fr  credits, introduction, anecdotes (Wikidata,
 //!                                                Wikipedia), studios, series, screenshots (RomM)
@@ -637,7 +642,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             if app.client().is_none() {
                 return err(req, 409, "no paired profile");
             }
-            catalog::start_sync(app);
+            if !too_soon("sync", 3) {
+                catalog::start_sync(app);
+            }
             ok(req, json!(*app.sync.lock().unwrap()))
         }
         (Method::Get, ["api", "v1", "platforms"]) => {
@@ -686,8 +693,34 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             if renamed {
                 list.sort_by_cached_key(|v| library::title_sort_key(v["name"].as_str().unwrap_or("")));
             }
+            // The profile's record: favourites, recently played; then the tab, filter and order asked.
+            let stats = app.active_profile().map(|p| app.db.play_stats(&p.id)).unwrap_or_default();
+            for v in list.iter_mut() {
+                let (last, secs, fav) = v["group_key"].as_str().and_then(|k| stats.get(k)).cloned().unwrap_or((None, 0, false));
+                v["last_played"] = json!(last);
+                v["play_seconds"] = json!(secs);
+                v["favourite"] = json!(fav);
+            }
+            if query(&q, "fav").as_deref() == Some("1") {
+                list.retain(|v| v["favourite"].as_bool() == Some(true));
+            }
+            if query(&q, "recent").as_deref() == Some("1") {
+                list.retain(|v| !v["last_played"].is_null());
+            }
+            if let Some(genre) = query(&q, "genre").filter(|g| !g.is_empty()) {
+                list.retain(|v| v["genres"].as_str().map(|g| g.split(", ").any(|x| x == genre)).unwrap_or(false));
+            }
+            match query(&q, "sort").as_deref() {
+                Some("played") => list.sort_by_key(|v| std::cmp::Reverse(v["last_played"].as_i64().unwrap_or(0))),
+                Some("added") => list.sort_by_key(|v| std::cmp::Reverse(v["rom_id"].as_i64().unwrap_or(0))),
+                Some("time") => list.sort_by_key(|v| std::cmp::Reverse(v["play_seconds"].as_i64().unwrap_or(0))),
+                _ => {}
+            }
             // Which scans exist (spine, backdrop…), so the UI asks only for those.
             for v in list.iter_mut() {
+                if let Some(k) = v["group_key"].as_str() {
+                    v["alt_names"] = json!(crate::screenscraper::all_titles(app, k).join(" | "));
+                }
                 // Every version of the game counts, even those filtered out (Installed, search).
                 let mut ids = vec![v["rom_id"].as_i64().unwrap_or(0)];
                 let mut kinds = vec![];
@@ -707,6 +740,18 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             }
             ok(req, json!(list))
         }
+        // A game group in or out of the active profile's favourites: {on}.
+        (Method::Post, ["api", "v1", "games", id, "favourite"]) => {
+            let body = body_json(&mut req);
+            let on = body["on"].as_bool().unwrap_or(true);
+            match (id.parse::<i64>().ok().and_then(|i| app.db.game(i)), app.active_profile()) {
+                (Some(g), Some(p)) => {
+                    app.db.set_favourite(&p.id, &g.group_key, on);
+                    ok(req, json!({ "favourite": on }))
+                }
+                _ => err(req, 404, "unknown game or no profile"),
+            }
+        }
         (Method::Get, ["api", "v1", "games", id]) => {
             match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
                 Some(g) => {
@@ -716,6 +761,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         .and_then(|p| app.db.game_prefs(&p.id).remove(&g.group_key))
                         .unwrap_or((None, None));
                     let mut game = library::version_json(&g);
+                    game["favourite"] = json!(app.active_profile().map(|p| app.db.play_stats(&p.id).get(&g.group_key).map(|s| s.2).unwrap_or(false)).unwrap_or(false));
                     let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
                     if let Some(t) = crate::screenscraper::title(app, &g.group_key, &lang) {
                         game["name"] = json!(t);
@@ -896,6 +942,29 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "media", "report"]) => ok(req, crate::media::report(app)),
+        (Method::Get, ["api", "v1", "screenscraper", "report"]) => ok(req, crate::screenscraper::report(app)),
+        (Method::Get, ["api", "v1", "screenscraper", "search"]) => {
+            let name = query(&q, "q").unwrap_or_default();
+            match crate::screenscraper::search(app, &name, &query(&q, "platform").unwrap_or_default()) {
+                Ok(v) => ok(req, v),
+                Err(e) => err(req, 502, &e),
+            }
+        }
+        (Method::Get, ["api", "v1", "games", id, "screenscraper"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => ok(req, crate::screenscraper::regions(app, &g.group_key)),
+            None => err(req, 404, "unknown game"),
+        },
+        // Corrects the game's ScreenScraper match {ss_id} or box region {region} ("" = automatic).
+        (Method::Post, ["api", "v1", "games", id, "screenscraper"]) => {
+            let body = body_json(&mut req);
+            match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+                Some(g) => match crate::screenscraper::correct(app, &g.group_key, body["ss_id"].as_i64(), body["region"].as_str()) {
+                    Ok(()) => ok(req, json!({ "ok": true })),
+                    Err(e) => err(req, 400, &e),
+                },
+                None => err(req, 404, "unknown game"),
+            }
+        }
         (Method::Post, ["api", "v1", "screenscraper", "pause"]) => {
             let b = body_json(&mut req);
             crate::screenscraper::pause(app, b["paused"].as_bool().unwrap_or(true));
@@ -929,17 +998,23 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Post, ["api", "v1", "screenscraper", "fetch"]) => {
             let again = body_json(&mut req)["again"].as_bool().unwrap_or(false);
-            crate::screenscraper::start(app, again);
+            if !too_soon("screenscraper", 3) {
+                crate::screenscraper::start(app, again);
+            }
             ok(req, crate::screenscraper::status(app))
         }
         (Method::Post, ["api", "v1", "media", "refresh"]) => {
+            if too_soon("media-refresh", 30) {
+                return ok(req, json!({ "refreshing": true }));
+            }
             for p in app.db.clear_media() {
                 let _ = std::fs::remove_file(p);
             }
             catalog::start_sync(app);
             ok(req, json!({ "refreshing": true }))
         }
-        (Method::Get, ["api", "v1", "games", id, "art", kind]) => {
+        // With a revision segment (ignored) so the interface can ask again after a correction.
+        (Method::Get, ["api", "v1", "games", id, "art", _, kind]) | (Method::Get, ["api", "v1", "games", id, "art", kind]) => {
             match id.parse::<i64>() {
                 Ok(rom_id) if ART_KINDS.contains(kind) => match art(app, rom_id, kind) {
                     Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
@@ -1174,4 +1249,19 @@ mod tests {
         assert_eq!(parse_range("bytes=0-", 0), None);
         assert_eq!(parse_range("bytes=200-", 100), None);
     }
+}
+
+/// Expensive actions asked again and again (a stuck key, a script) run once per short period.
+fn too_soon(what: &'static str, seconds: u64) -> bool {
+    use std::collections::HashMap;
+    use std::time::{Duration, Instant};
+    static LAST: std::sync::Mutex<Option<HashMap<&'static str, Instant>>> = std::sync::Mutex::new(None);
+    let mut g = LAST.lock().unwrap();
+    let map = g.get_or_insert_with(HashMap::new);
+    let now = Instant::now();
+    if map.get(what).map(|t| now.duration_since(*t) < Duration::from_secs(seconds)).unwrap_or(false) {
+        return true;
+    }
+    map.insert(what, now);
+    false
 }

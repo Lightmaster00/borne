@@ -77,7 +77,7 @@ Item {
             useA = !useA
         }
         // A slow push in and out, so the still background breathes.
-        property real drift: 0
+        property real drift       // driven by the animation below
         SequentialAnimation on drift {
             loops: Animation.Infinite
             running: glow.visible && amb.visible && !amb.paused

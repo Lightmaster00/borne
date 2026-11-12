@@ -260,6 +260,23 @@ try:
     devices = romm("GET", "/api/devices")
     check(any(d.get("client") == "borne" for d in devices), "Borne device registered in RomM")
 
+    print("Signing in with a password")
+    s, acc = call(api, "GET", "/api/v1/romm/accounts")
+    check(s == 200 and acc["accounts"] is None, "no account list while no profile signed in with a password")
+    s, e = call(api, "POST", "/api/v1/profiles/login", {"username": USER2, "password": "wrong"})
+    check(s == 401 and "password" in e["error"], "wrong password refused")
+    check(len(call(api, "GET", "/api/v1/profiles")[1]) == 2, "no profile left behind by a refused sign-in")
+    s, p = call(api, "POST", "/api/v1/profiles/login", {"username": ADMIN, "password": PWD})
+    check(s == 200 and p["id"] == p1["id"] and p["paired"], "signing in again with the password keeps the account's profile")
+    s, acc = call(api, "GET", "/api/v1/romm/accounts")
+    names = {a["username"]: a for a in (acc["accounts"] or [])}
+    check(ADMIN in names and USER2 in names and names[ADMIN]["profile"] == p1["id"], "an administrator's profile lists the server's accounts")
+    call(api, "DELETE", f"/api/v1/profiles/{p2['id']}")
+    s, p = call(api, "POST", "/api/v1/profiles/login", {"username": USER2, "password": PWD2})
+    check(s == 200 and p["paired"] and p["romm_user"] == USER2, "a profile added by picking the account and typing its password")
+    p2 = p
+    call(api, "POST", f"/api/v1/profiles/{p2['id']}/activate")
+
     print("Game details and media")
     rid = call(api, "GET", "/api/v1/library")[1][0]["rom_id"]
     s, f = call(api, "GET", f"/api/v1/games/{rid}/facts?lang=fr")

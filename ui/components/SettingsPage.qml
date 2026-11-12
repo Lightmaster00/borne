@@ -240,7 +240,9 @@ Item {
                      ? [{ id: ss.state.paused ? "ss-resume" : "ss-pause", label: ss.state.paused ? qsTr("Resume") : qsTr("Pause"), primary: true },
                         { id: "ss-stop", label: qsTr("Stop") }]
                      : [{ id: "ss-fetch", label: qsTr("Fetch missing"), primary: true, disabled: !(ss && ss.configured) },
-                        { id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) }] }
+                        { id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) }] },
+            { id: "ss-report", kind: "buttons", title: qsTr("Games found, per console"), desc: qsTr("Which games ScreenScraper recognised, and those it did not: open one to correct its match"),
+              items: [{ id: "ss-report", label: qsTr("See the report"), disabled: !(ss && ss.configured) }] }
         ]
         if (id === "server") return [
             { id: "sync", kind: "buttons", title: qsTr("Library"), desc: syncText(), items: [{ id: "sync", label: qsTr("Sync now"), disabled: !!(status && status.sync && status.sync.running) }] },
@@ -417,7 +419,7 @@ Item {
     Column {
         id: rowsCol
         width: parent.width
-        spacing: 32
+        spacing: 18
 
         Column {
             visible: page.sections[page.section].id === "games"
@@ -442,7 +444,7 @@ Item {
                 readonly property bool current: page.row === index
                 onCurrentChanged: if (current) rowsView.ensure(rowItem)
                 width: parent.width
-                height: modelData.kind === "cards" ? cards.height : Math.max(88, line.height + 24)
+                height: modelData.kind === "cards" ? cards.height : Math.max(96, line.height + 52)
 
                 // Install method: two explained cards.
                 Row {
@@ -478,11 +480,20 @@ Item {
                     }
                 }
 
+                // Each setting is a card, as in the redesign; the current one stands out.
+                Rectangle {
+                    visible: rowItem.modelData.kind !== "cards"
+                    anchors.fill: parent
+                    radius: 26
+                    color: rowItem.current ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.045)
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
                 // A setting: title and explanation, choices or buttons on the right.
                 Item {
                     id: line
                     visible: rowItem.modelData.kind !== "cards"
-                    width: parent.width
+                    x: 32
+                    width: parent.width - 64
                     height: Math.max(texts.height, choices.height)
                     anchors.verticalCenter: parent.verticalCenter
                     Column {
@@ -537,12 +548,7 @@ Item {
                         }
                     }
                 }
-                Rectangle {
-                    visible: rowItem.modelData.kind !== "cards"
-                    anchors.bottom: parent.bottom
-                    width: parent.width; height: 1
-                    color: Qt.rgba(1, 1, 1, 0.1)
-                }
+
             }
         }
     }

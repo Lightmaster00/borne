@@ -113,7 +113,9 @@ Window {
             dl_total: g.download_total || 0, dl_error: g.download_error || "", hue: (g.rom_id * 47) % 360,
             linked: !!g.linked, version_count: g.version_count || 1, other_installed: !!g.other_installed,
             group_key: g.group_key || "",
-            art: apiBase + "/api/v1/games/" + g.rom_id + "/art/",
+            favourite: !!g.favourite, last_played: g.last_played || 0, alt_names: g.alt_names || "",
+            // The revision changes when a game's images are corrected, so they are asked again.
+            art: apiBase + "/api/v1/games/" + g.rom_id + "/art/" + artRev + "/",
             art_kinds: "," + (g.art_kinds || []).join(",") + ",",
             // Pixel sizes of the case scans: the box is shaped before the images load.
             front_ar: g.media_sizes && g.media_sizes.front ? g.media_sizes.front[0] / g.media_sizes.front[1] : 0,
@@ -127,18 +129,20 @@ Window {
     readonly property string consoleSlug: {
         if (overlay === "game" && pageGame) return pageGame.platform_slug || ""
         const s = systems[systemIndex]
-        if (s && s.id !== "all" && s.id !== "local") return s.id
+        if (s && ["all", "local", "fav", "recent"].indexOf(s.id) < 0) return s.id
         return focusedGame ? focusedGame.platform_slug || "" : ""
     }
     readonly property color consoleTint: Cases.tint(consoleSlug)
     onConsoleTintChanged: graphite.accent = consoleTint
     readonly property bool framed: !gameMode
     readonly property real frameMargin: framed ? Math.round(Math.min(width, height) * 0.036) : 0
+    property int artRev: 0
     function loadPlatforms() {
         api("GET", "/api/v1/platforms", null, function (list) {
             if (!list) return
             const current = systems[systemIndex] ? systems[systemIndex].id : "all"
-            const sys = [{ id: "all", name: qsTr("All games") }, { id: "local", name: qsTr("Installed", "systems bar") }]
+            const sys = [{ id: "all", name: qsTr("All games") }, { id: "local", name: qsTr("Installed", "systems bar") },
+                         { id: "fav", name: qsTr("Favourites") }, { id: "recent", name: qsTr("Recent") }]
             // Short names for the systems bar (RomM returns full names).
             const shortNames = { "nes": "NES", "snes": "Super Nintendo", "n64": "Nintendo 64", "gb": "Game Boy", "gbc": "Game Boy Color",
                             "gba": "Game Boy Advance", "nds": "Nintendo DS", "genesis": "Mega Drive", "sms": "Master System",
@@ -159,7 +163,10 @@ Window {
     // Reloads the list keeping the selection; updates in place if the list did not change.
     function loadLibrary(resetFocus) {
         const s = systems[systemIndex] || systems[0]
-        const q = "?lang=" + uiLang + (s.id === "all" ? "" : s.id === "local" ? "&local=1" : "&platform=" + encodeURIComponent(s.id))
+        const tab = s.id === "all" ? "" : s.id === "local" ? "&local=1" : s.id === "fav" ? "&fav=1" : s.id === "recent" ? "&recent=1" : "&platform=" + encodeURIComponent(s.id)
+        // The Recent tab is always newest first; the others follow the chosen order and genre.
+        const order = s.id === "recent" ? "played" : prefs.librarySort
+        const q = "?lang=" + uiLang + tab + "&sort=" + order + (prefs.libraryGenre ? "&genre=" + encodeURIComponent(prefs.libraryGenre) : "")
         const keep = !resetFocus && focusedGame ? focusedGame.rom_id : -1
         const t0 = Date.now()
         api("GET", "/api/v1/library" + q, null, function (list, err) {
@@ -433,6 +440,8 @@ Window {
         else if (id === "play") play(g)
         else if (id === "cheats") cheatsMenu(g)
         else if (id === "display") displayMenu(g)
+        else if (id === "fav") setFavourite(g, !g.favourite)
+        else if (id === "images") imagesMenu(g)
         else if (id === "lang") {
             // A language picks the version launched for it.
             api("POST", "/api/v1/games/" + g.rom_id + "/prefs", { version: payload.version, emu_language: payload.code }, function (r, err) {
@@ -578,6 +587,7 @@ Window {
         else if (id === "ss-stop") api("POST", "/api/v1/screenscraper/stop", {}, function () { loadSettings() })
         else if (id === "ss-signin") ssSignIn()
         else if (id === "ss-signout") api("DELETE", "/api/v1/screenscraper", null, function () { loadSettings() })
+        else if (id === "ss-report") ssReport()
         else if (id === "ss-fetch" || id === "ss-again") api("POST", "/api/v1/screenscraper/fetch", { again: id === "ss-again" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "media-refresh") api("POST", "/api/v1/media/refresh", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Fetching the game media again."), "info"); refreshStatus() } })
         else if (id === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else { toasts.show(qsTr("Sync started."), "info"); refreshStatus() } })
@@ -622,12 +632,97 @@ Window {
             toasts.show(qsTr("Version %1 is available: Settings → Updates.").arg(u.available.version), "info")
         }
     }
+    // ScreenScraper corrections from the game page: the box region, or the right game.
+    function imagesMenu(g) {
+        api("GET", "/api/v1/games/" + g.rom_id + "/screenscraper", null, function (r) {
+            const items = []
+            const regions = r && r.regions ? r.regions : []
+            if (regions.length > 1) {
+                items.push({ id: "region:", label: qsTr("Box: automatic"), detail: !r.chosen ? qsTr("Current · follows the interface language") : qsTr("Follows the interface language") })
+                for (const x of regions) items.push({ id: "region:" + x, label: qsTr("Box: %1").arg(regionName(x)), detail: r.chosen === x ? qsTr("Current") : "" })
+            }
+            items.push({ id: "search", label: qsTr("Not the right game?"), detail: qsTr("Search ScreenScraper by name") })
+            items.push({ id: "close", label: qsTr("Close") })
+            menu.open(qsTr("Images · %1").arg(g.name), qsTr("From ScreenScraper"), items, function (c) {
+                if (c.indexOf("region:") === 0) correctImages(g, { region: c.slice(7) })
+                else if (c === "search") nameEntry.open(qsTr("Search ScreenScraper"), g.name, function (name) { searchScreenScraper(g, name) }, qsTr("Game name"))
+            })
+        })
+    }
+    function regionName(code) {
+        const names = { eu: qsTr("Europe"), us: qsTr("USA"), jp: qsTr("Japan"), wor: qsTr("World"), fr: qsTr("France"), de: qsTr("Germany"),
+                        uk: qsTr("United Kingdom"), es: qsTr("Spain"), it: qsTr("Italy"), au: qsTr("Australia"), kr: qsTr("Korea"), br: qsTr("Brazil"), ss: qsTr("ScreenScraper") }
+        return names[code] || code.toUpperCase()
+    }
+    function searchScreenScraper(g, name) {
+        toasts.show(qsTr("Searching ScreenScraper…"), "info")
+        api("GET", "/api/v1/screenscraper/search?q=" + encodeURIComponent(name) + "&platform=" + encodeURIComponent(g.platform_slug || ""), null, function (list, err) {
+            if (err) { toasts.show(qsTr("ScreenScraper: %1").arg(err), "error"); return }
+            if (!list || !list.length) { toasts.show(qsTr("Nothing found for “%1”.").arg(name), "error"); return }
+            menu.open(qsTr("Which game is it?"), qsTr("%n result(s) for “%1”", "", list.length).arg(name),
+                      list.map(x => ({ id: "ss:" + x.id, label: x.name, detail: [x.year, x.system, x.publisher].filter(v => v).join(" · ") }))
+                          .concat([{ id: "close", label: qsTr("Cancel") }]), function (c) {
+                if (c.indexOf("ss:") === 0) correctImages(g, { ss_id: parseInt(c.slice(3)) })
+            })
+        })
+    }
+    function correctImages(g, body) {
+        api("POST", "/api/v1/games/" + g.rom_id + "/screenscraper", body, function (r, err) {
+            if (err) toasts.show(qsTr("ScreenScraper: %1").arg(err), "error")
+            else toasts.show(qsTr("Fetching the images again…"), "info")
+        })
+    }
+    // ScreenScraper's report: per console, then the games it did not recognise.
+    function ssReport() {
+        api("GET", "/api/v1/screenscraper/report", null, function (list, err) {
+            if (err || !list) { toasts.show(err || qsTr("No report"), "error"); return }
+            menu.open(qsTr("Games found, per console"), qsTr("Choose a console to see the games not found"),
+                      list.map(c => ({ id: c.slug, label: c.name, detail: qsTr("%1 found · %2 not found · %3 not looked up").arg(c.found).arg(c.not_found).arg(c.pending), disabled: c.not_found === 0 }))
+                          .concat([{ id: "close", label: qsTr("Close") }]), function (slug) {
+                const c = list.find(x => x.slug === slug)
+                if (!c) return
+                menu.open(qsTr("Not found · %1").arg(c.name), qsTr("Open a game to search ScreenScraper for it"),
+                          c.missing.map(m => ({ id: "g:" + m.rom_id, label: m.name })).concat([{ id: "close", label: qsTr("Close") }]), function (k) {
+                    if (k.indexOf("g:") === 0) { overlay = ""; openGame(parseInt(k.slice(2))) }
+                })
+            })
+        })
+    }
+    // Favourites (per profile): from the game page or the menu.
+    function setFavourite(g, on) {
+        api("POST", "/api/v1/games/" + g.rom_id + "/favourite", { on: on }, function (r, err) {
+            if (err) { toasts.show(err, "error"); return }
+            toasts.show(on ? qsTr("%1 added to your favourites.").arg(g.name) : qsTr("%1 removed from your favourites.").arg(g.name), "info")
+            if (page && pageGame && pageGame.rom_id === g.rom_id) reloadGame()
+            libReload.restart()
+        })
+    }
+    // Order and genre of the library (kept between sessions).
+    function sortMenu() {
+        const sorts = [["name", qsTr("By name")], ["played", qsTr("Recently played")], ["added", qsTr("Recently added")], ["time", qsTr("Most played")]]
+        const genres = {}
+        for (let i = 0; i < libModel.count; i++)
+            for (const x of (libModel.get(i).genres || "").split(", ")) if (x) genres[x] = (genres[x] || 0) + 1
+        const items = sorts.map(s => ({ id: "sort:" + s[0], label: s[1], detail: prefs.librarySort === s[0] ? qsTr("Current") : "" }))
+        items.push({ id: "genre:", label: qsTr("Every genre"), detail: prefs.libraryGenre === "" ? qsTr("Current") : "" })
+        for (const k of Object.keys(genres).sort())
+            items.push({ id: "genre:" + k, label: k, detail: prefs.libraryGenre === k ? qsTr("Current") : qsTr("%n game(s)", "", genres[k]) })
+        if (prefs.libraryGenre && !genres[prefs.libraryGenre]) items.push({ id: "genre:" + prefs.libraryGenre, label: prefs.libraryGenre, detail: qsTr("Current") })
+        menu.open(qsTr("Sort and filter"), qsTr("Order of the games, and one genre"), items, function (c) {
+            if (c.indexOf("sort:") === 0) prefs.librarySort = c.slice(5)
+            else if (c.indexOf("genre:") === 0) prefs.libraryGenre = c.slice(6)
+            else return
+            loadLibrary(true)
+        })
+    }
     function mainMenu() {
         const inLib = screen === "library"
         const sync = status ? status.sync : null
         let items = []
         if (inLib) {
             items.push({ id: "sync", label: qsTr("Sync library"), detail: sync && sync.running ? qsTr("In progress…") : (sync && sync.last_sync ? qsTr("Last: %1").arg(new Date(sync.last_sync * 1000).toLocaleTimeString(Qt.locale(), Locale.ShortFormat)) : ""), disabled: sync && sync.running })
+            items.push({ id: "sort", label: qsTr("Sort and filter"), detail: [{ name: qsTr("by name"), played: qsTr("recently played"), added: qsTr("recently added"), time: qsTr("most played") }[prefs.librarySort] || "", prefs.libraryGenre].filter(x => x).join(" · ") })
+            if (focusedGame) items.push({ id: "fav", label: focusedGame.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites"), detail: focusedGame.name })
             items.push({ id: "downloads", label: qsTr("Downloads") })
             items.push({ id: "profile", label: qsTr("Switch profile"), detail: activeProfile ? activeProfile.name : "" })
         }
@@ -638,6 +733,8 @@ Window {
         menu.open(qsTr("Menu"), activeProfile && inLib ? qsTr("Profile: %1").arg(activeProfile.name) : "", items, function (c) {
             if (c === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else toasts.show(qsTr("Sync started."), "info") })
             else if (c === "downloads") openDownloads()
+            else if (c === "sort") sortMenu()
+            else if (c === "fav") setFavourite(focusedGame, !focusedGame.favourite)
             else if (c === "settings") settingsMenu()
             else if (c === "profile") showProfiles()
             else if (c === "server") showServer()
@@ -850,6 +947,10 @@ Window {
         const st = win.status ? win.status.sync : null
         if (st && st.running) return qsTr("Syncing the library…")
         if (st && st.error && libModel.count === 0) return qsTr("The library could not be synced: %1").arg(st.error)
+        const tabId = win.systems[win.systemIndex] ? win.systems[win.systemIndex].id : ""
+        if (tabId === "fav") return qsTr("No favourites yet. On a game, choose “Add to favourites” (Select menu or game page).")
+        if (tabId === "recent") return qsTr("No game played yet on this profile.")
+        if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre in Select → Sort and filter.").arg(prefs.libraryGenre)
         if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
             return qsTr("No game installed yet. Open a game in “All games” to download it or play it from the network.")
         return qsTr("No games here.")
@@ -877,6 +978,7 @@ Window {
             else if (m.type === "stick") { win.padTurnX = m.x; win.padTurnY = m.y }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
+            else if (m.type === "media") { win.artRev++; libReload.restart(); if (win.page && win.overlay === "game") win.reloadGame() }
             else if (m.type === "platforms") win.loadPlatforms()
             else if (m.type === "session") win.onSession(m.session)
             else if (m.type === "emulators" || m.type === "systemfiles") { if (win.overlay === "settings") loadSettings() }
@@ -1678,6 +1780,8 @@ Window {
         category: "ui"
         property bool sounds: true
         property bool trailers: true
+        property string librarySort: "name"
+        property string libraryGenre: ""
         property int notifiedBuild: 0
     }
 

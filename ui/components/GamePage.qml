@@ -62,7 +62,13 @@ Item {
         dl.primary = true
         return [dl, net]
     }
-    readonly property var allActions: hasTrailer && trailers ? actions.concat([{ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") }]) : actions
+    readonly property var allActions: {
+        let a = actions
+        if (game && !busy) a = a.concat([{ id: "fav", label: game.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites") }])
+        if (game && !busy) a = a.concat([{ id: "images", label: qsTr("Images") }])
+        if (hasTrailer && trailers) a = a.concat([{ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") }])
+        return a
+    }
 
     // Credits: from RomM (studios, series), with the year and the number of players.
     readonly property var credits: {
@@ -189,6 +195,14 @@ Item {
     }
     NumberAnimation { id: scrollAnim; target: body; property: "contentY"; duration: 260; easing.type: Easing.OutCubic }
 
+    // Slideshow of the screenshots behind the title when the game has no other picture.
+    property int shotIndex: 0
+    Timer {
+        interval: 7000; repeat: true
+        running: page.visible && !page.paused && !page.videoShown && !!page.facts && page.facts.screenshots > 1
+        onTriggered: page.shotIndex++
+    }
+
     // ---------- trailer ----------
     function restartVideo() {
         delay.stop(); player.stop(); player.source = ""; videoShown = false; videoError = ""
@@ -242,15 +256,17 @@ Item {
                     id: backdrop
                     anchors.fill: parent
                     // The game's art without text first (ScreenScraper), else RomM's artwork.
+                    // Without any art: the screenshots, one after the other.
                     source: page.has("marquee") ? page.game.art + "marquee" : page.has("steamgrid") ? page.game.art + "steamgrid"
-                          : page.has("backdrop") ? page.game.art + "backdrop" : ""
+                          : page.has("backdrop") ? page.game.art + "backdrop"
+                          : page.shotBase && page.facts && page.facts.screenshots > 0 ? page.shotBase + (page.shotIndex % page.facts.screenshots) : ""
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
                     sourceSize: Qt.size(1920, 1080)
                     opacity: status === Image.Ready && !page.videoShown ? 0.7 : 0
                     Behavior on opacity { NumberAnimation { duration: 700 } }
-                    property real drift: 1.03
-                    scale: drift
+                    property real drift       // driven by the animation below
+                    scale: Math.max(1.03, drift)
                     SequentialAnimation on drift {
                         loops: Animation.Infinite
                         running: page.visible && !page.paused
@@ -463,8 +479,16 @@ Item {
                 spacing: 72
                 readonly property real rightW: Math.min(620, width * 0.36)
 
-                Column {
+                // Cards, as in the redesign: rounded, with an ink shadow.
+                Item {
                     width: lower.width - lower.rightW - lower.spacing
+                    height: aboutCol.height + 72
+                    Ink { theme: page.theme; radius: 30 }
+                    Rectangle { anchors.fill: parent; radius: 30; color: Qt.rgba(0.11, 0.11, 0.14, 1) }
+                Column {
+                    id: aboutCol
+                    x: 40; y: 36
+                    width: parent.width - 80
                     spacing: 22
                     Text { text: qsTr("About"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
                     Text {
@@ -489,24 +513,34 @@ Item {
                             model: page.facts ? Math.min(6, page.facts.screenshots) : 0
                             Rectangle {
                                 required property int index
-                                width: (parent.width - 32) / 3; height: width * 9 / 16; radius: 12
+                                width: (parent.width - 32) / 3; height: width * 9 / 16; radius: 20
                                 color: theme.glass
-                                clip: true
+                                Ink { z: -1; theme: page.theme; radius: 20 }
                                 Image {
+                                    layer.enabled: true
+                                    layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
                                     anchors.fill: parent
                                     source: page.shotBase ? page.shotBase + parent.index : ""
                                     asynchronous: true
                                     fillMode: Image.PreserveAspectCrop
                                     sourceSize: Qt.size(640, 360)
                                 }
+                                Rectangle { id: shotMask; anchors.fill: parent; radius: 20; visible: false; layer.enabled: true }
                             }
                         }
                     }
                 }
+                }
 
+                Item {
+                    width: lower.rightW
+                    height: credits.height + 72
+                    Ink { theme: page.theme; radius: 30 }
+                    Rectangle { anchors.fill: parent; radius: 30; color: Qt.rgba(0.11, 0.11, 0.14, 1) }
                 Column {
                     id: credits
-                    width: lower.rightW
+                    x: 36; y: 36
+                    width: parent.width - 72
                     spacing: 18
                     Text { text: qsTr("Credits"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
                     Repeater {
@@ -531,6 +565,7 @@ Item {
                         font { family: theme.fontFamily; pixelSize: 14 }
                     }
                 }
+                }
             }
         }
     }
@@ -550,8 +585,8 @@ Item {
             anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
             spacing: 10
             Rectangle {
-                width: 32; height: 32; radius: 16; color: theme.glassRaised
-                Text { anchors.centerIn: parent; text: "B"; color: theme.fg; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold } }
+                width: 32; height: 32; radius: 16; color: "#FF6B6B"
+                Text { anchors.centerIn: parent; text: "B"; color: theme.bg; font { family: theme.displayFont; pixelSize: 15; weight: Font.Bold } }
             }
             Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Library"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
         }

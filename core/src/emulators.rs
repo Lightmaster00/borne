@@ -209,6 +209,7 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "ryubing" => if mac_os { mac.join("Ryujinx") } else { xdg_config.join("Ryujinx") },
         "rpcs3" => if mac_os { mac.join("rpcs3") } else { xdg_config.join("rpcs3") },
         "pcsx2" => if mac_os { mac } else { xdg_config },
+        "shadps4" => if mac_os { mac.join("shadPS4") } else { xdg_data.join("shadPS4") },
         _ => base,
     }
 }
@@ -398,6 +399,12 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     let userdir = app.paths.profiles().join(&profile).join(&p.id);
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     crate::gamesettings::apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &display)?;
+    // Dolphin: the cheats chosen in Borne, from Dolphin's own code list.
+    if p.id == "dolphin" {
+        if let Err(e) = crate::cheats::dolphin_settings(app, rom_id, &userdir, rom) {
+            app.db.log("cheats", &format!("Dolphin: {e}"));
+        }
+    }
     // Each game its own memory card, so its saves can follow it on RomM.
     if p.id == "dolphin" {
         let card = crate::savesync::dolphin_card(app, &profile, rom);
@@ -413,8 +420,11 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     if p.id == "duckstation" {
         ini_set(&data_dir(app, &profile, &p.id).join("data/duckstation/settings.ini"), &[("MemoryCards", "Card1Type", "PerGameFileTitle")])?;
     }
-    let pad = app.pads.lock().unwrap().pads.first().cloned();
-    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, pad.as_deref())?;
+    let (pad, guid) = {
+        let s = app.pads.lock().unwrap();
+        (s.pads.first().cloned(), s.guids.first().cloned())
+    };
+    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, pad.as_deref(), guid.as_deref())?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
     let mut args: Vec<String> = vec![];
     for a in &p.args {
@@ -639,6 +649,12 @@ fn follow(app: Shared, log: PathBuf) {
                     app.db.log("saves", &format!("{name}: {n}"));
                 }
                 app.db.log("play", &format!("{name}: session ended after {played} s ({status})"));
+                // Recently played and time played, for the library's "Recent" tab and sorting.
+                if error.is_none() {
+                    if let (Some(p), Some(g)) = (app.active_profile(), app.db.game(rom_id)) {
+                        app.db.record_play(&p.id, &g.group_key, played as i64);
+                    }
+                }
                 app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": rom_id, "seconds": played, "error": error, "saves": save_note } }));
                 return;
             }

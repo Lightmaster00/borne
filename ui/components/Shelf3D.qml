@@ -30,7 +30,7 @@ Item {
 
     property real flow: currentIndex
     Behavior on flow { NumberAnimation { duration: 460; easing.type: Easing.OutCubic } }
-    property real sway: 0
+    property real sway        // driven by the animation below (0 when it does not run)
     SequentialAnimation on sway {
         loops: Animation.Infinite
         running: shelf.visible

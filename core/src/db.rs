@@ -72,6 +72,15 @@ CREATE TABLE IF NOT EXISTS downloads (
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
+-- Per-profile play record of a game group: last played, time played, favourite.
+CREATE TABLE IF NOT EXISTS play_stats (
+    profile_id TEXT NOT NULL,
+    group_key TEXT NOT NULL,
+    last_played INTEGER,
+    seconds INTEGER NOT NULL DEFAULT 0,
+    favourite INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (profile_id, group_key)
+);
 -- Per-profile choices on a game group: the version to play and the emulator language.
 CREATE TABLE IF NOT EXISTS game_prefs (
     profile_id TEXT NOT NULL,
@@ -755,6 +764,34 @@ impl Db {
 
     // ---------- per-profile game preferences ----------
     /// All of a profile's choices: group_key -> (chosen version, emulator language).
+    /// A session of a game ended: when, and how long.
+    pub fn record_play(&self, profile: &str, group_key: &str, seconds: i64) {
+        let _ = self.c().execute(
+            "INSERT INTO play_stats(profile_id, group_key, last_played, seconds) VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(profile_id, group_key) DO UPDATE SET last_played = ?3, seconds = seconds + ?4",
+            params![profile, group_key, now(), seconds],
+        );
+    }
+
+    pub fn set_favourite(&self, profile: &str, group_key: &str, on: bool) {
+        let _ = self.c().execute(
+            "INSERT INTO play_stats(profile_id, group_key, favourite) VALUES (?1, ?2, ?3)
+             ON CONFLICT(profile_id, group_key) DO UPDATE SET favourite = ?3",
+            params![profile, group_key, on as i64],
+        );
+    }
+
+    /// group key → (last played, seconds played, favourite), for one profile.
+    pub fn play_stats(&self, profile: &str) -> std::collections::HashMap<String, (Option<i64>, i64, bool)> {
+        let c = self.c();
+        let Ok(mut st) = c.prepare("SELECT group_key, last_played, seconds, favourite FROM play_stats WHERE profile_id = ?1") else {
+            return Default::default();
+        };
+        st.query_map(params![profile], |r| Ok((r.get::<_, String>(0)?, (r.get(1)?, r.get(2)?, r.get::<_, i64>(3)? != 0))))
+            .map(|rows| rows.flatten().collect())
+            .unwrap_or_default()
+    }
+
     pub fn game_prefs(
         &self,
         profile_id: &str,

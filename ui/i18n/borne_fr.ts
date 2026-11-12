@@ -399,6 +399,18 @@
         <source>Display</source>
         <translation>Affichage</translation>
     </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Retirer des favoris</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Ajouter aux favoris</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Images</translation>
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -1117,6 +1129,302 @@
     <message>
         <source>RomM unreachable: the save will be sent later.</source>
         <translation>RomM injoignable : la sauvegarde sera envoyée plus tard.</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Favoris</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Récents</translation>
+    </message>
+    <message>
+        <source>Box: automatic</source>
+        <translation>Boîte : automatique</translation>
+    </message>
+    <message>
+        <source>Current · follows the interface language</source>
+        <translation>Actuel · suit la langue de l’interface</translation>
+    </message>
+    <message>
+        <source>Follows the interface language</source>
+        <translation>Suit la langue de l’interface</translation>
+    </message>
+    <message>
+        <source>Box: %1</source>
+        <translation>Boîte : %1</translation>
+    </message>
+    <message>
+        <source>Current</source>
+        <translation>Actuel</translation>
+    </message>
+    <message>
+        <source>Not the right game?</source>
+        <translation>Ce n’est pas le bon jeu ?</translation>
+    </message>
+    <message>
+        <source>Search ScreenScraper by name</source>
+        <translation>Chercher sur ScreenScraper par le nom</translation>
+    </message>
+    <message>
+        <source>Images · %1</source>
+        <translation>Images · %1</translation>
+    </message>
+    <message>
+        <source>From ScreenScraper</source>
+        <translation>Depuis ScreenScraper</translation>
+    </message>
+    <message>
+        <source>Search ScreenScraper</source>
+        <translation>Chercher sur ScreenScraper</translation>
+    </message>
+    <message>
+        <source>Game name</source>
+        <translation>Nom du jeu</translation>
+    </message>
+    <message>
+        <source>Europe</source>
+        <translation>Europe</translation>
+    </message>
+    <message>
+        <source>USA</source>
+        <translation>États-Unis</translation>
+    </message>
+    <message>
+        <source>Japan</source>
+        <translation>Japon</translation>
+    </message>
+    <message>
+        <source>World</source>
+        <translation>Monde</translation>
+    </message>
+    <message>
+        <source>France</source>
+        <translation>France</translation>
+    </message>
+    <message>
+        <source>Germany</source>
+        <translation>Allemagne</translation>
+    </message>
+    <message>
+        <source>United Kingdom</source>
+        <translation>Royaume-Uni</translation>
+    </message>
+    <message>
+        <source>Spain</source>
+        <translation>Espagne</translation>
+    </message>
+    <message>
+        <source>Italy</source>
+        <translation>Italie</translation>
+    </message>
+    <message>
+        <source>Australia</source>
+        <translation>Australie</translation>
+    </message>
+    <message>
+        <source>Korea</source>
+        <translation>Corée</translation>
+    </message>
+    <message>
+        <source>Brazil</source>
+        <translation>Brésil</translation>
+    </message>
+    <message>
+        <source>ScreenScraper</source>
+        <translation>ScreenScraper</translation>
+    </message>
+    <message>
+        <source>Searching ScreenScraper…</source>
+        <translation>Recherche sur ScreenScraper…</translation>
+    </message>
+    <message>
+        <source>Nothing found for “%1”.</source>
+        <translation>Rien trouvé pour « %1 ».</translation>
+    </message>
+    <message>
+        <source>Which game is it?</source>
+        <translation>Quel jeu est-ce ?</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n result(s) for “%1”</source>
+        <translation><numerusform>%n résultat pour « %1 »</numerusform><numerusform>%n résultats pour « %1 »</numerusform></translation>
+    </message>
+    <message>
+        <source>Fetching the images again…</source>
+        <translation>Récupération des images…</translation>
+    </message>
+    <message>
+        <source>No report</source>
+        <translation>Pas de bilan</translation>
+    </message>
+    <message>
+        <source>Games found, per console</source>
+        <translation>Jeux trouvés, par console</translation>
+    </message>
+    <message>
+        <source>Choose a console to see the games not found</source>
+        <translation>Choisissez une console pour voir les jeux introuvables</translation>
+    </message>
+    <message>
+        <source>%1 found · %2 not found · %3 not looked up</source>
+        <translation>%1 trouvés · %2 introuvables · %3 pas encore cherchés</translation>
+    </message>
+    <message>
+        <source>Not found · %1</source>
+        <translation>Introuvables · %1</translation>
+    </message>
+    <message>
+        <source>Open a game to search ScreenScraper for it</source>
+        <translation>Ouvrez un jeu pour le chercher sur ScreenScraper</translation>
+    </message>
+    <message>
+        <source>%1 added to your favourites.</source>
+        <translation>%1 ajouté à vos favoris.</translation>
+    </message>
+    <message>
+        <source>%1 removed from your favourites.</source>
+        <translation>%1 retiré de vos favoris.</translation>
+    </message>
+    <message>
+        <source>By name</source>
+        <translation>Par nom</translation>
+    </message>
+    <message>
+        <source>Recently played</source>
+        <translation>Joués récemment</translation>
+    </message>
+    <message>
+        <source>Recently added</source>
+        <translation>Ajoutés récemment</translation>
+    </message>
+    <message>
+        <source>Most played</source>
+        <translation>Les plus joués</translation>
+    </message>
+    <message>
+        <source>Every genre</source>
+        <translation>Tous les genres</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
+    </message>
+    <message>
+        <source>Sort and filter</source>
+        <translation>Trier et filtrer</translation>
+    </message>
+    <message>
+        <source>Order of the games, and one genre</source>
+        <translation>L’ordre des jeux, et un genre</translation>
+    </message>
+    <message>
+        <source>by name</source>
+        <translation>par nom</translation>
+    </message>
+    <message>
+        <source>recently played</source>
+        <translation>joués récemment</translation>
+    </message>
+    <message>
+        <source>recently added</source>
+        <translation>ajoutés récemment</translation>
+    </message>
+    <message>
+        <source>most played</source>
+        <translation>les plus joués</translation>
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation>Retirer des favoris</translation>
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation>Ajouter aux favoris</translation>
+    </message>
+    <message>
+        <source>Sign in with the password</source>
+        <translation>Se connecter avec le mot de passe</translation>
+    </message>
+    <message>
+        <source>With a code, from the phone</source>
+        <translation>Avec un code, depuis le téléphone</translation>
+    </message>
+    <message>
+        <source>RomM user name</source>
+        <translation>Nom d’utilisateur RomM</translation>
+    </message>
+    <message>
+        <source>Administrator</source>
+        <translation>Administrateur</translation>
+    </message>
+    <message>
+        <source>Viewer</source>
+        <translation>Lecteur</translation>
+    </message>
+    <message>
+        <source>Player</source>
+        <translation>Joueur</translation>
+    </message>
+    <message>
+        <source>Another account…</source>
+        <translation>Un autre compte…</translation>
+    </message>
+    <message>
+        <source>Sign in with name and password</source>
+        <translation>Se connecter avec nom et mot de passe</translation>
+    </message>
+    <message>
+        <source>Type the RomM account's name</source>
+        <translation>Taper le nom du compte RomM</translation>
+    </message>
+    <message>
+        <source>Approve from the phone</source>
+        <translation>Valider depuis le téléphone</translation>
+    </message>
+    <message>
+        <source>A code to confirm in RomM, no password typed here</source>
+        <translation>Un code à confirmer dans RomM, sans taper de mot de passe ici</translation>
+    </message>
+    <message>
+        <source>Add a profile</source>
+        <translation>Ajouter un profil</translation>
+    </message>
+    <message>
+        <source>Choose your RomM account</source>
+        <translation>Choisissez votre compte RomM</translation>
+    </message>
+    <message>
+        <source>How to connect the RomM account</source>
+        <translation>Comment connecter le compte RomM</translation>
+    </message>
+    <message>
+        <source>Password for %1</source>
+        <translation>Mot de passe de %1</translation>
+    </message>
+    <message>
+        <source>Connecting %1…</source>
+        <translation>Connexion de %1…</translation>
+    </message>
+    <message>
+        <source>Wrong user name or password.</source>
+        <translation>Nom d’utilisateur ou mot de passe incorrect.</translation>
+    </message>
+    <message>
+        <source>RomM: %1</source>
+        <translation>RomM : %1</translation>
+    </message>
+    <message>
+        <source>No favourites yet. On a game, choose “Add to favourites” (Select menu or game page).</source>
+        <translation>Pas encore de favoris. Sur un jeu, choisissez « Ajouter aux favoris » (menu Select ou page du jeu).</translation>
+    </message>
+    <message>
+        <source>No game played yet on this profile.</source>
+        <translation>Aucun jeu joué pour l’instant avec ce profil.</translation>
+    </message>
+    <message>
+        <source>No “%1” game here. Change the genre in Select → Sort and filter.</source>
+        <translation>Aucun jeu « %1 » ici. Changez le genre dans Select → Trier et filtrer.</translation>
     </message>
 </context>
 <context>
@@ -1927,6 +2235,18 @@
     <message>
         <source>Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived.</source>
         <translation>Les sauvegardes suivent chaque profil : reprises depuis RomM avant une partie si elles sont plus récentes, envoyées après. Les sauvegardes remplacées sont archivées.</translation>
+    </message>
+    <message>
+        <source>Games found, per console</source>
+        <translation>Jeux trouvés, par console</translation>
+    </message>
+    <message>
+        <source>Which games ScreenScraper recognised, and those it did not: open one to correct its match</source>
+        <translation>Les jeux que ScreenScraper a reconnus, et les autres : ouvrez-en un pour corriger la correspondance</translation>
+    </message>
+    <message>
+        <source>See the report</source>
+        <translation>Voir le bilan</translation>
     </message>
 </context>
 </TS>

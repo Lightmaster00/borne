@@ -399,6 +399,18 @@
         <source>Display</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Images</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -1116,6 +1128,302 @@
     </message>
     <message>
         <source>RomM unreachable: the save will be sent later.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Box: automatic</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Current · follows the interface language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Follows the interface language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Box: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Current</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not the right game?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Search ScreenScraper by name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Images · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Search ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Europe</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>USA</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Japan</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>World</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>France</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Germany</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>United Kingdom</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Spain</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Italy</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Australia</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Korea</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Brazil</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Searching ScreenScraper…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nothing found for “%1”.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Which game is it?</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n result(s) for “%1”</source>
+        <translation><numerusform>%n result for “%1”</numerusform><numerusform>%n results for “%1”</numerusform></translation>
+    </message>
+    <message>
+        <source>Fetching the images again…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No report</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games found, per console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose a console to see the games not found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 found · %2 not found · %3 not looked up</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not found · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open a game to search ScreenScraper for it</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 added to your favourites.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 removed from your favourites.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>By name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recently played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recently added</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Every genre</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
+    </message>
+    <message>
+        <source>Sort and filter</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Order of the games, and one genre</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>by name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>recently played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>recently added</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>most played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove from favourites</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add to favourites</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sign in with the password</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>With a code, from the phone</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM user name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Administrator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Viewer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Player</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Another account…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sign in with name and password</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Type the RomM account's name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Approve from the phone</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A code to confirm in RomM, no password typed here</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add a profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose your RomM account</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How to connect the RomM account</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Password for %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Connecting %1…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wrong user name or password.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No favourites yet. On a game, choose “Add to favourites” (Select menu or game page).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No game played yet on this profile.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No “%1” game here. Change the genre in Select → Sort and filter.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1926,6 +2234,18 @@
     </message>
     <message>
         <source>Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games found, per console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Which games ScreenScraper recognised, and those it did not: open one to correct its match</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>See the report</source>
         <translation type="unfinished" />
     </message>
 </context>
