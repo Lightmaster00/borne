@@ -489,6 +489,12 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
         }
         args.push(v);
     }
+    // A game's own emulator options given as flags go before the game.
+    let extra = crate::gamesettings::emu_args(&p.id, &options);
+    if !extra.is_empty() {
+        let at = args.len().saturating_sub(1);
+        args.splice(at..at, extra);
+    }
     let mut cmd = match found {
         Found::Program(exe) => {
             let mut c = Command::new(exe);

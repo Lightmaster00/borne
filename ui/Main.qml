@@ -1232,7 +1232,7 @@ Window {
     Item {
         id: topbar
         opacity: win.attract ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: win.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
+        Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
         y: 40
         width: parent.width; height: 56
         visible: win.screen === "library" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
@@ -1258,6 +1258,11 @@ Window {
                 required property var modelData
                 required property int index
                 readonly property bool cur: index === win.systemIndex
+                // Too many tabs for the space (a large interface size, many consoles): a tab only
+                // partly in view is dimmed, showing that more wait on that side.
+                readonly property real inView: x - sysBar.contentX
+                opacity: inView < -1 || inView + width > sysBar.width + 1 ? 0.3 : 1
+                Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
                 // A pill: filled with the console's colour when it is the open tab.
                 width: (sysLogo.visible ? sysLogo.width : lbl.implicitWidth) + 44; height: 48
                 y: 2
@@ -1360,7 +1365,7 @@ Window {
     LibraryView {
         id: libraryView
         opacity: win.attract ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: win.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
+        Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
         anchors.fill: parent
         boxYaw: win.boxYaw
         boxPitch: win.boxPitch
@@ -1379,7 +1384,7 @@ Window {
     Rectangle {
         id: hintsBar
         opacity: win.attract ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: win.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
+        Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 20 }
         height: 48
         color: "transparent"

@@ -283,7 +283,25 @@ pub const EMU_OPTIONS: &[(&str, &str, &[&str], &str)] = &[
     ("citron", "docked", &["on", "off"], "on"),
     ("ryubing", "docked", &["on", "off"], "on"),
     ("rpcs3", "colorbuffers", &["off", "on"], "off"),
+    ("melonds", "console", &["ds", "dsi"], "ds"),
+    ("melonds", "renderer", &["software", "opengl"], "software"),
+    ("melonds", "jit", &["off", "on"], "off"),
+    ("xenia", "license", &["trial", "full"], "trial"),
+    ("xenia", "vsync", &["on", "off"], "on"),
+    ("shadps4", "pro", &["off", "on"], "off"),
+    ("shadps4", "trophies", &["on", "off"], "on"),
 ];
+
+/// Command-line flags for a game's options (Xenia takes its settings on the command line).
+pub fn emu_args(program: &str, m: &Map<String, Value>) -> Vec<String> {
+    match program {
+        "xenia" => vec![
+            format!("--license_mask={}", if s(m, "license") == "full" { 1 } else { 0 }),
+            format!("--vsync={}", s(m, "vsync") != "off"),
+        ],
+        _ => vec![],
+    }
+}
 
 fn emu_key(group: &str, program: &str, key: &str) -> String {
     format!("emuopt.{group}.{program}.{key}")
@@ -376,6 +394,28 @@ pub fn emu_apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Val
         }
         "ryubing" => json_patch(&data.join("Config.json"), &[("docked_mode", json!(s(m, "docked") != "off"))]),
         "rpcs3" => yaml_set(&data.join("config.yml"), &[("Video", "Write Color Buffers", if on("colorbuffers") { "true" } else { "false" })]),
+        // melonDS 1.x: melonDS.toml in its config folder (per profile on Linux).
+        "melonds" => {
+            let file = [data.join("config/melonDS/melonDS.toml"), data.join("melonDS.toml")]
+                .into_iter()
+                .find(|f| f.exists())
+                .unwrap_or_else(|| if cfg!(target_os = "macos") { data.join("melonDS.toml") } else { data.join("config/melonDS/melonDS.toml") });
+            ini(
+                &file,
+                &[
+                    ("Emu", "ConsoleType", if s(m, "console") == "dsi" { "1" } else { "0" }),
+                    ("3D", "Renderer", if s(m, "renderer") == "opengl" { "1" } else { "0" }),
+                    ("JIT", "Enable", if on("jit") { "true" } else { "false" }),
+                ],
+            )
+        }
+        "shadps4" => ini(
+            &data.join("config.toml"),
+            &[
+                ("General", "isPS4Pro", if on("pro") { "true" } else { "false" }),
+                ("General", "isTrophyPopupDisabled", if s(m, "trophies") == "off" { "true" } else { "false" }),
+            ],
+        ),
         _ => Ok(()),
     }
 }
@@ -560,6 +600,11 @@ mod tests {
         assert!(v.contains(&("run_ahead_enabled".into(), "true".into())));
         assert!(v.contains(&("run_ahead_frames".into(), "2".into())));
         assert!(EMU_OPTIONS.iter().all(|o| o.2.contains(&o.3)));
+        let mut x = Map::new();
+        x.insert("license".into(), json!("full"));
+        x.insert("vsync".into(), json!("off"));
+        assert_eq!(emu_args("xenia", &x), vec!["--license_mask=1".to_string(), "--vsync=false".to_string()]);
+        assert!(emu_args("dolphin", &x).is_empty());
     }
 
     use super::*;

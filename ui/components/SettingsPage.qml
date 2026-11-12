@@ -313,9 +313,9 @@ Item {
               items: [{ id: "ss-report", label: qsTr("See the report"), disabled: !(ss && ss.configured) }] }
         ]
         if (id === "server") return [
-            { id: "sync", kind: "buttons", title: qsTr("Library"), desc: syncText(), items: [{ id: "sync", label: qsTr("Sync now"), disabled: !!(status && status.sync && status.sync.running) }] },
             { id: "server", kind: "buttons", title: qsTr("RomM server"), desc: status && status.server_url ? status.server_url + (status.online ? "" : " · " + qsTr("offline")) : qsTr("not configured"),
               items: [{ id: "server", label: qsTr("Change server") }] },
+            { id: "sync", kind: "buttons", title: qsTr("Library"), desc: syncText(), items: [{ id: "sync", label: qsTr("Sync now"), disabled: !!(status && status.sync && status.sync.running) }] },
             { id: "profile", kind: "buttons", title: qsTr("Profile"), desc: status && status.active_profile ? status.active_profile.name : "",
               items: [{ id: "profile", label: qsTr("Switch profile") }] }
         ]
@@ -428,7 +428,8 @@ Item {
                     required property var modelData
                     required property int index
                     readonly property bool current: page.section === index
-                    width: parent.width; height: 72
+                    // Shorter on a short screen (a larger interface size): every section fits above the version.
+                    width: parent.width; height: Math.max(56, Math.min(72, (side.height - 160 - 120) / page.sections.length - 8))
                     radius: 14
                     // The open section: a soft fill and a bar in the accent colour; brighter while the
                     // focus is on the list (no ring: the bar says it).

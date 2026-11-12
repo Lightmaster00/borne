@@ -135,8 +135,10 @@ Item {
     ShelfView {
         id: boxes
         // The cases stand in the middle; the selected game's name sits under its case.
+        // A shorter screen (a larger interface size) gives the cases less height, so the name stays
+        // clear of the hints.
         x: 0; y: Math.max(170, (root.height - 1000) / 2 + 170)
-        width: parent.width; height: 600
+        width: parent.width; height: Math.max(380, Math.min(600, root.height - 170 - 290))
         theme: root.theme
         games: root.games
         currentIndex: root.currentIndex

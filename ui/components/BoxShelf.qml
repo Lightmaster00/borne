@@ -16,7 +16,7 @@ Item {
 
     // Box size (screen pixels at depth 0) and layout.
     readonly property real boxW: 270
-    readonly property real boxH: 420
+    readonly property real boxH: 420 * Math.min(1, height / 600)   // smaller on a shorter shelf (interface size)
     readonly property real boxD: 30
     readonly property real focal: 1500    // camera distance: lower = stronger perspective
     readonly property real cx: width / 2

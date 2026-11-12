@@ -746,6 +746,70 @@
         <source>On</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>JIT recompiler</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Arcade games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Vertical sync</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PS4 Pro mode</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trophy notifications</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>DSi: for DSi-only games and their extras; needs the DSi system files</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Much faster on most computers; turn off if the game misbehaves</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Xbox Live Arcade games as the full version, not the trial</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No tearing; off can lower input lag</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some games look better on a PS4 Pro; needs a stronger computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A notice on screen when a trophy is won</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Full version</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trial</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hidden</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shown</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>GamePage</name>

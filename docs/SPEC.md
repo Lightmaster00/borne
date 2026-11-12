@@ -815,8 +815,10 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Settings → Interface (Qt preferences, `prefs` in Main.qml): Videos — video behind the library on/off
   (`bgVideo`), video in full screen after 5 s / 15 s / 30 s / 1 min / never (`attractDelay`), its length
   1 / 3 / 10 min or no limit (`attractRest`), videos on the game page (`pageVideo`); Look — interface
-  size 90–120 % (`uiScale`: the 1080-unit scene scaled, never below 1600 units wide), animations
-  normal or reduced (`motion`: Theme durations × 0.4), clock shown or hidden; Sounds — interface
+  size 90–120 % (`uiScale`: the 1080-unit scene scaled, never below 1600 units wide; on the shorter scene the
+  shelf, its cases and the settings' section list shrink to keep clear of the hints, and a console
+  tab only partly in view is dimmed), animations
+  normal or reduced (`motion`: Theme durations and the attract fades × 0.4), clock shown or hidden; Sounds — interface
   sounds, volume low / medium / high; Controls — buttons shown: last used, gamepad or keyboard
   (`prompts`). Rows that cannot apply are hidden (no full-screen video without the background video).
   The former single `trailers` switch is copied once to both video switches.
@@ -833,7 +835,9 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   removes one): RetroArch rewind and run-ahead (1–2 frames); Dolphin widescreen hack and CPU
   overclock (150 / 200 %); PCSX2 widescreen patches and software renderer; DuckStation widescreen
   hack, PGXP and texture filtering; Eden / Citron / Ryubing docked or handheld; RPCS3 write colour
-  buffers. Written before every game of that program, defaults included, so one game's choice
+  buffers; melonDS DS or DSi, OpenGL renderer and JIT; Xenia full
+  version of Arcade games and vertical sync (given as flags); shadPS4 PS4 Pro mode and trophy
+  notifications. Written before every game of that program, defaults included, so one game's choice
   never reaches another.
 - Console names: RomM's carry the maker ("Sega Game Gear", "Sony PlayStation"); Borne drops Sega,
   Sony, Microsoft, SNK and NEC where the console is known by its own name, and says Mega Drive,

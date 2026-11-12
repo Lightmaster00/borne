@@ -746,6 +746,70 @@
         <source>On</source>
         <translation>Oui</translation>
     </message>
+    <message>
+        <source>Console</source>
+        <translation>Console</translation>
+    </message>
+    <message>
+        <source>JIT recompiler</source>
+        <translation>Recompilateur JIT</translation>
+    </message>
+    <message>
+        <source>Arcade games</source>
+        <translation>Jeux Arcade</translation>
+    </message>
+    <message>
+        <source>Vertical sync</source>
+        <translation>Synchronisation verticale</translation>
+    </message>
+    <message>
+        <source>PS4 Pro mode</source>
+        <translation>Mode PS4 Pro</translation>
+    </message>
+    <message>
+        <source>Trophy notifications</source>
+        <translation>Notifications de trophées</translation>
+    </message>
+    <message>
+        <source>DSi: for DSi-only games and their extras; needs the DSi system files</source>
+        <translation>DSi : pour les jeux réservés à la DSi et leurs bonus ; demande les fichiers système de la DSi</translation>
+    </message>
+    <message>
+        <source>Much faster on most computers; turn off if the game misbehaves</source>
+        <translation>Bien plus rapide sur la plupart des ordinateurs ; à couper si le jeu se comporte mal</translation>
+    </message>
+    <message>
+        <source>Xbox Live Arcade games as the full version, not the trial</source>
+        <translation>Les jeux Xbox Live Arcade en version complète, pas en version d’essai</translation>
+    </message>
+    <message>
+        <source>No tearing; off can lower input lag</source>
+        <translation>Sans déchirement de l’image ; désactivée, la latence peut baisser</translation>
+    </message>
+    <message>
+        <source>Some games look better on a PS4 Pro; needs a stronger computer</source>
+        <translation>Certains jeux sont plus beaux sur PS4 Pro ; demande un ordinateur plus puissant</translation>
+    </message>
+    <message>
+        <source>A notice on screen when a trophy is won</source>
+        <translation>Une notification à l’écran quand un trophée est gagné</translation>
+    </message>
+    <message>
+        <source>Full version</source>
+        <translation>Version complète</translation>
+    </message>
+    <message>
+        <source>Trial</source>
+        <translation>Essai</translation>
+    </message>
+    <message>
+        <source>Hidden</source>
+        <translation>Masquée</translation>
+    </message>
+    <message>
+        <source>Shown</source>
+        <translation>Affichée</translation>
+    </message>
 </context>
 <context>
     <name>GamePage</name>

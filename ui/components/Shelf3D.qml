@@ -20,7 +20,7 @@ Item {
     property real swayAmp: 4
     property int swayPeriod: 3600
 
-    readonly property real boxH: 420
+    readonly property real boxH: 420 * Math.min(1, height / 600)   // smaller on a shorter shelf (interface size)
     readonly property real focal: 1500
     readonly property int slots: 7
     property real probeYaw: 0
