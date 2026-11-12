@@ -33,7 +33,7 @@ Window {
     // ---------- State ----------
     property string screen: "boot"       // boot | server | profiles | pairing | library
     property var status: null
-    property var systems: [{ id: "all", name: qsTr("All games") }, { id: "local", name: qsTr("Installed", "systems bar") }]
+    property var systems: []
     property int systemIndex: 0
     property int focusIndex: 0
     property string overlay: ""          // "", "diag", "launch", "game", "settings"
@@ -67,8 +67,6 @@ Window {
     readonly property bool trailers: prefs.trailers
     readonly property var activeProfile: status ? status.active_profile : null
     readonly property bool textEntry: screen === "server" || nameEntry.visible
-    // Mouse in use (pointer moved recently): hover states and on-screen buttons.
-    readonly property bool pointerActive: typeof pointer !== "undefined" && pointer !== null && pointer.active
     readonly property string uiLang: Qt.locale().name.substring(0, 2)
     property var settings: ({ install_mode: "download", stream: { available: false, error: "" } })
     // Game page
@@ -130,7 +128,7 @@ Window {
     readonly property string consoleSlug: {
         if (overlay === "game" && pageGame) return pageGame.platform_slug || ""
         const s = systems[systemIndex]
-        if (s && ["all", "local", "fav", "recent"].indexOf(s.id) < 0) return s.id
+        if (s && ["local", "fav", "recent"].indexOf(s.id) < 0) return s.id
         return focusedGame ? focusedGame.platform_slug || "" : ""
     }
     readonly property color consoleTint: Cases.tint(consoleSlug)
@@ -139,32 +137,38 @@ Window {
     readonly property real frameMargin: framed ? Math.round(Math.min(width, height) * 0.036) : 0
     property int artRev: 0
     function loadPlatforms() {
-        api("GET", "/api/v1/platforms", null, function (list) {
+        api("GET", "/api/v1/library/tabs", null, function (tabs) {
+          api("GET", "/api/v1/platforms", null, function (list) {
             if (!list) return
-            const current = systems[systemIndex] ? systems[systemIndex].id : "all"
-            const sys = [{ id: "all", name: qsTr("All games") }, { id: "local", name: qsTr("Installed", "systems bar") },
-                         { id: "fav", name: qsTr("Favourites") }, { id: "recent", name: qsTr("Recent") }]
+            const current = systems[systemIndex] ? systems[systemIndex].id : ""
+            // The player's own tabs, only when they hold something; then one tab per console.
+            const sys = []
+            if (tabs && tabs.local > 0) sys.push({ id: "local", name: qsTr("Installed", "systems bar") })
+            if (tabs && tabs.fav > 0) sys.push({ id: "fav", name: qsTr("Favourites") })
+            if (tabs && tabs.recent > 0) sys.push({ id: "recent", name: qsTr("Recent") })
             // Short names for the systems bar (RomM returns full names).
             const shortNames = { "nes": "NES", "snes": "Super Nintendo", "n64": "Nintendo 64", "gb": "Game Boy", "gbc": "Game Boy Color",
                             "gba": "Game Boy Advance", "nds": "Nintendo DS", "genesis": "Mega Drive", "sms": "Master System",
                             "ngc": "GameCube", "wii": "Wii", "wiiu": "Wii U", "switch": "Switch", "ps": "PlayStation", "psx": "PlayStation",
                             "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "dc": "Dreamcast", "saturn": "Saturn", "arcade": "Arcade" }
-            // The console's logo from ScreenScraper when there is one, else its name.
             const frames = {}
             for (const p of list) {
-                sys.push({ id: p.slug, name: shortNames[p.slug] || p.name,
-                    logo: p.art_kinds && p.art_kinds.indexOf("logo") >= 0 ? apiBase + "/api/v1/systems/" + p.slug + "/art/logo" : "" })
+                sys.push({ id: p.slug, name: shortNames[p.slug] || p.name })
                 if (p.art_kinds && p.art_kinds.indexOf("frame") >= 0) frames[p.slug] = apiBase + "/api/v1/systems/" + p.slug + "/art/frame"
             }
             consoleFrames = frames
             systems = sys
             systemIndex = Math.max(0, sys.findIndex(s => s.id === current))
+            // The open tab went away (emptied) or this is the first list: show the one now open.
+            if (sys.length && sys[systemIndex].id !== current) loadLibrary(true)
+          })
         })
     }
     // Reloads the list keeping the selection; updates in place if the list did not change.
     function loadLibrary(resetFocus) {
         const s = systems[systemIndex] || systems[0]
-        const tab = s.id === "all" ? "" : s.id === "local" ? "&local=1" : s.id === "fav" ? "&fav=1" : s.id === "recent" ? "&recent=1" : "&platform=" + encodeURIComponent(s.id)
+        if (!s) { libModel.clear(); return }
+        const tab = s.id === "local" ? "&local=1" : s.id === "fav" ? "&fav=1" : s.id === "recent" ? "&recent=1" : "&platform=" + encodeURIComponent(s.id)
         // The Recent tab is always newest first; the others follow the chosen order and genre.
         const order = s.id === "recent" ? "played" : prefs.librarySort
         const q = "?lang=" + uiLang + tab + "&sort=" + order + (prefs.libraryGenre ? "&genre=" + encodeURIComponent(prefs.libraryGenre) : "")
@@ -296,7 +300,7 @@ Window {
     property bool attract: false
     readonly property bool attractAllowed: screen === "library" && overlay === "" && ready && !gameMode
                                            && !menu.visible && !search.visible && !downloadsPanel.visible
-                                           && !nameEntry.visible && !turning && !pointerActive
+                                           && !nameEntry.visible && !turning
                                            && libModel.count > 0 && ambience.videoShown
     onAttractAllowedChanged: if (!attractAllowed) attract = false
     function touch() {
@@ -915,16 +919,16 @@ Window {
         loadLibrary(true)
     }
 
-    // ---------- turning the selected box (right stick, or Z Q S D) ----------
+    // ---------- turning the selected box (right stick, or W A S D) ----------
     property real padTurnX: 0
     property real padTurnY: 0
     property var turnKeys: ({})
-    readonly property real turnX: Math.max(-1, Math.min(1, padTurnX + (turnKeys.d ? 1 : 0) - (turnKeys.q ? 1 : 0)))
-    readonly property real turnY: Math.max(-1, Math.min(1, padTurnY + (turnKeys.s ? 1 : 0) - (turnKeys.z ? 1 : 0)))
-    // The stick sets the angle directly (not a speed): the box leans toward where you push, within
-    // limits that keep its front in view (never its back), and comes back as soon as you let go.
-    readonly property real maxYaw: 38
-    readonly property real maxPitch: 22
+    readonly property real turnX: Math.max(-1, Math.min(1, padTurnX + (turnKeys.d ? 1 : 0) - (turnKeys.a ? 1 : 0)))
+    readonly property real turnY: Math.max(-1, Math.min(1, padTurnY + (turnKeys.s ? 1 : 0) - (turnKeys.w ? 1 : 0)))
+    // The stick sets the angle directly (not a speed): the box turns toward where you push, far
+    // enough to face its spine (never its back), and comes back as soon as you let go.
+    readonly property real maxYaw: 82
+    readonly property real maxPitch: 40
     property real boxYaw: turnX * maxYaw
     property real boxPitch: turnY * maxPitch
     Behavior on boxYaw { SmoothedAnimation { velocity: 160; reversingMode: SmoothedAnimation.Immediate } }
@@ -939,7 +943,6 @@ Window {
         inputCounts[source] = (inputCounts[source] || 0) + 1
         inputCountsChanged()
         lastInput = a + " via " + source
-        if (source === "pad" && win.pointerActive) pointer.hide()
         if (touch() && screen === "library" && overlay === "") return
         if (session && session.running) { quitChord.feed(a); return }
         if (bench.running && a !== "start") return
@@ -978,12 +981,8 @@ Window {
         if (tabId === "recent") return qsTr("No game played yet on this profile.")
         if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre in Select → Sort and filter.").arg(prefs.libraryGenre)
         if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
-            return qsTr("No game installed yet. Open a game in “All games” to download it or play it from the network.")
+            return qsTr("No game installed yet. Open a game in its console’s tab to download it or play it from the network.")
         return qsTr("No games here.")
-    }
-    function pick(i) {
-        win.focusIndex = i
-        win.openGame(libModel.get(i).rom_id)
     }
     function playTimeText() {
         const d = new Date(clock)
@@ -1214,13 +1213,13 @@ Window {
             if (screen === "library" && overlay === "" && !menu.visible && !nameEntry.visible && !downloadsPanel.visible) {
                 const f = e.key === Qt.Key_Slash || (e.key === Qt.Key_F && (e.modifiers & Qt.ControlModifier))
                 if (f) { e.accepted = true; openSearch("", true); return }
-                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_A, Qt.Key_E, Qt.Key_R, Qt.Key_C, Qt.Key_Z, Qt.Key_Q, Qt.Key_S, Qt.Key_D].indexOf(e.key) >= 0
+                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_Q, Qt.Key_E, Qt.Key_R, Qt.Key_C, Qt.Key_W, Qt.Key_A, Qt.Key_S, Qt.Key_D].indexOf(e.key) >= 0
                 if (!shortcut && !(e.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && e.text && e.text.length === 1 && (e.text.toLowerCase() !== e.text.toUpperCase() || /[0-9]/.test(e.text))) {
                     e.accepted = true; openSearch(e.text, true); return
                 }
             }
-            // Z Q S D turn the selected box (held keys, like a stick).
-            const turnKey = { [Qt.Key_Z]: "z", [Qt.Key_Q]: "q", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
+            // W A S D turn the selected box (held keys, like a stick).
+            const turnKey = { [Qt.Key_W]: "w", [Qt.Key_A]: "a", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
             if (turnKey && !search.visible && !menu.visible && (win.screen === "library" || win.overlay === "game")) {
                 e.accepted = true
                 if (!e.isAutoRepeat) setTurnKey(turnKey, true)
@@ -1231,13 +1230,13 @@ Window {
             map[Qt.Key_Return] = "a"; map[Qt.Key_Enter] = "a"; map[Qt.Key_Space] = "a"
             map[Qt.Key_Escape] = "b"; map[Qt.Key_Backspace] = "b"
             map[Qt.Key_X] = "x"; map[Qt.Key_T] = "y"; map[Qt.Key_Y] = "y"; map[Qt.Key_F1] = "start"; map[Qt.Key_M] = "start"; map[Qt.Key_F2] = "select"
-            map[Qt.Key_PageUp] = "lb"; map[Qt.Key_A] = "lb"; map[Qt.Key_PageDown] = "rb"; map[Qt.Key_E] = "rb"
+            map[Qt.Key_PageUp] = "lb"; map[Qt.Key_Q] = "lb"; map[Qt.Key_PageDown] = "rb"; map[Qt.Key_E] = "rb"
             map[Qt.Key_R] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
             const a = map[e.key]
             if (a) { e.accepted = true; dispatch(a, "keyboard") }
         }
         Keys.onReleased: (e) => {
-            const turnKey = { [Qt.Key_Z]: "z", [Qt.Key_Q]: "q", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
+            const turnKey = { [Qt.Key_W]: "w", [Qt.Key_A]: "a", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
             if (turnKey && !e.isAutoRepeat) { e.accepted = true; setTurnKey(turnKey, false) }
         }
     }
@@ -1279,18 +1278,11 @@ Window {
                 Rectangle {
                     anchors.fill: parent
                     radius: 24
-                    color: parent.cur ? theme.accent : sysMouse.containsMouse ? theme.glassRaised : Qt.rgba(1, 1, 1, 0.06)
+                    color: parent.cur ? theme.accent : Qt.rgba(1, 1, 1, 0.06)
                     Behavior on color { ColorAnimation { duration: theme.focusMs } }
                 }
                 Accessible.role: Accessible.PageTab
                 Accessible.name: modelData.name
-                MouseArea {
-                    id: sysMouse
-                    anchors.fill: parent
-                    hoverEnabled: win.pointerActive
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: if (!parent.cur) { win.systemIndex = parent.index; win.loadLibrary(true) }
-                }
                 Image {
                     id: sysLogo
                     anchors.centerIn: parent
@@ -1300,7 +1292,7 @@ Window {
                     sourceSize.height: 56
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
-                    opacity: parent.cur || sysMouse.containsMouse ? 1 : 0.6
+                    opacity: parent.cur ? 1 : 0.6
                     Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
                     // On the console's colour, the logo in white.
                     layer.enabled: parent.cur
@@ -1310,7 +1302,7 @@ Window {
                     id: lbl; anchors.centerIn: parent
                     visible: !sysLogo.visible
                     text: modelData.name
-                    color: parent.cur ? theme.accentFg : sysMouse.containsMouse ? theme.fg : theme.fgSoft
+                    color: parent.cur ? theme.accentFg : theme.fgSoft
                     font { family: theme.fontFamily; pixelSize: 18; weight: Font.Bold }
                 }
             }
@@ -1341,7 +1333,7 @@ Window {
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: dlRow.implicitWidth + 36; height: 48; radius: 24
-                color: dlMouse.containsMouse ? theme.glassRaised : theme.glass
+                color: theme.glass
                 Ink { z: -1; theme: win.theme; radius: 24; opacity: 0.5 }
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Downloads")
@@ -1352,7 +1344,6 @@ Window {
                     Icon { anchors.verticalCenter: parent.verticalCenter; name: "download"; size: 18; stroke: 2.2; color: theme.fg }
                     Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Downloads"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 16 } }
                 }
-                MouseArea { id: dlMouse; anchors.fill: parent; hoverEnabled: win.pointerActive; cursorShape: Qt.PointingHandCursor; onClicked: win.openDownloads() }
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -1373,7 +1364,6 @@ Window {
                     color: theme.accentFg
                     font { family: theme.displayFont; pixelSize: 22; weight: Font.Bold }
                 }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.showProfiles() }
             }
         }
     }
@@ -1392,29 +1382,9 @@ Window {
         currentIndex: win.focusIndex
         sectionTitle: win.systems[win.systemIndex] ? win.systems[win.systemIndex].name : ""
         emptyText: win.emptyLibraryText
-        pointerActive: win.pointerActive
         letters: win.letters
         revision: win.libRevision
         currentLetter: win.focusedGame ? win.letterOf(win.focusedGame.name) : ""
-        onPicked: (i) => win.pick(i)
-        onAction: (a) => win.dispatch(a, "mouse")
-        onJumpTo: (l) => { if (win.letterStart[l] !== undefined) win.focusIndex = win.letterStart[l] }
-    }
-    // Mouse wheel and trackpad: move the selection like the gamepad would.
-    WheelHandler {
-        target: null
-        enabled: win.screen === "library" && win.overlay === "" && !menu.visible
-        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        property real acc: 0
-        onWheel: (e) => {
-            if (win.touch()) return
-            acc += (e.angleDelta.y !== 0 ? e.angleDelta.y : -e.angleDelta.x)
-            while (Math.abs(acc) >= 120) {
-                const back = acc > 0
-                win.move(back ? "left" : "right")
-                acc += back ? -120 : 120
-            }
-        }
     }
 
     Rectangle {
@@ -1429,7 +1399,6 @@ Window {
             id: hints
             x: 84; anchors.verticalCenter: parent.verticalCenter
             theme: win.theme
-            pointerActive: win.pointerActive
             hints: {
                 const g = win.focusedGame
                 const h = []
@@ -1442,7 +1411,6 @@ Window {
                 h.push(["Select", qsTr("Menu"), "select"])
                 return h
             }
-            onTriggered: (a) => win.dispatch(a, "mouse")
         }
         Text {
             anchors { right: parent.right; rightMargin: 96; verticalCenter: parent.verticalCenter }
@@ -1459,7 +1427,6 @@ Window {
         anchors.fill: parent
         visible: win.screen === "server"
         theme: win.theme
-        pointerActive: win.pointerActive
         onSubmit: (url) => {
             busy = true
             win.api("POST", "/api/v1/server", { url: url }, function (r, err) {
@@ -1476,7 +1443,6 @@ Window {
         anchors.fill: parent
         visible: win.screen === "profiles"
         theme: win.theme
-        pointerActive: win.pointerActive
         serverUrl: win.status && win.status.server_url ? win.status.server_url : ""
         online: win.status ? win.status.online : false
         onChoose: (p) => p.paired ? win.enterLibrary(p) : win.startPairing(p)
@@ -1489,7 +1455,6 @@ Window {
         anchors.fill: parent
         visible: win.screen === "pairing"
         theme: win.theme
-        pointerActive: win.pointerActive
         serverUrl: win.status && win.status.server_url ? win.status.server_url : ""
         pairing: win.pairing
         profileName: win.pairingProfile ? win.pairingProfile.name : ""
@@ -1549,9 +1514,7 @@ Window {
             }
             HintBar {
                 theme: win.theme
-                pointerActive: win.pointerActive
                 hints: [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["Start", qsTr("Confirm"), "start"], ["Select", qsTr("Cancel"), "select"]]
-                onTriggered: (a) => nameEntry.handle(a)
             }
         }
     }
@@ -1623,7 +1586,6 @@ Window {
         installMode: win.page ? win.page.install_mode : "download"
         streamAvailable: win.page ? win.page.stream.available : false
         streamError: win.page && win.page.stream.error ? CoreText.tr(win.page.stream.error) : ""
-        pointerActive: win.pointerActive
         trailers: win.trailers
         trailerUrl: win.pageTrailer
         trailerState: win.pageTrailerState
@@ -1645,7 +1607,6 @@ Window {
         reportPaths: win.reportPaths
         sounds: prefs.sounds
         trailers: win.trailers
-        pointerActive: win.pointerActive
         onAction: (id, payload) => win.settingsAction(id, payload)
     }
 
@@ -1667,7 +1628,6 @@ Window {
     DownloadsPanel {
         id: downloadsPanel
         theme: win.theme
-        pointerActive: win.pointerActive
         z: 60
         onCancel: (d) => win.api("DELETE", "/api/v1/downloads/" + d.id, null, function () { win.refreshDownloads() })
         onRetry: (d) => win.api("POST", "/api/v1/games/" + d.rom_id + "/download", {}, function (r, err) { if (err) toasts.show(err, "error"); win.refreshDownloads() })
@@ -1677,11 +1637,10 @@ Window {
         anchors.fill: parent
         theme: win.theme
         model: libModel
-        pointerActive: win.pointerActive
         z: 60
         onPicked: (i) => { if (win.focusIndex !== i) win.focusIndex = i }
     }
-    ActionMenu { id: menu; theme: win.theme; pointerActive: win.pointerActive; z: 80 }
+    ActionMenu { id: menu; theme: win.theme; z: 80 }
     Toasts {
         id: toasts
         theme: win.theme
@@ -1735,7 +1694,7 @@ Window {
             Text { x: 32; y: 24; text: qsTr("Diagnostics"); color: theme.fg; font { family: theme.displayFont; pixelSize: 24; weight: Font.ExtraBold } }
             Column {
                 x: 32; y: 72; width: parent.width * 0.4 - 32; spacing: 14
-                Menu { width: parent.width; theme: win.theme; currentIndex: diag.index; items: diag.items; pointerActive: win.pointerActive; onClicked: (i) => { diag.index = i; diag.handle("a") } }
+                Menu { width: parent.width; theme: win.theme; currentIndex: diag.index; items: diag.items }
                 Text { visible: diag.report !== null; text: qsTr("LAST BENCHMARK"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 12; letterSpacing: 1 } }
                 KeyValues {
                     visible: diag.report !== null; width: parent.width; theme: win.theme; keyWidth: 200

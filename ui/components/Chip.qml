@@ -11,13 +11,11 @@ Rectangle {
     property bool focused: false
     property bool badge: false          // e.g. this version is on this device
     property bool compact: false
-    property bool pointerActive: false
-    signal clicked()
 
     width: content.implicitWidth + 44
     height: 52
     radius: 26
-    color: selected ? theme.fg : mouse.containsMouse ? theme.glassRaised : Qt.rgba(1, 1, 1, 0.05)
+    color: selected ? theme.fg : Qt.rgba(1, 1, 1, 0.05)
     border { width: selected ? 0 : 1; color: theme.glassEdge }
     Behavior on color { ColorAnimation { duration: 150 } }
     Ink { z: -1; theme: chip.theme; radius: chip.radius }
@@ -56,12 +54,5 @@ Rectangle {
         border { width: theme.ringWidth; color: chip.selected ? theme.accent : theme.focusRing }
         opacity: chip.focused ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
-    }
-    MouseArea {
-        id: mouse
-        anchors.fill: parent
-        hoverEnabled: chip.pointerActive
-        cursorShape: Qt.PointingHandCursor
-        onClicked: chip.clicked()
     }
 }

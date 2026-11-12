@@ -1,8 +1,9 @@
 // One game case as a 3D object (Qt Quick 3D): a box to the case's real proportions with slightly
-// rounded corners and edges, lit by the shelf's studio, with a thin ink outline (Borne's touch of
-// cel shading). The front is the cover scan, the same spine on the left and the right, the back
-// scan behind, and the console's plastic colour on the top and the bottom. Prints have a fine
-// grain and a varnish (cardboard: matte paper), the plastic a satin grain.
+// rounded corners and edges, cel shaded inside a bold ink outline. The front is the cover scan, the
+// same spine on the left and the right, the back scan behind, and the console's plastic colour on
+// the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
+// them by flat light bands whose dark side takes the console's colour, with a paper or plastic grain;
+// a second one (gloss.frag) adds a crisp highlight and a rim of the console's colour on the edges.
 // Coordinates: x right, y up, z toward you.
 import QtQuick
 import QtQuick3D
@@ -54,13 +55,10 @@ Node {
             indexes: mesh.indexes
         }
     }
-    // The fine grain of the prints and the plastic (a tiling normal map).
-    component Grain: Texture {
-        source: "grain.png"
-        scaleU: box.bw / 40
-        scaleV: box.bh / 40
-        tilingModeHorizontal: Texture.Repeat
-        tilingModeVertical: Texture.Repeat
+    readonly property color consoleTint: Cases.tint(game ? game.platform_slug : "")
+    // A flat print: no lighting of its own, the shading skin does it.
+    component Flat: PrincipledMaterial {
+        lighting: PrincipledMaterial.NoLighting
     }
     // A print: the scan over the game's tone; the title only when there is no scan to show.
     component Print: Rectangle {
@@ -132,7 +130,7 @@ Node {
             id: outline
             castsShadows: false
             pickable: false
-            readonly property real t: 3
+            readonly property real t: 5.5
             readonly property var mesh: Mesh.hull(box.bw + 2 * t, box.bh + 2 * t, box.bd + 2 * t, box.round + t, 2)
             geometry: ProceduralMesh {
                 positions: outline.mesh.positions
@@ -152,18 +150,12 @@ Node {
             side: "front"
             property int slotIndex: box.slotIndex
             pickable: true
-            materials: PrincipledMaterial {
+            materials: Flat {
                 baseColorMap: Texture {
                     generateMipmaps: true
                     mipFilter: Texture.Linear
                     sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl }
                 }
-                roughness: box.card ? 0.62 : 0.45
-                specularAmount: 0.35
-                clearcoatAmount: box.card ? 0.15 : 0.6
-                clearcoatRoughnessAmount: box.card ? 0.4 : 0.06
-                normalMap: Grain { }
-                normalStrength: box.card ? 0.22 : 0.1
             }
         }
         // The same spine on both sides.
@@ -172,25 +164,17 @@ Node {
             Face {
                 required property string modelData
                 side: modelData
-                materials: PrincipledMaterial {
+                materials: Flat {
                     baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Spine { width: 96; height: 800 } }
-                    roughness: box.card ? 0.62 : 0.45
-                    specularAmount: 0.35
-                    clearcoatAmount: box.card ? 0.15 : 0.6
-                    clearcoatRoughnessAmount: box.card ? 0.4 : 0.06
                 }
             }
         }
         // Back: the back scan, else the console's plastic.
         Face {
             side: "back"
-            materials: PrincipledMaterial {
+            materials: Flat {
                 baseColor: box.backUrl !== "" ? "white" : box.plastic
                 baseColorMap: box.backUrl !== "" ? backTex : null
-                roughness: box.card ? 0.62 : 0.45
-                specularAmount: 0.35
-                clearcoatAmount: box.card ? 0.15 : 0.5
-                clearcoatRoughnessAmount: box.card ? 0.4 : 0.08
             }
             Texture {
                 id: backTex
@@ -198,21 +182,65 @@ Node {
                 sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.backUrl; titled: false }
             }
         }
-        // Top and bottom: the console's plastic, satin with a grain.
+        // Top and bottom: the console's plastic.
         Repeater3D {
             model: ["top", "bottom"]
             Face {
                 required property string modelData
                 side: modelData
-                materials: PrincipledMaterial {
-                    baseColor: box.plastic
-                    roughness: box.lightPlastic ? 0.34 : 0.4
-                    specularAmount: 0.5
-                    clearcoatAmount: 0.2
-                    clearcoatRoughnessAmount: 0.3
-                    normalMap: Grain { }
-                    normalStrength: 0.35
-                }
+                materials: Flat { baseColor: box.plastic }
+            }
+        }
+
+        // The shading skin: the box grown a hair, multiplied onto the flat prints under it.
+        Model {
+            id: skin
+            castsShadows: false
+            receivesShadows: true
+            pickable: false
+            readonly property real e: 0.6
+            readonly property var mesh: Mesh.hull(box.bw + 2 * e, box.bh + 2 * e, box.bd + 2 * e, box.round + e, 4)
+            geometry: ProceduralMesh {
+                positions: skin.mesh.positions
+                normals: skin.mesh.normals
+                uv0s: skin.mesh.uv0s
+                indexes: skin.mesh.indexes
+            }
+            Texture {
+                id: grainTexture
+                source: "grain.png"
+                tilingModeHorizontal: Texture.Repeat
+                tilingModeVertical: Texture.Repeat
+            }
+            materials: CustomMaterial {
+                shadingMode: CustomMaterial.Shaded
+                fragmentShader: "toon.frag"
+                sourceBlend: CustomMaterial.DstColor
+                destinationBlend: CustomMaterial.Zero
+                property TextureInput grainTex: TextureInput { texture: grainTexture }
+                // Dark side: the console's colour, deep; half tone: a lighter, warmer step.
+                property color shadeTint: Qt.rgba(box.consoleTint.r * 0.30 + 0.10, box.consoleTint.g * 0.30 + 0.10, box.consoleTint.b * 0.30 + 0.16, 1)
+                property color midTint: Qt.rgba(0.62, 0.60, 0.66, 1)
+                property real grainAmount: box.card ? 0.10 : 0.06
+                property real grainScale: Math.max(2, box.bh / 30)
+            }
+        }
+        // The gloss skin: highlight and coloured rim, added over the shaded box.
+        Model {
+            castsShadows: false
+            receivesShadows: true
+            pickable: false
+            geometry: skin.geometry
+            scale: Qt.vector3d(1 + 0.8 / box.bw, 1 + 0.8 / box.bh, 1 + 0.8 / box.bd)
+            materials: CustomMaterial {
+                shadingMode: CustomMaterial.Shaded
+                fragmentShader: "gloss.frag"
+                sourceBlend: CustomMaterial.One
+                destinationBlend: CustomMaterial.One
+                property color rimColor: Qt.lighter(box.consoleTint, 1.25)
+                property real rimStrength: 0.75
+                // Varnished prints and clear plastic glint; cardboard barely.
+                property real glint: box.card ? 0.18 : 0.42
             }
         }
     }

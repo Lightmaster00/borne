@@ -7,7 +7,6 @@ Item {
     property QtObject theme
     property var games
     property int currentIndex: 0
-    property bool pointerActive: false
     property int revision: 0
     property bool showSelection: true
     property real userYaw: 0
@@ -17,7 +16,6 @@ Item {
     property bool prefer3d: true
     property bool failed3d: false
     readonly property bool is3d: prefer3d && !failed3d
-    signal picked(int index)
 
     Loader {
         id: ld
@@ -29,12 +27,10 @@ Item {
                 sv.failed3d = true
             }
         }
-        onLoaded: item.picked.connect(sv.picked)
     }
     Binding { when: ld.item !== null; target: ld.item; property: "theme"; value: sv.theme }
     Binding { when: ld.item !== null; target: ld.item; property: "games"; value: sv.games }
     Binding { when: ld.item !== null; target: ld.item; property: "currentIndex"; value: sv.currentIndex }
-    Binding { when: ld.item !== null; target: ld.item; property: "pointerActive"; value: sv.pointerActive }
     Binding { when: ld.item !== null; target: ld.item; property: "revision"; value: sv.revision }
     Binding { when: ld.item !== null; target: ld.item; property: "showSelection"; value: sv.showSelection }
     Binding { when: ld.item !== null; target: ld.item; property: "userYaw"; value: sv.userYaw }

@@ -9,7 +9,6 @@ Item {
     property int index: 0
     property string serverUrl: ""
     property bool online: false
-    property bool pointerActive: false
     signal choose(var profile)
     signal add()
     signal options(var profile)
@@ -43,15 +42,6 @@ Item {
                     readonly property var p: isAdd ? null : picker.profiles[index]
                     readonly property bool cur: index === picker.index
                     width: 240; height: 320
-                    MouseArea {
-                        anchors.fill: parent
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: (m) => {
-                            picker.index = parent.index
-                            picker.handle(m.button === Qt.RightButton ? "y" : "a")
-                        }
-                    }
                     Rectangle {
                         id: avatar
                         width: 200; height: 200; radius: 100
@@ -96,9 +86,7 @@ Item {
         HintBar {
             anchors.horizontalCenter: parent.horizontalCenter
             theme: picker.theme
-            pointerActive: picker.pointerActive
             hints: [["A", qsTr("Choose"), "a"], ["Y", qsTr("Profile options"), "y"], ["Start", qsTr("Menu"), "start"]]
-            onTriggered: (a) => picker.handle(a)
         }
     }
 }

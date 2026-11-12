@@ -10,7 +10,6 @@ Rectangle {
     property var items: []
     property int index: 0
     property var callback: null
-    property bool pointerActive: false
     readonly property bool opened: visible
     onIndexChanged: Qt.callLater(listView.follow)
     onItemsChanged: { listView.contentY = 0; Qt.callLater(listView.follow) }
@@ -48,8 +47,6 @@ Rectangle {
         else if (a === "b" || a === "start" || a === "y") close()
     }
 
-    // Click outside the panel: same as B.
-    MouseArea { anchors.fill: parent; onClicked: menu.close(); onWheel: (w) => w.accepted = true }
 
     Rectangle {
         anchors.centerIn: parent
@@ -59,7 +56,6 @@ Rectangle {
         color: theme.panel
         Ink { z: -1; theme: menu.theme; radius: 28 }
         border.color: theme.panelBorder
-        MouseArea { anchors.fill: parent }   // clicks on the panel itself do not close it
         Column {
             id: col
             x: 36; y: 36; width: parent.width - 72; spacing: 18
@@ -84,15 +80,11 @@ Rectangle {
                 Menu {
                     id: list
                     width: parent.width; theme: menu.theme; currentIndex: menu.index; items: menu.items
-                    pointerActive: menu.pointerActive
-                    onClicked: (i) => { menu.index = i; menu.handle("a") }
                 }
             }
             HintBar {
                 theme: menu.theme
-                pointerActive: menu.pointerActive
                 hints: [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"]]
-                onTriggered: (a) => menu.handle(a)
             }
         }
     }

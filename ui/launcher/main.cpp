@@ -9,75 +9,44 @@
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QLocale>
-#include <QQmlContext>
-#include <QTimer>
 #include <QQmlApplicationEngine>
 #include <QTranslator>
 #include <QUrl>
 #include <QVariantMap>
 
-// Mouse pointer: shown while the mouse is used, hidden after a few idle seconds or as soon
-// as the keyboard or a gamepad is used (the couch case). QML reads `pointer.active` to show
-// hover states and on-screen back buttons only when they make sense.
-class Pointer : public QObject
+// Borne is played with a gamepad or a keyboard only: the pointer stays hidden and mouse,
+// wheel and touch input never reach the interface.
+class NoPointer : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(bool active READ active NOTIFY activeChanged)
 
 public:
-    explicit Pointer(QObject *parent = nullptr) : QObject(parent)
+    explicit NoPointer(QObject *parent = nullptr) : QObject(parent)
     {
-        m_idle.setSingleShot(true);
-        m_idle.setInterval(4000);
-        connect(&m_idle, &QTimer::timeout, this, &Pointer::hide);
         QGuiApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
     }
-    bool active() const { return m_active; }
-
-    // Called from QML when a gamepad button is pressed.
-    Q_INVOKABLE void hide()
-    {
-        m_idle.stop();
-        if (!m_active)
-            return;
-        m_active = false;
-        QGuiApplication::setOverrideCursor(QCursor(Qt::BlankCursor));
-        emit activeChanged();
-    }
-
-signals:
-    void activeChanged();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override
     {
         switch (event->type()) {
-        case QEvent::MouseMove:
         case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonRelease:
+        case QEvent::MouseButtonDblClick:
+        case QEvent::MouseMove:
+        case QEvent::HoverEnter:
+        case QEvent::HoverMove:
+        case QEvent::HoverLeave:
         case QEvent::Wheel:
-            show();
-            break;
-        case QEvent::KeyPress:
-            hide();
-            break;
+        case QEvent::TouchBegin:
+        case QEvent::TouchUpdate:
+        case QEvent::TouchEnd:
+        case QEvent::NativeGesture:
+            return true;
         default:
-            break;
+            return QObject::eventFilter(watched, event);
         }
-        return QObject::eventFilter(watched, event);
     }
-
-private:
-    void show()
-    {
-        m_idle.start();
-        if (m_active)
-            return;
-        m_active = true;
-        QGuiApplication::restoreOverrideCursor();
-        emit activeChanged();
-    }
-    QTimer m_idle;
-    bool m_active = false;
 };
 
 int main(int argc, char *argv[])
@@ -111,11 +80,10 @@ int main(int argc, char *argv[])
     base.setHintingPreference(QFont::PreferNoHinting);
     QGuiApplication::setFont(base);
 
-    Pointer pointer;
-    app.installEventFilter(&pointer);
+    NoPointer noPointer;
+    app.installEventFilter(&noPointer);
 
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty(QStringLiteral("pointer"), &pointer);
     // QML module for the theme API: import Borne.Theme
     engine.addImportPath(ui + QStringLiteral("/imports"));
     engine.setInitialProperties({

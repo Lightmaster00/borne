@@ -9,7 +9,6 @@ Item {
     property string serverUrl: ""
     property string qrUrl: ""
     property int qrRevision: 0
-    property bool pointerActive: false
     signal retry()
     signal back()
 
@@ -160,9 +159,7 @@ Item {
         HintBar {
             x: 52; anchors.verticalCenter: parent.verticalCenter
             theme: screen.theme
-            pointerActive: screen.pointerActive
             hints: screen.failed ? [["A", qsTr("Retry"), "a"], ["B", qsTr("Cancel"), "b"]] : [["B", qsTr("Cancel"), "b"]]
-            onTriggered: (a) => screen.handle(a)
         }
         Text {
             anchors { right: parent.right; rightMargin: 64; verticalCenter: parent.verticalCenter }

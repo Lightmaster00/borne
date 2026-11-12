@@ -9,7 +9,6 @@ Item {
     property QtObject theme
     property var game
     property bool focused: false
-    property bool hovered: false
 
     width: 236
     height: 354
@@ -23,7 +22,7 @@ Item {
 
     scale: focused ? 1.06 : 1
     z: focused ? 2 : 1
-    opacity: focused || hovered ? 1 : 0.88
+    opacity: focused ? 1 : 0.88
     Behavior on scale { NumberAnimation { duration: theme.focusMs; easing.type: Easing.OutCubic } }
     Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
 
@@ -43,7 +42,7 @@ Item {
         radius: 16 + theme.ringGap + theme.ringWidth
         color: "transparent"
         border { width: theme.ringWidth; color: theme.focusRing }
-        opacity: card.focused ? 1 : card.hovered ? 0.45 : 0
+        opacity: card.focused ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }
 

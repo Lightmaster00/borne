@@ -1,6 +1,6 @@
 // Settings: sections on the left, their rows on the right.
 // Gamepad: up/down moves in the focused column, right enters a section, left goes back to the
-// sections, left/right inside a row of choices, A to choose, B to go back. Mouse: all clickable.
+// sections, left/right inside a row of choices, A to choose, B to go back.
 import QtQuick
 import "CoreText.js" as CoreText
 import "Display.js" as Display
@@ -12,7 +12,6 @@ Item {
     property var status: null            // GET /api/v1/status
     property bool sounds: true
     property bool trailers: true
-    property bool pointerActive: false
     property string version: ""
     property var reportPaths: []
 
@@ -337,9 +336,7 @@ Item {
         else if (a === "a") activate(r, colOf(r.id))
     }
     function focused(id, i) { return inRows && rows[row] && rows[row].id === id && colOf(id) === i }
-    function click(id, i) { inRows = true; row = rows.findIndex(r => r.id === id); setCol(id, i); activate(rows[row], i) }
 
-    MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: (w) => w.accepted = true }
 
     // ---------- sections ----------
     Rectangle {
@@ -353,7 +350,7 @@ Item {
             x: 64; y: 56
             width: backRow.implicitWidth + 24; height: 44
             radius: 22
-            color: backMouse.containsMouse ? theme.glassRaised : theme.glass
+            color: theme.glass
             border { width: 1; color: theme.glassEdge }
             Accessible.role: Accessible.Button
             Accessible.name: qsTr("Back to the library")
@@ -367,7 +364,6 @@ Item {
                 }
                 Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Library"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
             }
-            MouseArea { id: backMouse; anchors.fill: parent; hoverEnabled: page.pointerActive; cursorShape: Qt.PointingHandCursor; onClicked: page.action("back", null) }
         }
         Text {
             x: 64; y: 128
@@ -388,7 +384,7 @@ Item {
                     readonly property bool current: page.section === index
                     width: parent.width; height: 72
                     radius: 14
-                    color: current ? Qt.rgba(1, 1, 1, 0.1) : secMouse.containsMouse ? theme.glass : "transparent"
+                    color: current ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
                     border { width: current ? 1 : 0; color: Qt.rgba(1, 1, 1, 0.16) }
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
@@ -406,7 +402,6 @@ Item {
                         opacity: sec.current && !page.inRows ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
                     }
-                    MouseArea { id: secMouse; anchors.fill: parent; hoverEnabled: page.pointerActive; cursorShape: Qt.PointingHandCursor; onClicked: { page.inRows = false; page.selectSection(sec.index) } }
                 }
             }
         }
@@ -482,8 +477,6 @@ Item {
                         points: [qsTr("Plays offline, even if the server is down"), qsTr("Fastest loading, no network during play"), qsTr("Uses disk space for every installed game")]
                         selected: page.installMode === "download"
                         focused: page.focused("install", 0)
-                        pointerActive: page.pointerActive
-                        onClicked: page.click("install", 0)
                     }
                     OptionCard {
                         width: (parent.width - 24) / 2
@@ -496,8 +489,6 @@ Item {
                         selected: page.installMode === "stream"
                         disabled: !page.streamAvailable
                         focused: page.focused("install", 1)
-                        pointerActive: page.pointerActive
-                        onClicked: page.click("install", 1)
                     }
                 }
 
@@ -552,8 +543,6 @@ Item {
                                     primary: !!modelData.primary
                                     disabled: !!modelData.disabled
                                     focused: page.focused(rowItem.modelData.id, index)
-                                    pointerActive: page.pointerActive
-                                    onClicked: page.click(rowItem.modelData.id, index)
                                 }
                                 Chip {
                                     id: chip
@@ -562,8 +551,6 @@ Item {
                                     text: modelData.label
                                     selected: modelData.id === rowItem.modelData.selected
                                     focused: page.focused(rowItem.modelData.id, index)
-                                    pointerActive: page.pointerActive
-                                    onClicked: page.click(rowItem.modelData.id, index)
                                 }
                             }
                         }
@@ -582,9 +569,7 @@ Item {
         HintBar {
             x: 64; anchors.verticalCenter: parent.verticalCenter
             theme: page.theme
-            pointerActive: page.pointerActive
             hints: [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"], ["◀ ▶", qsTr("Change value"), "right"]]
-            onTriggered: (a) => page.handle(a)
         }
     }
 }

@@ -12,9 +12,7 @@ Item {
     property QtObject theme
     property var games                    // library ListModel
     property int currentIndex: 0
-    property bool pointerActive: false
     property int revision: 0              // bumps when library rows change (states, progress)
-    signal picked(int index)
 
     // Box size (screen pixels at depth 0) and layout.
     readonly property real boxW: 270
@@ -34,7 +32,7 @@ Item {
     // Gentle idle sway of the selected box.
     property real sway        // driven by the animation below (0 when it does not run)
     property bool showSelection: true
-    // Turned by the player (right stick, Z Q S D): applied to the selected box.
+    // Turned by the player (right stick, W A S D): applied to the selected box.
     property real userYaw: 0
     property real userPitch: 0
     readonly property bool userTurned: Math.abs(userYaw) > 0.5 || Math.abs(userPitch) > 0.5
@@ -168,8 +166,6 @@ Item {
                 game: slot.game
                 place: slot.p
                 current: slot.current
-                pointerActive: shelf.pointerActive
-                onClicked: shelf.picked(slot.gameIndex)
             }
         }
     }

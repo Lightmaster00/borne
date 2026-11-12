@@ -1,14 +1,11 @@
-// Button hints at the bottom of a screen. With the mouse, each hint is a button that does
-// what the gamepad button would. hints: [[key, label, action], …]; the first key is the
-// confirm button, drawn light.
+// Button hints at the bottom of a screen. hints: [[key, label, action], …]; the first key is
+// the confirm button, drawn light.
 import QtQuick
 
 Row {
     id: bar
     property QtObject theme
     property var hints: []
-    property bool pointerActive: false
-    signal triggered(string action)
     spacing: 22
 
     Repeater {
@@ -22,7 +19,7 @@ Row {
             width: row.implicitWidth + 24
             height: 44
             radius: 22
-            color: mouse.containsMouse ? bar.theme.glass : "transparent"
+            color: "transparent"
             Behavior on color { ColorAnimation { duration: 120 } }
             Row {
                 id: row
@@ -51,13 +48,6 @@ Row {
                     color: bar.theme.fgSoft
                     font { family: bar.theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
                 }
-            }
-            MouseArea {
-                id: mouse
-                anchors.fill: parent
-                hoverEnabled: bar.pointerActive
-                cursorShape: Qt.PointingHandCursor
-                onClicked: bar.triggered(hint.modelData[2])
             }
         }
     }

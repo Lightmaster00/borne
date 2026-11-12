@@ -123,11 +123,6 @@ Item {
                         border { width: keyRow.r === 5 && index === 0 && kb.shift ? 2 : 0; color: theme.accent }
                         scale: cur ? 1.06 : 1
                         Behavior on scale { NumberAnimation { duration: 90 } }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: { kb.row = keyRow.r; kb.col = parent.index; kb.press() }
-                        }
                         Text {
                             anchors.centerIn: parent
                             text: kb.label(keyRow.r, index)

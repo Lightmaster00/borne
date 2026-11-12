@@ -1178,10 +1178,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No game installed yet. Open a game in “All games” to download it or play it from the network.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No games here.</source>
         <translation type="unfinished" />
     </message>
@@ -1927,6 +1923,10 @@
     </message>
     <message>
         <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No game installed yet. Open a game in its console’s tab to download it or play it from the network.</source>
         <translation type="unfinished" />
     </message>
 </context>

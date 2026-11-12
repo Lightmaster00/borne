@@ -7,7 +7,6 @@ Item {
     id: root
     property QtObject theme
     property var model: null          // the library ListModel
-    property bool pointerActive: false
     property bool showKeyboard: true  // hidden when the user types on a physical keyboard
     property int selected: 0
     property var results: []          // [{ index, name, sub, cover }]
@@ -83,7 +82,6 @@ Item {
     Connections { target: kb; function onTextChanged() { root.refresh() } }
 
     Rectangle { anchors.fill: parent; color: Qt.rgba(0.03, 0.035, 0.045, 0.82) }
-    MouseArea { anchors.fill: parent; onClicked: root.close() }
 
     Rectangle {
         id: panel
@@ -94,7 +92,6 @@ Item {
         radius: 22
         color: Qt.rgba(0.09, 0.1, 0.12, 0.92)
         border { color: Qt.rgba(1, 1, 1, 0.08); width: 1 }
-        MouseArea { anchors.fill: parent }   // swallow clicks inside the panel
 
         Column {
             id: content
@@ -213,10 +210,6 @@ Item {
                                     font { family: root.theme.fontFamily; pixelSize: 15; weight: Font.Medium }
                                 }
                             }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: { root.selected = index; root.confirm() }
-                            }
                         }
                     }
                 }
@@ -224,11 +217,9 @@ Item {
 
             HintBar {
                 theme: root.theme
-                pointerActive: root.pointerActive
                 hints: root.showKeyboard
                     ? [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["LB/RB", qsTr("Result"), "rb"], ["Start", qsTr("Go to game"), "start"]]
                     : [["↑↓", qsTr("Result"), "down"], ["Enter", qsTr("Go to game"), "start"], ["Esc", qsTr("Close"), "select"]]
-                onTriggered: (a) => root.handle(a)
             }
         }
     }

@@ -1398,10 +1398,6 @@
         <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
     </message>
     <message>
-        <source>No game installed yet. Open a game in “All games” to download it or play it from the network.</source>
-        <translation>Aucun jeu installé pour l'instant. Ouvre un jeu dans « Tous les jeux » pour le télécharger ou y jouer depuis le réseau.</translation>
-    </message>
-    <message>
         <source>Open</source>
         <translation>Ouvrir</translation>
     </message>
@@ -1929,6 +1925,10 @@
         <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
         <translation>Les cheats PS2 viennent d’un fichier .pnach que vous fournissez pour ce jeu (le format de PCSX2).</translation>
     </message>
+    <message>
+        <source>No game installed yet. Open a game in its console’s tab to download it or play it from the network.</source>
+        <translation>Aucun jeu installé pour l'instant. Ouvrez un jeu dans l'onglet de sa console pour le télécharger ou y jouer depuis le réseau.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -2110,7 +2110,7 @@
     </message>
     <message>
         <source>Enter the address of your RomM server, for example http://192.168.1.20:8080 or https://romm.home.lan.</source>
-        <translation>Saisis l'adresse de ton serveur RomM, par exemple http://192.168.1.20:8080 ou https://romm.maison.lan.</translation>
+        <translation>Saisissez l'adresse de votre serveur RomM, par exemple http://192.168.1.20:8080 ou https://romm.maison.lan.</translation>
     </message>
     <message>
         <source>Connecting to the server…</source>

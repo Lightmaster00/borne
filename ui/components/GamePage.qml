@@ -5,7 +5,7 @@
 // series (RomM).
 //
 // Gamepad: up/down between rows (actions, language, then the rest of the page),
-// left/right inside a row, A to activate, B to go back. Mouse and wheel: everything works.
+// left/right inside a row, A to activate, B to go back.
 import QtQuick
 import QtQuick.Effects
 import QtMultimedia
@@ -24,7 +24,6 @@ Item {
     property string installMode: "download"
     property bool streamAvailable: false
     property string streamError: ""
-    property bool pointerActive: false
     property bool trailers: true
     property string trailerUrl: ""         // local file prepared by the core
     property string trailerState: ""       // "", "loading", "ready", "error: …"
@@ -189,9 +188,7 @@ Item {
     }
     onAllActionsChanged: setCol(0, Math.min(col[0], Math.max(0, allActions.length - 1)))
     readonly property real progress: game && game.dl_total > 0 ? Math.min(1, game.dl_received / game.dl_total) : 0
-    property bool fromMouse: false
     onRowChanged: {
-        if (fromMouse) return
         const name = rows[row]
         if (name === "actions") scrollTo(0)
         else if (name === "language") scrollTo(0)
@@ -233,7 +230,6 @@ Item {
     }
 
     // Swallow clicks so the library underneath never receives them.
-    MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: (w) => w.accepted = true }
 
     ListModel { id: boxModel }
 
@@ -242,7 +238,7 @@ Item {
         anchors.fill: parent
         contentHeight: content.height + 140
         boundsBehavior: Flickable.StopAtBounds
-        interactive: page.pointerActive
+        interactive: false
         flickDeceleration: 4000
 
         Item {
@@ -400,8 +396,6 @@ Item {
                                 primary: !!modelData.primary
                                 disabled: !!modelData.disabled
                                 focused: page.rows[page.row] === "actions" && page.col[0] === index
-                                pointerActive: page.pointerActive
-                                onClicked: { page.fromMouse = true; page.row = 0; page.fromMouse = false; page.setCol(0, index); page.activate("actions", index) }
                             }
                         }
                         Column {
@@ -452,8 +446,6 @@ Item {
                                     selected: modelData.code === page.currentLang
                                     badge: !!v && (v.local_state === "local" || v.linked)
                                     focused: page.rows[page.row] === "language" && page.col[1] === index
-                                    pointerActive: page.pointerActive
-                                    onClicked: { page.fromMouse = true; page.row = page.rows.indexOf("language"); page.fromMouse = false; page.setCol(1, index); page.activate("language", index) }
                                 }
                             }
                         }
@@ -580,7 +572,7 @@ Item {
         visible: y > -60
         width: backRow.implicitWidth + 24; height: 44
         radius: 22
-        color: backMouse.containsMouse ? theme.glassRaised : theme.glass
+        color: theme.glass
         border { width: 1; color: theme.glassEdge }
         Accessible.role: Accessible.Button
         Accessible.name: qsTr("Back to the library")
@@ -593,13 +585,6 @@ Item {
                 Text { anchors.centerIn: parent; text: "B"; color: theme.bg; font { family: theme.displayFont; pixelSize: 15; weight: Font.Bold } }
             }
             Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Library"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
-        }
-        MouseArea {
-            id: backMouse
-            anchors.fill: parent
-            hoverEnabled: page.pointerActive
-            cursorShape: Qt.PointingHandCursor
-            onClicked: page.action("back", null)
         }
     }
     Rectangle {
@@ -614,8 +599,6 @@ Item {
     HintBar {
         x: 84; anchors { bottom: parent.bottom; bottomMargin: 24 }
         theme: page.theme
-        pointerActive: page.pointerActive
         hints: [["A", qsTr("Select"), "a"], ["B", qsTr("Back"), "b"], ["▲ ▼", qsTr("More about the game"), "down"]]
-        onTriggered: (a) => page.handle(a)
     }
 }

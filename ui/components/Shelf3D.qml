@@ -13,14 +13,12 @@ Item {
     property QtObject theme
     property var games
     property int currentIndex: 0
-    property bool pointerActive: false
     property int revision: 0
     property bool showSelection: true
     property real userYaw: 0
     property real userPitch: 0
     property real swayAmp: 4
     property int swayPeriod: 3600
-    signal picked(int index)
 
     readonly property real boxH: 420
     readonly property real focal: 1500
@@ -169,13 +167,4 @@ Item {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        enabled: shelf.pointerActive
-        onClicked: (m) => {
-            const r = view.pick(m.x, m.y)
-            if (r.objectHit && r.objectHit.slotIndex !== undefined && r.objectHit.slotIndex >= 0)
-                shelf.picked(r.objectHit.slotIndex)
-        }
-    }
 }

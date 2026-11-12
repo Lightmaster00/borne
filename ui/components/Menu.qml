@@ -1,4 +1,4 @@
-// Option list navigable with the gamepad or the mouse (used by menus and panels).
+// Option list navigable with the gamepad or the keyboard (used by menus and panels).
 import QtQuick
 
 Column {
@@ -6,8 +6,6 @@ Column {
     property var items: []          // [{ label, detail?, disabled? }]
     property int currentIndex: 0
     property QtObject theme
-    property bool pointerActive: false
-    signal clicked(int index)
     spacing: 4
     function rowAt(i) { return rows.itemAt(i) }
 
@@ -22,7 +20,7 @@ Column {
             width: menu.width
             height: col.height + 28
             radius: 14
-            color: cur ? theme.fg : mouse.containsMouse && !modelData.disabled ? theme.glass : "transparent"
+            color: cur ? theme.fg : "transparent"
             opacity: modelData.disabled ? 0.45 : 1
             Behavior on color { ColorAnimation { duration: 120 } }
             Ink { z: -1; theme: menu.theme; radius: 14; visible: row.cur }
@@ -45,13 +43,6 @@ Column {
                     color: row.cur ? "#4A4F5C" : theme.fgMuted
                     font { family: theme.fontFamily; pixelSize: 15 }
                 }
-            }
-            MouseArea {
-                id: mouse
-                anchors.fill: parent
-                hoverEnabled: menu.pointerActive
-                cursorShape: row.modelData.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
-                onClicked: if (!row.modelData.disabled) menu.clicked(row.index)
             }
         }
     }

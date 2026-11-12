@@ -668,6 +668,17 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 None => err(req, 404, "no such image for this console"),
             }
         }
+        // How many games each personal tab holds (Installed, Favourites, Recent), so the UI
+        // shows only the tabs that have something.
+        (Method::Get, ["api", "v1", "library", "tabs"]) => {
+            use std::collections::HashSet;
+            let all: HashSet<String> = app.db.games(None, None, false).into_iter().map(|g| g.group_key).collect();
+            let local: HashSet<String> = app.db.games(None, None, true).into_iter().map(|g| g.group_key).collect();
+            let stats = app.active_profile().map(|p| app.db.play_stats(&p.id)).unwrap_or_default();
+            let fav = stats.iter().filter(|(k, v)| v.2 && all.contains(*k)).count();
+            let recent = stats.iter().filter(|(k, v)| v.0.is_some() && all.contains(*k)).count();
+            ok(req, json!({ "local": local.len(), "fav": fav, "recent": recent }))
+        }
         (Method::Get, ["api", "v1", "library"]) => {
             let platform = query(&q, "platform");
             let search = query(&q, "q");

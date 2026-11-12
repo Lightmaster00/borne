@@ -46,20 +46,20 @@ Since then:
   no root. Settings → Games chooses what A does by default (download or network).
 - **Settings**: how games are installed (download or network, with what each brings), network cache
   size, updates, interface sounds and trailers.
-- **Mouse**: everything is clickable; the pointer appears when the mouse moves and hides when the
-  gamepad is used. The wheel scrolls the library.
+- **Gamepad or keyboard only**: the mouse pointer stays hidden and mouse input is ignored.
 - **One look, "Halo"**: the games stand as physical cases at the real size and shape of their console's
   retail case (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
-  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the console's plastic colour on top and bottom, lit in a virtual photo studio with soft shadows and drawn with a thin ink outline, turnable with the right stick or Z Q S D; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 7 seconds without input the library fades out and leaves the video. A letter index and LT / RT jump through the alphabet; Y opens a
+  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the console's plastic colour on top and bottom, cel shaded (flat light bands, a dark side and an edge rim in the console's colour, a crisp highlight, a paper or plastic grain) inside a bold ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, far enough to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 7 seconds without input the library fades out and leaves the video. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The screen sits in a frame dressed in the selected console: its blank Steam grid from ScreenScraper, in the console's own colour, which also colours the buttons, the open console tab and the A key. Rounded shapes with a thin ink edge; titles in Fredoka, text in Manrope.
 - **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
   a language chooses the version launched (English → USA, Français → the European version that has
   French, 日本語 → Japan). Below: summary, screenshots, studios and series (RomM only).
-- **Console logos and pictures**: the systems bar shows each console's logo from ScreenScraper
-  (its name until the logo is fetched); the console's photo is kept for later use. Behind the
+- **Tabs and console pictures**: the tabs bar shows Installed, Favourites and Recent when they hold
+  games, then one tab per console, named in Borne's display font; the console's logo and photo from
+  ScreenScraper are kept for later use. Behind the
   shelf and on the game page, the game's art without any text (ScreenScraper's blank Steam grid
   and blank screen marquee) is used under the video, before the blurred cover.
 - **Titles and covers in your language**: with ScreenScraper, each game shows the title and the case
@@ -168,13 +168,13 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | — | Any letter or digit | Start a search with that letter |
 | D-pad | Arrows | Move through the covers |
 | LT / RT | R / C, Home / End | Previous / next letter |
-| LB / RB | Page Up / Page Down, A / E | Previous / next system |
-| Right stick | Z Q S D (held) | Lean the selected game box (front always in view); it comes back when let go |
+| LB / RB | Page Up / Page Down, Q / E | Previous / next tab |
+| Right stick | W A S D (held) | Turn the selected game box, up to its spine; it comes back when let go |
 | Start | M or F1 | Settings |
 | Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |
 
-In text fields, type directly on the keyboard; Enter confirms. With the mouse: click a game to open
-it, click the hints at the bottom of the screen as buttons, right-click a profile for its options.
+In text fields, type directly on the keyboard; Enter confirms. Borne is played with a gamepad or a
+keyboard only: the mouse pointer is hidden and mouse input is ignored.
 
 ## Language
 

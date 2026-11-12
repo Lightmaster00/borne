@@ -7,7 +7,6 @@ Item {
     property bool busy: false
     property string error: ""
     property string initial: "http://"
-    property bool pointerActive: false
     signal submit(string url)
     signal cancelled()
 
@@ -49,9 +48,7 @@ Item {
         }
         HintBar {
             theme: setup.theme
-            pointerActive: setup.pointerActive
             hints: [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["X", qsTr("Shift"), "x"], ["Y", qsTr("Space"), "y"], ["Start", qsTr("Confirm"), "start"]]
-            onTriggered: (a) => setup.handle(a)
         }
     }
 }

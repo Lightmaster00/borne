@@ -11,15 +11,12 @@ Item {
     property bool primary: false
     property bool disabled: false
     property bool focused: false
-    property bool pointerActive: false
-    signal clicked()
 
     implicitWidth: row.implicitWidth + (key !== "" ? 40 : 56)
     implicitHeight: 60
     width: implicitWidth
     height: implicitHeight
     opacity: disabled ? 0.45 : 1
-    scale: mouse.pressed && !disabled ? 0.97 : 1
     Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutQuart } }
     Accessible.role: Accessible.Button
     Accessible.name: text
@@ -37,7 +34,7 @@ Item {
         id: face
         anchors.fill: parent
         radius: height / 2
-        color: btn.primary ? theme.accent : mouse.containsMouse && !btn.disabled ? theme.glassRaised : theme.glass
+        color: btn.primary ? theme.accent : theme.glass
         border { width: btn.primary ? 0 : 1; color: theme.glassEdge }
         Behavior on color { ColorAnimation { duration: 150 } }
     }
@@ -71,12 +68,5 @@ Item {
         border { width: theme.ringWidth; color: theme.focusRing }
         opacity: btn.focused ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
-    }
-    MouseArea {
-        id: mouse
-        anchors.fill: parent
-        hoverEnabled: btn.pointerActive
-        cursorShape: btn.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
-        onClicked: if (!btn.disabled) btn.clicked()
     }
 }

@@ -1,7 +1,7 @@
 // One game box, built as a solid: six faces drawn through BoxShelf.faceMatrix (front, back,
 // spine on the left, opening edge on the right, top, bottom), lit by one key light — each face
 // darkens as it turns from the light and catches a highlight where the light reflects toward
-// the eye, so the box reads as an object as it turns (right stick, Z Q S D).
+// the eye, so the box reads as an object as it turns (right stick, W A S D).
 // Materials: a plastic keep case (colored rim, clear sleeve with a moving sheen, rounded edges),
 // a clear CD case (hinge, black tray seen through the lid), a hard clamshell, or a cardboard box
 // (matte, sharp folds). Printed faces come from the case scans; nothing is drawn over the art
@@ -17,8 +17,6 @@ Item {
     property var game: null
     property var place: ({ x: 0, y: 0, z: 0, ang: 0 })
     property bool current: false
-    property bool pointerActive: false
-    signal clicked()
 
     // The case's real size, to scale with the other consoles' cases. Boxes sold both ways
     // (Super Nintendo: wide in America, upright in Europe) follow their cover.
@@ -308,21 +306,5 @@ Item {
         // Light: the face darkens away from the light and catches the highlight.
         Light { face: "front"; radius: box.mat === "keep" ? 6 : 1 }
 
-        // Hover (mouse): a fine white line around the box. The selected box needs none: it stands forward.
-        Rectangle {
-            anchors { fill: parent; margins: -8 }
-            radius: 12
-            color: "transparent"
-            border { width: 2.5; color: box.theme.focusRing }
-            opacity: !box.current && mouse.containsMouse ? 0.35 : 0
-            Behavior on opacity { NumberAnimation { duration: 200 } }
-        }
-        MouseArea {
-            id: mouse
-            anchors.fill: parent
-            hoverEnabled: box.pointerActive
-            cursorShape: Qt.PointingHandCursor
-            onClicked: box.clicked()
-        }
     }
 }

@@ -11,13 +11,9 @@ Item {
     property int currentIndex: 0
     property string sectionTitle: ""
     property string emptyText: qsTr("No games here.")
-    property bool pointerActive: false
     property var letters: []          // letters present, in order
     property string currentLetter: ""
 
-    signal picked(int index)
-    signal action(string id)
-    signal jumpTo(string letter)
 
     readonly property int columns: 10    // up / down jump this many games
     property int revision: 0
@@ -144,10 +140,8 @@ Item {
         games: root.games
         currentIndex: root.currentIndex
         revision: root.revision
-        pointerActive: root.pointerActive
         userYaw: root.boxYaw
         userPitch: root.boxPitch
-        onPicked: (i) => root.picked(i)
     }
 
     // ---------- letters ----------
@@ -175,7 +169,6 @@ Item {
                 text: modelData
                 color: cur ? theme.accent : theme.fgFaint
                 font { family: theme.fontFamily; pixelSize: cur ? 19 : 14; weight: cur ? Font.Bold : Font.DemiBold }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { root.jumpTo(parent.modelData); root.showLetter(parent.modelData) } }
             }
         }
     }

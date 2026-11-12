@@ -13,13 +13,11 @@ Rectangle {
     property bool selected: false
     property bool focused: false
     property bool disabled: false
-    property bool pointerActive: false
-    signal clicked()
 
     height: col.height + 64
     radius: 20
     Ink { z: -1; theme: card.theme; radius: card.radius }
-    color: selected ? Qt.rgba(1, 1, 1, 0.1) : mouse.containsMouse && !disabled ? theme.glass : Qt.rgba(1, 1, 1, 0.03)
+    color: selected ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.03)
     border { width: 1; color: selected ? Qt.rgba(1, 1, 1, 0.22) : theme.glassEdge }
     opacity: disabled ? 0.6 : 1
     Behavior on color { ColorAnimation { duration: 150 } }
@@ -103,12 +101,5 @@ Rectangle {
         border { width: theme.ringWidth; color: theme.focusRing }
         opacity: card.focused ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
-    }
-    MouseArea {
-        id: mouse
-        anchors.fill: parent
-        hoverEnabled: card.pointerActive
-        cursorShape: card.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
-        onClicked: if (!card.disabled) card.clicked()
     }
 }

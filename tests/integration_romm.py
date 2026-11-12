@@ -229,6 +229,13 @@ try:
     with open(r["path"], "rb") as f:
         check(hashlib.sha1(f.read()).hexdigest() == target["sha1"], "file read from RomM through the mount (SHA-1)")
     check(any(g["rom_id"] == target["rom_id"] for g in call(api, "GET", "/api/v1/library?local=1")[1]), "linked game listed with installed games")
+    tabs = call(api, "GET", "/api/v1/library/tabs")[1]
+    check(tabs["local"] == len(call(api, "GET", "/api/v1/library?local=1")[1]), "Installed tab count matches its list")
+    call(api, "POST", f"/api/v1/games/{target['rom_id']}/favourite", {"on": True})
+    fav = call(api, "GET", "/api/v1/library/tabs")[1]["fav"]
+    check(fav == tabs["fav"] + 1 and any(g["rom_id"] == target["rom_id"] for g in call(api, "GET", "/api/v1/library?fav=1")[1]), "favourite counted in the Favourites tab")
+    call(api, "POST", f"/api/v1/games/{target['rom_id']}/favourite", {"on": False})
+    check(call(api, "GET", "/api/v1/library/tabs")[1]["fav"] == tabs["fav"], "favourite removed from the Favourites tab")
     s, rb = call(api, "POST", f"/api/v1/games/{big['rom_id']}/link")
     with open(rb["path"], "rb") as f, open(call(api, "GET", f"/api/v1/games/{big['rom_id']}")[1]["game"]["local_main"], "rb") as local:
         ok_ranges = True

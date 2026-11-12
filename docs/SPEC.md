@@ -81,7 +81,7 @@ the final decision to the user. Compatibility checks inform and recommend; they 
 
 ### 2.2 Experience principles
 
-- The gamepad is the primary input; keyboard and mouse remain available for administration and troubleshooting.
+- The gamepad is the primary input; the keyboard does everything too. The mouse is not used.
 - Long operations never block: download, extraction, verification, shader compilation and sync show their state and can be resumed.
 - Messages explain the cause and propose a concrete action, not just an error code.
 - Advanced settings stay reachable without cluttering the main flow.
@@ -232,7 +232,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   blank Steam grid / marquee, else its cover blurred, enlarged and drifting slowly. One dark filter
   (about 60 %) and a deeper bottom keep the cases and the text readable. The background has no setting.
 - Attract: after 7 s without input on the library, once the video plays, the library (cases, bars and
-  hints) fades out and the filter lightens, leaving the video; any input, the mouse or the stick brings
+  hints) fades out and the filter lightens, leaving the video; any input or the stick brings
   it back at once, and that input only wakes it.
 - Library: the selected game's platform, title and states, and the games as physical cases standing on
   the stage below (cover inset under a plastic rim with gloss, spines with the system's color band and the
@@ -241,10 +241,13 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   Rendered in real 3D with Qt Quick 3D (`Shelf3D`, `Case3D`): each case is a box to its console's
   proportions with slightly rounded corners and edges (`CaseMesh.js`): cover on the front, the same spine
   on the left and the right, the back scan behind, the console's plastic colour on the top and the bottom;
-  varnished prints and satin plastic with a fine grain (`grain.png`), a thin ink outline (Borne's touch of
-  cel shading, also the hard ink shadow under buttons, chips, cards and panels: `Ink.qml`), lit by a
-  studio light probe (`studio.hdr`, both from `scripts/gen-case-assets.py`) and a key light casting soft
-  shadows on a floor that fades out. A slot keeps its case while the case stays in view, so moving
+  cel shaded: the faces are printed flat (unlit), a skin just over the box (`toon.frag`, multiplied)
+  gives flat light bands with a hard terminator, a dark side in the console's colour and a paper or
+  plastic grain (`grain.png`), and a second skin (`gloss.frag`, added) a crisp highlight spot and a rim
+  of the console's colour; all inside a bold ink outline (the same ink as the hard shadow under
+  buttons, chips, cards and panels: `Ink.qml`). A key light casts soft shadows on a floor that fades
+  out (the floor alone reflects the studio light probe `studio.hdr`; both assets come from
+  `scripts/gen-case-assets.py`). A slot keeps its case while the case stays in view, so moving
   reloads one print only; a title is drawn only where a game has no scan, never while one loads. Only the 13
   cases around the selection exist. Fallback: the earlier 2D drawing (`BoxShelf`, six flat faces
   through one perspective matrix), used when Qt Quick 3D cannot load; `ShelfView` picks one and forwards the same properties. A letter index; LT / RT jump between letters and show the letter
@@ -275,9 +278,8 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
 - A game opens on its own page before anything is downloaded: details, state, actions (download, play from
   the network, play, delete…), version chips (region, languages, revision), emulator language chips
   (Automatic follows the UI language), summary. Choices are stored per profile.
-- Everything works with the gamepad (focus rings, row/column navigation) and with the mouse (hover and press
-  states, clickable hints, back button, wheel scrolling). The pointer shows when the mouse moves and hides
-  after a few seconds or as soon as a gamepad or the keyboard is used.
+- Everything works with the gamepad or the keyboard (focus rings, row/column navigation). The mouse is
+  not used: the launcher hides the pointer and drops mouse, wheel and touch events.
 - Original synthesized UI sounds; bundled OFL font.
 
 ### 5.5 Media and trailers
@@ -834,6 +836,6 @@ says so in Settings; development builds can set the same variables in the enviro
   Materials: keep case (rim, rounded edges, moulded ridges on bare edges), jewel case (hinge, black
   tray under a clear lid), clamshell, cardboard (matte, crisp folds).
 - The selected box (library and game page) leans with the right stick (core event `stick`, dead
-  zone 0.18, steps of 0.05) or Z Q S D held: the stick sets the angle, within ±38° of turn and ±22°
-  of tilt, so the front always stays in view (never the back); released, the box comes straight
+  zone 0.18, steps of 0.05) or W A S D held: the stick sets the angle, within ±82° of turn and ±40°
+  of tilt, far enough to face the spine (never the back); released, the box comes straight
   back. `POST /api/v1/debug/stick?x=&y=` drives it in tests.
