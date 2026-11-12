@@ -1,22 +1,25 @@
 name: Build identity
 description: >
   Sets BORNE_VERSION, BORNE_BUILD and BORNE_COMMIT, compiled into the core and used by in-app updates:
-  tag vX.Y.Z → version X.Y.Z (stable channel); otherwise <Cargo version>-dev.<run number> (dev channel).
+  tag vX.Y.Z → version X.Y.Z (stable channel); otherwise <Cargo version>-dev.<build> (dev channel).
+  The build number orders updates: the Release workflow's run number + 100, above the builds of the
+  former "build" workflow (last: 76), so installed copies always see newer builds.
 runs:
   using: composite
   steps:
     - shell: bash
       run: |
         base=$(grep -m1 '^version' core/Cargo.toml | cut -d'"' -f2)
+        build=$((GITHUB_RUN_NUMBER + 100))
         if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
           v="${GITHUB_REF_NAME#v}"
           [ "${v%%-*}" = "$base" ] || { echo "::error::tag $GITHUB_REF_NAME does not match core/Cargo.toml ($base)"; exit 1; }
         else
-          v="$base-dev.$GITHUB_RUN_NUMBER"
+          v="$base-dev.$build"
         fi
         {
           echo "BORNE_VERSION=$v"
-          echo "BORNE_BUILD=$GITHUB_RUN_NUMBER"
+          echo "BORNE_BUILD=$build"
           echo "BORNE_COMMIT=${GITHUB_SHA::7}"
         } >> "$GITHUB_ENV"
-        echo "Borne $v (build $GITHUB_RUN_NUMBER, ${GITHUB_SHA::7})"
+        echo "Borne $v (build $build, ${GITHUB_SHA::7})"
