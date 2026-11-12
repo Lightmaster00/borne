@@ -28,8 +28,17 @@ UI="$APP/Contents/Resources/ui"
 mkdir -p "$UI/i18n" "$APP/Contents/Resources/resources"
 cp -R "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fonts" "$HERE/ui/sounds" "$UI/"
 for ts in "$HERE"/ui/i18n/*.ts; do "$QT_PREFIX/bin/lrelease" -silent "$ts" -qm "$UI/i18n/$(basename "${ts%.ts}").qm"; done
-cp -R "$HERE/resources/." "$APP/Contents/Resources/resources/" 2>/dev/null || true
-cp -R "$HERE/examples" "$APP/Contents/Resources/examples" 2>/dev/null || true
+cp -R "$HERE/resources/." "$APP/Contents/Resources/resources/"
+
+# App icon, from resources/borne.png.
+ICONSET="$OUT/Borne.iconset"
+mkdir -p "$ICONSET"
+for s in 16 32 128 256 512; do
+  sips -z $s $s "$HERE/resources/borne.png" --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+  sips -z $((s * 2)) $((s * 2)) "$HERE/resources/borne.png" --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+done
+iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/borne.icns"
+rm -rf "$ICONSET"
 
 # Qt: frameworks, plugins and QML modules used by the views (import scan).
 # Homebrew splits Qt into several packages (qtbase, qtmultimedia…): all their folders are given
@@ -48,6 +57,12 @@ done
 mv "$APP/Contents/MacOS/Borne" "$APP/Contents/MacOS/borne-ui"
 cp "$HERE/core/target/release/borne" "$APP/Contents/MacOS/borne"
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable borne" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string borne.icns" "$APP/Contents/Info.plist" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile borne.icns" "$APP/Contents/Info.plist"
+if [ -n "${BORNE_VERSION:-}" ]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${BORNE_VERSION%%-*}" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BORNE_BUILD:-0}" "$APP/Contents/Info.plist"
+fi
 /usr/libexec/PlistBuddy -c "Add :LSApplicationCategoryType string public.app-category.games" "$APP/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "$APP/Contents/Info.plist" 2>/dev/null || true
 

@@ -1,0 +1,52 @@
+# Checks every change: formatting, lints, unit tests, QML syntax, translations.
+# Runs on pull requests and branches, and is called by the release workflow before building.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - uses: actions/cache@v4
+        with:
+          path: ~/apt-cache
+          key: apt-${{ runner.os }}-${{ hashFiles('scripts/ci/linux-deps.sh') }}
+          restore-keys: apt-${{ runner.os }}-
+      - name: System packages
+        timeout-minutes: 20
+        run: scripts/ci/linux-deps.sh cmake g++ qt6-base-dev qt6-declarative-dev qt6-l10n-tools libudev-dev libxcb-cursor0 libgl-dev libpulse0
+      - name: Rust formatting
+        run: cargo fmt --manifest-path core/Cargo.toml --check
+      - name: Rust lints
+        run: cargo clippy --release --manifest-path core/Cargo.toml -- -D warnings
+      - name: Unit tests
+        run: cargo test --release --manifest-path core/Cargo.toml
+      - uses: ./.github/actions/qt-linux
+      - name: QML syntax
+        run: scripts/check-qml.sh qt-ess/PySide6
+      - name: Translations up to date and complete
+        run: |
+          LD_LIBRARY_PATH="$PWD/qt-ess/PySide6/Qt/lib" scripts/i18n/update.sh "$PWD/qt-ess/PySide6/lupdate"
+          git diff --exit-code -- ui/i18n || { echo "::error::ui/i18n is stale: run scripts/i18n/update.sh and commit"; exit 1; }
+      - name: Scripts
+        run: |
+          python3 -m py_compile scripts/release/*.py scripts/i18n/*.py tests/*.py
+          bash -n scripts/*.sh scripts/ci/*.sh scripts/i18n/*.sh tests/*.sh

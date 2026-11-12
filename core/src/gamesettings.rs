@@ -149,9 +149,16 @@ pub fn yaml_set(path: &Path, values: &[(&str, &str, &str)]) -> Result<(), String
                 lines.len() - 1
             }
         };
-        let end = lines[start + 1..].iter().position(|l| !l.starts_with(' ') && !l.trim().is_empty()).map(|i| start + 1 + i).unwrap_or(lines.len());
+        let end = lines[start + 1..]
+            .iter()
+            .position(|l| !l.starts_with(' ') && !l.trim().is_empty())
+            .map(|i| start + 1 + i)
+            .unwrap_or(lines.len());
         let line = format!("  {key}: {value}");
-        match lines[start + 1..end].iter().position(|l| l.starts_with("  ") && !l.starts_with("   ") && l.trim_start().starts_with(&format!("{key}:"))) {
+        match lines[start + 1..end]
+            .iter()
+            .position(|l| l.starts_with("  ") && !l.starts_with("   ") && l.trim_start().starts_with(&format!("{key}:")))
+        {
             Some(i) => lines[start + 1 + i] = line,
             None => lines.insert(end, line),
         }
@@ -187,7 +194,14 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
                 _ => "0",
             };
             ini(&userdir.join("Config/GFX.ini"), &[("Settings", "InternalResolution", up), ("Settings", "AspectRatio", aspect)])?;
-            ini(&userdir.join("Config/Dolphin.ini"), &[("Interface", "ShowFPS", if fps { "True" } else { "False" }), ("Interface", "ConfirmStop", "False"), ("Display", "Fullscreen", "True")])
+            ini(
+                &userdir.join("Config/Dolphin.ini"),
+                &[
+                    ("Interface", "ShowFPS", if fps { "True" } else { "False" }),
+                    ("Interface", "ConfirmStop", "False"),
+                    ("Display", "Fullscreen", "True"),
+                ],
+            )
         }
         "pcsx2" => {
             let aspect = match s(m, "aspect") {
@@ -198,7 +212,12 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
             };
             ini(
                 &data.join("PCSX2/inis/PCSX2.ini"),
-                &[("EmuCore/GS", "upscale_multiplier", up), ("EmuCore/GS", "AspectRatio", aspect), ("EmuCore/GS", "OsdShowFPS", if fps { "true" } else { "false" }), ("UI", "ConfirmShutdown", "false")],
+                &[
+                    ("EmuCore/GS", "upscale_multiplier", up),
+                    ("EmuCore/GS", "AspectRatio", aspect),
+                    ("EmuCore/GS", "OsdShowFPS", if fps { "true" } else { "false" }),
+                    ("UI", "ConfirmShutdown", "false"),
+                ],
             )
         }
         "duckstation" => {
@@ -210,7 +229,12 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
             };
             ini(
                 &data.join("data/duckstation/settings.ini"),
-                &[("GPU", "ResolutionScale", up), ("Display", "AspectRatio", aspect), ("Display", "ShowFPS", if fps { "true" } else { "false" }), ("Main", "ConfirmPowerOff", "false")],
+                &[
+                    ("GPU", "ResolutionScale", up),
+                    ("Display", "AspectRatio", aspect),
+                    ("Display", "ShowFPS", if fps { "true" } else { "false" }),
+                    ("Main", "ConfirmPowerOff", "false"),
+                ],
             )
         }
         "eden" | "citron" => {
@@ -226,7 +250,11 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
                 "stretch" => "4",
                 _ => "0",
             };
-            let path = if cfg!(target_os = "macos") { data.join("config/qt-config.ini") } else { userdir.join("config").join(program).join("qt-config.ini") };
+            let path = if cfg!(target_os = "macos") {
+                data.join("config/qt-config.ini")
+            } else {
+                userdir.join("config").join(program).join("qt-config.ini")
+            };
             ini(
                 &path,
                 &[
@@ -249,7 +277,12 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
             };
             json_patch(
                 &data.join("Config.json"),
-                &[("res_scale", json!(up.parse::<i64>().unwrap_or(2))), ("aspect_ratio", json!(aspect)), ("start_fullscreen", json!(true)), ("show_confirm_exit", json!(false))],
+                &[
+                    ("res_scale", json!(up.parse::<i64>().unwrap_or(2))),
+                    ("aspect_ratio", json!(aspect)),
+                    ("start_fullscreen", json!(true)),
+                    ("show_confirm_exit", json!(false)),
+                ],
             )
         }
         "rpcs3" => {
@@ -257,7 +290,11 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
             let aspect = if s(m, "aspect") == "4:3" { "4:3" } else { "16:9" };
             yaml_set(
                 &data.join("config.yml"),
-                &[("Video", "Resolution Scale", &scale), ("Video", "Aspect ratio", aspect), ("Video", "Stretch To Display Area", if s(m, "aspect") == "stretch" { "true" } else { "false" })],
+                &[
+                    ("Video", "Resolution Scale", &scale),
+                    ("Video", "Aspect ratio", aspect),
+                    ("Video", "Stretch To Display Area", if s(m, "aspect") == "stretch" { "true" } else { "false" }),
+                ],
             )
         }
         _ => Ok(()),
@@ -295,10 +332,9 @@ pub const EMU_OPTIONS: &[(&str, &str, &[&str], &str)] = &[
 /// Command-line flags for a game's options (Xenia takes its settings on the command line).
 pub fn emu_args(program: &str, m: &Map<String, Value>) -> Vec<String> {
     match program {
-        "xenia" => vec![
-            format!("--license_mask={}", if s(m, "license") == "full" { 1 } else { 0 }),
-            format!("--vsync={}", s(m, "vsync") != "off"),
-        ],
+        "xenia" => {
+            vec![format!("--license_mask={}", if s(m, "license") == "full" { 1 } else { 0 }), format!("--vsync={}", s(m, "vsync") != "off")]
+        }
         _ => vec![],
     }
 }
@@ -371,7 +407,10 @@ pub fn emu_apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Val
                 _ => "1",
             };
             ini(&userdir.join("Config/GFX.ini"), &[("Settings", "wideScreenHack", if on("widescreen") { "True" } else { "False" })])?;
-            ini(&userdir.join("Config/Dolphin.ini"), &[("Core", "OverclockEnable", if oc == "off" { "False" } else { "True" }), ("Core", "Overclock", ratio)])
+            ini(
+                &userdir.join("Config/Dolphin.ini"),
+                &[("Core", "OverclockEnable", if oc == "off" { "False" } else { "True" }), ("Core", "Overclock", ratio)],
+            )
         }
         "pcsx2" => ini(
             &data.join("PCSX2/inis/PCSX2.ini"),
@@ -389,17 +428,29 @@ pub fn emu_apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Val
             ],
         ),
         "eden" | "citron" => {
-            let path = if cfg!(target_os = "macos") { data.join("config/qt-config.ini") } else { userdir.join("config").join(program).join("qt-config.ini") };
-            ini(&path, &[("System", "use_docked_mode\\default", "false"), ("System", "use_docked_mode", if s(m, "docked") == "off" { "false" } else { "true" })])
+            let path = if cfg!(target_os = "macos") {
+                data.join("config/qt-config.ini")
+            } else {
+                userdir.join("config").join(program).join("qt-config.ini")
+            };
+            ini(
+                &path,
+                &[
+                    ("System", "use_docked_mode\\default", "false"),
+                    ("System", "use_docked_mode", if s(m, "docked") == "off" { "false" } else { "true" }),
+                ],
+            )
         }
         "ryubing" => json_patch(&data.join("Config.json"), &[("docked_mode", json!(s(m, "docked") != "off"))]),
-        "rpcs3" => yaml_set(&data.join("config.yml"), &[("Video", "Write Color Buffers", if on("colorbuffers") { "true" } else { "false" })]),
+        "rpcs3" => {
+            yaml_set(&data.join("config.yml"), &[("Video", "Write Color Buffers", if on("colorbuffers") { "true" } else { "false" })])
+        }
         // melonDS 1.x: melonDS.toml in its config folder (per profile on Linux).
         "melonds" => {
-            let file = [data.join("config/melonDS/melonDS.toml"), data.join("melonDS.toml")]
-                .into_iter()
-                .find(|f| f.exists())
-                .unwrap_or_else(|| if cfg!(target_os = "macos") { data.join("melonDS.toml") } else { data.join("config/melonDS/melonDS.toml") });
+            let file =
+                [data.join("config/melonDS/melonDS.toml"), data.join("melonDS.toml")].into_iter().find(|f| f.exists()).unwrap_or_else(
+                    || if cfg!(target_os = "macos") { data.join("melonDS.toml") } else { data.join("config/melonDS/melonDS.toml") },
+                );
             ini(
                 &file,
                 &[
@@ -423,7 +474,8 @@ pub fn emu_apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Val
 /// First start of an emulator: its controller set to the gamepad Borne sees (SDL), so it plays at
 /// once. A mapping already there (changed by the user) is kept.
 pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>, guid: Option<&str>) -> Result<(), String> {
-    let has_section = |p: &Path, sec: &str| std::fs::read_to_string(p).map(|t| t.lines().any(|l| l.trim() == format!("[{sec}]"))).unwrap_or(false);
+    let has_section =
+        |p: &Path, sec: &str| std::fs::read_to_string(p).map(|t| t.lines().any(|l| l.trim() == format!("[{sec}]"))).unwrap_or(false);
     let ini = crate::emulators::ini_set;
     match program {
         "dolphin" => {
@@ -505,19 +557,37 @@ pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>
         // position like the Switch (its A on the right).
         "eden" | "citron" => {
             let (Some(_), Some(guid)) = (pad, guid) else { return Ok(()) };
-            let path = if cfg!(target_os = "macos") { data.join("config/qt-config.ini") } else { userdir.join("config").join(program).join("qt-config.ini") };
+            let path = if cfg!(target_os = "macos") {
+                data.join("config/qt-config.ini")
+            } else {
+                userdir.join("config").join(program).join("qt-config.ini")
+            };
             let text = std::fs::read_to_string(&path).unwrap_or_default();
             // Already on a gamepad (ours, or the user's own mapping): kept.
-            if text.lines().any(|l| l.split('=').next().map(|k| k.trim() == "player_0_button_a").unwrap_or(false) && l.contains("engine:sdl")) {
+            if text
+                .lines()
+                .any(|l| l.split('=').next().map(|k| k.trim() == "player_0_button_a").unwrap_or(false) && l.contains("engine:sdl"))
+            {
                 return Ok(());
             }
             let p = |extra: &str| format!("\"{extra},guid:{guid},port:0,engine:sdl\"");
             let buttons: [(&str, &str); 16] = [
-                ("a", "button:1"), ("b", "button:0"), ("x", "button:3"), ("y", "button:2"),
-                ("lstick", "button:7"), ("rstick", "button:8"), ("l", "button:9"), ("r", "button:10"),
-                ("zl", "axis:4,threshold:0.500000,invert:+"), ("zr", "axis:5,threshold:0.500000,invert:+"),
-                ("plus", "button:6"), ("minus", "button:4"),
-                ("dleft", "button:13"), ("dup", "button:11"), ("dright", "button:14"), ("ddown", "button:12"),
+                ("a", "button:1"),
+                ("b", "button:0"),
+                ("x", "button:3"),
+                ("y", "button:2"),
+                ("lstick", "button:7"),
+                ("rstick", "button:8"),
+                ("l", "button:9"),
+                ("r", "button:10"),
+                ("zl", "axis:4,threshold:0.500000,invert:+"),
+                ("zr", "axis:5,threshold:0.500000,invert:+"),
+                ("plus", "button:6"),
+                ("minus", "button:4"),
+                ("dleft", "button:13"),
+                ("dup", "button:11"),
+                ("dright", "button:14"),
+                ("ddown", "button:12"),
             ];
             let mut pairs: Vec<(String, String)> = buttons.iter().map(|(k, v)| (format!("player_0_button_{k}"), p(v))).collect();
             pairs.push(("player_0_lstick".into(), p("axis_x:0,axis_y:1,deadzone:0.150000,range:1.000000")));
@@ -569,7 +639,8 @@ pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>
                 return Ok(());
             }
             let _ = std::fs::create_dir_all(path.parent().unwrap());
-            let yml = format!("Player 1 Input:\n  Handler: SDL\n  Device: {pad} 1\n  Profile: Default\n  Config: {{}}\n  Buddy Device: \"\"\n");
+            let yml =
+                format!("Player 1 Input:\n  Handler: SDL\n  Device: {pad} 1\n  Profile: Default\n  Config: {{}}\n  Buddy Device: \"\"\n");
             std::fs::write(&path, yml).map_err(|e| e.to_string())
         }
         _ => Ok(()),
@@ -634,7 +705,12 @@ mod tests {
         std::fs::write(&p, "Core:\n  PPU Decoder: Recompiler\nVideo:\n  Renderer: Vulkan\n  Resolution Scale: 100\n  Vulkan:\n    Adapter: \"\"\nAudio:\n  Renderer: Cubeb\n").unwrap();
         yaml_set(&p, &[("Video", "Resolution Scale", "300"), ("Video", "Aspect ratio", "16:9")]).unwrap();
         let t = std::fs::read_to_string(&p).unwrap();
-        assert!(t.contains("  Resolution Scale: 300") && t.contains("  Aspect ratio: 16:9") && t.contains("    Adapter:") && t.contains("Audio:\n  Renderer: Cubeb"));
+        assert!(
+            t.contains("  Resolution Scale: 300")
+                && t.contains("  Aspect ratio: 16:9")
+                && t.contains("    Adapter:")
+                && t.contains("Audio:\n  Renderer: Cubeb")
+        );
         let _ = std::fs::remove_file(p);
     }
 
@@ -643,7 +719,11 @@ mod tests {
         assert_eq!(dotnet_guid("030000005e0400008e02000014010000").as_deref(), Some("00000003-045e-0000-8e02-000014010000"));
         let d = std::env::temp_dir().join(format!("borne-ryu-pad-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
-        std::fs::write(d.join("Config.json"), r#"{"version": 50, "input_config": [{"backend": "WindowKeyboard", "player_index": "Player1"}]}"#).unwrap();
+        std::fs::write(
+            d.join("Config.json"),
+            r#"{"version": 50, "input_config": [{"backend": "WindowKeyboard", "player_index": "Player1"}]}"#,
+        )
+        .unwrap();
         controllers("ryubing", &d, &d, Some("Pad"), Some("030000005e0400008e02000014010000")).unwrap();
         let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(d.join("Config.json")).unwrap()).unwrap();
         assert_eq!(v["input_config"][0]["id"], "0-00000003-045e-0000-8e02-000014010000");

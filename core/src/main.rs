@@ -9,6 +9,8 @@
 //! Options:
 //!   --no-ui           core only (prints the addresses; development and tests)
 //!   --ui <binary>     path to the UI (default: <package>/bin/borne-ui)
+//!   --version         prints the version, build and commit
+//!   --part-hashes <package>   prints the hash of each part of a package (updates; CI checks)
 //! Variables: BORNE_DATA_DIR (data root), BORNE_DEBUG_INPUT=1 (test route).
 
 mod api;
@@ -22,8 +24,8 @@ mod emulators;
 mod events;
 mod gamesettings;
 mod library;
-mod media;
 mod logfile;
+mod media;
 mod pad;
 mod pairing;
 mod paths;
@@ -58,58 +60,48 @@ fn layout() -> Layout {
         .unwrap_or_else(|| PathBuf::from("."));
     if exe_dir.file_name().map(|n| n == "MacOS").unwrap_or(false) {
         let res = exe_dir.parent().unwrap_or(&exe_dir).join("Resources");
-        return Layout {
-            ui_bin: exe_dir.join("borne-ui"),
-            resources: res.join("resources"),
-        };
+        return Layout { ui_bin: exe_dir.join("borne-ui"), resources: res.join("resources") };
     }
-    let root = exe_dir
-        .parent()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| exe_dir.clone());
-    Layout {
-        ui_bin: root.join("bin").join("borne-ui"),
-        resources: root.join("resources"),
-    }
+    let root = exe_dir.parent().map(PathBuf::from).unwrap_or_else(|| exe_dir.clone());
+    Layout { ui_bin: root.join("bin").join("borne-ui"), resources: root.join("resources") }
 }
 
 fn random_token() -> String {
     use rand::Rng;
     let mut rng = rand::rng();
-    (0..32)
-        .map(|_| format!("{:x}", rng.random_range(0..16u8)))
-        .collect()
+    (0..32).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect()
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--version") {
+        println!("Borne {} (build {}, {})", update::VERSION, update::build(), update::COMMIT);
+        return;
+    }
+    if let Some(pkg) = args.iter().position(|a| a == "--part-hashes").and_then(|i| args.get(i + 1)) {
+        match update::tree_hashes(std::path::Path::new(pkg)) {
+            Ok(h) => println!("{}", serde_json::to_string(&h).unwrap_or_default()),
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     let no_ui = args.iter().any(|a| a == "--no-ui");
     let layout = layout();
-    let ui_bin = args
-        .iter()
-        .position(|a| a == "--ui")
-        .and_then(|i| args.get(i + 1))
-        .map(PathBuf::from)
-        .unwrap_or_else(|| layout.ui_bin.clone());
+    let ui_bin =
+        args.iter().position(|a| a == "--ui").and_then(|i| args.get(i + 1)).map(PathBuf::from).unwrap_or_else(|| layout.ui_bin.clone());
 
     let paths = paths::Paths::from_env();
     if let Err(e) = paths.ensure() {
-        crate::logfile::write(
-            "main",
-            &format!("cannot create {}: {e}", paths.root.display()),
-        );
+        crate::logfile::write("main", &format!("cannot create {}: {e}", paths.root.display()));
         std::process::exit(1);
     }
     logfile::init(paths.root.join("logs"));
     logfile::write(
         "start",
-        &format!(
-            "Borne {} (build {}) on {} {}",
-            update::VERSION,
-            update::build(),
-            std::env::consts::OS,
-            std::env::consts::ARCH
-        ),
+        &format!("Borne {} (build {}) on {} {}", update::VERSION, update::build(), std::env::consts::OS, std::env::consts::ARCH),
     );
     let db = db::Db::open(&paths.db()).unwrap_or_else(|e| {
         crate::logfile::write("main", &format!("unreadable local database: {e}"));
@@ -141,10 +133,7 @@ fn main() {
     downloads::verify_local(&app);
     let requeued = app.db.requeue_interrupted();
     if requeued > 0 {
-        app.db.log(
-            "download",
-            &format!("{requeued} interrupted download(s) resumed"),
-        );
+        app.db.log("download", &format!("{requeued} interrupted download(s) resumed"));
     }
     downloads::spawn_worker(app.clone());
     stream::start(&app);
@@ -164,10 +153,7 @@ fn main() {
     // e.g. tests) but never to the log file.
     eprintln!("[borne] API {api_url}");
     eprintln!("[borne] events {ws_url}");
-    logfile::write(
-        "start",
-        &format!("API on port {http_port}, events on port {ws_port}"),
-    );
+    logfile::write("start", &format!("API on port {http_port}, events on port {ws_port}"));
 
     if no_ui {
         loop {
@@ -181,11 +167,7 @@ fn main() {
 
     let mut crashes: Vec<Instant> = vec![];
     loop {
-        let safe_mode = crashes
-            .iter()
-            .filter(|t| t.elapsed() < Duration::from_secs(60))
-            .count()
-            >= 2;
+        let safe_mode = crashes.iter().filter(|t| t.elapsed() < Duration::from_secs(60)).count() >= 2;
         if safe_mode {
             logfile::write("main", "safe mode: default theme");
         }
@@ -208,10 +190,7 @@ fn main() {
                 crashes.push(Instant::now());
             }
             Err(e) => {
-                logfile::write(
-                    "ui",
-                    &format!("cannot launch the UI {}: {e}", ui_bin.display()),
-                );
+                logfile::write("ui", &format!("cannot launch the UI {}: {e}", ui_bin.display()));
                 std::process::exit(1);
             }
         }

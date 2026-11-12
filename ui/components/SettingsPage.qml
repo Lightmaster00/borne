@@ -170,26 +170,6 @@ Item {
         if (ss.asked) return qsTr("%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.").arg(ss.found).arg(ss.asked).arg(Math.max(0, ss.games - ss.asked))
         return qsTr("Fetched after each sync for new games.")
     }
-    // Case scans, cartridges and logos on this device, against the games of the library.
-    function mediaText() {
-        const m = settings && settings.media ? settings.media : null
-        if (!m || !m.platforms.length) return ""
-        let games = 0
-        const have = { front: 0, side: 0, back: 0, physical: 0, logo: 0 }
-        const gaps = []
-        for (const p of m.platforms) {
-            games += p.games
-            for (const k in have) have[k] += p.have[k] || 0
-            const missing = p.games - Math.min(p.games, p.have.side || 0)
-            if (missing > 0) gaps.push(qsTr("%1: %2 without spine").arg(p.name).arg(missing))
-        }
-        if (status && status.sync && status.sync.media_pending > 0) return qsTr("Fetching… %1 image(s) left").arg(status.sync.media_pending)
-        let t = qsTr("Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6")
-                .arg(have.front).arg(have.side).arg(have.back).arg(have.physical).arg(have.logo).arg(games)
-        if (gaps.length) t += "\n" + gaps.slice(0, 4).join(" · ") + (gaps.length > 4 ? " …" : "")
-              + "\n" + qsTr("Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.")
-        return t
-    }
     readonly property var updateButtons: {
         if (!upd) return []
         const st = updState ? updState.state : "idle"

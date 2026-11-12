@@ -1,236 +1,114 @@
 # Borne
 
-A couch-friendly, controller-driven launcher for retro and console games on Linux, connected to
-[RomM](https://github.com/rommapp/romm). Borne brings together the library, downloads, emulators,
-compatibility checks and multi-profile saves.
+A couch-friendly, controller-driven launcher for your [RomM](https://github.com/rommapp/romm) game
+library, on Linux (ChimeraOS, SteamOS or any desktop) and macOS. Pick a game with the gamepad, and
+Borne downloads it (or plays it straight from the network), installs and configures the right
+emulator, keeps each player's saves on RomM, and gets out of the way.
 
-Specification: [`docs/SPEC.md`](docs/SPEC.md).
+[![CI](https://github.com/Lightmaster00/borne/actions/workflows/ci.yml/badge.svg)](https://github.com/Lightmaster00/borne/actions/workflows/ci.yml)
+[![Release](https://github.com/Lightmaster00/borne/actions/workflows/release.yml/badge.svg)](https://github.com/Lightmaster00/borne/actions/workflows/release.yml)
 
-## Status
+## Install
 
-| Stage | Scope | Status |
-|---|---|---|
-| 0 | Prototypes and technical choices (Rust core + Qt/QML UI) | ✅ |
-| **1** | **Foundation + RomM: pairing, catalog, covers, downloads** | ✅ |
-| 2 | Profiles and saves: per-profile isolation, RomM sync, conflicts | planned |
-| 3 | NES / Mega Drive emulators (isolated RetroArch): real launching | planned |
-| 4 | GameCube / PS2 (Dolphin, PCSX2), then Switch (Eden) | planned |
-| 5 | Compatibility, peripherals, polish, packaging | planned |
+Downloads are on the [releases page](https://github.com/Lightmaster00/borne/releases): the latest
+stable release, or the `dev` pre-release rebuilt on every change.
 
-### What stage 1 does
+**Linux** (x86_64)
 
-- **First launch**: the RomM server address is typed with the gamepad on-screen keyboard and checked before it is saved.
-- **Console-style profiles** ("Who's playing?"), each bound to a RomM account. To add one, pick the
-  RomM account in the server's list (shown once an administrator's profile has signed in with its
-  password) and type its password; or type the account's name; or approve a code from the phone.
-  The password is never kept: Borne uses it once to approve its own pairing code.
-- **Keyboard-free pairing**: Borne shows a code and a QR code; you approve it from your phone in RomM,
-  which creates a "Borne device". The token is stored outside the database (`secrets/`, 0600).
-- **Catalog** synced (platforms, games, metadata, cached covers), browsable **offline**. Favourites
-  and Recent tabs per profile; sort by name (the first three letters of the title, then the release
-  date, so a series stands in the order it came out), recently played, recently added or most played, and
-  filter by genre (Select: Sort and filter); the search also matches other regions' titles.
-- **Downloads**: persistent queue, **resume after interruption** (Range requests), **SHA-1** verification
-  (including archive contents), safe zip extraction, atomic install, live progress on the poster,
-  pause and resume, cancellation, a list that clears finished downloads, local deletion that never touches RomM.
-- **UI**: grid and detailed view, systems bar, main menu, game menu, downloads panel, notifications,
-  English and French.
+```bash
+tar xzf Borne-linux-x86_64.tar.gz
+./Borne/install.sh            # installs to ~/.local/opt/Borne, adds a menu entry and ~/.local/bin/borne
+```
 
-Since then:
+On ChimeraOS or SteamOS, add Borne to Steam as a non-Steam game to start it from the gamepad
+interface. `./install.sh --uninstall` removes the program; your games, saves and settings stay in
+`~/.local/share/borne`. Playing from the network needs FUSE (`fusermount3`, present on ChimeraOS
+and SteamOS).
 
-- **Game page**: a game opens on its own page before anything is downloaded. Versions of the same game
-  (regions, languages, revisions) are grouped into one entry; picking a language picks the version,
-  remembered per profile.
-- **Play from the network** (Linux): instead of downloading, a game can be linked into the Borne
-  virtual mount (`~/.local/share/borne/mount`). Only the games you pick appear there; their files
-  are read from RomM on demand with the profile's token, through a bounded cache. No NFS export,
-  no root. Settings → Games chooses what A does by default (download or network).
-- **Settings**: grouped and explained section by section: how games are installed (download or
-  network, with what each brings) and saves, the interface (video behind the library on or off,
-  when it fills the screen and for how long, videos on the game page, interface size, animations,
-  clock, sounds and their volume, gamepad or keyboard buttons shown), the picture in games, emulators,
-  system files, game images, RomM, updates and help.
-- **Gamepad or keyboard only**: the mouse pointer stays hidden and mouse input is ignored.
-- **One look, "Halo"**: the games stand as physical cases in the shape of their console's
-  retail case (small cases drawn larger so they stay readable) (cardboard boxes
-  for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
-  Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
-  stored by RomM: front, spine and back scans, fitted to their console's case (every case of a console has the same size, except editions whose box differs, which keep their own proportions and thickness so no scan is stretched). The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the spine's dominant colour on top and bottom (else the console's), cel shaded (flat light bands, a dark side and a thin edge rim in the console's colour, a paper or plastic grain) under clear plastic that reflects a photo studio like glass, the reflections sliding over the cover as the case turns inside a thin ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, up to 60° to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 5 seconds without input (turning the box counts; adjustable or off in Settings → Interface) the library fades out and leaves the video; after a minute (adjustable) the video pauses and the games come back, until another game is selected. A letter index and LT / RT jump through the alphabet; Y opens a
-  search with results as you type. The screen sits in a frame dressed in the selected console: its blank Steam grid from ScreenScraper, in the console's own colour, which also colours the buttons, the open console tab and the A key. Rounded shapes with a thin ink edge; titles in Fredoka, text in Manrope.
-- **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
-  the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
-  a language chooses the version launched (English → USA, Français → the European version that has
-  French, 日本語 → Japan). Its actions: Play (or Download / Play from the network), the favourite,
-  and *Game settings*, a page laid out like Settings where nothing closes by itself (B goes back one
-  level): the game's own emulator (else its console's) and that emulator's options for this game
-  (rewind, run-ahead, widescreen hacks, CPU overclock, docked mode…), picture, cheats, language,
-  cover and video sound, storage. Below: the summary and the screenshots side by side, then the
-  credits (studios, series, release, players) on one line.
-- **Tabs and console pictures**: the tabs bar shows Installed, Favourites and Recent when they hold
-  games, then one tab per console, named in Borne's display font (Game Boy and Game Boy Color share
-  one tab: the same console to their players); the console's logo and photo from
-  ScreenScraper are kept for later use. Behind the
-  shelf and on the game page, the game's art without any text (ScreenScraper's blank Steam grid
-  and blank screen marquee) is used under the video, before the blurred cover.
-- **Titles and covers in your language**: with ScreenScraper, each game shows the title and the case
-  of the language Borne is displayed in (French → the French case and title, else the European one;
-  Japanese → the Japanese ones; English → the US ones), and the library is sorted on those titles.
-- **Game images**: the case front, spine and back, cartridge or disc, logo and artwork come from
-  ScreenScraper, either through RomM (`scan.media` with `box2d`, `box2d_side`, `box2d_back`,
-  `physical`, `logo`, `fanart`, `video`, then rescan) or directly from Borne once your ScreenScraper
-  account is connected (Settings → Game images, with a per-console report of the games found and
-  not found). On the game page, *Game settings → Change the cover* corrects a wrong match (search
-  ScreenScraper by name) or picks another region's box. Borne talks to nothing but RomM, ScreenScraper and
-  GitHub (for its own updates).
-- **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
-  writes a shareable text report (versions, settings, server version, recent downloads, log; no
-  passwords or tokens) to the data folder and to Downloads.
+**macOS** (Apple Silicon)
 
-- **Playing**: you choose one emulator per console in Settings → Emulators (RetroArch cores such
-  as Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation; Dolphin; PCSX2; DuckStation;
-  melonDS; Eden, Citron Neo, Ryubing for the Switch; RPCS3 for the PS3; shadPS4 for the PS4;
-  Xenia Canary for the Xbox 360, Linux only — no usable Xbox One emulator exists yet); Borne downloads it from its official source (GitHub releases, the libretro buildbot,
-  Dolphin's site, Flathub), installs it in its own folder, configures it and keeps it up to date —
-  you never open the emulator. RetroArch runs with Borne's own configuration: no menu, no
-  messages, no hotkeys, saves and states in the profile's folder. *Play* starts the game (after
-  installing what is missing); Select then Start quits it.
-- **System files**: BIOS, keys and firmware (PS1, PS2, Saturn, Mega-CD, DS, GBA BIOS; Switch
-  prod.keys, title.keys and firmware; PS3 PUP) are taken from RomM's BIOS and firmware for each
-  console (after each sync, or chosen in Settings → System files), or given to Borne there
-  from a file on the computer (the system's file chooser, or a typed path) or from a link (a link
-  to your RomM server is sent with your profile's token). Borne checks them (size, format), keeps
-  them (a BIOS against known dumps: model and region shown), and places them for the chosen
-  emulator before each game (shadPS4 system modules and Ryujinx firmware included); a missing one is reported
-  before launching. Borne never downloads such files by itself.
-- **Display settings in Borne**: picture shape (the game's own, 4:3, 16:9, fill), rendering
-  resolution for 3D consoles (1× to 4×), sharp, smoothed or CRT-TV pixels, whole-number scaling,
-  frame rate on screen — for all games or one console in Settings → Picture in games, and per game on its
-  page (*Game settings → Picture*). Borne writes them into each emulator's own configuration before the game
-  starts (RetroArch, Dolphin, PCSX2, DuckStation, Eden, Citron, Ryubing, RPCS3, Xenia), and sets
-  the controller of the standalone emulators on their first start (Dolphin, PCSX2, DuckStation).
-- **Saves on RomM**: each profile's saves follow it: taken from RomM before a game when newer,
-  sent after it; replaced copies are archived, never deleted; offline, they are sent later
-  (Settings → Games). Covered: RetroArch battery saves and save states (with the core's name,
-  like RomM's own player), a memory card per game for Dolphin, PCSX2 and DuckStation, the Switch
-  save folder of each game (Eden, Citron), the PS3 save folders (RPCS3, by the serial in the
-  game's name), the PS4 save folders (shadPS4, by title id), Ryujinx's and Xenia's save folders. Profiles never share saves, even
-  where an emulator keeps one save folder for the whole computer.
-- **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
-  public databases — the libretro cheat database for the consoles run by RetroArch (matched by
-  the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the
-  DS (matched by the game ID read from the cartridge header: game code and header CRC), and for
-  GameCube and Wii the Action Replay and Gecko codes Dolphin ships (matched by the disc's game ID),
-  for the Switch HamletDuFromage's switch-cheats-db (by title id), and for the PS2 a `.pnach` file
-  you give for the game (no public database exists). Turn them
-  on per profile; they apply the next time the game starts.
-
-## Try it on a Mac (Apple Silicon)
-
-1. On GitHub, open the [Actions](https://github.com/Lightmaster00/borne/actions) tab → latest successful
-   build → *Artifacts* → `borne-macos-arm64`. Unzip until you get `Borne.app`.
-2. The app is not signed with an Apple developer account: on first launch, right-click `Borne.app` →
-   **Open**, or run `xattr -dr com.apple.quarantine Borne.app` in Terminal.
-3. Enter the RomM server address (e.g. `http://192.168.1.20:8080`), create a profile, then approve
-   the pairing from RomM (QR code or the code shown).
-
+Unzip `Borne-macos-arm64.zip` and move `Borne.app` to Applications. The app is not notarized: the
+first time, right-click it → **Open** (or run `xattr -dr com.apple.quarantine /Applications/Borne.app`).
 Data lives in `~/Library/Application Support/borne`.
+
+**First start**: type your RomM server's address (e.g. `http://192.168.1.20:8080`) with the
+on-screen keyboard, create a profile, then approve the pairing from RomM (QR code or the code shown),
+or sign in with the account's password.
 
 ## Updates
 
-Settings → Updates: Borne checks GitHub for a newer build, downloads it, verifies its SHA-256 and
-installs it on "Restart and install" (the previous version is kept next to it as `.borne-previous`).
-Two channels: **Stable** (releases published with a `vX.Y.Z` tag) and **Development** (the `dev`
-pre-release, rebuilt by CI on every change of `main`). Automatic checks run at startup and every
-6 hours; nothing is installed without confirmation. *Check now* looks right away; *Reinstall the latest
-build* offers the channel's latest build even when it is not newer (to repair, or to go back from
-Development to Stable); *Open on GitHub* opens the channel's release. Where Borne cannot install itself
-(a local build, Flatpak, a read-only folder, or macOS running the app from a temporary copy because
-it was not moved to Applications), it still checks and offers the build as a download from GitHub.
+Borne updates itself: Settings → Updates checks GitHub at startup and every 6 hours, and installs
+only when you confirm, never during a game. It downloads **only the parts that changed** — the
+programs, the interface, or the Qt runtime — and checks each against its SHA-256: a usual update
+weighs about 5 MB instead of the whole 70 MB package. The previous version is kept next to the new
+one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` pre-release).
 
-To publish a stable version: `git tag v0.2.0 && git push origin v0.2.0` (CI builds and publishes it).
+## What it does
 
-## Architecture
+- **Profiles** ("Who's playing?"), each bound to a RomM account; pairing without a keyboard (code or
+  QR code approved from the phone). Tokens are kept outside the database, readable only by you.
+- **Your library, offline too**: consoles, favourites and recently played, sorted by name (then
+  release date, so a series stands in order) or by play time, filtered by genre, searched as you
+  type, in titles from every region.
+- **Games as real cases**: 3D boxes in the shape of each console's retail case, rebuilt from the
+  front, spine and back scans of ScreenScraper, cel shaded under clear plastic that reflects like
+  glass; turn them with the right stick (or W A S D) to read the spine. Behind them, a video of the
+  selected game; left alone, the library fades out and leaves the video.
+- **Game page**: the trailer, the game's logo, the languages it really exists in (choosing one
+  chooses the version), Play, favourite, and the game's own settings.
+- **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
+  **play from the network** (Linux): only the games you pick are mounted, read from RomM on demand.
+- **Emulators managed for you**: one per console, chosen in Settings → Emulators — RetroArch cores
+  (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation…), Dolphin, PCSX2, DuckStation, melonDS,
+  Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary (Xbox 360, Linux).
+  Borne downloads each from its official source, configures it and keeps it up to date; you never
+  open it. Select then Start quits a game.
+- **Per-game settings**: another emulator for one game, its options (rewind, run-ahead, widescreen
+  hacks, CPU overclock, Switch docked or handheld…), picture (shape, resolution, sharp, smooth or CRT
+  pixels), cheats, language, cover.
+- **Saves on RomM**, per profile: fetched before a game when newer, sent after it, replaced copies
+  archived — for RetroArch, memory cards per game (Dolphin, PCSX2, DuckStation), Switch, PS3, PS4,
+  Xbox 360 save folders. Profiles never share saves.
+- **Cheats** from public databases (libretro, DeadSkullzJr's DS codes, Dolphin's codes,
+  switch-cheats-db), or a `.pnach` you give for a PS2 game.
+- **System files** (BIOS, keys, firmware) taken from RomM or given by you, checked and placed for
+  each emulator; Borne never downloads them by itself.
+- **Settings in plain words**: installation and saves, the interface (videos, size, animations,
+  clock, sounds, buttons shown), the picture in games, emulators, system files, game images, RomM,
+  updates, help (diagnostics report without any password or token).
+- **English and French**, following the system (`BORNE_LANG=fr|en` forces one).
 
-```
-borne (script)  →  bin/borne        Rust core: local HTTP + WebSocket API, RomM, SQLite database,
-                                    downloads, gamepads; launches and supervises the UI
-                   bin/borne-ui     minimal C++ launcher for the QML UI
-                   ui/              QML UI (no business logic), translations in ui/i18n
-                   lib/ plugins/ qml/   bundled Qt 6.8
-```
-
-The UI talks to the core only through the local API (`core/src/api.rs` documents every route):
-a UI crash interrupts neither downloads nor sync, and the core restarts the UI.
-
-Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets/`, `profiles/`, `logs/`,
-`mount/` and `cache/stream/` for games played from the network). The virtual mount needs FUSE
-(`fusermount3`, present on ChimeraOS and SteamOS).
+Borne talks to nothing but your RomM server, ScreenScraper (game images) and GitHub (its own updates
+and the emulators' releases).
 
 ## Controls
 
 | Gamepad | Keyboard | Action |
 |---|---|---|
-| D-pad / stick | Arrows | Navigate |
-| A | Enter | Open the game page / choose |
+| D-pad / left stick | Arrows | Move |
+| A | Enter | Open / choose |
 | B | Escape | Back |
 | X | X | Play |
 | Y | Y, T, Ctrl+F or / | Search (on the profile screen: profile options) |
-| — | Any letter or digit | Start a search with that letter |
-| D-pad | Arrows | Move through the covers |
-| LT / RT | R / C, Home / End | Previous / next letter |
+| — | Any letter or digit | Start a search with it |
 | LB / RB | Page Up / Page Down, Q / E | Previous / next tab |
-| Right stick | W A S D (held) | Turn the selected game box (up to 60°) to see its spine; it comes back when let go |
-| R3 (right stick click) | Tab | Downloads |
+| LT / RT | R / C, Home / End | Previous / next letter |
+| Right stick | W A S D (held) | Turn the selected case to see its spine |
+| R3 | Tab | Downloads |
 | Start | M or F1 | Settings |
-| Select | F2 | Sort and filter the library (order, genre) |
-| Select then Start | the emulator's own key (usually Esc) | Quit the game being played |
+| Select | F2 | Sort and filter |
+| Select then Start | the emulator's own key (usually Esc) | Quit the game |
 
-The button hints on screen, and the texts that name a button, follow the device in use: gamepad
-buttons, or the keyboard's keys as soon as a key is pressed (back to the gamepad on its next button).
-In text fields, type directly on the keyboard: Enter confirms, Esc cancels, Backspace erases.
-Borne is played with a gamepad or a keyboard only: the mouse pointer is hidden and mouse input is
-ignored.
+The hints on screen show the buttons of the device in use (or the one chosen in Settings →
+Interface). Borne is played with a gamepad or a keyboard only: the mouse is ignored.
 
-## Language
+## Documentation
 
-The UI follows the system language (English and French today). `BORNE_LANG=fr` or `BORNE_LANG=en`
-forces one. English is the source language: wrap new strings in `qsTr("…")`, run
-`scripts/i18n/update.sh`, add the translation to `ui/i18n/fr.json` (and plural forms to
-`ui/i18n/en.json`), run the script again. CI fails if a translation is missing or `ui/i18n` is stale.
-
-## Building
-
-Requirements (Ubuntu 24.04): stable Rust, `cmake g++ qt6-base-dev qt6-declarative-dev qt6-l10n-tools libudev-dev libxcb-cursor0`.
-
-```bash
-# Qt 6.8 to bundle (extracted from the PySide6 wheels)
-pip download --no-deps -d qt-wheels "pyside6-essentials==6.8.3" "pyside6-addons==6.8.3"
-mkdir -p qt-ess qt-add qt
-python3 -m zipfile -e qt-wheels/PySide6_Essentials-*.whl qt-ess
-python3 -m zipfile -e qt-wheels/PySide6_Addons-*.whl qt-add
-cp -a qt-ess/PySide6/Qt/. qt/ && cp -a qt-add/PySide6/Qt/. qt/
-
-cargo test --release --manifest-path core/Cargo.toml                          # core unit tests
-scripts/check-qml.sh qt-ess/PySide6                                            # syntax of every QML view
-LRELEASE=/usr/lib/qt6/bin/lrelease scripts/package.sh "$PWD/qt" "$PWD/out/Borne"   # self-contained package
-./out/Borne/borne
-```
-
-macOS: `scripts/package-macos.sh out-macos` (official Qt ≥ 6.9 via `QT_PREFIX`, or Homebrew Qt).
-
-End-to-end tests against a real RomM: see [`scripts/romm-dev/`](scripts/romm-dev/README.md).
-
-Useful variables: `BORNE_DATA_DIR` (data directory), `BORNE_LANG` (UI language), `BORNE_DEBUG_INPUT=1`
-(gamepad action injection for automated tests), `BORNE_DEBUG_DL_KBPS` (download rate limit for tests).
-
-## Look
-
-Borne has a single look, "Halo", defined in `ui/imports/Borne/Theme/Theme.qml` (colors, type, sizes,
-motion) and drawn by the components in `ui/components/`. User QML themes were removed: a QML theme is
-code, and one well-made look serves better than several half-finished ones. Bundled fonts: Fredoka and Manrope (SIL
-Open Font License, see `ui/fonts/licenses`); UI sounds are synthesized by `scripts/assets/make_sounds.py`.
-After two UI crashes, Borne restarts in safe mode, with trailers and sounds off.
+- [`docs/SPEC.md`](docs/SPEC.md) — functional and technical specification.
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — building, testing, translating, releasing.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — what is left to do and to check.
 
 ## License
 
-GPL-3.0-or-later. Qt is used under the LGPL (dynamic linking, replaceable libraries in `lib/`).
+GPL-3.0-or-later. Qt is used under the LGPL (dynamic linking, replaceable libraries). Fonts:
+Fredoka and Manrope (SIL Open Font License, `ui/fonts/licenses`).

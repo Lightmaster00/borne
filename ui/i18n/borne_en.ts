@@ -914,14 +914,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Version %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Rev. %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Waiting to download</source>
         <translation type="unfinished" />
     </message>
@@ -1464,32 +1456,8 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Open the game page</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Cancel download</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Remove from the network mount</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Download</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Play from the network</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Close</source>
         <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n version(s)</source>
-        <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
     </message>
     <message>
         <source>Settings</source>
@@ -2651,22 +2619,6 @@
     </message>
     <message>
         <source>Fetched after each sync for new games.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1: %2 without spine</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Fetching… %1 image(s) left</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.</source>
         <translation type="unfinished" />
     </message>
     <message>

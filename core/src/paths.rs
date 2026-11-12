@@ -22,11 +22,7 @@ impl Paths {
     pub fn from_env() -> Self {
         let root = std::env::var_os("BORNE_DATA_DIR")
             .map(PathBuf::from)
-            .unwrap_or_else(|| {
-                dirs::data_dir()
-                    .unwrap_or_else(|| PathBuf::from("."))
-                    .join("borne")
-            });
+            .unwrap_or_else(|| dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("borne"));
         Self { root }
     }
 
@@ -125,9 +121,7 @@ pub fn machine_id(paths: &Paths) -> String {
     }
     use rand::Rng;
     let mut rng = rand::rng();
-    let id: String = (0..32)
-        .map(|_| format!("{:x}", rng.random_range(0..16u8)))
-        .collect();
+    let id: String = (0..32).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect();
     let _ = std::fs::write(&file, &id);
     id
 }
@@ -139,10 +133,7 @@ pub fn hostname() -> String {
     let rc = unsafe { libc::gethostname(buf.as_mut_ptr() as *mut libc::c_char, buf.len()) };
     if rc == 0 {
         let end = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());
-        let name = String::from_utf8_lossy(&buf[..end])
-            .trim()
-            .trim_end_matches(".local")
-            .to_string();
+        let name = String::from_utf8_lossy(&buf[..end]).trim().trim_end_matches(".local").to_string();
         if !name.is_empty() {
             return name;
         }

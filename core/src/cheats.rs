@@ -69,10 +69,7 @@ fn state() -> Value {
 }
 
 fn fresh(p: &Path) -> bool {
-    p.metadata()
-        .and_then(|m| m.modified())
-        .map(|t| t.elapsed().map(|e| e.as_secs() < 7 * 86400).unwrap_or(true))
-        .unwrap_or(false)
+    p.metadata().and_then(|m| m.modified()).map(|t| t.elapsed().map(|e| e.as_secs() < 7 * 86400).unwrap_or(true)).unwrap_or(false)
 }
 
 /// Downloads (or refreshes) the databases in the background.
@@ -122,7 +119,9 @@ fn refresh(app: &Shared) {
                     crate::downloads::extract_zip(&file, &out, &std::sync::atomic::AtomicBool::new(false))?;
                 }
                 let _ = std::fs::remove_file(&file);
-                let xml = walk(&out).into_iter().find(|p| p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case("cheats.xml")).unwrap_or(false));
+                let xml = walk(&out)
+                    .into_iter()
+                    .find(|p| p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case("cheats.xml")).unwrap_or(false));
                 let xml = xml.ok_or("no cheats.xml in the DS database")?;
                 std::fs::rename(&xml, dir.join("nds-cheats.xml")).map_err(|e| e.to_string())?;
                 let _ = std::fs::remove_dir_all(&out);
@@ -151,7 +150,8 @@ fn refresh(app: &Shared) {
         for e in &errors {
             app.db.log("cheats", e);
         }
-        *STATE.lock().unwrap() = Some(json!({ "running": false, "error": if errors.is_empty() { Value::Null } else { json!(errors.join("; ")) } }));
+        *STATE.lock().unwrap() =
+            Some(json!({ "running": false, "error": if errors.is_empty() { Value::Null } else { json!(errors.join("; ")) } }));
         app.emit(json!({ "type": "cheats" }));
     });
 }
@@ -216,7 +216,10 @@ pub fn parse_cht(text: &str) -> Vec<Cheat> {
             _ => {}
         }
     }
-    map.into_values().filter(|(_, c)| !c.is_empty()).map(|(n, c)| Cheat { name: if n.is_empty() { "?".into() } else { n }, code: c }).collect()
+    map.into_values()
+        .filter(|(_, c)| !c.is_empty())
+        .map(|(n, c)| Cheat { name: if n.is_empty() { "?".into() } else { n }, code: c })
+        .collect()
 }
 
 // ---------- DS ----------
@@ -276,16 +279,16 @@ pub fn ds_cheats(xml: &str, code: &str, crc: u32) -> Option<Vec<Cheat>> {
                         let words: Vec<&str> = cheat_codes.split_whitespace().collect();
                         let code: Vec<String> = words.chunks(2).filter(|c| c.len() == 2).map(|c| format!("{} {}", c[0], c[1])).collect();
                         if !code.is_empty() {
-                            let name = if folder.is_empty() || parent != "folder" { cheat_name.clone() } else { format!("{folder} — {cheat_name}") };
+                            let name = if folder.is_empty() || parent != "folder" {
+                                cheat_name.clone()
+                            } else {
+                                format!("{folder} — {cheat_name}")
+                            };
                             out.push(Cheat { name, code: code.join("+") });
                         }
                     }
                     ("folder", _) => folder.clear(),
-                    ("game", _) => {
-                        if ids.iter().any(|i| *i == game_id) {
-                            return Some(out);
-                        }
-                    }
+                    ("game", _) if ids.contains(&game_id) => return Some(out),
                     _ => {}
                 }
                 text.clear();
@@ -310,9 +313,14 @@ fn profile(app: &Shared) -> String {
 fn game_cheats(app: &Shared, rom_id: i64) -> Result<(Vec<Cheat>, &'static str), String> {
     let g = app.db.game(rom_id).ok_or("unknown game")?;
     if g.platform_slug == "nds" {
-        let rom = g.local_main.clone().filter(|m| Path::new(m).is_file()).ok_or("download the game first: its exact version is read from the file")?;
+        let rom = g
+            .local_main
+            .clone()
+            .filter(|m| Path::new(m).is_file())
+            .ok_or("download the game first: its exact version is read from the file")?;
         let (code, crc) = ds_id(Path::new(&rom)).ok_or("this file is not a DS game")?;
-        let xml = std::fs::read_to_string(root(app).join("nds-cheats.xml")).map_err(|_| "the DS cheat database is not here yet".to_string())?;
+        let xml =
+            std::fs::read_to_string(root(app).join("nds-cheats.xml")).map_err(|_| "the DS cheat database is not here yet".to_string())?;
         return Ok((ds_cheats(&xml, &code, crc).unwrap_or_default(), "ds"));
     }
     if g.platform_slug == "ps2" {
@@ -335,7 +343,11 @@ fn game_cheats(app: &Shared, rom_id: i64) -> Result<(Vec<Cheat>, &'static str), 
         return Ok((list, "switch-cheats-db"));
     }
     if g.platform_slug == "ngc" || g.platform_slug == "wii" {
-        let rom = g.local_main.clone().filter(|m| Path::new(m).is_file()).ok_or("download the game first: its exact version is read from the file")?;
+        let rom = g
+            .local_main
+            .clone()
+            .filter(|m| Path::new(m).is_file())
+            .ok_or("download the game first: its exact version is read from the file")?;
         let id = disc_id(Path::new(&rom)).ok_or("the game ID could not be read from this file")?;
         let dir = dolphin_codes_dir(app).ok_or("install Dolphin first (Settings → Emulators): its own code list is used")?;
         return Ok((dolphin_cheats(&dir, &id), "dolphin"));
@@ -350,11 +362,8 @@ pub fn list(app: &Shared, rom_id: i64) -> Value {
     if !fresh(&dir.join("libretro.stamp")) || !fresh(&dir.join("nds.stamp")) {
         refresh(app);
     }
-    let on: Vec<String> = app
-        .db
-        .setting(&enabled_key(&profile(app), rom_id))
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default();
+    let on: Vec<String> =
+        app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     match game_cheats(app, rom_id) {
         Ok((list, source)) => json!({
             "ready": ready,
@@ -374,7 +383,8 @@ pub fn set(app: &Shared, rom_id: i64, on: &[String]) -> Value {
 
 /// RetroArch: the enabled cheats as a .cht file and the settings that load it with the game.
 pub fn retroarch_settings(app: &Shared, rom_id: i64, core_name: &str, rom: &Path) -> Vec<(String, String)> {
-    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    let on: Vec<String> =
+        app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     let dir = app.paths.profiles().join(profile(app)).join("cheats");
     let file = dir.join(core_name).join(format!("{}.cht", stem(&rom.to_string_lossy())));
     let _ = std::fs::remove_file(&file);
@@ -386,7 +396,11 @@ pub fn retroarch_settings(app: &Shared, rom_id: i64, core_name: &str, rom: &Path
     }
     let mut text = format!("cheats = {}\n", chosen.len());
     for (i, c) in chosen.iter().enumerate() {
-        text += &format!("cheat{i}_desc = \"{}\"\ncheat{i}_code = \"{}\"\ncheat{i}_enable = true\n", c.name.replace('"', "'"), c.code.replace('"', ""));
+        text += &format!(
+            "cheat{i}_desc = \"{}\"\ncheat{i}_code = \"{}\"\ncheat{i}_enable = true\n",
+            c.name.replace('"', "'"),
+            c.code.replace('"', "")
+        );
     }
     if std::fs::create_dir_all(file.parent().unwrap()).is_ok() && std::fs::write(&file, text).is_ok() {
         out.push(("apply_cheats_after_load".into(), "true".into()));
@@ -398,7 +412,8 @@ pub fn retroarch_settings(app: &Shared, rom_id: i64, core_name: &str, rom: &Path
 /// Standalone melonDS: the chosen DS cheats in "<game>.mch" next to the game file (melonDS's own
 /// cheat file), and cheats turned on in its settings when they exist.
 pub fn melonds_settings(app: &Shared, rom_id: i64, data: &Path, rom: &Path) -> Result<(), String> {
-    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    let on: Vec<String> =
+        app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     let mch = rom.with_extension("mch");
     // melonDS 1.x keeps its settings in melonDS.toml (its config folder, per profile on Linux).
     for file in [data.join("config/melonDS/melonDS.toml"), data.join("melonDS.toml")] {
@@ -494,7 +509,8 @@ pub fn parse_pnach(text: &str) -> Vec<Cheat> {
 /// PCSX2: the chosen cheats in `cheats/<CRC>.pnach` (unnamed, so PCSX2 applies them all) and
 /// cheats turned on; the CRC is read from the game's main program on the disc (ISO only).
 pub fn ps2_settings(app: &Shared, rom_id: i64, data: &Path, rom: &Path, group_key: &str) -> Result<(), String> {
-    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    let on: Vec<String> =
+        app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     let ini = data.join("PCSX2/inis/PCSX2.ini");
     crate::emulators::ini_set(&ini, &[("EmuCore", "EnableCheats", if on.is_empty() { "false" } else { "true" })])?;
     if on.is_empty() {
@@ -566,7 +582,11 @@ fn switch_cheat_files(app: &Shared, tid: &str) -> Vec<(String, String)> {
     let Ok(f) = std::fs::File::open(&zip_path) else { return vec![] };
     let Ok(mut z) = zip::ZipArchive::new(f) else { return vec![] };
     let want = format!("/{}/cheats/", tid.to_lowercase());
-    let names: Vec<String> = z.file_names().filter(|n| format!("/{}", n.to_lowercase()).contains(&want) && n.to_lowercase().ends_with(".txt")).map(String::from).collect();
+    let names: Vec<String> = z
+        .file_names()
+        .filter(|n| format!("/{}", n.to_lowercase()).contains(&want) && n.to_lowercase().ends_with(".txt"))
+        .map(String::from)
+        .collect();
     let mut out = vec![];
     for n in names {
         let Ok(mut e) = z.by_name(&n) else { continue };
@@ -603,7 +623,8 @@ pub fn parse_atmosphere(text: &str) -> Vec<Cheat> {
 /// emulator's mod folder (Borne cannot read the game's build id, so each version gets its file).
 pub fn switch_settings(app: &Shared, rom_id: i64, program: &str, data: &Path, rom: &Path) -> Result<(), String> {
     let Some(tid) = crate::savesync::title_id(rom) else { return Ok(()) };
-    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    let on: Vec<String> =
+        app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     let dir = match program {
         "ryubing" => data.join("mods/contents").join(tid.to_lowercase()).join("Borne").join("cheats"),
         _ => data.join("load").join(&tid).join("Borne").join("cheats"),
@@ -691,8 +712,12 @@ pub fn dolphin_cheats(dir: &Path, id: &str) -> Vec<Cheat> {
 /// Dolphin: the chosen codes enabled in the game's settings of Borne's Dolphin folder, and
 /// cheats turned on (or off when none is chosen).
 pub fn dolphin_settings(app: &Shared, rom_id: i64, userdir: &Path, rom: &Path) -> Result<(), String> {
-    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
-    crate::emulators::ini_set(&userdir.join("Config/Dolphin.ini"), &[("Core", "EnableCheats", if on.is_empty() { "False" } else { "True" })])?;
+    let on: Vec<String> =
+        app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    crate::emulators::ini_set(
+        &userdir.join("Config/Dolphin.ini"),
+        &[("Core", "EnableCheats", if on.is_empty() { "False" } else { "True" })],
+    )?;
     let Some(id) = disc_id(rom) else { return Ok(()) };
     let list = dolphin_codes_dir(app).map(|d| dolphin_cheats(&d, &id)).unwrap_or_default();
     let file = userdir.join("GameSettings").join(format!("{id}.ini"));
@@ -757,11 +782,17 @@ mod tests {
     fn dolphin_codes_and_disc_ids() {
         let d = std::env::temp_dir().join(format!("borne-dolphin-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
-        std::fs::write(d.join("GALE01.ini"), "[OnFrame]\n[ActionReplay]\n$Infinite health\n0000 0000\n[Gecko]\n$Moon jump [someone]\nC2000000 00000000\n").unwrap();
+        std::fs::write(
+            d.join("GALE01.ini"),
+            "[OnFrame]\n[ActionReplay]\n$Infinite health\n0000 0000\n[Gecko]\n$Moon jump [someone]\nC2000000 00000000\n",
+        )
+        .unwrap();
         std::fs::write(d.join("GAL.ini"), "[ActionReplay]\n$Infinite health\n$All trophies\n").unwrap();
         let c = dolphin_cheats(&d, "GALE01");
-        assert_eq!(c.iter().map(|c| (c.name.as_str(), c.code.as_str())).collect::<Vec<_>>(),
-                   vec![("Infinite health", "ActionReplay"), ("Moon jump [someone]", "Gecko"), ("All trophies", "ActionReplay")]);
+        assert_eq!(
+            c.iter().map(|c| (c.name.as_str(), c.code.as_str())).collect::<Vec<_>>(),
+            vec![("Infinite health", "ActionReplay"), ("Moon jump [someone]", "Gecko"), ("All trophies", "ActionReplay")]
+        );
         let mut iso = b"GALE01".to_vec();
         iso.resize(0x100, 0);
         std::fs::write(d.join("g.iso"), &iso).unwrap();

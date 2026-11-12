@@ -133,11 +133,7 @@ fn percent_decode(s: &str) -> String {
 }
 
 fn query(q: &str, key: &str) -> Option<String> {
-    q.split('&').find_map(|kv| {
-        kv.strip_prefix(key)
-            .and_then(|r| r.strip_prefix('='))
-            .map(percent_decode)
-    })
+    q.split('&').find_map(|kv| kv.strip_prefix(key).and_then(|r| r.strip_prefix('=')).map(percent_decode))
 }
 
 fn body_json(req: &mut Request) -> Value {
@@ -147,12 +143,7 @@ fn body_json(req: &mut Request) -> Value {
 }
 
 fn mime(path: &Path) -> &'static str {
-    match path
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_ascii_lowercase())
-        .as_deref()
-    {
+    match path.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()).as_deref() {
         Some("mp4") | Some("m4v") => "video/mp4",
         Some("webm") => "video/webm",
         Some("mkv") => "video/x-matroska",
@@ -175,11 +166,7 @@ fn parse_range(v: &str, size: u64) -> Option<(u64, u64)> {
         (size.saturating_sub(n), size - 1)
     } else {
         let s: u64 = a.parse().ok()?;
-        let e = if b.is_empty() {
-            size - 1
-        } else {
-            b.parse::<u64>().ok()?.min(size - 1)
-        };
+        let e = if b.is_empty() { size - 1 } else { b.parse::<u64>().ok()?.min(size - 1) };
         (s, e)
     };
     (start <= end && start < size).then_some((start, end))
@@ -199,15 +186,8 @@ fn serve_file(req: Request, raw: &str, roots: &[PathBuf]) {
         return;
     };
     let size = file.metadata().map(|m| m.len()).unwrap_or(0);
-    let range = req
-        .headers()
-        .iter()
-        .find(|h| h.field.equiv("Range"))
-        .and_then(|h| parse_range(h.value.as_str(), size));
-    let mut headers = vec![
-        header("Content-Type", mime(&path)),
-        header("Accept-Ranges", "bytes"),
-    ];
+    let range = req.headers().iter().find(|h| h.field.equiv("Range")).and_then(|h| parse_range(h.value.as_str(), size));
+    let mut headers = vec![header("Content-Type", mime(&path)), header("Accept-Ranges", "bytes")];
     match range {
         Some((start, end)) => {
             let len = end - start + 1;
@@ -215,26 +195,11 @@ fn serve_file(req: Request, raw: &str, roots: &[PathBuf]) {
                 let _ = req.respond(Response::empty(StatusCode(416)));
                 return;
             }
-            headers.push(header(
-                "Content-Range",
-                &format!("bytes {start}-{end}/{size}"),
-            ));
-            let _ = req.respond(Response::new(
-                StatusCode(206),
-                headers,
-                file.take(len),
-                Some(len as usize),
-                None,
-            ));
+            headers.push(header("Content-Range", &format!("bytes {start}-{end}/{size}")));
+            let _ = req.respond(Response::new(StatusCode(206), headers, file.take(len), Some(len as usize), None));
         }
         None => {
-            let _ = req.respond(Response::new(
-                StatusCode(200),
-                headers,
-                file,
-                Some(size as usize),
-                None,
-            ));
+            let _ = req.respond(Response::new(StatusCode(200), headers, file, Some(size as usize), None));
         }
     }
 }
@@ -260,8 +225,7 @@ fn settings(app: &Shared) -> Value {
 /// Installing or linking a version makes it the one the active profile sees for that game.
 fn choose_version(app: &Shared, rom_id: i64) {
     if let (Some(p), Some(g)) = (app.active_profile(), app.db.game(rom_id)) {
-        app.db
-            .set_game_pref(&p.id, &g.group_key, Some(Some(rom_id)), None);
+        app.db.set_game_pref(&p.id, &g.group_key, Some(Some(rom_id)), None);
     }
 }
 
@@ -272,26 +236,16 @@ fn screenshot(app: &Shared, rom_id: i64, n: usize) -> Result<PathBuf, String> {
     if path.is_file() {
         return Ok(path);
     }
-    let extra: Value = app
-        .db
-        .game_extra(rom_id)
-        .and_then(|e| serde_json::from_str(&e).ok())
-        .ok_or("no screenshots")?;
-    let remote = extra["screenshots"][n]
-        .as_str()
-        .ok_or("no such screenshot")?;
+    let extra: Value = app.db.game_extra(rom_id).and_then(|e| serde_json::from_str(&e).ok()).ok_or("no screenshots")?;
+    let remote = extra["screenshots"][n].as_str().ok_or("no such screenshot")?;
     let client = app.client().ok_or("offline")?;
-    let bytes = client
-        .fetch_bytes(remote, 20 * 1024 * 1024)
-        .map_err(|e| e.to_string())?;
+    let bytes = client.fetch_bytes(remote, 20 * 1024 * 1024).map_err(|e| e.to_string())?;
     if !catalog::looks_like_image(&bytes) {
         return Err("not an image".into());
     }
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let tmp = path.with_extension("tmp");
-    std::fs::write(&tmp, &bytes)
-        .and_then(|_| std::fs::rename(&tmp, &path))
-        .map_err(|e| e.to_string())?;
+    std::fs::write(&tmp, &bytes).and_then(|_| std::fs::rename(&tmp, &path)).map_err(|e| e.to_string())?;
     Ok(path)
 }
 
@@ -348,7 +302,12 @@ fn art(app: &Shared, rom_id: i64, kind: &str) -> Result<PathBuf, String> {
     // ScreenScraper's art without text, kept only in the media table.
     if kind == "steamgrid" || kind == "marquee" {
         let g = app.db.game(rom_id).ok_or("unknown game")?;
-        return app.db.media(&g.group_key, kind).filter(|m| std::path::Path::new(&m.path).is_file()).map(|m| PathBuf::from(m.path)).ok_or_else(|| "not fetched".into());
+        return app
+            .db
+            .media(&g.group_key, kind)
+            .filter(|m| std::path::Path::new(&m.path).is_file())
+            .map(|m| PathBuf::from(m.path))
+            .ok_or_else(|| "not fetched".into());
     }
     if kind == "fanart" || kind == "backdrop" {
         if let Some(m) = app.db.game(rom_id).and_then(|g| app.db.media(&g.group_key, "fanart")) {
@@ -375,17 +334,13 @@ fn art(app: &Shared, rom_id: i64, kind: &str) -> Result<PathBuf, String> {
     }
     .ok_or("not in RomM")?;
     let client = app.client().ok_or("offline")?;
-    let bytes = client
-        .fetch_bytes(&remote, 25 * 1024 * 1024)
-        .map_err(|e| e.to_string())?;
+    let bytes = client.fetch_bytes(&remote, 25 * 1024 * 1024).map_err(|e| e.to_string())?;
     if !catalog::looks_like_image(&bytes) {
         return Err("not an image".into());
     }
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let tmp = path.with_extension("tmp");
-    std::fs::write(&tmp, &bytes)
-        .and_then(|_| std::fs::rename(&tmp, &path))
-        .map_err(|e| e.to_string())?;
+    std::fs::write(&tmp, &bytes).and_then(|_| std::fs::rename(&tmp, &path)).map_err(|e| e.to_string())?;
     Ok(path)
 }
 
@@ -415,13 +370,11 @@ fn trailer(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
     let client = app.client().ok_or("offline")?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let tmp = dir.join(format!("{rom_id}.part"));
-    client
-        .fetch_to_file(&remote, &tmp, 300 * 1024 * 1024)
-        .map_err(|e| {
-            let _ = std::fs::remove_file(&tmp);
-            app.db.log("trailer", &format!("game {rom_id}: {e}"));
-            e.to_string()
-        })?;
+    client.fetch_to_file(&remote, &tmp, 300 * 1024 * 1024).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp);
+        app.db.log("trailer", &format!("game {rom_id}: {e}"));
+        e.to_string()
+    })?;
     std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
     prune_videos(&dir, 2 * 1024 * 1024 * 1024);
     Ok(path)
@@ -466,9 +419,7 @@ fn prune_videos(dir: &std::path::Path, max: u64) {
 fn new_profile_id() -> String {
     use rand::Rng;
     let mut rng = rand::rng();
-    (0..12)
-        .map(|_| format!("{:x}", rng.random_range(0..16u8)))
-        .collect()
+    (0..12).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect()
 }
 
 fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
@@ -485,10 +436,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
 
     match (&method, parts.as_slice()) {
         // ---------- system ----------
-        (Method::Get, ["api", "v1", "hello"]) => ok(
-            req,
-            json!({ "api": API_VERSION, "core": update::VERSION, "build": update::build() }),
-        ),
+        (Method::Get, ["api", "v1", "hello"]) => ok(req, json!({ "api": API_VERSION, "core": update::VERSION, "build": update::build() })),
         (Method::Get, ["api", "v1", "status"]) => ok(req, app.status()),
         (Method::Get, ["api", "v1", "diagnostics"]) => ok(req, json!(diag::diagnostics())),
         (Method::Get, ["api", "v1", "pads"]) => {
@@ -510,10 +458,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                             app.db.set_unpaired(&p.id);
                         }
                         app.db.set_setting("romm_url", &url);
-                        app.db.log(
-                            "server",
-                            &format!("RomM server set: {url} (version {version})"),
-                        );
+                        app.db.log("server", &format!("RomM server set: {url} (version {version})"));
                     }
                     app.set_online(true);
                     ok(req, json!({ "url": url, "version": version }))
@@ -589,7 +534,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 return err(req, 400, "user name and password needed");
             }
             // The profile: the one given, else the one already bound to this account, else a new one.
-            let existing = body["profile_id"].as_str().and_then(|id| app.db.profile(id))
+            let existing = body["profile_id"]
+                .as_str()
+                .and_then(|id| app.db.profile(id))
                 .or_else(|| app.db.profiles().into_iter().find(|p| p.romm_user.as_deref() == Some(username.as_str())));
             let (id, created) = match existing {
                 Some(p) => (p.id, false),
@@ -623,12 +570,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             ok(req, json!({ "cancelled": true }))
         }
         (Method::Get, ["api", "v1", "pairing", "qr.svg"]) => {
-            let url = app
-                .pairing
-                .lock()
-                .unwrap()
-                .as_ref()
-                .map(|p| p.verification_url.clone());
+            let url = app.pairing.lock().unwrap().as_ref().map(|p| p.verification_url.clone());
             match url.and_then(|u| pairing::qr_svg(&u)) {
                 Some(svg) => {
                     let r = Response::from_string(svg)
@@ -676,7 +618,13 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 .map(|p| {
                     let mut v = json!(p);
                     v["case_ar"] = json!(ratios.get(&p.slug));
-                    let kinds: Vec<String> = app.db.media_of(&format!("system:{}", p.slug)).into_iter().filter(|m| std::path::Path::new(&m.path).is_file()).map(|m| m.kind).collect();
+                    let kinds: Vec<String> = app
+                        .db
+                        .media_of(&format!("system:{}", p.slug))
+                        .into_iter()
+                        .filter(|m| std::path::Path::new(&m.path).is_file())
+                        .map(|m| m.kind)
+                        .collect();
                     v["art_kinds"] = json!(kinds);
                     v
                 })
@@ -709,10 +657,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Some(parts) => parts.iter().flat_map(|p| app.db.games(Some(p), search.as_deref(), local)).collect(),
                 None => app.db.games(platform.as_deref(), search.as_deref(), local),
             };
-            let prefs = app
-                .active_profile()
-                .map(|p| app.db.game_prefs(&p.id))
-                .unwrap_or_default();
+            let prefs = app.active_profile().map(|p| app.db.game_prefs(&p.id)).unwrap_or_default();
             crate::screenscraper::set_ui_lang(app, &lang);
             let mut list = library::groups(rows, &prefs, &lang);
             // Titles in the interface language (ScreenScraper), the list ordered on them: by their
@@ -783,64 +728,55 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 _ => err(req, 404, "unknown game or no profile"),
             }
         }
-        (Method::Get, ["api", "v1", "games", id]) => {
-            match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
-                Some(g) => {
-                    let versions = app.db.group(&g.group_key);
-                    let prefs = app
-                        .active_profile()
-                        .and_then(|p| app.db.game_prefs(&p.id).remove(&g.group_key))
-                        .unwrap_or((None, None));
-                    let mut game = library::version_json(&g);
-                    game["favourite"] = json!(app.active_profile().map(|p| app.db.play_stats(&p.id).get(&g.group_key).map(|s| s.2).unwrap_or(false)).unwrap_or(false));
-                    let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
-                    if let Some(t) = crate::screenscraper::title(app, &g.group_key, &lang) {
-                        game["name"] = json!(t);
-                    }
-                    let all = if versions.is_empty() { vec![g.clone()] } else { versions.clone() };
-                    library::fill_media(&mut game, &versions);
-                    let ids: Vec<i64> = std::iter::once(g.rom_id).chain(versions.iter().map(|v| v.rom_id)).collect();
-                    let m = crate::media::summary(app, &g.group_key);
-                    let mut kinds = m["kinds"].as_array().cloned().unwrap_or_default();
-                    kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
-                    game["art_kinds"] = json!(kinds);
-                    game["media_sizes"] = m["sizes"].clone();
-                    game["spine_color"] = m["spine_color"].clone();
-                    if let Some(r) = game["cover_local"].as_str().and_then(cover_ratio) {
-                        game["cover_ar"] = json!(r);
-                    }
-                    ok(
-                        req,
-                        json!({
-                            "game": game,
-                            "chosen_version": prefs.0,
-                            "versions": if versions.is_empty() { vec![g] } else { versions }
-                                .iter()
-                                .map(library::version_json)
-                                .collect::<Vec<_>>(),
-                            "emu_language": prefs.1.unwrap_or_else(|| "auto".into()),
-                            "emu_languages": library::EMU_LANGUAGES,
-                            "languages": library::game_languages(&all),
-                            "install_mode": install_mode(app),
-                            "stream": stream::status(app),
-                        }),
-                    )
+        (Method::Get, ["api", "v1", "games", id]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => {
+                let versions = app.db.group(&g.group_key);
+                let prefs = app.active_profile().and_then(|p| app.db.game_prefs(&p.id).remove(&g.group_key)).unwrap_or((None, None));
+                let mut game = library::version_json(&g);
+                game["favourite"] = json!(app
+                    .active_profile()
+                    .map(|p| app.db.play_stats(&p.id).get(&g.group_key).map(|s| s.2).unwrap_or(false))
+                    .unwrap_or(false));
+                let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
+                if let Some(t) = crate::screenscraper::title(app, &g.group_key, &lang) {
+                    game["name"] = json!(t);
                 }
-                None => err(req, 404, "unknown game"),
+                let all = if versions.is_empty() { vec![g.clone()] } else { versions.clone() };
+                library::fill_media(&mut game, &versions);
+                let ids: Vec<i64> = std::iter::once(g.rom_id).chain(versions.iter().map(|v| v.rom_id)).collect();
+                let m = crate::media::summary(app, &g.group_key);
+                let mut kinds = m["kinds"].as_array().cloned().unwrap_or_default();
+                kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
+                game["art_kinds"] = json!(kinds);
+                game["media_sizes"] = m["sizes"].clone();
+                game["spine_color"] = m["spine_color"].clone();
+                if let Some(r) = game["cover_local"].as_str().and_then(cover_ratio) {
+                    game["cover_ar"] = json!(r);
+                }
+                ok(
+                    req,
+                    json!({
+                        "game": game,
+                        "chosen_version": prefs.0,
+                        "versions": if versions.is_empty() { vec![g] } else { versions }
+                            .iter()
+                            .map(library::version_json)
+                            .collect::<Vec<_>>(),
+                        "emu_language": prefs.1.unwrap_or_else(|| "auto".into()),
+                        "emu_languages": library::EMU_LANGUAGES,
+                        "languages": library::game_languages(&all),
+                        "install_mode": install_mode(app),
+                        "stream": stream::status(app),
+                    }),
+                )
             }
-        }
+            None => err(req, 404, "unknown game"),
+        },
         (Method::Get, ["api", "v1", "games", id, "facts"]) => {
             match id.parse::<i64>().ok().filter(|i| app.db.game(*i).is_some()) {
                 Some(rom_id) => {
-                    let extra: Value = app
-                        .db
-                        .game_extra(rom_id)
-                        .and_then(|e| serde_json::from_str(&e).ok())
-                        .unwrap_or(Value::Null);
-                    let shots = extra["screenshots"]
-                        .as_array()
-                        .map(|a| a.len())
-                        .unwrap_or(0);
+                    let extra: Value = app.db.game_extra(rom_id).and_then(|e| serde_json::from_str(&e).ok()).unwrap_or(Value::Null);
+                    let shots = extra["screenshots"].as_array().map(|a| a.len()).unwrap_or(0);
                     ok(
                         req,
                         json!({
@@ -876,7 +812,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Post, ["api", "v1", "games", id, "cheats"]) => match id.parse::<i64>() {
             Ok(rom_id) => {
                 let b = body_json(&mut req);
-                let on: Vec<String> = b["on"].as_array().into_iter().flatten().filter_map(|v| v.as_str().map(String::from)).take(500).collect();
+                let on: Vec<String> =
+                    b["on"].as_array().into_iter().flatten().filter_map(|v| v.as_str().map(String::from)).take(500).collect();
                 ok(req, crate::cheats::set(app, rom_id, &on))
             }
             Err(_) => err(req, 400, "invalid identifier"),
@@ -901,7 +838,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             } else if let Some(p) = b["path"].as_str() {
                 crate::systemfiles::add_path(app, console, item, p)
             } else if b["pick"].as_bool().unwrap_or(false) {
-                crate::systemfiles::pick_file(b["title"].as_str().unwrap_or("Borne")).and_then(|p| crate::systemfiles::add_path(app, console, item, &p))
+                crate::systemfiles::pick_file(b["title"].as_str().unwrap_or("Borne"))
+                    .and_then(|p| crate::systemfiles::add_path(app, console, item, &p))
             } else {
                 Err("a path, a link or pick expected".into())
             };
@@ -943,7 +881,12 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Post, ["api", "v1", "games", id, "display"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
             Some(g) => {
                 let b = body_json(&mut req);
-                match crate::gamesettings::set(app, crate::gamesettings::Scope::Game(&g.group_key), b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                match crate::gamesettings::set(
+                    app,
+                    crate::gamesettings::Scope::Game(&g.group_key),
+                    b["key"].as_str().unwrap_or(""),
+                    b["value"].as_str().unwrap_or(""),
+                ) {
                     Ok(()) => ok(req, crate::gamesettings::view(app, crate::gamesettings::Scope::Game(&g.group_key), &g.platform_slug)),
                     Err(e) => err(req, 400, &e),
                 }
@@ -968,7 +911,13 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 let Some(e) = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key) else {
                     return err(req, 409, "no emulator for this console");
                 };
-                match crate::gamesettings::emu_set(app, &e.program, &g.group_key, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                match crate::gamesettings::emu_set(
+                    app,
+                    &e.program,
+                    &g.group_key,
+                    b["key"].as_str().unwrap_or(""),
+                    b["value"].as_str().unwrap_or(""),
+                ) {
                     Ok(()) => {
                         let mut v = crate::gamesettings::emu_view(app, &e.program, &g.group_key);
                         v["engine"] = json!(e.name);
@@ -1094,21 +1043,20 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 _ => err(req, 400, "invalid identifier"),
             }
         }
-        (Method::Get, ["api", "v1", "games", id, "screenshots", n]) => {
-            match (id.parse::<i64>(), n.parse::<usize>()) {
-                (Ok(rom_id), Ok(n)) if n < 8 => match screenshot(app, rom_id, n) {
-                    Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
-                    Err(e) => err(req, 404, &e),
-                },
-                _ => err(req, 400, "invalid identifier"),
-            }
-        }
+        (Method::Get, ["api", "v1", "games", id, "screenshots", n]) => match (id.parse::<i64>(), n.parse::<usize>()) {
+            (Ok(rom_id), Ok(n)) if n < 8 => match screenshot(app, rom_id, n) {
+                Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+                Err(e) => err(req, 404, &e),
+            },
+            _ => err(req, 400, "invalid identifier"),
+        },
         // The emulator of one game: its own choice (null: its console's), and the choices.
         (Method::Get, ["api", "v1", "games", id, "emulator"]) => {
             let Some(g) = id.parse::<i64>().ok().and_then(|i| app.db.game(i)) else {
                 return err(req, 404, "unknown game");
             };
-            let choices: Vec<Value> = crate::emulators::engines(&g.platform_slug).iter().map(|e| json!({ "id": e.id, "name": e.name })).collect();
+            let choices: Vec<Value> =
+                crate::emulators::engines(&g.platform_slug).iter().map(|e| json!({ "id": e.id, "name": e.name })).collect();
             let own = app.db.setting(&format!("emu_for_game.{}", g.group_key)).filter(|o| choices.iter().any(|c| c["id"] == *o));
             let console = crate::emulators::chosen(app, &g.platform_slug).map(|e| e.id);
             ok(req, json!({ "choices": choices, "own": own, "console": console }))
@@ -1125,26 +1073,16 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Post, ["api", "v1", "games", id, "prefs"]) => {
             let body = body_json(&mut req);
-            let (Some(g), Some(p)) = (
-                id.parse::<i64>().ok().and_then(|i| app.db.game(i)),
-                app.active_profile(),
-            ) else {
+            let (Some(g), Some(p)) = (id.parse::<i64>().ok().and_then(|i| app.db.game(i)), app.active_profile()) else {
                 return err(req, 404, "unknown game or no active profile");
             };
             let version = body.get("version").map(|v| v.as_i64());
             if let Some(Some(v)) = version {
-                if app
-                    .db
-                    .game(v)
-                    .map(|x| x.group_key != g.group_key)
-                    .unwrap_or(true)
-                {
+                if app.db.game(v).map(|x| x.group_key != g.group_key).unwrap_or(true) {
                     return err(req, 400, "this version belongs to another game");
                 }
             }
-            let lang = body
-                .get("emu_language")
-                .map(|v| v.as_str().filter(|l| *l != "auto"));
+            let lang = body.get("emu_language").map(|v| v.as_str().filter(|l| *l != "auto"));
             if let Some(Some(l)) = lang {
                 if !library::EMU_LANGUAGES.contains(&l) {
                     return err(req, 400, "unknown language");
@@ -1192,11 +1130,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     return err(req, 400, "install_mode: download or stream");
                 }
                 if m == "stream" && !stream::available() {
-                    return err(
-                        req,
-                        409,
-                        "the virtual mount is not available on this system",
-                    );
+                    return err(req, 409, "the virtual mount is not available on this system");
                 }
                 app.db.set_setting("install_mode", m);
             }
@@ -1244,7 +1178,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             ok(req, json!({ "cleared": n, "downloads": app.db.downloads() }))
         }
         (Method::Post, ["api", "v1", "downloads", id, action @ ("pause" | "resume")]) => match id.parse::<i64>() {
-            Ok(dl) if (if *action == "pause" { downloads::pause(app, dl) } else { downloads::resume(app, dl) }) => ok(req, json!({ "id": dl, "action": action })),
+            Ok(dl) if (if *action == "pause" { downloads::pause(app, dl) } else { downloads::resume(app, dl) }) => {
+                ok(req, json!({ "id": dl, "action": action }))
+            }
             _ => err(req, 409, "this download cannot do that now"),
         },
         (Method::Delete, ["api", "v1", "downloads", id]) => match id.parse::<i64>() {
@@ -1259,14 +1195,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         },
         (Method::Post, ["api", "v1", "report"]) => {
             let mut body = String::new();
-            let _ = req
-                .as_reader()
-                .take(4 * 1024 * 1024)
-                .read_to_string(&mut body);
-            let path = app
-                .paths
-                .reports()
-                .join(format!("bench-{}.json", crate::db::now()));
+            let _ = req.as_reader().take(4 * 1024 * 1024).read_to_string(&mut body);
+            let path = app.paths.reports().join(format!("bench-{}.json", crate::db::now()));
             match std::fs::write(&path, body) {
                 Ok(()) => ok(req, json!({ "path": path })),
                 Err(e) => err(req, 500, &e.to_string()),
@@ -1278,10 +1208,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             ok(req, json!({ "ok": true }))
         }
         (Method::Post, ["api", "v1", "debug", "pad"]) if app.debug_input => {
-            const OK: [&str; 15] = [
-                "up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "lb", "rb",
-                "lt", "rt", "r3",
-            ];
+            const OK: [&str; 15] = ["up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "lb", "rb", "lt", "rt", "r3"];
             match query(&q, "action") {
                 Some(a) if OK.contains(&a.as_str()) => {
                     app.emit(json!({ "type": "pad", "action": a, "pad": "test", "repeat": false }));
@@ -1305,25 +1232,17 @@ pub fn start(app: Shared, token: String) -> std::io::Result<u16> {
     let server = Server::http("127.0.0.1:0").map_err(|e| std::io::Error::other(e.to_string()))?;
     let port = server.server_addr().to_ip().map(|a| a.port()).unwrap_or(0);
     // Only covers and bundled resources are served: nothing else from the disk.
-    let roots: Vec<PathBuf> = [
-        app.paths.covers(),
-        app.paths.screenshots(),
-        app.paths.videos(),
-        app.paths.art(),
-        app.resources.clone(),
-    ]
-    .into_iter()
-    .filter_map(|r| r.canonicalize().ok())
-    .collect();
+    let roots: Vec<PathBuf> = [app.paths.covers(), app.paths.screenshots(), app.paths.videos(), app.paths.art(), app.resources.clone()]
+        .into_iter()
+        .filter_map(|r| r.canonicalize().ok())
+        .collect();
     let server = std::sync::Arc::new(server);
-    std::thread::Builder::new()
-        .name("borne-http".into())
-        .spawn(move || {
-            for req in server.incoming_requests() {
-                let (app, token, roots) = (app.clone(), token.clone(), roots.clone());
-                std::thread::spawn(move || handle(req, &app, &token, &roots));
-            }
-        })?;
+    std::thread::Builder::new().name("borne-http".into()).spawn(move || {
+        for req in server.incoming_requests() {
+            let (app, token, roots) = (app.clone(), token.clone(), roots.clone());
+            std::thread::spawn(move || handle(req, &app, &token, &roots));
+        }
+    })?;
     Ok(port)
 }
 

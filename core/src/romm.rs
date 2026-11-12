@@ -108,10 +108,7 @@ pub struct ArchiveMember {
 
 impl RomFile {
     pub fn is_archive(&self) -> bool {
-        self.archive_members
-            .as_ref()
-            .map(|m| !m.is_empty())
-            .unwrap_or(false)
+        self.archive_members.as_ref().map(|m| !m.is_empty()).unwrap_or(false)
     }
 }
 
@@ -127,15 +124,7 @@ pub struct RomDetail {
 impl RomDetail {
     /// Files to install: the game and its related content, not manuals or soundtracks.
     pub fn installable_files(&self) -> Vec<&RomFile> {
-        self.files
-            .iter()
-            .filter(|f| {
-                matches!(
-                    f.category.as_deref(),
-                    None | Some("game") | Some("dlc") | Some("update")
-                )
-            })
-            .collect()
+        self.files.iter().filter(|f| matches!(f.category.as_deref(), None | Some("game") | Some("dlc") | Some("update"))).collect()
     }
 }
 
@@ -145,13 +134,7 @@ fn status_error(code: u16, body: &str) -> RommError {
     }
     let detail = serde_json::from_str::<Value>(body)
         .ok()
-        .and_then(|v| {
-            v.get("detail").map(|d| {
-                d.as_str()
-                    .map(String::from)
-                    .unwrap_or_else(|| d.to_string())
-            })
-        })
+        .and_then(|v| v.get("detail").map(|d| d.as_str().map(String::from).unwrap_or_else(|| d.to_string())))
         .unwrap_or_else(|| body.chars().take(200).collect());
     RommError::Http(code, detail)
 }
@@ -159,10 +142,7 @@ fn status_error(code: u16, body: &str) -> RommError {
 fn map_transport(e: ureq::Error) -> RommError {
     let text = e.to_string();
     let lower = text.to_ascii_lowercase();
-    if lower.contains("certificate")
-        || lower.contains("unknownissuer")
-        || lower.contains("invalidcertificate")
-    {
+    if lower.contains("certificate") || lower.contains("unknownissuer") || lower.contains("invalidcertificate") {
         return RommError::Offline(format!(
             "the server's HTTPS certificate is not trusted by this system; install its certificate authority or use http ({text})"
         ));
@@ -180,9 +160,7 @@ pub fn normalize_url(input: &str) -> std::result::Result<String, String> {
         return Err("empty address".into());
     }
     let (scheme, rest) = match s.split_once("://") {
-        Some((sc, r)) if sc.eq_ignore_ascii_case("http") || sc.eq_ignore_ascii_case("https") => {
-            (sc.to_ascii_lowercase(), r)
-        }
+        Some((sc, r)) if sc.eq_ignore_ascii_case("http") || sc.eq_ignore_ascii_case("https") => (sc.to_ascii_lowercase(), r),
         Some(_) => return Err("only http:// and https:// are accepted".into()),
         None => ("http".to_string(), s),
     };
@@ -197,9 +175,7 @@ pub fn normalize_url(input: &str) -> std::result::Result<String, String> {
 /// HTTPS trust: the system's certificate store, so a RomM server signed by a home CA installed
 /// on the machine (or a corporate proxy's) is accepted like in the browser.
 pub fn tls() -> ureq::tls::TlsConfig {
-    ureq::tls::TlsConfig::builder()
-        .root_certs(ureq::tls::RootCerts::PlatformVerifier)
-        .build()
+    ureq::tls::TlsConfig::builder().root_certs(ureq::tls::RootCerts::PlatformVerifier).build()
 }
 
 impl Client {
@@ -229,13 +205,7 @@ impl Client {
             .tls_config(tls())
             .build()
             .into();
-        Self {
-            base: base.trim_end_matches('/').to_string(),
-            token,
-            api,
-            list,
-            dl,
-        }
+        Self { base: base.trim_end_matches('/').to_string(), token, api, list, dl }
     }
 
     fn auth(&self) -> Option<String> {
@@ -253,12 +223,7 @@ impl Client {
         }
         let mut resp = req.call().map_err(map_transport)?;
         let code = resp.status().as_u16();
-        let body = resp
-            .body_mut()
-            .with_config()
-            .limit(200 * 1024 * 1024)
-            .read_to_string()
-            .map_err(|e| RommError::Parse(e.to_string()))?;
+        let body = resp.body_mut().with_config().limit(200 * 1024 * 1024).read_to_string().map_err(|e| RommError::Parse(e.to_string()))?;
         if !(200..300).contains(&code) {
             return Err(status_error(code, &body));
         }
@@ -302,10 +267,7 @@ impl Client {
         });
         let (code, v) = self.post_json("/api/auth/device/init", &body)?;
         if code == 404 {
-            return Err(RommError::Http(
-                404,
-                "this RomM version does not support device pairing".into(),
-            ));
+            return Err(RommError::Http(404, "this RomM version does not support device pairing".into()));
         }
         if !(200..300).contains(&code) {
             return Err(status_error(code, &v.to_string()));
@@ -314,10 +276,7 @@ impl Client {
     }
 
     pub fn device_poll(&self, device_code: &str) -> Result<TokenPoll> {
-        let (code, v) = self.post_json(
-            "/api/auth/device/token",
-            &serde_json::json!({ "device_code": device_code }),
-        )?;
+        let (code, v) = self.post_json("/api/auth/device/token", &serde_json::json!({ "device_code": device_code }))?;
         if (200..300).contains(&code) {
             let token = v["access_token"].as_str().unwrap_or_default().to_string();
             let device_id = v["device_id"].as_str().unwrap_or_default().to_string();
@@ -372,20 +331,14 @@ impl Client {
 
     pub fn me(&self) -> Result<(i64, String)> {
         let v = self.get_json("/api/users/me")?;
-        Ok((
-            v["id"].as_i64().unwrap_or(0),
-            v["username"].as_str().unwrap_or("").to_string(),
-        ))
+        Ok((v["id"].as_i64().unwrap_or(0), v["username"].as_str().unwrap_or("").to_string()))
     }
 
     // ---------- catalog ----------
     pub fn platforms(&self) -> Result<Vec<Value>> {
         match self.get_json("/api/platforms")? {
             Value::Array(a) => Ok(a),
-            other => Err(RommError::Parse(format!(
-                "expected a list of platforms, got {}",
-                other
-            ))),
+            other => Err(RommError::Parse(format!("expected a list of platforms, got {}", other))),
         }
     }
 
@@ -414,11 +367,7 @@ impl Client {
         body.extend_from_slice(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"{field}\"; filename=\"{safe_name}\"\r\nContent-Type: application/octet-stream\r\n\r\n").as_bytes());
         body.extend_from_slice(data);
         body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
-        let url = format!(
-            "{}/api/{kind}?rom_id={rom_id}&emulator={}&overwrite=true",
-            self.base,
-            percent_encode(emulator)
-        );
+        let url = format!("{}/api/{kind}?rom_id={rom_id}&emulator={}&overwrite=true", self.base, percent_encode(emulator));
         let mut req = self.dl.post(url).header("Content-Type", &format!("multipart/form-data; boundary={boundary}"));
         if let Some(a) = self.auth() {
             req = req.header("Authorization", a);
@@ -435,10 +384,7 @@ impl Client {
     /// One catalog page. Returns (games, total).
     /// Accepts both shapes RomM has used: a page object `{items, total}` and a bare list.
     pub fn roms_page(&self, offset: usize, limit: usize) -> Result<(Vec<Value>, usize)> {
-        let v = self.get_json_with(
-            &self.list,
-            &format!("/api/roms?limit={limit}&offset={offset}&order_by=name&order_dir=asc"),
-        )?;
+        let v = self.get_json_with(&self.list, &format!("/api/roms?limit={limit}&offset={offset}&order_by=name&order_dir=asc"))?;
         parse_roms_page(v, offset, limit)
     }
 
@@ -449,11 +395,7 @@ impl Client {
 
     /// Downloads a server-relative resource (cover…).
     pub fn fetch_bytes(&self, path: &str, limit: u64) -> Result<Vec<u8>> {
-        let url = if path.starts_with("http") {
-            path.to_string()
-        } else {
-            format!("{}{}", self.base, path)
-        };
+        let url = if path.starts_with("http") { path.to_string() } else { format!("{}{}", self.base, path) };
         let mut req = self.api.get(encode_url(&url));
         if let Some(a) = self.auth() {
             req = req.header("Authorization", a);
@@ -463,11 +405,7 @@ impl Client {
         if !(200..300).contains(&code) {
             return Err(status_error(code, ""));
         }
-        resp.body_mut()
-            .with_config()
-            .limit(limit)
-            .read_to_vec()
-            .map_err(|e| RommError::Parse(e.to_string()))
+        resp.body_mut().with_config().limit(limit).read_to_vec().map_err(|e| RommError::Parse(e.to_string()))
     }
 
     /// Downloads a server asset (a trailer…) to `dest`, at most `limit` bytes.
@@ -489,17 +427,8 @@ impl Client {
 
     /// Opens a game file stream starting at byte `from` (resume).
     /// Returns (reader, total file size, resume accepted by the server).
-    pub fn open_file(
-        &self,
-        file: &RomFile,
-        from: u64,
-    ) -> Result<(Box<dyn Read + Send>, u64, bool)> {
-        let url = format!(
-            "{}/api/roms/{}/files/content/{}",
-            self.base,
-            file.id,
-            percent_encode(&file.file_name)
-        );
+    pub fn open_file(&self, file: &RomFile, from: u64) -> Result<(Box<dyn Read + Send>, u64, bool)> {
+        let url = format!("{}/api/roms/{}/files/content/{}", self.base, file.id, percent_encode(&file.file_name));
         let mut req = self.dl.get(url);
         if let Some(a) = self.auth() {
             req = req.header("Authorization", a);
@@ -538,23 +467,9 @@ impl Client {
 
 impl Client {
     /// Reads bytes `start..start + len` of a game file (virtual mount). Shorter at the end of the file.
-    pub fn fetch_range(
-        &self,
-        file_id: i64,
-        file_name: &str,
-        start: u64,
-        len: u64,
-    ) -> Result<Vec<u8>> {
-        let url = format!(
-            "{}/api/roms/{}/files/content/{}",
-            self.base,
-            file_id,
-            percent_encode(file_name)
-        );
-        let mut req = self.dl.get(url).header(
-            "Range",
-            format!("bytes={}-{}", start, start + len.max(1) - 1),
-        );
+    pub fn fetch_range(&self, file_id: i64, file_name: &str, start: u64, len: u64) -> Result<Vec<u8>> {
+        let url = format!("{}/api/roms/{}/files/content/{}", self.base, file_id, percent_encode(file_name));
+        let mut req = self.dl.get(url).header("Range", format!("bytes={}-{}", start, start + len.max(1) - 1));
         if let Some(a) = self.auth() {
             req = req.header("Authorization", a);
         }
@@ -566,11 +481,7 @@ impl Client {
         if !(200..300).contains(&code) {
             return Err(status_error(code, ""));
         }
-        let body = resp
-            .body_mut()
-            .with_config()
-            .limit(len + 1024)
-            .read_to_vec();
+        let body = resp.body_mut().with_config().limit(len + 1024).read_to_vec();
         let mut data = body.map_err(|e| RommError::Offline(e.to_string()))?;
         if code == 200 {
             // Server ignored the Range header: keep the requested part.
@@ -594,17 +505,10 @@ pub fn parse_roms_page(v: Value, offset: usize, limit: usize) -> Result<(Vec<Val
                 Some(Value::Array(a)) => a,
                 _ => return Err(RommError::Parse("game list without items".into())),
             };
-            let total = o
-                .get("total")
-                .and_then(|t| t.as_u64())
-                .map(|t| t as usize)
-                .unwrap_or(offset + items.len());
+            let total = o.get("total").and_then(|t| t.as_u64()).map(|t| t as usize).unwrap_or(offset + items.len());
             Ok((items, total))
         }
-        other => Err(RommError::Parse(format!(
-            "unexpected game list: {}",
-            other.to_string().chars().take(80).collect::<String>()
-        ))),
+        other => Err(RommError::Parse(format!("unexpected game list: {}", other.to_string().chars().take(80).collect::<String>()))),
     }
 }
 
@@ -640,53 +544,32 @@ mod tests {
 
     #[test]
     fn roms_page_shapes() {
-        let (items, total) = parse_roms_page(
-            serde_json::json!({"items": [{"id": 1}], "total": 9}),
-            0,
-            100,
-        )
-        .unwrap();
+        let (items, total) = parse_roms_page(serde_json::json!({"items": [{"id": 1}], "total": 9}), 0, 100).unwrap();
         assert_eq!((items.len(), total), (1, 9));
-        let (items, total) =
-            parse_roms_page(serde_json::json!([{"id": 1}, {"id": 2}]), 0, 100).unwrap();
+        let (items, total) = parse_roms_page(serde_json::json!([{"id": 1}, {"id": 2}]), 0, 100).unwrap();
         assert_eq!((items.len(), total), (2, 2));
         assert!(parse_roms_page(serde_json::json!({"detail": "x"}), 0, 100).is_err());
     }
 
     #[test]
     fn url_normalization() {
-        assert_eq!(
-            normalize_url("192.168.1.10:8080/").unwrap(),
-            "http://192.168.1.10:8080"
-        );
-        assert_eq!(
-            normalize_url(" https://romm.local ").unwrap(),
-            "https://romm.local"
-        );
+        assert_eq!(normalize_url("192.168.1.10:8080/").unwrap(), "http://192.168.1.10:8080");
+        assert_eq!(normalize_url(" https://romm.local ").unwrap(), "https://romm.local");
         assert!(normalize_url("").is_err());
         assert!(normalize_url("http://").is_err());
         assert!(normalize_url("ftp://x").is_err());
-        assert_eq!(
-            normalize_url("HTTP://Romm.lan/romm/").unwrap(),
-            "http://Romm.lan/romm"
-        );
+        assert_eq!(normalize_url("HTTP://Romm.lan/romm/").unwrap(), "http://Romm.lan/romm");
     }
 
     #[test]
     fn encodes_romm_asset_urls() {
-        assert_eq!(
-            encode_url("http://h/assets/x/big.png?ts=2026-11-08 16:15:31"),
-            "http://h/assets/x/big.png?ts=2026-11-08%2016:15:31"
-        );
+        assert_eq!(encode_url("http://h/assets/x/big.png?ts=2026-11-08 16:15:31"), "http://h/assets/x/big.png?ts=2026-11-08%2016:15:31");
         assert_eq!(encode_url("http://h/a/é.png"), "http://h/a/%C3%A9.png");
     }
 
     #[test]
     fn encodes_file_names() {
-        assert_eq!(
-            percent_encode("Big Test (World).md"),
-            "Big%20Test%20%28World%29.md"
-        );
+        assert_eq!(percent_encode("Big Test (World).md"), "Big%20Test%20%28World%29.md");
     }
 }
 
@@ -694,7 +577,7 @@ mod tests {
 pub fn base64(s: &str) -> String {
     const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let b = s.as_bytes();
-    let mut out = String::with_capacity((b.len() + 2) / 3 * 4);
+    let mut out = String::with_capacity(b.len().div_ceil(3) * 4);
     for c in b.chunks(3) {
         let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
         out.push(T[(n >> 18) as usize & 63] as char);

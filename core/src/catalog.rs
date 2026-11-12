@@ -18,11 +18,7 @@ pub fn year_from_timestamp(ts: i64) -> Option<i64> {
     if ts == 0 {
         return None; // RomM returns 0 when the date is unknown
     }
-    let secs = if ts.abs() > 100_000_000_000 {
-        ts / 1000
-    } else {
-        ts
-    };
+    let secs = if ts.abs() > 100_000_000_000 { ts / 1000 } else { ts };
     let days = secs.div_euclid(86_400);
     // "Civil from days" algorithm (Howard Hinnant).
     let z = days + 719_468;
@@ -40,20 +36,13 @@ fn join_strings(v: &Value) -> Option<String> {
     let parts: Vec<String> = v
         .as_array()?
         .iter()
-        .filter_map(|x| {
-            x.as_str()
-                .map(String::from)
-                .or_else(|| x.get("name").and_then(|n| n.as_str()).map(String::from))
-        })
+        .filter_map(|x| x.as_str().map(String::from).or_else(|| x.get("name").and_then(|n| n.as_str()).map(String::from)))
         .collect();
     (!parts.is_empty()).then(|| parts.join(", "))
 }
 
 fn non_empty(v: &Value) -> Option<String> {
-    v.as_str()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(String::from)
+    v.as_str().map(str::trim).filter(|s| !s.is_empty()).map(String::from)
 }
 
 /// Platform slugs become directory names (library, virtual mount): only `[a-z0-9_-]` is kept,
@@ -62,13 +51,7 @@ pub fn safe_slug(s: &str) -> String {
     let out: String = s
         .chars()
         .map(|c| c.to_ascii_lowercase())
-        .map(|c| {
-            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '-'
-            }
-        })
+        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
         .collect();
     let out = out.trim_matches('-').to_string();
     if out.is_empty() {
@@ -89,25 +72,19 @@ pub fn resource_path(p: &str) -> String {
 }
 
 pub fn map_rom(v: &Value) -> Option<GameUpsert> {
-    let name = non_empty(&v["name"])
-        .or_else(|| non_empty(&v["fs_name_no_tags"]))
-        .or_else(|| non_empty(&v["fs_name"]))?;
+    let name = non_empty(&v["name"]).or_else(|| non_empty(&v["fs_name_no_tags"])).or_else(|| non_empty(&v["fs_name"]))?;
     Some(GameUpsert {
         rom_id: v["id"].as_i64()?,
         platform_id: v["platform_id"].as_i64().unwrap_or(0),
         platform_slug: safe_slug(&non_empty(&v["platform_slug"]).unwrap_or_default()),
-        platform_name: non_empty(&v["platform_custom_name"])
-            .or_else(|| non_empty(&v["platform_display_name"]))
-            .unwrap_or_default(),
+        platform_name: non_empty(&v["platform_custom_name"]).or_else(|| non_empty(&v["platform_display_name"])).unwrap_or_default(),
         sort_key: non_empty(&v["name_sort_key"]).unwrap_or_else(|| name.to_lowercase()),
         name,
         fs_name: non_empty(&v["fs_name"]).unwrap_or_default(),
         fs_size: v["fs_size_bytes"].as_i64().unwrap_or(0),
         multi_file: v["has_multiple_files"].as_bool().unwrap_or(false),
         summary: non_empty(&v["summary"]),
-        year: v["metadatum"]["first_release_date"]
-            .as_i64()
-            .and_then(year_from_timestamp),
+        year: v["metadatum"]["first_release_date"].as_i64().and_then(year_from_timestamp),
         genres: join_strings(&v["metadatum"]["genres"]),
         regions: join_strings(&v["regions"]),
         languages: join_strings(&v["languages"]),
@@ -126,22 +103,10 @@ pub fn map_rom(v: &Value) -> Option<GameUpsert> {
 pub fn extra_of(v: &Value) -> Value {
     let strings = |x: &Value| -> Vec<String> {
         x.as_array()
-            .map(|a| {
-                a.iter()
-                    .filter_map(|s| {
-                        s.as_str()
-                            .map(str::trim)
-                            .filter(|s| !s.is_empty())
-                            .map(String::from)
-                    })
-                    .collect()
-            })
+            .map(|a| a.iter().filter_map(|s| s.as_str().map(str::trim).filter(|s| !s.is_empty()).map(String::from)).collect())
             .unwrap_or_default()
     };
-    let shots: Vec<String> = strings(&v["merged_screenshots"])
-        .into_iter()
-        .take(8)
-        .collect();
+    let shots: Vec<String> = strings(&v["merged_screenshots"]).into_iter().take(8).collect();
     serde_json::json!({
         "companies": strings(&v["metadatum"]["companies"]),
         "franchises": strings(&v["metadatum"]["franchises"]),
@@ -228,9 +193,7 @@ fn emit_progress(app: &Shared) {
 }
 
 fn sync(app: &Shared) -> Result<(), RommError> {
-    let client = app
-        .client()
-        .ok_or_else(|| RommError::Http(0, "no paired profile".into()))?;
+    let client = app.client().ok_or_else(|| RommError::Http(0, "no paired profile".into()))?;
     let platforms = client.platforms()?;
     app.set_online(true);
     let list: Vec<(i64, String, String, String, i64)> = platforms
@@ -253,10 +216,8 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         .collect();
     app.db.replace_platforms(&list);
     // ScreenScraper's system id of each console, for Borne's own ScreenScraper lookups.
-    let ss_systems: serde_json::Map<String, Value> = platforms
-        .iter()
-        .filter_map(|p| Some((safe_slug(p["slug"].as_str()?), json!(p["ss_id"].as_i64()?))))
-        .collect();
+    let ss_systems: serde_json::Map<String, Value> =
+        platforms.iter().filter_map(|p| Some((safe_slug(p["slug"].as_str()?), json!(p["ss_id"].as_i64()?)))).collect();
     app.db.set_setting("ss_systems", &Value::Object(ss_systems).to_string());
 
     let sync_id = crate::db::now();
@@ -266,10 +227,7 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         // One retry with a smaller page if the server times out or drops the connection.
         let (items, total) = match client.roms_page(offset, PAGE) {
             Err(RommError::Offline(e)) => {
-                app.db.log(
-                    "sync",
-                    &format!("page at {offset} failed ({e}); retrying with a smaller page"),
-                );
+                app.db.log("sync", &format!("page at {offset} failed ({e}); retrying with a smaller page"));
                 client.roms_page(offset, PAGE / 4)?
             }
             other => other?,
@@ -289,8 +247,7 @@ fn sync(app: &Shared) -> Result<(), RommError> {
     }
     let removed = app.db.prune_games(sync_id);
     merge_groups(app);
-    app.db
-        .log("sync", &format!("{offset} games synced, {removed} removed"));
+    app.db.log("sync", &format!("{offset} games synced, {removed} removed"));
     app.emit(serde_json::json!({ "type": "library" }));
     fetch_covers(app, &client, covers);
     crate::media::prefetch(app, &client);
@@ -310,10 +267,7 @@ pub fn merge_groups(app: &Shared) {
         .games(None, None, false)
         .into_iter()
         .map(|g| {
-            let ss = app
-                .db
-                .media(&g.group_key, "ss")
-                .and_then(|m| m.stamp.strip_prefix("found|").map(String::from));
+            let ss = app.db.media(&g.group_key, "ss").and_then(|m| m.stamp.strip_prefix("found|").map(String::from));
             (g.rom_id, g.platform_slug, g.group_key, g.fs_name, ss)
         })
         .collect();
@@ -336,13 +290,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
     let dir = app.paths.covers();
     let mut handles = vec![];
     for _ in 0..4 {
-        let (queue, app, client, dir, failed) = (
-            queue.clone(),
-            app.clone(),
-            client.clone(),
-            dir.clone(),
-            failed.clone(),
-        );
+        let (queue, app, client, dir, failed) = (queue.clone(), app.clone(), client.clone(), dir.clone(), failed.clone());
         handles.push(std::thread::spawn(move || loop {
             let Some((rom_id, remote, stamp)) = queue.lock().unwrap().pop() else {
                 break;
@@ -352,9 +300,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
                 .next()
                 .and_then(|p| p.rsplit('/').next())
                 .and_then(|name| name.rsplit_once('.').map(|(_, e)| e))
-                .filter(|e| {
-                    !e.is_empty() && e.len() <= 4 && e.chars().all(|c| c.is_ascii_alphanumeric())
-                })
+                .filter(|e| !e.is_empty() && e.len() <= 4 && e.chars().all(|c| c.is_ascii_alphanumeric()))
                 .unwrap_or("img");
             let path = dir.join(format!("{rom_id}.{ext}"));
             if let Ok(bytes) = client.fetch_bytes(&remote, 20 * 1024 * 1024) {
@@ -386,10 +332,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
     }
     let failed = failed.load(std::sync::atomic::Ordering::Relaxed);
     if failed > 0 {
-        app.db.log(
-            "sync",
-            &format!("{failed} cover(s) were not images and were skipped"),
-        );
+        app.db.log("sync", &format!("{failed} cover(s) were not images and were skipped"));
     }
     app.emit(serde_json::json!({ "type": "library" }));
 }

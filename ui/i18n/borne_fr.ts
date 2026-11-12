@@ -914,14 +914,6 @@
         <translation>Pays-Bas</translation>
     </message>
     <message>
-        <source>Version %1</source>
-        <translation>Version %1</translation>
-    </message>
-    <message>
-        <source>Rev. %1</source>
-        <translation>Rév. %1</translation>
-    </message>
-    <message>
         <source>Waiting to download</source>
         <translation>En attente de téléchargement</translation>
     </message>
@@ -1460,14 +1452,6 @@
         <translation>%1 supprimé de cet appareil.</translation>
     </message>
     <message>
-        <source>Cancel download</source>
-        <translation>Annuler le téléchargement</translation>
-    </message>
-    <message>
-        <source>Download</source>
-        <translation>Télécharger</translation>
-    </message>
-    <message>
         <source>Close</source>
         <translation>Fermer</translation>
     </message>
@@ -1790,22 +1774,6 @@
     <message>
         <source>%1 is ready to play from the network.</source>
         <translation>%1 est prêt à être joué depuis le réseau.</translation>
-    </message>
-    <message>
-        <source>Open the game page</source>
-        <translation>Ouvrir la page du jeu</translation>
-    </message>
-    <message>
-        <source>Remove from the network mount</source>
-        <translation>Retirer du montage réseau</translation>
-    </message>
-    <message>
-        <source>Play from the network</source>
-        <translation>Jouer depuis le réseau</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n version(s)</source>
-        <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
     </message>
     <message>
         <source>Settings</source>
@@ -2652,22 +2620,6 @@
     <message>
         <source>Fetched after each sync for new games.</source>
         <translation>Récupéré après chaque synchro pour les nouveaux jeux.</translation>
-    </message>
-    <message>
-        <source>%1: %2 without spine</source>
-        <translation>%1 : %2 sans tranche</translation>
-    </message>
-    <message>
-        <source>Fetching… %1 image(s) left</source>
-        <translation>Récupération… %1 image(s) restante(s)</translation>
-    </message>
-    <message>
-        <source>Front %1/%6 · spine %2/%6 · back %3/%6 · cartridge %4/%6 · logo %5/%6</source>
-        <translation>Face %1/%6 · tranche %2/%6 · dos %3/%6 · cartouche %4/%6 · logo %5/%6</translation>
-    </message>
-    <message>
-        <source>Missing scans are not in RomM: add box2d, box2d_side, box2d_back, physical and logo to scan.media in RomM's ScreenScraper settings, then rescan.</source>
-        <translation>Les scans manquants ne sont pas dans RomM : ajoutez box2d, box2d_side, box2d_back, physical et logo à scan.media dans les réglages ScreenScraper de RomM, puis relancez une analyse.</translation>
     </message>
     <message>
         <source>Open on GitHub</source>

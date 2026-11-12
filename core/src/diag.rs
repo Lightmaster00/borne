@@ -58,12 +58,8 @@ fn gpus() -> Vec<String> {
                 continue;
             }
             let dev = e.path().join("device");
-            let vendor = read(&dev.join("vendor").to_string_lossy())
-                .trim()
-                .to_string();
-            let device = read(&dev.join("device").to_string_lossy())
-                .trim()
-                .to_string();
+            let vendor = read(&dev.join("vendor").to_string_lossy()).trim().to_string();
+            let device = read(&dev.join("device").to_string_lossy()).trim().to_string();
             let driver = std::fs::read_link(dev.join("driver"))
                 .ok()
                 .and_then(|p| p.file_name().map(|f| f.to_string_lossy().into_owned()))
@@ -127,14 +123,8 @@ fn vram() -> (Option<u64>, Option<u64>) {
     if let Ok(rd) = std::fs::read_dir("/sys/class/drm") {
         for e in rd.flatten() {
             let dev = e.path().join("device");
-            let used = read(&dev.join("mem_info_vram_used").to_string_lossy())
-                .trim()
-                .parse::<u64>()
-                .ok();
-            let total = read(&dev.join("mem_info_vram_total").to_string_lossy())
-                .trim()
-                .parse::<u64>()
-                .ok();
+            let used = read(&dev.join("mem_info_vram_used").to_string_lossy()).trim().parse::<u64>().ok();
+            let total = read(&dev.join("mem_info_vram_total").to_string_lossy()).trim().parse::<u64>().ok();
             if let (Some(u), Some(t)) = (used, total) {
                 if best.1.map(|bt| t > bt * 1024 * 1024).unwrap_or(true) {
                     best = (Some(u / 1024 / 1024), Some(t / 1024 / 1024));
@@ -146,18 +136,8 @@ fn vram() -> (Option<u64>, Option<u64>) {
 }
 
 fn va_drivers() -> Vec<String> {
-    let mut dirs: Vec<PathBuf> = std::env::var("LIBVA_DRIVERS_PATH")
-        .map(|v| v.split(':').map(PathBuf::from).collect())
-        .unwrap_or_default();
-    dirs.extend(
-        [
-            "/usr/lib/dri",
-            "/usr/lib64/dri",
-            "/usr/lib/x86_64-linux-gnu/dri",
-        ]
-        .iter()
-        .map(PathBuf::from),
-    );
+    let mut dirs: Vec<PathBuf> = std::env::var("LIBVA_DRIVERS_PATH").map(|v| v.split(':').map(PathBuf::from).collect()).unwrap_or_default();
+    dirs.extend(["/usr/lib/dri", "/usr/lib64/dri", "/usr/lib/x86_64-linux-gnu/dri"].iter().map(PathBuf::from));
     let mut out = vec![];
     for d in dirs {
         if let Ok(rd) = std::fs::read_dir(&d) {
@@ -174,21 +154,11 @@ fn va_drivers() -> Vec<String> {
 }
 
 pub fn diagnostics() -> Diagnostics {
-    let env: Vec<(String, String)> = ENV_KEYS
-        .iter()
-        .map(|k| {
-            (
-                k.to_string(),
-                std::env::var(k).unwrap_or_else(|_| "—".into()),
-            )
-        })
-        .collect();
+    let env: Vec<(String, String)> = ENV_KEYS.iter().map(|k| (k.to_string(), std::env::var(k).unwrap_or_else(|_| "—".into()))).collect();
     let (rss_mb, processes) = rss_tree();
     Diagnostics {
         in_gamescope: std::env::var("GAMESCOPE_WAYLAND_DISPLAY").is_ok()
-            || std::env::var("XDG_CURRENT_DESKTOP")
-                .map(|d| d.contains("gamescope"))
-                .unwrap_or(false),
+            || std::env::var("XDG_CURRENT_DESKTOP").map(|d| d.contains("gamescope")).unwrap_or(false),
         in_steam: std::env::var("SteamGameId").is_ok() || std::env::var("SteamAppId").is_ok(),
         env,
         cpu: cpu_model(),
@@ -206,14 +176,8 @@ pub fn diagnostics() -> Diagnostics {
 pub fn redact_url(url: &str) -> String {
     match url.split_once("://") {
         Some((scheme, rest)) => {
-            let (authority, path) = rest
-                .split_once('/')
-                .map(|(a, p)| (a, format!("/{p}")))
-                .unwrap_or((rest, String::new()));
-            let host = authority
-                .rsplit_once('@')
-                .map(|(_, h)| h)
-                .unwrap_or(authority);
+            let (authority, path) = rest.split_once('/').map(|(a, p)| (a, format!("/{p}"))).unwrap_or((rest, String::new()));
+            let host = authority.rsplit_once('@').map(|(_, h)| h).unwrap_or(authority);
             format!("{scheme}://{host}{path}")
         }
         None => url.to_string(),
@@ -228,19 +192,8 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
     let mut r = String::new();
     let _ = writeln!(r, "Borne diagnostic report");
     let _ = writeln!(r, "generated: {}", crate::db::now());
-    let _ = writeln!(
-        r,
-        "version: {} (build {}, commit {})",
-        crate::update::VERSION,
-        crate::update::build(),
-        crate::update::COMMIT
-    );
-    let _ = writeln!(
-        r,
-        "system: {} {}",
-        std::env::consts::OS,
-        std::env::consts::ARCH
-    );
+    let _ = writeln!(r, "version: {} (build {}, commit {})", crate::update::VERSION, crate::update::build(), crate::update::COMMIT);
+    let _ = writeln!(r, "system: {} {}", std::env::consts::OS, std::env::consts::ARCH);
     let server = app.server_url().unwrap_or_default();
     let _ = writeln!(r, "server: {}", redact_url(&server));
     if !server.is_empty() {
@@ -254,53 +207,18 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
         }
     }
     let profiles = app.db.profiles();
-    let _ = writeln!(
-        r,
-        "profiles: {} ({} paired)",
-        profiles.len(),
-        profiles.iter().filter(|p| p.paired).count()
-    );
-    let _ = writeln!(
-        r,
-        "active profile paired: {}",
-        app.active_profile().map(|p| p.paired).unwrap_or(false)
-    );
-    for key in [
-        "install_mode",
-        "stream_cache_mb",
-        "update_channel",
-        "update_auto",
-    ] {
-        let _ = writeln!(
-            r,
-            "setting {key}: {}",
-            app.db.setting(key).unwrap_or_else(|| "default".into())
-        );
+    let _ = writeln!(r, "profiles: {} ({} paired)", profiles.len(), profiles.iter().filter(|p| p.paired).count());
+    let _ = writeln!(r, "active profile paired: {}", app.active_profile().map(|p| p.paired).unwrap_or(false));
+    for key in ["install_mode", "stream_cache_mb", "update_channel", "update_auto"] {
+        let _ = writeln!(r, "setting {key}: {}", app.db.setting(key).unwrap_or_else(|| "default".into()));
     }
     let _ = writeln!(r, "mount: {}", crate::stream::status(app));
-    let _ = writeln!(
-        r,
-        "sync: {}",
-        serde_json::to_string(&*app.sync.lock().unwrap()).unwrap_or_default()
-    );
-    let _ = writeln!(
-        r,
-        "free space: {:?} bytes",
-        crate::paths::free_space(&app.paths.root)
-    );
+    let _ = writeln!(r, "sync: {}", serde_json::to_string(&*app.sync.lock().unwrap()).unwrap_or_default());
+    let _ = writeln!(r, "free space: {:?} bytes", crate::paths::free_space(&app.paths.root));
     let _ = writeln!(r, "\n--- recent downloads ---");
     for d in app.db.downloads() {
-        let _ = writeln!(
-            r,
-            "{} game {} '{}': {} {}/{} {}",
-            d.id,
-            d.rom_id,
-            d.name,
-            d.state,
-            d.received,
-            d.total,
-            d.error.unwrap_or_default()
-        );
+        let _ =
+            writeln!(r, "{} game {} '{}': {} {}/{} {}", d.id, d.rom_id, d.name, d.state, d.received, d.total, d.error.unwrap_or_default());
     }
     let _ = writeln!(r, "\n--- log ---");
     r.push_str(&crate::logfile::tail(512 * 1024));
@@ -323,10 +241,7 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
 mod tests {
     #[test]
     fn redacts_credentials() {
-        assert_eq!(
-            super::redact_url("https://bob:secret@romm.lan:8443/romm"),
-            "https://romm.lan:8443/romm"
-        );
+        assert_eq!(super::redact_url("https://bob:secret@romm.lan:8443/romm"), "https://romm.lan:8443/romm");
         assert_eq!(super::redact_url("http://romm.lan"), "http://romm.lan");
     }
 }

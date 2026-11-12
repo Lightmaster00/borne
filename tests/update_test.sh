@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # End-to-end test of in-app updates (Linux), against a local release server:
-# an installed build 100 finds build 101 on the dev channel, downloads it, verifies its SHA-256,
-# swaps the package and restarts on the new core.
+# an installed build 100 finds build 101 on the dev channel (full archive only, as older manifests),
+# downloads it, verifies its SHA-256, swaps the package and restarts on the new core; then build
+# 102 is published in parts (scripts/release/parts.py) where only the core changed: only that part
+# is downloaded, the package is assembled and checked, and the core restarts on build 102.
 #
 #   tests/update_test.sh <package dir>      (e.g. out/Borne, built by scripts/package.sh)
 set -euo pipefail
@@ -85,4 +87,38 @@ kill -0 $CORE || fail "core stopped"
 ok "previous version kept aside"
 curl -sf -X POST "$API/api/v1/update/check" >/dev/null; wait_state uptodate || fail "up to date ($(state))"
 ok "up to date afterwards"
+
+# Build 102, published in parts: only the core differs from the installed build 101.
+rm -rf "$WORK/new" && mkdir -p "$WORK/new"
+cp -a "$WORK/install/Borne" "$WORK/new/Borne"
+build_core 102 0.1.2 "$WORK/new/Borne/bin/borne"
+D="$WORK/release/download/dev"
+rm -f "$D"/*.tar.gz
+tar czf "$D/Borne-linux-x86_64.tar.gz" -C "$WORK/new" Borne
+python3 "$HERE/scripts/release/parts.py" "$WORK/new/Borne" linux "$D" Borne-linux-x86_64 > "$WORK/parts.json"
+python3 - "$D" "$BASE" "$WORK/parts.json" <<'PY'
+import hashlib, json, os, sys
+d, base, parts = sys.argv[1], sys.argv[2], json.load(open(sys.argv[3]))
+full = open(f"{d}/Borne-linux-x86_64.tar.gz", "rb").read()
+asset = {"url": f"{base}/download/dev/Borne-linux-x86_64.tar.gz", "sha256": hashlib.sha256(full).hexdigest(), "size": len(full),
+         "parts": {k: {"url": f"{base}/download/dev/{v['file']}", "sha256": v["sha256"], "size": v["size"], "tree": v["tree"]} for k, v in parts.items()}}
+json.dump({"version": "0.1.2", "build": 102, "channel": "dev", "commit": "test", "date": "today", "notes": "Test build",
+           "assets": {"linux-x86_64": asset}}, open(f"{d}/latest.json", "w"))
+PY
+CORE_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["core"]["size"])' "$WORK/parts.json")
+curl -sf -X POST "$API/api/v1/update/check" >/dev/null; wait_state available || fail "build 102 not found ($(state))"
+curl -sf -X POST "$API/api/v1/update/download" >/dev/null
+wait_state ready || fail "download by parts ($(state))"
+TOTAL=$(curl -sf "$API/api/v1/update" | python3 -c 'import json,sys; print(json.load(sys.stdin)["update"]["total"])')
+[ "$TOTAL" = "$CORE_SIZE" ] || fail "downloaded $TOTAL bytes, expected only the core part ($CORE_SIZE)"
+ok "only the changed part downloaded ($((CORE_SIZE / 1024)) KB of $(( $(stat -c %s "$D/Borne-linux-x86_64.tar.gz") / 1024 )) KB)"
+OLD_API="$API"
+curl -sf -X POST "$API/api/v1/update/apply" >/dev/null || fail "apply 102"
+for _ in $(seq 1 40); do [ "$(api)" != "$OLD_API" ] && break; sleep 0.25; done
+API=$(api)
+for _ in $(seq 1 20); do curl -sf "$API/api/v1/hello" >/dev/null && break; sleep 0.25; done
+curl -sf "$API/api/v1/hello" | grep -q '"build":102' || fail "build 102 not running"
+[ "$("$WORK/install/Borne/bin/borne" --part-hashes "$WORK/install/Borne")" = "$("$WORK/install/Borne/bin/borne" --part-hashes "$WORK/new/Borne")" ] \
+  || fail "the assembled package differs from the published one"
+ok "restarted on build 102, package identical to the published one"
 echo "Update test passed"

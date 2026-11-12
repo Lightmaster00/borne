@@ -8,3 +8,5 @@ qt-wheels/
 __pycache__/
 build-macos/
 out-macos/
+dist/
+notes.md

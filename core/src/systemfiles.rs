@@ -273,7 +273,11 @@ fn safe_name(name: &str) -> String {
     let n = name.rsplit(['/', '\\']).next().unwrap_or("file");
     let n: String = n.chars().filter(|c| !c.is_control()).collect();
     let n = n.trim().trim_start_matches('.').to_string();
-    if n.is_empty() { "file".into() } else { n.chars().take(120).collect() }
+    if n.is_empty() {
+        "file".into()
+    } else {
+        n.chars().take(120).collect()
+    }
 }
 
 /// Checks and keeps a file for an item.
@@ -340,7 +344,10 @@ fn check_and_place(d: &Path, it: &Item, name: &str, tmp: &Path, size: u64) -> Re
                 return Err("this file is too large for a keys file".into());
             }
             let text = std::fs::read_to_string(tmp).map_err(|_| "this is not a keys file (text expected)".to_string())?;
-            if !text.lines().any(|l| l.contains('=') && l.split('=').nth(1).map(|v| v.trim().chars().all(|c| c.is_ascii_hexdigit()) && !v.trim().is_empty()).unwrap_or(false)) {
+            if !text.lines().any(|l| {
+                l.contains('=')
+                    && l.split('=').nth(1).map(|v| v.trim().chars().all(|c| c.is_ascii_hexdigit()) && !v.trim().is_empty()).unwrap_or(false)
+            }) {
                 return Err("this is not a keys file (lines of name = key expected)".into());
             }
             replace(d, tmp, &it.names[0])
@@ -466,7 +473,13 @@ pub fn fill_from_romm(app: &Shared) -> usize {
                 continue;
             }
             let list = cands[&it.id].as_array().cloned().unwrap_or_default();
-            let take: Vec<&Value> = if it.multi { list.iter().collect() } else if list.len() == 1 { vec![&list[0]] } else { vec![] };
+            let take: Vec<&Value> = if it.multi {
+                list.iter().collect()
+            } else if list.len() == 1 {
+                vec![&list[0]]
+            } else {
+                vec![]
+            };
             for c in take {
                 let (Some(id), Some(name)) = (c["id"].as_i64(), c["file_name"].as_str()) else { continue };
                 match add_romm_now(app, &console, &it, id, name) {
@@ -497,10 +510,7 @@ fn replace(d: &Path, tmp: &Path, target: &str) -> Result<(), String> {
 pub fn pick_file(title: &str) -> Result<String, String> {
     let title: String = title.chars().filter(|c| c.is_alphanumeric() || " .()-".contains(*c)).collect();
     let out = if cfg!(target_os = "macos") {
-        std::process::Command::new("osascript")
-            .arg("-e")
-            .arg(format!("POSIX path of (choose file with prompt \"{title}\")"))
-            .output()
+        std::process::Command::new("osascript").arg("-e").arg(format!("POSIX path of (choose file with prompt \"{title}\")")).output()
     } else if crate::emulators::which("zenity").is_some() {
         std::process::Command::new("zenity").args(["--file-selection", "--title", &title]).output()
     } else if crate::emulators::which("kdialog").is_some() {
@@ -539,7 +549,14 @@ pub fn bios_dir(app: &Shared) -> PathBuf {
 
 /// Puts the console's files where the chosen emulator reads them. `data` is the emulator's data
 /// folder for this profile (Linux: Borne's own; macOS: the emulator's usual folder).
-pub fn prepare(app: &Shared, console: &str, program: &str, data: &Path, exe: Option<&Path>, env: &[(String, String)]) -> Result<(), String> {
+pub fn prepare(
+    app: &Shared,
+    console: &str,
+    program: &str,
+    data: &Path,
+    exe: Option<&Path>,
+    env: &[(String, String)],
+) -> Result<(), String> {
     check(app, console)?;
     for it in items(console) {
         let fs = files(app, console, &it.id);
@@ -620,7 +637,17 @@ mod tests {
     use super::*;
 
     fn item(kind: &str, names: &[&str], size: Option<u64>, multi: bool) -> Item {
-        Item { id: "x".into(), name: "x".into(), kind: kind.into(), required: true, multi, names: names.iter().map(|s| s.to_string()).collect(), ext: vec![], size, known: Default::default() }
+        Item {
+            id: "x".into(),
+            name: "x".into(),
+            kind: kind.into(),
+            required: true,
+            multi,
+            names: names.iter().map(|s| s.to_string()).collect(),
+            ext: vec![],
+            size,
+            known: Default::default(),
+        }
     }
 
     fn tmpdir(tag: &str) -> PathBuf {

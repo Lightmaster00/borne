@@ -47,9 +47,9 @@ cp "$HERE/core/target/release/borne" "$HERE/build/borne-ui" "$OUT/bin/"
 printf '[Paths]\nPrefix=..\nLibraries=lib\nPlugins=plugins\nQmlImports=qml\n' > "$OUT/bin/qt.conf"
 mkdir -p "$OUT/ui/i18n" && cp -a "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fonts" "$HERE/ui/sounds" "$OUT/ui/"
 for ts in "$HERE"/ui/i18n/*.ts; do "${LRELEASE:-lrelease}" -silent "$ts" -qm "$OUT/ui/i18n/$(basename "${ts%.ts}").qm"; done
-cp -a "$HERE/resources/." "$OUT/resources/" 2>/dev/null || true
-cp "$HERE/README.md" "$OUT/README.md" 2>/dev/null || true
-cp -a "$HERE/examples" "$OUT/examples" 2>/dev/null || true
+cp -a "$HERE/resources/." "$OUT/resources/"
+cp "$HERE/README.md" "$HERE/LICENSE" "$OUT/"
+cp "$HERE/scripts/install-linux.sh" "$OUT/install.sh"
 
 cat > "$OUT/borne" <<'SH'
 #!/usr/bin/env bash

@@ -22,7 +22,11 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 pub fn os() -> &'static str {
-    if cfg!(target_os = "macos") { "macos" } else { "linux" }
+    if cfg!(target_os = "macos") {
+        "macos"
+    } else {
+        "linux"
+    }
 }
 
 fn net(url: &str) -> String {
@@ -44,11 +48,7 @@ fn agent() -> ureq::Agent {
 }
 
 fn get_text(url: &str) -> Result<String, String> {
-    let mut r = agent()
-        .get(net(url))
-        .header("Accept", "application/vnd.github+json")
-        .call()
-        .map_err(|e| format!("{url}: {e}"))?;
+    let mut r = agent().get(net(url)).header("Accept", "application/vnd.github+json").call().map_err(|e| format!("{url}: {e}"))?;
     if r.status().as_u16() != 200 {
         return Err(format!("{url} answered {}", r.status().as_u16()));
     }
@@ -92,7 +92,9 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
             let t = get_text(&format!("{base}/api/v1/repos/{repo}/releases?limit=10"))?;
             let releases: Vec<Value> = serde_json::from_str::<Value>(&t).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
             for r in releases.iter().filter(|r| spec["prerelease"].as_bool().unwrap_or(false) || r["prerelease"] != true) {
-                if let Some(a) = r["assets"].as_array().into_iter().flatten().find(|a| a["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false)) {
+                if let Some(a) =
+                    r["assets"].as_array().into_iter().flatten().find(|a| a["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false))
+                {
                     let url = a["browser_download_url"].as_str().ok_or("no download address")?.to_string();
                     return Ok((r["tag_name"].as_str().unwrap_or("?").to_string(), url, None));
                 }
@@ -106,7 +108,12 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
             let t = get_text(&format!("{base}/api/v4/projects/{project}/releases?per_page=10"))?;
             let releases: Vec<Value> = serde_json::from_str::<Value>(&t).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
             for r in releases.iter().filter(|r| r["upcoming_release"] != true) {
-                if let Some(l) = r["assets"]["links"].as_array().into_iter().flatten().find(|l| l["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false)) {
+                if let Some(l) = r["assets"]["links"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .find(|l| l["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false))
+                {
                     let url = l["direct_asset_url"].as_str().or(l["url"].as_str()).ok_or("no download address")?.to_string();
                     return Ok((r["tag_name"].as_str().unwrap_or("?").to_string(), url, None));
                 }
@@ -307,7 +314,8 @@ fn run(app: &Shared, program: &str, cores: &[String]) -> Result<(), String> {
             unzip(&tmp, &out)?;
             let _ = std::fs::remove_file(&tmp);
             let name = dest.file_name().unwrap().to_owned();
-            let found = walk(&out).into_iter().find(|f| f.file_name() == Some(&name)).ok_or_else(|| format!("{c}: no core in the archive"))?;
+            let found =
+                walk(&out).into_iter().find(|f| f.file_name() == Some(&name)).ok_or_else(|| format!("{c}: no core in the archive"))?;
             std::fs::create_dir_all(cores_dir(app)).map_err(|e| e.to_string())?;
             std::fs::rename(&found, &dest).map_err(|e| e.to_string())?;
             let _ = std::fs::remove_dir_all(&out);
@@ -563,7 +571,8 @@ fn undmg(file: &Path, out: &Path) -> Result<(), String> {
     for e in std::fs::read_dir(&mnt).into_iter().flatten().flatten() {
         let p = e.path();
         if p.extension().map(|x| x == "app").unwrap_or(false) {
-            let ok = std::process::Command::new("ditto").arg(&p).arg(out.join(e.file_name())).status().map(|s| s.success()).unwrap_or(false);
+            let ok =
+                std::process::Command::new("ditto").arg(&p).arg(out.join(e.file_name())).status().map(|s| s.success()).unwrap_or(false);
             r = if ok { Ok(()) } else { Err("the application could not be copied".into()) };
             break;
         }
@@ -601,7 +610,12 @@ fn find_program(out: &Path, hint: Option<&str>) -> Result<PathBuf, String> {
         let macos = app.join("Contents/MacOS");
         let exe = match exe_name {
             Some(n) if macos.join(&n).is_file() => macos.join(n),
-            _ => std::fs::read_dir(&macos).map_err(|e| e.to_string())?.flatten().map(|e| e.path()).find(|p| p.is_file()).ok_or("no program in the application")?,
+            _ => std::fs::read_dir(&macos)
+                .map_err(|e| e.to_string())?
+                .flatten()
+                .map(|e| e.path())
+                .find(|p| p.is_file())
+                .ok_or("no program in the application")?,
         };
         set_exec(&exe);
         return Ok(exe);
@@ -610,10 +624,8 @@ fn find_program(out: &Path, hint: Option<&str>) -> Result<PathBuf, String> {
         // A plain build (Xenia, Ryubing…): the program named in the manifest, else the largest
         // executable file.
         use std::os::unix::fs::PermissionsExt;
-        let exec: Vec<&PathBuf> = items
-            .iter()
-            .filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false))
-            .collect();
+        let exec: Vec<&PathBuf> =
+            items.iter().filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false)).collect();
         let pick = hint
             .and_then(|h| exec.iter().find(|p| p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case(h)).unwrap_or(false)))
             .or_else(|| exec.iter().max_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0)))

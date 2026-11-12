@@ -1,6 +1,6 @@
 # Borne — Functional and technical specification
 
-Version 1.7 — November 2026
+Version 1.8 — November 2026
 
 > This document describes the intended product. It is not proof of emulator compatibility, a legal
 > review of licenses, or a promise that Borne works on every Linux machine.
@@ -28,9 +28,10 @@ Version 1.7 — November 2026
 | 1.2 | Theme system and media handling (posters, ES-DE-style background trailers). |
 | 1.3 | Dedicated Qt 6 / QML UI, separate from the Rust core (two processes linked by a local HTTP + WebSocket API). ES-DE dropped. Tauri + Nuxt, Electron and a custom native engine rejected (see 5.2). QML themes with guardrails; plugin section. |
 | 1.4 | Project renamed **Borne**. Specification moved to English. Stage plan aligned with the repository. UI translated (English source, French). |
+| 1.5 | Game page before any download; versions of a game grouped, with per-profile version and emulator language; "play from the network" through the Borne virtual mount (FUSE, only chosen games, read from RomM); mouse control; console-inspired themes (home row, tile dashboard, bright home, cabinet carousel) with UI sounds. |
 | 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
 | 1.7 | One built-in look, "Halo" (living background from the selected game's art, game boxes in space, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
-| 1.5 | Game page before any download; versions of a game grouped, with per-profile version and emulator language; "play from the network" through the Borne virtual mount (FUSE, only chosen games, read from RomM); mouse control; console-inspired themes (home row, tile dashboard, bright home, cabinet carousel) with UI sounds. |
+| 1.8 | Emulators managed by Borne, saves on RomM, cheats, system files, display settings; 3D cel-shaded cases from ScreenScraper scans; gamepad or keyboard only (no mouse); a game settings page with per-game emulator options; interface preferences; downloads that pause; updates by parts (only what changed is downloaded) and releases ready to install. |
 
 ## 1. Executive summary
 
@@ -591,11 +592,26 @@ never deletes the game on the server.
 - Settings → Updates shows the installed version and build, the channel (Stable: releases tagged `vX.Y.Z`;
   Development: the `dev` pre-release rebuilt on every change of `main`) and automatic checks (startup, then
   every 6 hours; never an automatic install).
-- CI publishes, per release, the Linux and macOS archives, `SHA256SUMS` and `latest.json` (version, build
-  number, notes, URL / size / SHA-256 per platform). Builds are ordered by their CI build number.
-- Installing: download, SHA-256 check, extraction next to the installed package, then on confirmation an
+- Releases (`.github/workflows/release.yml`): every change of `main` replaces the `dev` pre-release; a
+  `vX.Y.Z` tag (matching `core/Cargo.toml`) publishes a stable release. Each holds, per platform, the full
+  archive, the package split in parts, `latest.json` (version, build number, notes; per platform the full
+  archive and the parts: URL / size / SHA-256, and each part's `tree`), `SHA256SUMS` and release notes
+  (changes since the previous tag, install steps, the weight of each part). Builds are ordered by their CI
+  build number. The Linux archive installs with `./Borne/install.sh` (to `~/.local/opt/Borne`, with a menu
+  entry and `~/.local/bin/borne`; `--uninstall` removes the program, the data stays).
+- Parts: `core` (the programs and everything else at the package's root), `ui` (`ui/`, `resources/`;
+  macOS `Contents/Resources/ui` and `…/resources`) and `runtime` (Qt: `lib/`, `plugins/`, `qml/`; macOS
+  `Contents/Frameworks`, `PlugIns`, `Resources/qml`). A part's `tree` is the SHA-256 over its files sorted
+  by path, one line each with the content's SHA-256 and the executable bit, or a link's target
+  (`update::tree_hashes`, the same in `scripts/release/parts.py`; CI checks they agree, and
+  `borne --part-hashes <package>` prints them).
+- Installing: the installed package is hashed; only the parts whose hash differs are downloaded (SHA-256
+  checked) and laid over a copy of the installed package next to it (each part's old files removed first);
+  every part of the copy must then match the manifest, else the full archive is used instead. A usual
+  update is the programs and the interface: about 5 MB instead of 70 MB on Linux. On confirmation, an
   atomic swap of the package folder (the previous one kept as `.borne-previous`, restored if the swap fails)
-  and a restart on the new core. Locally built, Flatpak and read-only installs report why they cannot update.
+  and a restart on the new core. Nothing is installed while a game runs. Locally built, Flatpak and
+  read-only installs report why they cannot update.
 
 ## 12. Security, integrity and data protection
 
@@ -718,10 +734,10 @@ return a task identifier and publish progress events. The same API is used by th
 |---|---|---|---|
 | 0 — Audit & prototypes | Rust core + QML UI prototype (grid, trailer, themes, game mode); RomM API audit; licenses. | Prototype validated; RomM version, local API format and theme API v1 decided. | Done |
 | 1 — Foundation + RomM | Rust service, SQLite, XDG paths, local API, pairing, accounts, devices, catalog, covers, downloads with resume and verification, UI (grid, detailed view, menus, themes), English/French UI, Linux and macOS builds. | A RomM game can be downloaded, verified and seen locally; end-to-end tests against a real RomM. | Done |
-| 2 — Profiles & saves | Multi-person profiles, save isolation, Device Sync, conflict policy and archives. | Offline, shifted-clock and conflict tests pass without loss. | Next |
-| 3 — RetroArch | Isolated config, pinned cores, NES/MD launch, Steam non-Steam integration. | Complete NES/MD flow, including an EmulatorJS round trip. | Planned |
-| 4 — Dolphin, PCSX2, Switch | Adapters, per-profile memory cards, Flatpak installation; Yuzu-family adapter, keys/firmware, per-profile saves, shaders, mods, TotK profile. | Complete GC/PS2 flow; TotK scenario validated on the reference hardware. | Planned |
-| 5 — Compatibility, peripherals, distribution | Rules engine, reports, per-game profiles, gamepads; Flatpak/AppImage packaging, autostart, CLI, documentation. | Warned launch, launch anyway and diagnostics verified; couch/gamepad acceptance and Linux matrix published. | Planned |
+| 2 — Profiles & saves | Multi-person profiles, save isolation, Device Sync, conflict policy and archives. | Offline, shifted-clock and conflict tests pass without loss. | Done, except RomM's Device Sync and a conflict screen |
+| 3 — RetroArch | Isolated config, pinned cores, NES/MD launch, Steam non-Steam integration. | Complete NES/MD flow, including an EmulatorJS round trip. | Done; to validate on the reference hardware |
+| 4 — Dolphin, PCSX2, Switch | Adapters, per-profile memory cards, Flatpak installation; Yuzu-family adapter, keys/firmware, per-profile saves, shaders, mods, TotK profile. | Complete GC/PS2 flow; TotK scenario validated on the reference hardware. | Done (also PS1, DS, PS3, PS4, Xbox 360); to validate on the reference hardware |
+| 5 — Compatibility, peripherals, distribution | Rules engine, reports, per-game profiles, gamepads; Flatpak/AppImage packaging, autostart, CLI, documentation. | Warned launch, launch anyway and diagnostics verified; couch/gamepad acceptance and Linux matrix published. | In progress: per-game profiles, releases with an installer and updates by parts done; rules engine and Flatpak to do |
 
 ### 16.1 Main risks
 
@@ -778,7 +794,7 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - [S6] State of Switch emulation (specialized press, 2026): discontinuations and takedown requests, Eden and Citron active. Secondary sources to revalidate.
 - [S7] Pegasus Frontend — pegasus-frontend.org. Qt/QML launcher with QML themes, reference for theme architecture.
 
-## Cases, art and languages
+## 19. Cases, art and languages
 
 - Each console's games have a case profile (ui/components/Cases.js): material (cardboard, keep case,
   jewel case, clamshell), plastic color and real outer size in millimetres. Cases keep their
@@ -878,7 +894,7 @@ About and screenshots side by side on the game page, credits on one line.
   launched for it (the region that natively speaks it first, then installed, then the usual score).
   Choosing one stores both the version and the language.
 
-## ScreenScraper (Borne's own access)
+## 20. ScreenScraper (Borne's own access)
 
 - Settings → Game images: the user's ScreenScraper account (user name and password, checked with
   `ssuserInfos.php`, kept in a 0600 file, never logged). Borne's developer credentials are compiled
@@ -894,13 +910,13 @@ About and screenshots side by side on the game page, credits on one line.
 - Boxes are real boxes: the spine on the left side only, the opening edge on the right; the front
   takes the exact proportions of its image (scan, else cover), so nothing is cropped.
 
-## External services
+## 21. External services
 
 Borne talks to RomM, to ScreenScraper (Borne's own access, optional) and to GitHub (its own
 updates), and to nothing else. Earlier sources (LaunchBox Games Database, Wikidata / Wikipedia) were
 removed; their caches are dropped when the database is opened.
 
-### ScreenScraper developer credentials
+### 21.1 ScreenScraper developer credentials
 
 ScreenScraper requires the software's developer credentials with every request. They are repository
 secrets (`SCREENSCRAPER_DEV_ID`, `SCREENSCRAPER_DEV_PASSWORD`), passed to the build as
@@ -910,7 +926,7 @@ never logged by Borne, never returned by the API (only `developer_access: true/f
 from stored media URLs. Errors from the network never carry the request URL. A build without them
 says so in Settings; development builds can set the same variables in the environment.
 
-## Game boxes as solids
+## 22. Game boxes in 2D (fallback when 3D is unavailable)
 
 - Six faces (front, back, spine on the left, opening edge on the right, top, bottom), each drawn
   through one perspective matrix; the box turns about its vertical axis (yaw) and its horizontal

@@ -108,20 +108,6 @@ Item {
         }
         return map[r] || r
     }
-    function langCode(name) {
-        const map = { English: "EN", French: "FR", German: "DE", Spanish: "ES", Italian: "IT", Japanese: "JA", Dutch: "NL",
-                      Portuguese: "PT", Swedish: "SV", Danish: "DA", Norwegian: "NO", Finnish: "FI", Korean: "KO", Chinese: "ZH", Russian: "RU", Polish: "PL" }
-        return map[name] || name.substring(0, 2).toUpperCase()
-    }
-    function versionTitle(v) {
-        const regions = (v.regions || "").split(",").map(x => x.trim()).filter(x => x).map(regionName)
-        let t = regions.length ? regions.join(" / ") : qsTr("Version %1").arg(versions.indexOf(v) + 1)
-        if (v.revision) t += " · " + qsTr("Rev. %1").arg(v.revision)
-        return t
-    }
-    function versionDetail(v) {
-        return (v.langs || []).map(langCode).join(" ")
-    }
     function stateText() {
         const g = game
         if (!g) return ""

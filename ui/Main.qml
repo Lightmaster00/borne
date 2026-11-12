@@ -523,29 +523,6 @@ Window {
             }, qsTr("Password"), true)
         }, qsTr("User name"))
     }
-    // Quick menu (Y) on the library: the most common actions without opening the page.
-    function gameMenu() {
-        const g = focusedGame
-        if (!g) return
-        const active = ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0
-        let items = [{ id: "open", label: qsTr("Open the game page") }]
-        if (active) items.push({ id: "cancel", label: qsTr("Cancel download") })
-        else if (g.local_state === "local") items.push({ id: "delete", label: qsTr("Delete from this device") })
-        else if (g.linked) items.push({ id: "unlink", label: qsTr("Remove from the network mount") })
-        else {
-            items.push({ id: "download", label: qsTr("Download"), detail: fmtSize(g.fs_size) })
-            items.push({ id: "link", label: qsTr("Play from the network"), disabled: !settings.stream.available, detail: settings.stream.available ? "" : CoreText.tr(settings.stream.error || "") })
-        }
-        items.push({ id: "close", label: qsTr("Close") })
-        menu.open(g.name, g.platform_name + (g.year > 0 ? " · " + g.year : "") + (g.version_count > 1 ? " · " + qsTr("%n version(s)", "", g.version_count) : ""), items, function (c) {
-            if (c === "open") openGame(g.rom_id)
-            else if (c === "download") download(g)
-            else if (c === "link") link(g)
-            else if (c === "unlink") unlink(g)
-            else if (c === "cancel") cancelDownload(g)
-            else if (c === "delete") deleteLocal(g)
-        })
-    }
     function loadSettings() { api("GET", "/api/v1/settings", null, function (r) { if (r) settings = r }) }
     function settingsMenu() {
         loadSettings()

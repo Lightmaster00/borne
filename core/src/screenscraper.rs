@@ -149,12 +149,7 @@ fn call(c: &Credentials, endpoint: &str, params: &[(&str, String)]) -> Result<Va
     // The error text is not kept: it could carry the request URL, credentials included.
     let mut resp = req.call().map_err(|_| "ScreenScraper unreachable (network)".to_string())?;
     let code = resp.status().as_u16();
-    let body = resp
-        .body_mut()
-        .with_config()
-        .limit(8 << 20)
-        .read_to_string()
-        .unwrap_or_default();
+    let body = resp.body_mut().with_config().limit(8 << 20).read_to_string().unwrap_or_default();
     match code {
         200 => serde_json::from_str(&body).map_err(|_| {
             let t: String = body.split_whitespace().collect::<Vec<_>>().join(" ");
@@ -188,8 +183,7 @@ pub fn test(app: &Shared, c: &Credentials) -> Result<Value, String> {
 
 pub fn save(app: &Shared, c: &Credentials) -> Result<Value, String> {
     let info = test(app, c)?;
-    crate::secrets::store(&app.paths, SECRET_ID, &serde_json::to_string(c).unwrap())
-        .map_err(|e| e.to_string())?;
+    crate::secrets::store(&app.paths, SECRET_ID, &serde_json::to_string(c).unwrap()).map_err(|e| e.to_string())?;
     app.db.log("screenscraper", "account saved");
     Ok(info)
 }
@@ -397,12 +391,7 @@ pub fn video(app: &Shared, group_key: &str, dir: &std::path::Path) -> Result<std
         return Err(format!("video answered {}", resp.status().as_u16()));
     }
     let ctype = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
-    let bytes = resp
-        .body_mut()
-        .with_config()
-        .limit(150 << 20)
-        .read_to_vec()
-        .map_err(|_| "video download interrupted".to_string())?;
+    let bytes = resp.body_mut().with_config().limit(150 << 20).read_to_vec().map_err(|_| "video download interrupted".to_string())?;
     // ScreenScraper answers a text message (not an error code) when the media is missing.
     if bytes.len() < 4096 || ctype.starts_with("text") || ctype.contains("json") {
         app.db.set_media(group_key, "video", "", 0, 0, "none");
@@ -416,11 +405,7 @@ pub fn video(app: &Shared, group_key: &str, dir: &std::path::Path) -> Result<std
 
 /// The game's ScreenScraper record, matched by id, else by hashes, name and size.
 fn lookup(app: &Shared, c: &Credentials, versions: &[crate::db::GameRow]) -> Result<Option<Value>, String> {
-    let systems: Value = app
-        .db
-        .setting("ss_systems")
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or(Value::Null);
+    let systems: Value = app.db.setting("ss_systems").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(Value::Null);
     // A match the user chose by hand wins over everything.
     let chosen = versions.first().and_then(|g| app.db.setting(&format!("ss_match.{}", g.group_key))).and_then(|v| v.parse::<i64>().ok());
     for g in versions {
@@ -545,17 +530,30 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
     let systems = v["response"]["systemes"].as_array().cloned().unwrap_or_default();
     let regions = ui_regions(&ui_lang(app));
     for (slug, id) in slugs {
-        let Some(sys) = systems.iter().find(|s| s["id"].as_i64() == Some(id) || s["id"].as_str() == Some(&id.to_string())) else { continue };
-        let medias: Vec<Value> = sys["medias"].as_array().cloned().unwrap_or_default().into_iter().map(|mut m| {
-            // System media carry no "parent": treat them as the game's own for `pick`.
-            m["parent"] = json!("jeu");
-            if let Some(u) = m["url"].as_str().map(redact) {
-                m["url"] = json!(u);
-            }
-            m
-        }).collect();
+        let Some(sys) = systems.iter().find(|s| s["id"].as_i64() == Some(id) || s["id"].as_str() == Some(&id.to_string())) else {
+            continue;
+        };
+        let medias: Vec<Value> = sys["medias"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|mut m| {
+                // System media carry no "parent": treat them as the game's own for `pick`.
+                m["parent"] = json!("jeu");
+                if let Some(u) = m["url"].as_str().map(redact) {
+                    m["url"] = json!(u);
+                }
+                m
+            })
+            .collect();
         let key = format!("system:{slug}");
-        for (kind, types) in [("logo", &["wheel", "wheel-hd"][..]), ("logo-mono", &["logo-monochrome", "wheel-carbon"][..]), ("photo", &["photo", "illustration"][..]), ("frame", &frame_types[..])] {
+        for (kind, types) in [
+            ("logo", &["wheel", "wheel-hd"][..]),
+            ("logo-mono", &["logo-monochrome", "wheel-carbon"][..]),
+            ("photo", &["photo", "illustration"][..]),
+            ("frame", &frame_types[..]),
+        ] {
             let Some(url) = pick(&medias, types, &regions) else { continue };
             let stamp = format!("ss|{url}");
             if !again && app.db.media(&key, kind).map(|m| m.stamp == stamp && std::path::Path::new(&m.path).is_file()).unwrap_or(false) {
@@ -616,16 +614,16 @@ fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> us
     }
     // The gameplay video is only noted here (redacted address): it is downloaded the first
     // time the game is shown with the video background, see `video`.
-    let video = pick(&medias, &["video-normalized", "video"], &regions)
-        .map(|u| format!("ss|{}", redact(u)))
-        .unwrap_or_else(|| "none".into());
+    let video =
+        pick(&medias, &["video-normalized", "video"], &regions).map(|u| format!("ss|{}", redact(u))).unwrap_or_else(|| "none".into());
     if app.db.media(group_key, "video").map(|m| m.stamp != video).unwrap_or(true) {
         app.db.set_media(group_key, "video", "", 0, 0, &video);
     }
     // No spine scan: cut it from the unfolded case texture (back | spine | front). Not for CD
     // jewel cases: their back insert folds into a spine on each side, and the cut would take parts
     // of both (the title twice); their spine shows the title in the case's colour instead.
-    let has_side = app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|") && !m.stamp.starts_with(OLD_SPINE_CUT)).unwrap_or(false);
+    let has_side =
+        app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|") && !m.stamp.starts_with(OLD_SPINE_CUT)).unwrap_or(false);
     if !has_side && !jewel_case(group_key) {
         if let Some(ar) = front_ar {
             if cut_spine(app, c, group_key, &medias, &regions, ar) {
@@ -846,11 +844,7 @@ pub fn start(app: &Shared, again: bool) {
             });
             // As many requests at once as the account allows (ScreenScraper's maxthreads, 1 for
             // a free account), up to 4.
-            let threads = test(&app, &c)
-                .ok()
-                .and_then(|_| status_get().max_threads)
-                .map(|n| n.clamp(1, 4) as usize)
-                .unwrap_or(1);
+            let threads = test(&app, &c).ok().and_then(|_| status_get().max_threads).map(|n| n.clamp(1, 4) as usize).unwrap_or(1);
             fetch_systems(&app, &c, again);
             drop_jewel_texture_spines(&app);
             recut_spines(&app, &c);
@@ -933,7 +927,13 @@ mod tests {
         // a little off (as after trimming), so the first guess misses the folds.
         let mut g = image::GrayImage::new(620, 400);
         for (x, _, p) in g.enumerate_pixels_mut() {
-            p[0] = if x < 300 { 90 } else if x < 340 { 220 } else { 40 };
+            p[0] = if x < 300 {
+                90
+            } else if x < 340 {
+                220
+            } else {
+                40
+            };
         }
         let (x, w) = spine_span(&g, 290.0 / 400.0).unwrap();
         assert_eq!((x, w), (301, 38));
@@ -968,8 +968,11 @@ mod tests {
 
 /// Per console: games found on ScreenScraper, not found, not looked up yet, and the names of
 /// those not found (for Settings → Game images).
+/// A console's name and its games (name, ROM id, ScreenScraper state).
+type ConsoleGames = (String, Vec<(String, i64, String)>);
+
 pub fn report(app: &Shared) -> Value {
-    let mut by: std::collections::BTreeMap<String, (String, Vec<(String, i64, String)>)> = Default::default();
+    let mut by: std::collections::BTreeMap<String, ConsoleGames> = Default::default();
     let mut seen = std::collections::HashSet::new();
     for g in app.db.games(None, None, false) {
         if !seen.insert(g.group_key.clone()) {
@@ -1012,7 +1015,11 @@ pub fn search(app: &Shared, name: &str, platform: &str) -> Result<Value, String>
                 .find_map(|r| names.iter().find(|n| n["region"].as_str() == Some(r)).and_then(|n| n["text"].as_str()))
                 .or_else(|| names.first().and_then(|n| n["text"].as_str()))
                 .unwrap_or("?");
-            let year = j["dates"].as_array().and_then(|d| d.first()).and_then(|d| d["text"].as_str()).map(|t| t.chars().take(4).collect::<String>());
+            let year = j["dates"]
+                .as_array()
+                .and_then(|d| d.first())
+                .and_then(|d| d["text"].as_str())
+                .map(|t| t.chars().take(4).collect::<String>());
             json!({
                 "id": j["id"].as_str().and_then(|s| s.parse::<i64>().ok()).or_else(|| j["id"].as_i64()),
                 "name": title,
@@ -1044,11 +1051,7 @@ pub fn correct(app: &Shared, group_key: &str, ss_id: Option<i64>, region: Option
     std::thread::spawn(move || {
         let versions = app.db.group(&key);
         // The region alone: the record already kept is enough.
-        let rec = if ss_id.is_none() {
-            app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok())
-        } else {
-            None
-        };
+        let rec = if ss_id.is_none() { app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) } else { None };
         let rec = match rec {
             Some(r) => Some(r),
             None => match lookup(&app, &c, &versions) {

@@ -66,7 +66,7 @@ Item {
             aoStrength: 40
             aoDistance: 18
             aoSoftness: 40
-            // The photo studio (scripts/gen-studio-hdr.py): its softboxes and strips are what
+            // The photo studio (scripts/gen-case-assets.py): its softboxes and strips are what
             // the clear sleeves, jewel cases and plastic reflect.
             lightProbe: Texture { source: "studio.hdr"; mappingMode: Texture.LightProbe }
             probeExposure: 0.9

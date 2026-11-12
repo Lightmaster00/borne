@@ -26,23 +26,13 @@ pub fn write(kind: &str, message: &str) {
     eprintln!("[borne] {kind}: {message}");
     let guard = LOG.lock().unwrap();
     let Some(path) = guard.as_ref() else { return };
-    if std::fs::metadata(path)
-        .map(|m| m.len() > MAX_BYTES)
-        .unwrap_or(false)
-    {
+    if std::fs::metadata(path).map(|m| m.len() > MAX_BYTES).unwrap_or(false) {
         let _ = std::fs::rename(path, path.with_extension("log.1"));
     }
-    if let Ok(mut f) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-    {
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
         let ts = crate::db::now();
         // One line per entry, whatever the message contains.
-        let clean: String = message
-            .chars()
-            .map(|c| if c == '\n' || c == '\r' { ' ' } else { c })
-            .collect();
+        let clean: String = message.chars().map(|c| if c == '\n' || c == '\r' { ' ' } else { c }).collect();
         let _ = writeln!(f, "{ts} {kind}: {clean}");
     }
 }

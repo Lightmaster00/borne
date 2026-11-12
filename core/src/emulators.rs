@@ -225,12 +225,48 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
     let mac = home().join("Library/Application Support");
     let mac_os = cfg!(target_os = "macos");
     match program {
-        "eden" => if mac_os { mac.join("eden") } else { xdg_data.join("eden") },
-        "citron" => if mac_os { mac.join("citron") } else { xdg_data.join("citron") },
-        "ryubing" => if mac_os { mac.join("Ryujinx") } else { xdg_config.join("Ryujinx") },
-        "rpcs3" => if mac_os { mac.join("rpcs3") } else { xdg_config.join("rpcs3") },
-        "pcsx2" => if mac_os { mac } else { xdg_config },
-        "shadps4" => if mac_os { mac.join("shadPS4") } else { xdg_data.join("shadPS4") },
+        "eden" => {
+            if mac_os {
+                mac.join("eden")
+            } else {
+                xdg_data.join("eden")
+            }
+        }
+        "citron" => {
+            if mac_os {
+                mac.join("citron")
+            } else {
+                xdg_data.join("citron")
+            }
+        }
+        "ryubing" => {
+            if mac_os {
+                mac.join("Ryujinx")
+            } else {
+                xdg_config.join("Ryujinx")
+            }
+        }
+        "rpcs3" => {
+            if mac_os {
+                mac.join("rpcs3")
+            } else {
+                xdg_config.join("rpcs3")
+            }
+        }
+        "pcsx2" => {
+            if mac_os {
+                mac
+            } else {
+                xdg_config
+            }
+        }
+        "shadps4" => {
+            if mac_os {
+                mac.join("shadPS4")
+            } else {
+                xdg_data.join("shadPS4")
+            }
+        }
         "xenia" => xdg_data.join("Xenia"),
         _ => base,
     }
@@ -372,7 +408,9 @@ pub fn playing() -> bool {
 
 pub fn session() -> Value {
     match SESSION.lock().unwrap().as_ref() {
-        Some(s) => json!({ "running": true, "rom_id": s.rom_id, "name": s.name, "emulator": s.emulator, "seconds": s.started.elapsed().as_secs() }),
+        Some(s) => {
+            json!({ "running": true, "rom_id": s.rom_id, "name": s.name, "emulator": s.emulator, "seconds": s.started.elapsed().as_secs() })
+        }
         None => json!({ "running": false }),
     }
 }
@@ -396,7 +434,16 @@ fn game_file(app: &Shared, g: &GameRow) -> Result<PathBuf, String> {
 
 /// The command that starts `rom` with the chosen engine.
 #[allow(clippy::too_many_arguments)]
-fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, rom: &Path, lang: &str, rom_id: i64) -> Result<Command, String> {
+fn command(
+    app: &Shared,
+    p: &Program,
+    e: &Engine,
+    found: &Found,
+    system: &str,
+    rom: &Path,
+    lang: &str,
+    rom_id: i64,
+) -> Result<Command, String> {
     let core = match &e.core {
         Some(c) => {
             let path = crate::emuinstall::core_path(app, c);
@@ -462,7 +509,10 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
         ini_set(&data.join("PCSX2/inis/PCSX2.ini"), &[("MemoryCards", "Slot1_Enable", "true"), ("MemoryCards", "Slot1_Filename", &name)])?;
     }
     if p.id == "duckstation" {
-        ini_set(&data_dir(app, &profile, &p.id).join("data/duckstation/settings.ini"), &[("MemoryCards", "Card1Type", "PerGameFileTitle")])?;
+        ini_set(
+            &data_dir(app, &profile, &p.id).join("data/duckstation/settings.ini"),
+            &[("MemoryCards", "Card1Type", "PerGameFileTitle")],
+        )?;
     }
     let (pad, guid) = {
         let s = app.pads.lock().unwrap();
@@ -479,7 +529,10 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
             .replace("{userdir}", &userdir.to_string_lossy())
             .replace("{data}", &data_dir(app, &profile, &p.id).to_string_lossy())
             .replace("{lang_dolphin}", lang_dolphin)
-            .replace("{upscale3}", &display.get("upscale").and_then(|v| v.as_str()).and_then(|v| v.parse::<u32>().ok()).unwrap_or(1).min(3).to_string());
+            .replace(
+                "{upscale3}",
+                &display.get("upscale").and_then(|v| v.as_str()).and_then(|v| v.parse::<u32>().ok()).unwrap_or(1).min(3).to_string(),
+            );
         // An option left without its value (no language chosen…) goes with its flag.
         if v.ends_with('=') || v.is_empty() {
             if args.last().map(|l| l.starts_with('-')).unwrap_or(false) {
@@ -664,7 +717,8 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
-    *SESSION.lock().unwrap() = Some(Session { rom_id, name: g.name.clone(), emulator: e.name.clone(), started: Instant::now(), child, stopping: false, sync });
+    *SESSION.lock().unwrap() =
+        Some(Session { rom_id, name: g.name.clone(), emulator: e.name.clone(), started: Instant::now(), child, stopping: false, sync });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
     let app = app.clone();
@@ -683,14 +737,20 @@ fn follow(app: Shared, log: PathBuf) {
                 let quick = s.started.elapsed() < Duration::from_secs(8) && !s.stopping;
                 let error = (!status.success() && quick).then(|| {
                     let t = log_tail(&log);
-                    if t.is_empty() { format!("{} stopped at once ({status})", s.emulator) } else { format!("{} stopped at once: {t}", s.emulator) }
+                    if t.is_empty() {
+                        format!("{} stopped at once ({status})", s.emulator)
+                    } else {
+                        format!("{} stopped at once: {t}", s.emulator)
+                    }
                 });
                 let played = s.started.elapsed().as_secs();
                 let (rom_id, name, sync) = (s.rom_id, s.name.clone(), s.sync.clone());
                 *g = None;
                 drop(g);
                 // The save to RomM, then the end of the session is announced with the outcome.
-                let saved = sync.map(|(profile, system, program, rom, emu)| crate::savesync::push(&app, &profile, rom_id, &system, &program, &rom, &emu));
+                let saved = sync.map(|(profile, system, program, rom, emu)| {
+                    crate::savesync::push(&app, &profile, rom_id, &system, &program, &rom, &emu)
+                });
                 let save_note = match &saved {
                     Some(Ok(n)) if *n > 0 => Some("save sent to RomM".to_string()),
                     Some(Err(e)) => Some(e.clone()),
@@ -770,7 +830,12 @@ mod tests {
         std::fs::write(&p, "[UI]\nTheme = dark\nSetupWizardIncomplete = true\n\n[Other]\nA = 1\n").unwrap();
         ini_set(&p, &[("UI", "SetupWizardIncomplete", "false"), ("Folders", "Bios", "/x")]).unwrap();
         let t = std::fs::read_to_string(&p).unwrap();
-        assert!(t.contains("Theme = dark") && t.contains("SetupWizardIncomplete = false") && t.contains("[Folders]\nBios = /x") && t.contains("A = 1"));
+        assert!(
+            t.contains("Theme = dark")
+                && t.contains("SetupWizardIncomplete = false")
+                && t.contains("[Folders]\nBios = /x")
+                && t.contains("A = 1")
+        );
         let _ = std::fs::remove_file(p);
     }
 

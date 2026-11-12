@@ -55,7 +55,9 @@ pub fn ps3_serial(rom: &Path) -> Option<String> {
     let b = n.as_bytes();
     (0..b.len().saturating_sub(8)).find_map(|i| {
         let w = &n[i..i + 9];
-        let ok = w[..4].chars().all(|c| c.is_ascii_uppercase()) && w[4..].chars().all(|c| c.is_ascii_digit()) && matches!(&w[..2], "BL" | "BC" | "NP");
+        let ok = w[..4].chars().all(|c| c.is_ascii_uppercase())
+            && w[4..].chars().all(|c| c.is_ascii_digit())
+            && matches!(&w[..2], "BL" | "BC" | "NP");
         ok.then(|| w.to_string())
     })
 }
@@ -185,7 +187,12 @@ pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Pat
     let data = crate::emulators::data_dir(app, profile, program);
     let st = stem(rom);
     match program {
-        "retroarch" => vec![Item { kind: "saves", local: base.join("saves").join(system).join(format!("{st}.srm")), remote_name: format!("{st}.srm"), folder: false }],
+        "retroarch" => vec![Item {
+            kind: "saves",
+            local: base.join("saves").join(system).join(format!("{st}.srm")),
+            remote_name: format!("{st}.srm"),
+            folder: false,
+        }],
         "dolphin" => vec![Item { kind: "saves", local: dolphin_card(app, profile, rom), remote_name: format!("{st}.raw"), folder: false }],
         "duckstation" => {
             let name = format!("{st}_1.mcd");
@@ -202,7 +209,12 @@ pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Pat
                 .flatten()
                 .flatten()
                 .filter(|e| e.path().is_dir() && e.file_name().to_string_lossy().starts_with(&serial))
-                .map(|e| Item { kind: "saves", local: e.path(), remote_name: format!("{}.zip", e.file_name().to_string_lossy()), folder: true })
+                .map(|e| Item {
+                    kind: "saves",
+                    local: e.path(),
+                    remote_name: format!("{}.zip", e.file_name().to_string_lossy()),
+                    folder: true,
+                })
                 .collect(),
             None => vec![],
         },
@@ -219,7 +231,11 @@ pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Pat
                         break;
                     }
                 }
-                if found.is_dir() { vec![Item { kind: "saves", local: found, remote_name: format!("{tid}.zip"), folder: true }] } else { vec![] }
+                if found.is_dir() {
+                    vec![Item { kind: "saves", local: found, remote_name: format!("{tid}.zip"), folder: true }]
+                } else {
+                    vec![]
+                }
             }
             None => vec![],
         },
@@ -345,7 +361,12 @@ fn local_states(app: &Shared, profile: &str, system: &str, rom: &Path) -> Vec<It
         .flatten()
         .filter_map(|e| {
             let n = e.file_name().to_string_lossy().into_owned();
-            (n.starts_with(&prefix) && !n.ends_with(".png")).then(|| Item { kind: "states", local: e.path(), remote_name: n, folder: false })
+            (n.starts_with(&prefix) && !n.ends_with(".png")).then(|| Item {
+                kind: "states",
+                local: e.path(),
+                remote_name: n,
+                folder: false,
+            })
         })
         .collect()
 }
@@ -502,7 +523,8 @@ pub fn pull(app: &Shared, profile: &str, rom_id: i64, system: &str, program: &st
         let states = client.assets("states", rom_id).unwrap_or_default();
         let prefix = format!("{}.state", stem(rom));
         let dir = app.paths.profiles().join(profile).join("states").join(system);
-        let mut names: Vec<String> = states.iter().filter_map(|s| s["file_name"].as_str()).filter(|n| n.starts_with(&prefix)).map(String::from).collect();
+        let mut names: Vec<String> =
+            states.iter().filter_map(|s| s["file_name"].as_str()).filter(|n| n.starts_with(&prefix)).map(String::from).collect();
         names.sort();
         names.dedup();
         for n in names {
@@ -610,7 +632,11 @@ pub fn retry_pending(app: &Shared) {
         if !done.insert(rom_id) {
             continue;
         }
-        let (Some(system), Some(program), Some(rom), Some(emu)) = (v["system"].as_str(), v["program"].as_str(), v["rom"].as_str(), v["emulator"].as_str()) else { continue };
+        let (Some(system), Some(program), Some(rom), Some(emu)) =
+            (v["system"].as_str(), v["program"].as_str(), v["rom"].as_str(), v["emulator"].as_str())
+        else {
+            continue;
+        };
         match push(app, &p.id, rom_id, system, program, Path::new(rom), emu) {
             Ok(n) if n > 0 => app.db.log("saves", &format!("game {rom_id}: {n} waiting file(s) sent")),
             Err(e) => app.db.log("saves", &format!("game {rom_id}: {e}")),
@@ -663,7 +689,11 @@ mod tests {
     fn ryujinx_saves_found_by_program_id() {
         let root = std::env::temp_dir().join(format!("borne-ryu-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
-        for (dir, id, kind) in [("0000000000000001", 0x0100000000010000u64, 1u8), ("0000000000000002", 0x01007EF00011E000, 1), ("0000000000000003", 0x0100000000010000, 3)] {
+        for (dir, id, kind) in [
+            ("0000000000000001", 0x0100000000010000u64, 1u8),
+            ("0000000000000002", 0x01007EF00011E000, 1),
+            ("0000000000000003", 0x0100000000010000, 3),
+        ] {
             std::fs::create_dir_all(root.join(dir)).unwrap();
             let mut b = id.to_le_bytes().to_vec();
             b.resize(0x40, 0);

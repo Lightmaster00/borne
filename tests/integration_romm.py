@@ -220,6 +220,8 @@ try:
     pending = [d for d in dls if d["rom_id"] == other["rom_id"] and d["state"] in ("queued", "downloading", "verifying")]
     if pending:
         call(api, "DELETE", f"/api/v1/downloads/{pending[0]['id']}")
+    # A cancelled running download stops a moment later: clear once nothing is running.
+    wait(lambda: not [d for d in call(api, "GET", "/api/v1/downloads")[1] if d["state"] in ("queued", "downloading", "verifying", "extracting")], 30, "downloads settled")
     s, cl = call(api, "DELETE", "/api/v1/downloads")
     check(s == 200 and not [d for d in cl["downloads"] if d["state"] in ("done", "cancelled")], "finished and cancelled downloads cleared from the list")
     s, _ = call(api, "DELETE", f"/api/v1/games/{small['rom_id']}/local")

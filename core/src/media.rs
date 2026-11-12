@@ -38,14 +38,8 @@ pub fn sources(app: &Shared, group_key: &str) -> HashMap<&'static str, (i64, Str
         .map(|(id, _)| *id);
     let mut out = HashMap::new();
     for kind in KINDS {
-        let from_best = arts
-            .iter()
-            .filter(|(id, _)| Some(*id) == best)
-            .find_map(|(id, a)| a[kind].as_str().map(|p| (*id, p.to_string())));
-        let any = || {
-            arts.iter()
-                .find_map(|(id, a)| a[kind].as_str().map(|p| (*id, p.to_string())))
-        };
+        let from_best = arts.iter().filter(|(id, _)| Some(*id) == best).find_map(|(id, a)| a[kind].as_str().map(|p| (*id, p.to_string())));
+        let any = || arts.iter().find_map(|(id, a)| a[kind].as_str().map(|p| (*id, p.to_string())));
         if let Some(v) = from_best.or_else(any) {
             out.insert(kind, v);
         }
@@ -172,9 +166,8 @@ pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
 
 /// Decodes an image from the network, refusing absurd sizes before decoding (memory bombs).
 pub fn decode(bytes: &[u8]) -> Result<DynamicImage, String> {
-    let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
-        .with_guessed_format()
-        .map_err(|e| format!("unreadable image ({e})"))?;
+    let mut reader =
+        image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format().map_err(|e| format!("unreadable image ({e})"))?;
     let mut limits = image::Limits::default();
     limits.max_image_width = Some(12_000);
     limits.max_image_height = Some(12_000);
@@ -204,9 +197,7 @@ fn finish(app: &Shared, group_key: &str, kind: &str, mut img: DynamicImage) -> R
     let tmp = path.with_extension("tmp");
     let r = if opaque {
         let mut f = std::io::BufWriter::new(std::fs::File::create(&tmp).map_err(|e| e.to_string())?);
-        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut f, 90)
-            .encode_image(&img.to_rgb8())
-            .map_err(|e| e.to_string())
+        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut f, 90).encode_image(&img.to_rgb8()).map_err(|e| e.to_string())
     } else {
         img.save_with_format(&tmp, ImageFormat::Png).map_err(|e| e.to_string())
     };
@@ -365,7 +356,11 @@ pub fn case_shapes(mut v: Vec<f64>) -> Vec<f64> {
     match split {
         Some(i) => {
             let (a, b) = v.split_at(i);
-            if a.len() >= b.len() { vec![median(a), median(b)] } else { vec![median(b), median(a)] }
+            if a.len() >= b.len() {
+                vec![median(a), median(b)]
+            } else {
+                vec![median(b), median(a)]
+            }
         }
         None => vec![median(&v)],
     }
@@ -383,9 +378,7 @@ pub fn report(app: &Shared) -> Value {
     }
     let mut out: Vec<Value> = per
         .into_iter()
-        .map(|(slug, (name, games, counts))| {
-            json!({ "platform": slug, "name": name, "games": games, "have": counts })
-        })
+        .map(|(slug, (name, games, counts))| json!({ "platform": slug, "name": name, "games": games, "have": counts }))
         .collect();
     out.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
     json!({ "kinds": KINDS, "platforms": out })
@@ -402,9 +395,17 @@ mod tests {
         let mut img = image::RgbImage::new(140, 120);
         for (x, y, p) in img.enumerate_pixels_mut() {
             *p = if x < 16 {
-                if x % 4 == 0 { image::Rgb([200, 200, 205]) } else { image::Rgb([90, 90, 95]) }
+                if x % 4 == 0 {
+                    image::Rgb([200, 200, 205])
+                } else {
+                    image::Rgb([90, 90, 95])
+                }
             } else if x < 40 {
-                if (30..50).contains(&y) { image::Rgb([255, 255, 255]) } else { image::Rgb([5, 5, 5]) }
+                if (30..50).contains(&y) {
+                    image::Rgb([255, 255, 255])
+                } else {
+                    image::Rgb([5, 5, 5])
+                }
             } else {
                 image::Rgb([((x * 7 + y * 3) % 255) as u8, (y * 2 % 255) as u8, 80])
             };
@@ -427,7 +428,11 @@ mod tests {
         for x in 0..150 {
             for y in 0..120 {
                 let p = if x < 20 {
-                    if x % 3 == 0 { [45, 45, 48] } else { [12, 12, 14] }
+                    if x % 3 == 0 {
+                        [45, 45, 48]
+                    } else {
+                        [12, 12, 14]
+                    }
                 } else if x < 50 {
                     [6, 6, 6]
                 } else {

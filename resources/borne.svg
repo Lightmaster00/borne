@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Borne's mark (ui/components/Logo.qml): a rounded square frame with a dot, on the app's dark background. -->
+  <rect width="256" height="256" rx="56" fill="#0C0D10"/>
+  <rect x="58" y="58" width="140" height="140" rx="32" fill="none" stroke="#8CCBFF" stroke-width="16"/>
+  <circle cx="128" cy="128" r="22" fill="#8CCBFF"/>
+</svg>
