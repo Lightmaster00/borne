@@ -183,7 +183,9 @@ Item {
                      : i.required ? qsTr("Missing — needed to play") : qsTr("Optional")
             if (failed) desc = qsTr("Not added: %1").arg(CoreText.tr(t.error))
             const key = c.slug + "/" + i.id
-            const b = [{ id: "sf-romm:" + key, label: qsTr("From RomM"), primary: !i.files.length && i.required, disabled: !!(t && t.running) },
+            // A valid file is in place: only Remove (another file can be added once it is gone).
+            const b = i.valid ? []
+                    : [{ id: "sf-romm:" + key, label: qsTr("From RomM"), primary: !i.files.length && i.required, disabled: !!(t && t.running) },
                        { id: "sf-pick:" + key, label: qsTr("Choose a file"), disabled: !!(t && t.running) },
                        { id: "sf-url:" + key, label: qsTr("From a link"), disabled: !!(t && t.running) }]
             if (i.files.length) b.push({ id: "sf-remove:" + key, label: qsTr("Remove") })
@@ -215,15 +217,15 @@ Item {
         }))
     }
     readonly property var sections: [
-        { id: "games", name: qsTr("Games"), hint: qsTr("Install, cache") },
+        { id: "games", name: qsTr("Games"), hint: qsTr("Installation, saves") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable") },
-        { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, trailers") },
-        { id: "display", name: qsTr("Display"), hint: qsTr("All games") },
+        { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, videos") },
+        { id: "display", name: qsTr("Display"), hint: qsTr("Picture, ratio, filters") },
         { id: "emulators", name: qsTr("Emulators"), hint: qsTr("One per console") },
         { id: "systemfiles", name: qsTr("System files"), hint: qsTr("BIOS, keys, firmware") },
-        { id: "screenscraper", name: qsTr("Game images"), hint: ss && ss.configured ? ss.user : qsTr("ScreenScraper") },
-        { id: "server", name: qsTr("Server"), hint: qsTr("RomM, profiles") },
-        { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostic report") }
+        { id: "screenscraper", name: qsTr("Game images"), hint: qsTr("ScreenScraper") },
+        { id: "server", name: qsTr("Server"), hint: qsTr("RomM, sync, profile") },
+        { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostics, quit") }
     ]
     readonly property var cacheSizes: [5, 10, 20, 50, 100]
     readonly property var rows: {
@@ -232,20 +234,20 @@ Item {
             { id: "install", kind: "cards", selected: installMode },
             { id: "savesync", kind: "chips", title: qsTr("Saves on RomM"), desc: qsTr("Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived."),
               selected: settings && settings.save_sync === false ? "off" : "on", items: onOff() },
-            { id: "cache", kind: "chips", title: qsTr("Mount cache"), desc: qsTr("Space kept for recently played mounted games"),
+            { id: "cache", kind: "chips", title: qsTr("Space for network play"), desc: qsTr("Disk space Borne keeps for games played from the network (without downloading them), so they start faster next time"),
               selected: settings && settings.stream.cache_limit_mb ? String(Math.round(settings.stream.cache_limit_mb / 1024)) : "20",
               items: cacheSizes.map(g => ({ id: String(g), label: qsTr("%1 GB").arg(g) })) }
-        ]
+        ].filter(r => r.id !== "cache" || installMode === "stream")   // network play only
         if (id === "updates") return [
             { id: "channel", kind: "chips", title: qsTr("Update channel"), desc: qsTr("Stable gets tested releases; Development gets every build"),
               selected: upd ? upd.channel : "stable", items: [{ id: "stable", label: qsTr("Stable") }, { id: "dev", label: qsTr("Development") }] },
             { id: "auto", kind: "chips", title: qsTr("Check automatically"), desc: qsTr("Every 6 hours, never while you play"),
               selected: upd && upd.auto_check ? "on" : "off", items: onOff() },
-            { id: "update", kind: "buttons", title: qsTr("Borne %1").arg(page.version), desc: updateText, items: updateButtons }
+            { id: "update", kind: "buttons", title: qsTr("Installed version: %1").arg(page.version), desc: updateText, items: updateButtons }
         ]
         if (id === "interface") return [
             { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
-            { id: "trailers", kind: "chips", title: qsTr("Trailers"), desc: qsTr("Videos of the games, muted: behind the library and on the game page"), selected: trailers ? "on" : "off", items: onOff() }
+            { id: "trailers", kind: "chips", title: qsTr("Game videos"), desc: qsTr("Videos of the games, muted: behind the library and on the game page"), selected: trailers ? "on" : "off", items: onOff() }
         ]
         if (id === "display") return displayRows()
         if (id === "emulators") return emulatorRows()
@@ -275,7 +277,9 @@ Item {
             { id: "report", kind: "buttons", title: qsTr("Diagnostic report"),
               desc: reportPaths.length ? qsTr("Saved: %1").arg(reportPaths[reportPaths.length - 1]) : qsTr("Saves the log and settings, without passwords or tokens, to share when something goes wrong"),
               items: [{ id: "report", label: qsTr("Export the report") }] },
-            { id: "quit", kind: "buttons", title: qsTr("Quit Borne"), desc: "", items: [{ id: "quit", label: qsTr("Quit") }] }
+            { id: "diag", kind: "buttons", title: qsTr("Measurements"), desc: qsTr("Graphics, memory and disk speed of this device, to understand a slow game"),
+              items: [{ id: "diag", label: qsTr("Open") }] },
+            { id: "quit", kind: "buttons", title: qsTr("Quit Borne"), desc: qsTr("Back to the system"), items: [{ id: "quit", label: qsTr("Quit") }] }
         ]
     }
     function syncText() {
@@ -346,33 +350,14 @@ Item {
         color: Qt.rgba(1, 1, 1, 0.05)
         Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.1) }
 
-        Rectangle {
-            x: 64; y: 56
-            width: backRow.implicitWidth + 24; height: 44
-            radius: 22
-            color: theme.glass
-            border { width: 1; color: theme.glassEdge }
-            Accessible.role: Accessible.Button
-            Accessible.name: qsTr("Back to the library")
-            Row {
-                id: backRow
-                anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                spacing: 10
-                Rectangle {
-                    width: 32; height: 32; radius: 16; color: theme.glassRaised
-                    Text { anchors.centerIn: parent; text: "B"; color: theme.fg; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold } }
-                }
-                Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Library"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
-            }
-        }
         Text {
-            x: 64; y: 128
+            x: 64; y: 72
             text: qsTr("Settings")
             color: theme.fg
             font { family: theme.displayFont; pixelSize: 48; weight: Font.ExtraBold; letterSpacing: -1 }
         }
         Column {
-            x: 64; y: 216
+            x: 64; y: 160
             width: parent.width - 104
             spacing: 8
             Repeater {
@@ -384,8 +369,17 @@ Item {
                     readonly property bool current: page.section === index
                     width: parent.width; height: 72
                     radius: 14
-                    color: current ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
-                    border { width: current ? 1 : 0; color: Qt.rgba(1, 1, 1, 0.16) }
+                    // The open section: a soft fill and a bar in the accent colour; brighter while the
+                    // focus is on the list (no ring: the bar says it).
+                    readonly property bool focusedHere: current && !page.inRows
+                    color: focusedHere ? Qt.rgba(1, 1, 1, 0.14) : current ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    Behavior on color { ColorAnimation { duration: theme.focusMs } }
+                    Rectangle {
+                        x: 0; anchors.verticalCenter: parent.verticalCenter
+                        width: 4; height: parent.height - 24; radius: 2
+                        color: theme.accent
+                        opacity: sec.focusedHere ? 1 : sec.current ? 0.45 : 0
+                    }
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
                     Column {
@@ -393,14 +387,6 @@ Item {
                         spacing: 2
                         Text { text: sec.modelData.name; color: sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: Font.DemiBold } }
                         Text { text: sec.modelData.hint; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium } }
-                    }
-                    Rectangle {
-                        anchors { fill: parent; margins: -(theme.ringGap + 3) }
-                        radius: parent.radius + theme.ringGap + 3
-                        color: "transparent"
-                        border { width: 3; color: theme.focusRing }
-                        opacity: sec.current && !page.inRows ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
                     }
                 }
             }

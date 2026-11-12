@@ -52,25 +52,19 @@ Item {
         if (!g) return []
         if (busy) return [{ id: "cancel", label: qsTr("Cancel download"), primary: true }]
         if (g.dl_state === "failed") return [{ id: "download", label: qsTr("Retry download"), primary: true }, { id: "cancel", label: qsTr("Give up") }]
-        if (g.local_state === "local") return [{ id: "play", label: qsTr("Play"), primary: true }, { id: "cheats", label: qsTr("Cheats") }, { id: "display", label: qsTr("Display") }, { id: "delete", label: qsTr("Delete from this device") }]
-        if (g.linked) return [{ id: "play", label: qsTr("Play"), primary: true }, { id: "cheats", label: qsTr("Cheats") }, { id: "display", label: qsTr("Display") }, { id: "unlink", label: qsTr("Remove from the network mount") }]
-        if (g.local_state === "missing") return [{ id: "download", label: qsTr("Download again"), primary: true }, { id: "delete", label: qsTr("Forget the local copy") }]
+        // Play (or get the game), the favourite, and the game's own settings (emulator, display,
+        // cheats, language, cover, removal: see Main.gameSettings).
+        const fav = { id: "fav", label: g.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites") }
+        const set = { id: "settings", label: qsTr("Game settings") }
+        if (g.local_state === "local" || g.linked) return [{ id: "play", label: qsTr("Play"), primary: true }, fav, set]
+        if (g.local_state === "missing") return [{ id: "download", label: qsTr("Download again"), primary: true }, fav, set]
         const dl = { id: "download", label: qsTr("Download · %1").arg(fmtSize(g.fs_size)) }
         const net = { id: "link", label: qsTr("Play from the network"), disabled: !streamAvailable }
-        if (installMode === "stream" && streamAvailable) { net.primary = true; return [net, dl] }
+        if (installMode === "stream" && streamAvailable) { net.primary = true; return [net, dl, fav, set] }
         dl.primary = true
-        return [dl, net]
+        return [dl, net, fav, set]
     }
-    // The secondary actions: shown in the row when there is room, else behind "More…".
-    readonly property var moreActions: {
-        let a = []
-        if (game && !busy) a.push({ id: "fav", label: game.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites") })
-        if (game && !busy) a.push({ id: "images", label: qsTr("Images") })
-        if (hasTrailer && trailers) a.push({ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") })
-        return a
-    }
-    readonly property var allActions: actions.length + moreActions.length <= 5 ? actions.concat(moreActions)
-                                    : actions.concat([{ id: "more", label: qsTr("More…") }])
+    readonly property var allActions: actions
 
     // Credits: from RomM (studios, series), with the year and the number of players.
     readonly property var credits: {
@@ -83,7 +77,6 @@ Item {
         return out
     }
     readonly property string longSummary: game && game.summary ? game.summary : ""
-    readonly property bool factsLoading: false
     // The language played: the stored choice if it matches the shown version, else the UI
     // language, else the version's first language.
     readonly property string currentLang: {
@@ -156,9 +149,7 @@ Item {
         if (name === "actions") {
             const a = allActions[i]
             if (!a || a.disabled) return
-            if (a.id === "sound") sound = !sound
-            else if (a.id === "more") page.action("more", moreActions)
-            else page.action(a.id, null)
+            page.action(a.id, null)
         } else if (name === "language") {
             const l = gameLanguages[i]
             if (l) page.action("lang", l)
@@ -250,7 +241,8 @@ Item {
             Item {
                 id: hero
                 width: parent.width
-                height: Math.max(760, page.height * 0.8)
+                // Nearly the whole screen: the cards below only peek out above the hints.
+                height: Math.max(760, page.height - 130)
                 clip: true
                 Image {
                     id: backdrop
@@ -307,7 +299,7 @@ Item {
                     id: caseStage
                     width: 620; height: 640
                     x: parent.width - 96 - 520
-                    y: (parent.height - height) / 2 + 20
+                    y: (parent.height - height) / 2 - 20
                     theme: page.theme
                     games: boxModel
                     currentIndex: 0
@@ -341,7 +333,7 @@ Item {
                 Column {
                     id: info
                     x: 96
-                    anchors { bottom: parent.bottom; bottomMargin: 56 }
+                    anchors { bottom: parent.bottom; bottomMargin: 110 }   // clear of the hints
                     width: Math.min(1100, hero.width - 96 - 96 - (caseStage.opacity > 0.5 ? 560 : 0))
                     spacing: 22
 
@@ -461,106 +453,93 @@ Item {
                 }
             }
 
-            // ---------- below: about and screenshots | credits ----------
+            // ---------- below: about | screenshots, then the credits on one line ----------
             Rectangle {
                 y: hero.height
                 width: parent.width
                 height: lower.height + 400
                 color: Qt.rgba(0.047, 0.051, 0.063, 1)
             }
-            Row {
+            Column {
                 id: lower
                 x: 96; y: hero.height + 8
                 width: parent.width - 192
-                spacing: 72
-                readonly property real rightW: Math.min(620, width * 0.36)
+                spacing: 28
+                Row {
+                    id: cards
+                    width: parent.width
+                    spacing: 48
+                    readonly property real rightW: shotGrid.count > 0 ? Math.min(760, width * 0.44) : 0
+                    readonly property real cardH: Math.max(aboutCol.height, shotCol.height) + 72
 
-                // Cards, as in the redesign: rounded, with an ink shadow.
-                Item {
-                    width: lower.width - lower.rightW - lower.spacing
-                    height: aboutCol.height + 72
-                    Ink { theme: page.theme; radius: 30 }
-                    Rectangle { anchors.fill: parent; radius: 30; color: Qt.rgba(0.11, 0.11, 0.14, 1) }
-                Column {
-                    id: aboutCol
-                    x: 40; y: 36
-                    width: parent.width - 80
-                    spacing: 22
-                    Text { text: qsTr("About"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
-                    Text {
-                        width: Math.min(parent.width, 900)
-                        text: page.longSummary || qsTr("No summary for this game yet.")
-                        wrapMode: Text.WordWrap
-                        lineHeight: 1.5
-                        color: theme.fgSoft
-                        font { family: theme.fontFamily; pixelSize: 20 }
+                    // Cards, as in the redesign: rounded, with an ink shadow.
+                    Item {
+                        width: cards.width - cards.rightW - (cards.rightW > 0 ? cards.spacing : 0)
+                        height: cards.cardH
+                        Ink { theme: page.theme; radius: 30 }
+                        Rectangle { anchors.fill: parent; radius: 30; color: Qt.rgba(0.11, 0.11, 0.14, 1) }
+                        Column {
+                            id: aboutCol
+                            x: 40; y: 36
+                            width: parent.width - 80
+                            spacing: 22
+                            Text { text: qsTr("About"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
+                            Text {
+                                width: Math.min(parent.width, 900)
+                                text: page.longSummary || qsTr("No summary for this game yet.")
+                                wrapMode: Text.WordWrap
+                                lineHeight: 1.5
+                                color: theme.fgSoft
+                                font { family: theme.fontFamily; pixelSize: 20 }
+                            }
+                        }
                     }
-                    Item { width: 1; height: 10 }
-                    Text {
+                    Item {
                         visible: shotGrid.count > 0
-                        text: qsTr("Screenshots"); color: theme.fg
-                        font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold }
-                    }
-                    Flow {
-                        width: parent.width
-                        spacing: 16
-                        Repeater {
-                            id: shotGrid
-                            model: page.facts ? Math.min(6, page.facts.screenshots) : 0
-                            Rectangle {
-                                required property int index
-                                width: (parent.width - 32) / 3; height: width * 9 / 16; radius: 20
-                                color: theme.glass
-                                Ink { z: -1; theme: page.theme; radius: 20 }
-                                Image {
-                                    layer.enabled: true
-                                    layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
-                                    anchors.fill: parent
-                                    source: page.shotBase ? page.shotBase + parent.index : ""
-                                    asynchronous: true
-                                    fillMode: Image.PreserveAspectCrop
-                                    sourceSize: Qt.size(640, 360)
+                        width: cards.rightW
+                        height: cards.cardH
+                        Ink { theme: page.theme; radius: 30 }
+                        Rectangle { anchors.fill: parent; radius: 30; color: Qt.rgba(0.11, 0.11, 0.14, 1) }
+                        Column {
+                            id: shotCol
+                            x: 36; y: 36
+                            width: parent.width - 72
+                            spacing: 22
+                            Text { text: qsTr("Screenshots"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
+                            Flow {
+                                width: parent.width
+                                spacing: 16
+                                Repeater {
+                                    id: shotGrid
+                                    model: page.facts ? Math.min(4, page.facts.screenshots) : 0
+                                    Rectangle {
+                                        required property int index
+                                        width: (parent.width - 16) / 2; height: width * 9 / 16; radius: 20
+                                        color: theme.glass
+                                        Ink { z: -1; theme: page.theme; radius: 20 }
+                                        Image {
+                                            layer.enabled: true
+                                            layer.effect: MultiEffect { maskEnabled: true; maskSource: shotMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1 }
+                                            anchors.fill: parent
+                                            source: page.shotBase ? page.shotBase + parent.index : ""
+                                            asynchronous: true
+                                            fillMode: Image.PreserveAspectCrop
+                                            sourceSize: Qt.size(640, 360)
+                                        }
+                                        Rectangle { id: shotMask; anchors.fill: parent; radius: 20; visible: false; layer.enabled: true }
+                                    }
                                 }
-                                Rectangle { id: shotMask; anchors.fill: parent; radius: 20; visible: false; layer.enabled: true }
                             }
                         }
                     }
                 }
-                }
-
-                Item {
-                    width: lower.rightW
-                    height: credits.height + 72
-                    Ink { theme: page.theme; radius: 30 }
-                    Rectangle { anchors.fill: parent; radius: 30; color: Qt.rgba(0.11, 0.11, 0.14, 1) }
-                Column {
-                    id: credits
-                    x: 36; y: 36
-                    width: parent.width - 72
-                    spacing: 18
-                    Text { text: qsTr("Credits"); color: theme.fg; font { family: theme.displayFont; pixelSize: 28; weight: Font.Bold } }
-                    Repeater {
-                        model: page.credits
-                        Row {
-                            required property var modelData
-                            width: credits.width
-                            spacing: 20
-                            Text { width: 170; text: modelData[0]; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 17 } }
-                            Text { width: parent.width - 190; text: modelData[1]; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontFamily; pixelSize: 18; weight: Font.Medium } }
-                        }
-                    }
-                    Text {
-                        visible: page.factsLoading && page.credits.length === 0
-                        text: qsTr("Looking up the credits…")
-                        color: theme.fgMuted
-                        font { family: theme.fontFamily; pixelSize: 17 }
-                    }
-                    Text {
-                        text: qsTr("Source: RomM")
-                        color: theme.fgFaint
-                        font { family: theme.fontFamily; pixelSize: 14 }
-                    }
-                }
+                // Credits: one line under the cards (studios, series, release, players, source).
+                Text {
+                    width: parent.width
+                    text: page.credits.map(c => c[0] + " : " + c[1]).concat([qsTr("Source: RomM")]).join("   ·   ")
+                    elide: Text.ElideRight
+                    color: theme.fgMuted
+                    font { family: theme.fontFamily; pixelSize: 17 }
                 }
             }
         }
@@ -568,28 +547,8 @@ Item {
 
     // ---------- back, hints ----------
     Rectangle {
-        x: 96; y: 44 - body.contentY
-        visible: y > -60
-        width: backRow.implicitWidth + 24; height: 44
-        radius: 22
-        color: theme.glass
-        border { width: 1; color: theme.glassEdge }
-        Accessible.role: Accessible.Button
-        Accessible.name: qsTr("Back to the library")
-        Row {
-            id: backRow
-            anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-            spacing: 10
-            Rectangle {
-                width: 32; height: 32; radius: 16; color: "#FF6B6B"
-                Text { anchors.centerIn: parent; text: "B"; color: theme.bg; font { family: theme.displayFont; pixelSize: 15; weight: Font.Bold } }
-            }
-            Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Library"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
-        }
-    }
-    Rectangle {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-        height: 150
+        height: 180
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(0.047, 0.051, 0.063, 0.0) }
             GradientStop { position: 0.55; color: Qt.rgba(0.047, 0.051, 0.063, 0.92) }
@@ -597,7 +556,7 @@ Item {
         }
     }
     HintBar {
-        x: 84; anchors { bottom: parent.bottom; bottomMargin: 24 }
+        x: 84; anchors { bottom: parent.bottom; bottomMargin: 40 }
         theme: page.theme
         hints: [["A", qsTr("Select"), "a"], ["B", qsTr("Back"), "b"], ["▲ ▼", qsTr("More about the game"), "down"]]
     }

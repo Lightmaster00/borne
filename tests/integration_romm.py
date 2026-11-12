@@ -236,6 +236,13 @@ try:
     check(fav == tabs["fav"] + 1 and any(g["rom_id"] == target["rom_id"] for g in call(api, "GET", "/api/v1/library?fav=1")[1]), "favourite counted in the Favourites tab")
     call(api, "POST", f"/api/v1/games/{target['rom_id']}/favourite", {"on": False})
     check(call(api, "GET", "/api/v1/library/tabs")[1]["fav"] == tabs["fav"], "favourite removed from the Favourites tab")
+    emu = call(api, "GET", f"/api/v1/games/{target['rom_id']}/emulator")[1]
+    check(emu.get("own") is None and len(emu.get("choices", [])) > 0, "game emulator: the console's by default, choices listed")
+    other = emu["choices"][-1]["id"]
+    call(api, "POST", f"/api/v1/games/{target['rom_id']}/emulator", {"engine": other})
+    check(call(api, "GET", f"/api/v1/games/{target['rom_id']}/emulator")[1].get("own") == other, "game emulator set for this game only")
+    call(api, "POST", f"/api/v1/games/{target['rom_id']}/emulator", {"engine": None})
+    check(call(api, "GET", f"/api/v1/games/{target['rom_id']}/emulator")[1].get("own") is None, "game emulator back to the console's")
     s, rb = call(api, "POST", f"/api/v1/games/{big['rom_id']}/link")
     with open(rb["path"], "rb") as f, open(call(api, "GET", f"/api/v1/games/{big['rom_id']}")[1]["game"]["local_main"], "rb") as local:
         ok_ranges = True

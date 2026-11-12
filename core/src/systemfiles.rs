@@ -100,8 +100,10 @@ pub fn status(app: &Shared) -> Value {
                             })
                         })
                         .collect();
+                    // Valid: there, and (where dumps are known) at least one is a known dump.
+                    let valid = !f.is_empty() && (i.known.is_empty() || f.iter().any(|n| n.contains(" ✓ ")));
                     let shown = if i.kind == "firmware-nca" && !f.is_empty() { vec![format!("{} .nca", f.len())] } else { f };
-                    json!({ "id": i.id, "name": i.name, "required": i.required, "files": shown })
+                    json!({ "id": i.id, "name": i.name, "required": i.required, "files": shown, "valid": valid })
                 })
                 .collect();
             json!({ "slug": slug, "name": name, "items": list })

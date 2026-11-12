@@ -119,7 +119,8 @@ Window {
             // Pixel sizes of the case scans: the box is shaped before the images load.
             front_ar: g.media_sizes && g.media_sizes.front ? g.media_sizes.front[0] / g.media_sizes.front[1] : 0,
             side_ar: g.media_sizes && g.media_sizes.side ? g.media_sizes.side[0] / g.media_sizes.side[1] : 0,
-            cover_ar: g.cover_ar || 0
+            cover_ar: g.cover_ar || 0,
+            spine_color: g.spine_color || ""   // the spine scan's dominant colour: the case's top and bottom
         }
     }
     // The console the screen is dressed in: the open game's, else the selected console tab's, else
@@ -296,20 +297,22 @@ Window {
         }
     }
     onFocusedGameChanged: {
+        videoRested = false
         if (focusedGame && focusedGame.rom_id === bgVideoFor) return
         bgVideo = ""; bgVideoFor = -1
         if (bgVideoWanted) bgVideoDelay.restart()
     }
     onBgVideoWantedChanged: if (bgVideoWanted && bgVideoFor === -1) bgVideoDelay.restart()
     // Attract: after 5 s without input on the library, once the selected game's video plays, the
-    // library fades out and leaves the video; any input brings it back (that input only wakes it).
+    // library fades out and leaves the video; any input brings it back (that input only wakes it),
+    // and so does a minute of it (see videoRested).
     // Turning the box (stick or W A S D) counts as input.
     property double lastActivity: Date.now()
     property bool attract: false
     readonly property bool attractAllowed: screen === "library" && overlay === "" && ready && !gameMode
                                            && !menu.visible && !search.visible && !downloadsPanel.visible
                                            && !nameEntry.visible && !turning
-                                           && libModel.count > 0 && ambience.videoShown
+                                           && libModel.count > 0 && ambience.videoShown && !videoRested
     onAttractAllowedChanged: if (!attractAllowed) attract = false
     function touch() {
         lastActivity = Date.now()
@@ -321,6 +324,14 @@ Window {
         interval: 250; repeat: true
         running: win.attractAllowed && !win.attract
         onTriggered: if (Date.now() - win.lastActivity >= 5000) win.attract = true
+    }
+    // After a minute alone on screen, the video pauses and the games come back; it stays paused
+    // until another game is selected.
+    property bool videoRested: false
+    Timer {
+        interval: 60000
+        running: win.attract
+        onTriggered: { win.videoRested = true; win.attract = false }
     }
     onTurnXChanged: touch()
     onTurnYChanged: touch()
@@ -462,16 +473,52 @@ Window {
             }, at)
         })
     }
+    // A game's own settings: its emulator, display, cheats, language, cover, removal.
+    function gameSettings(g, at) {
+        const playable = g.local_state === "local" || g.linked
+        const items = [{ id: "emulator", label: qsTr("Emulator"), detail: qsTr("For this game only") },
+                       { id: "display", label: qsTr("Display"), detail: qsTr("Picture, ratio, filters for this game") }]
+        if (playable) items.push({ id: "cheats", label: qsTr("Cheats") })
+        if (gamePage.gameLanguages.length > 1)
+            items.push({ id: "language", label: qsTr("Game language"), detail: gamePage.languageName(gamePage.currentLang) })
+        items.push({ id: "images", label: qsTr("Change the cover"), detail: qsTr("Another match or region on ScreenScraper") })
+        if (gamePage.hasTrailer && trailers)
+            items.push({ id: "sound", label: gamePage.sound ? qsTr("Mute the video") : qsTr("Video sound") })
+        if (g.local_state === "local") items.push({ id: "delete", label: qsTr("Delete from this device"), detail: fmtSize(g.fs_size) })
+        else if (g.linked) items.push({ id: "unlink", label: qsTr("Remove from the network mount") })
+        else if (g.local_state === "missing") items.push({ id: "delete", label: qsTr("Forget the local copy") })
+        items.push({ id: "close", label: qsTr("Close") })
+        menu.open(qsTr("Game settings"), g.name, items, function (c) {
+            if (c === "sound") gamePage.sound = !gamePage.sound
+            else if (c === "language") {
+                const langs = gamePage.gameLanguages
+                menu.open(qsTr("Game language"), g.name, langs.map((l, i) => ({ id: String(i), label: gamePage.languageName(l.code), detail: l.code === gamePage.currentLang ? qsTr("Current") : "" })),
+                          function (k) { pageAction("lang", langs[Number(k)]) })
+            }
+            else if (c !== "close") pageAction(c, null)
+        }, at)
+    }
+    // The emulator of one game: its console's (default) or another one offered for the console.
+    function gameEmulatorMenu(g) {
+        api("GET", "/api/v1/games/" + g.rom_id + "/emulator", null, function (e, err) {
+            if (!e) { toasts.show(CoreText.tr(err), "error"); return }
+            const consoleName = (e.choices.find(c => c.id === e.console) || {}).name || ""
+            const items = [{ id: "", label: qsTr("Same as the console"), detail: (e.own ? "" : qsTr("Current") + " · ") + consoleName }]
+                .concat(e.choices.map(c => ({ id: c.id, label: c.name, detail: e.own === c.id ? qsTr("Current") : "" })))
+            menu.open(qsTr("Emulator"), g.name, items, function (c) {
+                api("POST", "/api/v1/games/" + g.rom_id + "/emulator", { engine: c === "" ? null : c }, function (r, err2) {
+                    if (err2) toasts.show(CoreText.tr(err2), "error")
+                    else toasts.show(c === "" ? qsTr("This game uses its console's emulator.") : qsTr("This game now uses %1.").arg(items.find(i => i.id === c).label), "info")
+                })
+            })
+        })
+    }
     function pageAction(id, payload) {
         const g = pageGame
         if (id === "back") { sfx.play("back"); closeGame(); return }
         if (!g) return
-        if (id === "more") {
-            menu.open(g.name, "", payload.concat([{ id: "close", label: qsTr("Close") }]), function (c) {
-                if (c === "sound") gamePage.sound = !gamePage.sound
-                else if (c !== "close") pageAction(c, null)
-            })
-        }
+        if (id === "settings") gameSettings(g)
+        else if (id === "emulator") gameEmulatorMenu(g)
         else if (id === "download") download(g)
         else if (id === "link") link(g)
         else if (id === "unlink") unlink(g)
@@ -755,33 +802,6 @@ Window {
             loadLibrary(true)
         })
     }
-    function mainMenu() {
-        const inLib = screen === "library"
-        const sync = status ? status.sync : null
-        let items = []
-        if (inLib) {
-            items.push({ id: "sync", label: qsTr("Sync library"), detail: sync && sync.running ? qsTr("In progress…") : (sync && sync.last_sync ? qsTr("Last: %1").arg(new Date(sync.last_sync * 1000).toLocaleTimeString(Qt.locale(), Locale.ShortFormat)) : ""), disabled: sync && sync.running })
-            items.push({ id: "sort", label: qsTr("Sort and filter"), detail: [{ name: qsTr("by name"), played: qsTr("recently played"), added: qsTr("recently added"), time: qsTr("most played") }[prefs.librarySort] || "", prefs.libraryGenre].filter(x => x).join(" · ") })
-            if (focusedGame) items.push({ id: "fav", label: focusedGame.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites"), detail: focusedGame.name })
-            items.push({ id: "downloads", label: qsTr("Downloads") })
-            items.push({ id: "profile", label: qsTr("Switch profile"), detail: activeProfile ? activeProfile.name : "" })
-        }
-        items.push({ id: "settings", label: qsTr("Settings") })
-        items.push({ id: "server", label: qsTr("RomM server"), detail: status && status.server_url ? status.server_url : qsTr("not configured") })
-        items.push({ id: "diag", label: qsTr("Diagnostics and measurements") })
-        items.push({ id: "quit", label: qsTr("Quit Borne") })
-        menu.open(qsTr("Menu"), activeProfile && inLib ? qsTr("Profile: %1").arg(activeProfile.name) : "", items, function (c) {
-            if (c === "sync") api("POST", "/api/v1/sync", {}, function (r, err) { if (err) toasts.show(err, "error"); else toasts.show(qsTr("Sync started."), "info") })
-            else if (c === "downloads") openDownloads()
-            else if (c === "sort") sortMenu()
-            else if (c === "fav") setFavourite(focusedGame, !focusedGame.favourite)
-            else if (c === "settings") settingsMenu()
-            else if (c === "profile") showProfiles()
-            else if (c === "server") showServer()
-            else if (c === "diag") diag.open()
-            else if (c === "quit") Qt.quit()
-        })
-    }
     function openDownloads() {
         downloadsPanel.index = 0
         downloadsPanel.visible = true
@@ -973,7 +993,7 @@ Window {
         else if (a === "y") openSearch("", false)
         else if (a === "x") { if (focusedGame) play(focusedGame) }
         else if (a === "start") settingsMenu()
-        else if (a === "select") mainMenu()
+        else if (a === "select") sortMenu()
         else if (a === "b") { /* root: nothing to close */ }
         else if (a === "lb") setSystem(-1)
         else if (a === "rb") setSystem(1)
@@ -989,9 +1009,9 @@ Window {
         if (st && st.running) return qsTr("Syncing the library…")
         if (st && st.error && libModel.count === 0) return qsTr("The library could not be synced: %1").arg(CoreText.tr(st.error))
         const tabId = win.systems[win.systemIndex] ? win.systems[win.systemIndex].id : ""
-        if (tabId === "fav") return qsTr("No favourites yet. On a game, choose “Add to favourites” (%1 menu or game page).").arg(graphite.key("select"))
+        if (tabId === "fav") return qsTr("No favourites yet. On a game's page, choose “Add to favourites”.")
         if (tabId === "recent") return qsTr("No game played yet on this profile.")
-        if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre in %2 → Sort and filter.").arg(prefs.libraryGenre).arg(graphite.key("select"))
+        if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre with %2 (Sort and filter).").arg(prefs.libraryGenre).arg(graphite.key("select"))
         if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
             return qsTr("No game installed yet. Open a game in its console’s tab to download it or play it from the network.")
         return qsTr("No games here.")
@@ -1186,11 +1206,13 @@ Window {
             id: ambience
             anchors.fill: parent
             theme: win.theme
-            visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
+            // Not behind the settings: they stand on a plain, neutral background.
+            visible: !win.gameMode && win.overlay !== "settings" && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.focusedGame
             trailers: win.trailers && win.screen === "library" && win.overlay === ""
             videoUrl: win.bgVideo
             paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible
+            rest: win.videoRested
             scrims: win.overlay === ""
             attract: win.attract
             dim: win.overlay === "settings" || win.overlay === "diag" ? 0.5 : win.overlay === "game" ? 0.55 : 0
@@ -1419,10 +1441,10 @@ Window {
                 if (g) h.push(["A", qsTr("Open"), "a"])
                 if (g) h.push(["X", qsTr("Play"), "x"])
                 h.push(["Y", qsTr("Search"), "y"])
-                h.push(["LB RB", qsTr("Systems"), "rb"])
+                h.push(["LB RB", qsTr("Tabs"), "rb"])
                 if (win.letters.length > 1) h.push(["LT RT", qsTr("Letters"), "rt"])
                 h.push(["Start", qsTr("Settings"), "start"])
-                h.push(["Select", qsTr("Menu"), "select"])
+                h.push(["Select", qsTr("Sort"), "select"])
                 return h
             }
         }
@@ -1462,7 +1484,7 @@ Window {
         onChoose: (p) => p.paired ? win.enterLibrary(p) : win.startPairing(p)
         onAdd: win.addProfile()
         onOptions: (p) => win.profileOptions(p)
-        onMainMenu: win.mainMenu()
+        onSettings: win.settingsMenu()
     }
     PairingScreen {
         id: pairingScreen

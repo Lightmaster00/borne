@@ -635,20 +635,8 @@
         <translation>Jouer</translation>
     </message>
     <message>
-        <source>Delete from this device</source>
-        <translation>Supprimer de cet appareil</translation>
-    </message>
-    <message>
-        <source>Remove from the network mount</source>
-        <translation>Retirer du montage réseau</translation>
-    </message>
-    <message>
         <source>Download again</source>
         <translation>Retélécharger</translation>
-    </message>
-    <message>
-        <source>Forget the local copy</source>
-        <translation>Oublier la copie locale</translation>
     </message>
     <message>
         <source>Download · %1</source>
@@ -779,24 +767,8 @@
         <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
     </message>
     <message>
-        <source>Back to the library</source>
-        <translation>Retour à la bibliothèque</translation>
-    </message>
-    <message>
-        <source>Library</source>
-        <translation>Bibliothèque</translation>
-    </message>
-    <message>
         <source>Select</source>
         <translation>Sélectionner</translation>
-    </message>
-    <message>
-        <source>Mute the trailer</source>
-        <translation>Couper le son</translation>
-    </message>
-    <message>
-        <source>Trailer sound</source>
-        <translation>Son de la bande-annonce</translation>
     </message>
     <message>
         <source>Studios</source>
@@ -817,14 +789,6 @@
     <message>
         <source>No summary for this game yet.</source>
         <translation>Pas encore de résumé pour ce jeu.</translation>
-    </message>
-    <message>
-        <source>Credits</source>
-        <translation>Crédits</translation>
-    </message>
-    <message>
-        <source>Looking up the credits…</source>
-        <translation>Recherche des crédits…</translation>
     </message>
     <message>
         <source>Screenshots</source>
@@ -859,14 +823,6 @@
         <translation>Source : RomM</translation>
     </message>
     <message>
-        <source>Cheats</source>
-        <translation>Cheats</translation>
-    </message>
-    <message>
-        <source>Display</source>
-        <translation>Affichage</translation>
-    </message>
-    <message>
         <source>Remove from favourites</source>
         <translation>Retirer des favoris</translation>
     </message>
@@ -875,12 +831,8 @@
         <translation>Ajouter aux favoris</translation>
     </message>
     <message>
-        <source>Images</source>
-        <translation>Images</translation>
-    </message>
-    <message>
-        <source>More…</source>
-        <translation>Plus…</translation>
+        <source>Game settings</source>
+        <translation>Paramètres du jeu</translation>
     </message>
 </context>
 <context>
@@ -1030,24 +982,8 @@
         <translation>Fermer</translation>
     </message>
     <message>
-        <source>Sync library</source>
-        <translation>Synchroniser la bibliothèque</translation>
-    </message>
-    <message>
-        <source>In progress…</source>
-        <translation>En cours…</translation>
-    </message>
-    <message>
-        <source>Last: %1</source>
-        <translation>Dernière : %1</translation>
-    </message>
-    <message>
         <source>Downloads</source>
         <translation>Téléchargements</translation>
-    </message>
-    <message>
-        <source>Switch profile</source>
-        <translation>Changer de profil</translation>
     </message>
     <message>
         <source>RomM server</source>
@@ -1058,16 +994,8 @@
         <translation>non configuré</translation>
     </message>
     <message>
-        <source>Diagnostics and measurements</source>
-        <translation>Diagnostic et mesures</translation>
-    </message>
-    <message>
         <source>Quit Borne</source>
         <translation>Quitter Borne</translation>
-    </message>
-    <message>
-        <source>Menu</source>
-        <translation>Menu</translation>
     </message>
     <message>
         <source>Profile: %1</source>
@@ -1441,10 +1369,6 @@
         <source>Play</source>
         <translation>Jouer</translation>
     </message>
-    <message>
-        <source>Systems</source>
-        <translation>Systèmes</translation>
-    </message>
     <message numerus="yes">
         <source>Synced at %1 · %n game(s)</source>
         <translation><numerusform>Synchronisé à %1 · %n jeu</numerusform><numerusform>Synchronisé à %1 · %n jeux</numerusform></translation>
@@ -1786,30 +1710,6 @@
         <translation>L’ordre des jeux, et un genre</translation>
     </message>
     <message>
-        <source>by name</source>
-        <translation>par nom</translation>
-    </message>
-    <message>
-        <source>recently played</source>
-        <translation>joués récemment</translation>
-    </message>
-    <message>
-        <source>recently added</source>
-        <translation>ajoutés récemment</translation>
-    </message>
-    <message>
-        <source>most played</source>
-        <translation>les plus joués</translation>
-    </message>
-    <message>
-        <source>Remove from favourites</source>
-        <translation>Retirer des favoris</translation>
-    </message>
-    <message>
-        <source>Add to favourites</source>
-        <translation>Ajouter aux favoris</translation>
-    </message>
-    <message>
         <source>Sign in with the password</source>
         <translation>Se connecter avec le mot de passe</translation>
     </message>
@@ -1930,20 +1830,84 @@
         <translation>Échap</translation>
     </message>
     <message>
-        <source>No favourites yet. On a game, choose “Add to favourites” (%1 menu or game page).</source>
-        <translation>Pas encore de favoris. Sur un jeu, choisissez « Ajouter aux favoris » (menu %1 ou page du jeu).</translation>
-    </message>
-    <message>
-        <source>No “%1” game here. Change the genre in %2 → Sort and filter.</source>
-        <translation>Aucun jeu « %1 » ici. Changez le genre dans %2 → Trier et filtrer.</translation>
-    </message>
-    <message>
         <source>Quit the game from the emulator (usually Esc, or its menu)</source>
         <translation>Quittez le jeu depuis l'émulateur (souvent Échap, ou son menu)</translation>
     </message>
     <message>
         <source>Game mode (test) — Esc to go back</source>
         <translation>Mode jeu (test) — Échap pour revenir</translation>
+    </message>
+    <message>
+        <source>Emulator</source>
+        <translation>Émulateur</translation>
+    </message>
+    <message>
+        <source>For this game only</source>
+        <translation>Pour ce jeu uniquement</translation>
+    </message>
+    <message>
+        <source>Display</source>
+        <translation>Affichage</translation>
+    </message>
+    <message>
+        <source>Picture, ratio, filters for this game</source>
+        <translation>Image, format, filtres pour ce jeu</translation>
+    </message>
+    <message>
+        <source>Game language</source>
+        <translation>Langue du jeu</translation>
+    </message>
+    <message>
+        <source>Change the cover</source>
+        <translation>Changer la jaquette</translation>
+    </message>
+    <message>
+        <source>Another match or region on ScreenScraper</source>
+        <translation>Autre correspondance ou région sur ScreenScraper</translation>
+    </message>
+    <message>
+        <source>Mute the video</source>
+        <translation>Couper le son de la vidéo</translation>
+    </message>
+    <message>
+        <source>Video sound</source>
+        <translation>Son de la vidéo</translation>
+    </message>
+    <message>
+        <source>Forget the local copy</source>
+        <translation>Oublier la copie locale</translation>
+    </message>
+    <message>
+        <source>Game settings</source>
+        <translation>Paramètres du jeu</translation>
+    </message>
+    <message>
+        <source>Same as the console</source>
+        <translation>Comme la console</translation>
+    </message>
+    <message>
+        <source>This game uses its console's emulator.</source>
+        <translation>Ce jeu utilise l'émulateur de sa console.</translation>
+    </message>
+    <message>
+        <source>This game now uses %1.</source>
+        <translation>Ce jeu utilise maintenant %1.</translation>
+    </message>
+    <message>
+        <source>No favourites yet. On a game's page, choose “Add to favourites”.</source>
+        <translation>Pas encore de favoris. Sur la page d'un jeu, choisissez « Ajouter aux favoris ».</translation>
+    </message>
+    <message>
+        <source>No “%1” game here. Change the genre with %2 (Sort and filter).</source>
+        <translation>Aucun jeu « %1 » ici. Changez le genre avec %2 (Trier et filtrer).</translation>
+    </message>
+    <message>
+        <source>Tabs</source>
+        <translation>Onglets</translation>
+    </message>
+    <message>
+        <source>Sort</source>
+        <translation>Trier</translation>
     </message>
 </context>
 <context>
@@ -2067,8 +2031,8 @@
         <translation>Options du profil</translation>
     </message>
     <message>
-        <source>Menu</source>
-        <translation>Menu</translation>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
     </message>
 </context>
 <context>
@@ -2460,10 +2424,6 @@
         <translation>Jeux</translation>
     </message>
     <message>
-        <source>Install, cache</source>
-        <translation>Installation, cache</translation>
-    </message>
-    <message>
         <source>Updates</source>
         <translation>Mises à jour</translation>
     </message>
@@ -2478,10 +2438,6 @@
     <message>
         <source>Interface</source>
         <translation>Interface</translation>
-    </message>
-    <message>
-        <source>Sounds, trailers</source>
-        <translation>Sons, bandes-annonces</translation>
     </message>
     <message>
         <source>Display</source>
@@ -2516,24 +2472,12 @@
         <translation>Serveur</translation>
     </message>
     <message>
-        <source>RomM, profiles</source>
-        <translation>RomM, profils</translation>
-    </message>
-    <message>
         <source>Help</source>
         <translation>Aide</translation>
     </message>
     <message>
         <source>Diagnostic report</source>
         <translation>Rapport de diagnostic</translation>
-    </message>
-    <message>
-        <source>Mount cache</source>
-        <translation>Cache du montage</translation>
-    </message>
-    <message>
-        <source>Space kept for recently played mounted games</source>
-        <translation>Espace gardé pour les jeux montés joués récemment</translation>
     </message>
     <message>
         <source>Update channel</source>
@@ -2562,10 +2506,6 @@
     <message>
         <source>Short, quiet sounds when moving and choosing</source>
         <translation>Sons courts et discrets en navigant et en validant</translation>
-    </message>
-    <message>
-        <source>Trailers</source>
-        <translation>Bandes-annonces</translation>
     </message>
     <message>
         <source>Videos of the games, muted: behind the library and on the game page</source>
@@ -2674,10 +2614,6 @@
     <message>
         <source>Synced at %1</source>
         <translation>Synchronisé à %1</translation>
-    </message>
-    <message>
-        <source>Back to the library</source>
-        <translation>Retour à la bibliothèque</translation>
     </message>
     <message>
         <source>Settings</source>
@@ -2850,6 +2786,58 @@
     <message>
         <source> is not writable</source>
         <translation> n’est pas modifiable</translation>
+    </message>
+    <message>
+        <source>Installation, saves</source>
+        <translation>Installation, sauvegardes</translation>
+    </message>
+    <message>
+        <source>Sounds, videos</source>
+        <translation>Sons, vidéos</translation>
+    </message>
+    <message>
+        <source>Picture, ratio, filters</source>
+        <translation>Image, format, filtres</translation>
+    </message>
+    <message>
+        <source>RomM, sync, profile</source>
+        <translation>RomM, synchro, profil</translation>
+    </message>
+    <message>
+        <source>Diagnostics, quit</source>
+        <translation>Diagnostic, quitter</translation>
+    </message>
+    <message>
+        <source>Space for network play</source>
+        <translation>Espace pour le jeu en réseau</translation>
+    </message>
+    <message>
+        <source>Disk space Borne keeps for games played from the network (without downloading them), so they start faster next time</source>
+        <translation>Espace disque que Borne garde pour les jeux joués depuis le réseau (sans les télécharger), pour qu'ils démarrent plus vite la fois suivante</translation>
+    </message>
+    <message>
+        <source>Installed version: %1</source>
+        <translation>Version installée : %1</translation>
+    </message>
+    <message>
+        <source>Game videos</source>
+        <translation>Vidéos des jeux</translation>
+    </message>
+    <message>
+        <source>Measurements</source>
+        <translation>Mesures</translation>
+    </message>
+    <message>
+        <source>Graphics, memory and disk speed of this device, to understand a slow game</source>
+        <translation>Graphismes, mémoire et vitesse du disque de cet appareil, pour comprendre un jeu lent</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <source>Back to the system</source>
+        <translation>Retour au système</translation>
     </message>
 </context>
 <context>

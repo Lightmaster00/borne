@@ -65,8 +65,8 @@ QtObject {
     readonly property int focusMs: 160
     readonly property int fadeMs: 600
     readonly property int scrollMs: 220
-    readonly property int ringWidth: 3
-    readonly property int ringGap: 5
+    readonly property int ringWidth: 2
+    readonly property int ringGap: 3
 
     // ---------- Game tiles ----------
     readonly property int tileW: 156

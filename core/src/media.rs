@@ -279,13 +279,52 @@ pub fn prefetch(app: &Shared, client: &crate::romm::Client) {
 pub fn summary(app: &Shared, group_key: &str) -> Value {
     let mut kinds = vec![];
     let mut sizes = serde_json::Map::new();
+    let mut spine = Value::Null;
     for m in app.db.media_of(group_key) {
         if std::path::Path::new(&m.path).is_file() {
             sizes.insert(m.kind.clone(), json!([m.w, m.h]));
+            if m.kind == "side" {
+                spine = dominant_color_cached(&m.path).map(Value::String).unwrap_or(Value::Null);
+            }
             kinds.push(m.kind);
         }
     }
-    json!({ "kinds": kinds, "sizes": sizes })
+    json!({ "kinds": kinds, "sizes": sizes, "spine_color": spine })
+}
+
+/// The spine scan's dominant colour, read once per file version (kept in memory).
+fn dominant_color_cached(path: &str) -> Option<String> {
+    use std::sync::{Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<HashMap<String, Option<String>>>> = OnceLock::new();
+    let stamp = std::fs::metadata(path).and_then(|m| m.modified()).ok()?;
+    let key = format!("{path}|{stamp:?}");
+    let cache = CACHE.get_or_init(Default::default);
+    if let Some(c) = cache.lock().ok()?.get(&key) {
+        return c.clone();
+    }
+    let c = image::open(path).ok().and_then(|img| dominant_color(&img));
+    cache.lock().ok()?.insert(key, c.clone());
+    c
+}
+
+/// The colour most present in a picture, as "#rrggbb": pixels are sorted into coarse colour bins
+/// (16 levels per channel), and the fullest bin's pixels are averaged. Transparent pixels are left out.
+pub fn dominant_color(img: &DynamicImage) -> Option<String> {
+    let small = img.thumbnail(96, 96).to_rgba8();
+    let mut bins: HashMap<u32, (u64, [u64; 3])> = HashMap::new();
+    for p in small.pixels() {
+        if p[3] < 128 {
+            continue;
+        }
+        let key = ((p[0] as u32 >> 4) << 8) | ((p[1] as u32 >> 4) << 4) | (p[2] as u32 >> 4);
+        let e = bins.entry(key).or_insert((0, [0; 3]));
+        e.0 += 1;
+        for i in 0..3 {
+            e.1[i] += p[i] as u64;
+        }
+    }
+    let (n, sum) = bins.into_values().max_by_key(|(n, _)| *n)?;
+    Some(format!("#{:02x}{:02x}{:02x}", sum[0] / n, sum[1] / n, sum[2] / n))
 }
 
 /// Per console: how many games have each kind on disk, and how many RomM has no scan for.
@@ -339,6 +378,18 @@ mod tests {
             }
         }
         assert_eq!(cut_hinge(&DynamicImage::ImageRgb8(band)).width(), 130);
+    }
+
+    #[test]
+    fn dominant_colour_is_the_most_present() {
+        // A red spine with a white title on a third of it.
+        let mut img = image::RgbImage::from_pixel(30, 300, image::Rgb([210, 20, 30]));
+        for y in 100..200 {
+            for x in 0..30 {
+                img.put_pixel(x, y, image::Rgb([250, 250, 250]));
+            }
+        }
+        assert_eq!(dominant_color(&DynamicImage::ImageRgb8(img)).as_deref(), Some("#d2141e"));
     }
 
     #[test]

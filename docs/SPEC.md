@@ -788,6 +788,20 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   round it: a white case's own band on top (Wii, 3DS) stays; fronts of those consoles stored before
   are fetched again once. Top and bottom take the console's signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture, their
   two folds found by edge detection around the place the front's proportions give.
+- Select opens Sort and filter (order, genre) directly; everything else lives in Settings (sync,
+  server, profile in Server; measurements and quit in Help). Settings stand on a plain background
+  (no game art); the open section is marked by a fill and a bar in the accent colour.
+- Game page: Play (or Download / Play from the network), the favourite, and Game settings (a
+  menu: the game's own emulator, `GET`/`POST /api/v1/games/<id>/emulator`, setting
+  `emu_for_game.<group_key>`, used at launch over the console's; display; cheats; language;
+  cover; video sound; removal). About and screenshots side by side, credits on one line.
+- Game Boy and Game Boy Color share one tab (library::JOINED: `/platforms` lists them as one,
+  `/library?platform=gb` returns both).
+- Attract: after a minute alone on screen the video pauses (on its frame) and the games come back,
+  until another game is selected.
+- Case top and bottom: the spine scan's dominant colour (media::dominant_color: 16-level bins,
+  the fullest averaged; `spine_color` in library entries), else the console's signature colour.
+- System files: a file in place and valid (a known dump where dumps are known) shows only Remove.
 - Order "by name" (library::shelf_order): the first three letters of the title in the interface
   language (articles and accents set aside), then the release date (games without one last), then
   the whole title; "Final Fantasy VII" stands before "Final Fantasy IX".

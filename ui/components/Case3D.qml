@@ -1,7 +1,7 @@
 // One game case as a 3D object (Qt Quick 3D): a box to the case's real proportions with slightly
 // rounded corners and edges, cel shaded inside a bold ink outline. The front is the cover scan, the
-// same spine on the left and the right, the back scan behind, and the console's signature colour
-// on the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
+// same spine on the left and the right, the back scan behind, and the spine's dominant colour (else
+// the console's signature colour) on the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
 // them by flat light bands whose dark side takes the console's colour, with a paper or plastic grain;
 // a second one (gloss.frag) adds a crisp highlight and a rim of the console's colour on the edges.
 // Coordinates: x right, y up, z toward you.
@@ -62,6 +62,9 @@ Node {
         }
     }
     readonly property color consoleTint: Cases.tint(game ? game.platform_slug : "")
+    // Top and bottom: the colour most present on the spine scan (the core reads it), else the
+    // console's signature colour.
+    readonly property color capColor: game && game.spine_color ? game.spine_color : consoleTint
     readonly property real printSaturation: -0.3
     // A flat print: no lighting of its own, the shading skin does it.
     component Flat: PrincipledMaterial {
@@ -207,13 +210,13 @@ Node {
                 sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.backUrl; titled: false }
             }
         }
-        // Top and bottom: the console's signature colour.
+        // Top and bottom: the spine's dominant colour (see capColor).
         Repeater3D {
             model: ["top", "bottom"]
             Face {
                 required property string modelData
                 side: modelData
-                materials: Flat { baseColor: box.consoleTint }
+                materials: Flat { baseColor: box.capColor }
             }
         }
 

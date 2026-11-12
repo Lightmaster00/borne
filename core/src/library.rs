@@ -49,6 +49,23 @@ pub fn group_key(v: &Value) -> String {
     format!("{platform}:name:{}", normalize_title(title))
 }
 
+/// Consoles shown as one tab: the Game Boy Color plays the Game Boy's games and is the same
+/// console to its players. (tab slug, consoles in it)
+pub const JOINED: &[(&str, &[&str])] = &[("gb", &["gb", "gbc"])];
+
+/// The consoles shown under a tab, when it joins several.
+pub fn joined_parts(slug: &str) -> Option<&'static [&'static str]> {
+    JOINED.iter().find(|(main, parts)| *main == slug || parts.contains(&slug)).map(|(_, parts)| *parts)
+}
+
+/// The name of a joined tab.
+pub fn joined_name(main: &str) -> &'static str {
+    match main {
+        "gb" => "Game Boy",
+        _ => "",
+    }
+}
+
 /// A file name's title without its tags and extension, normalized:
 /// "Final Fantasy VII (Europe) (Disc 2).chd" -> "final fantasy vii".
 pub fn title_key(fs_name: &str) -> String {

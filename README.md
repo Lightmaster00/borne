@@ -29,7 +29,7 @@ Specification: [`docs/SPEC.md`](docs/SPEC.md).
 - **Catalog** synced (platforms, games, metadata, cached covers), browsable **offline**. Favourites
   and Recent tabs per profile; sort by name (the first three letters of the title, then the release
   date, so a series stands in the order it came out), recently played, recently added or most played, and
-  filter by genre (Select → Sort and filter); the search also matches other regions' titles.
+  filter by genre (Select: Sort and filter); the search also matches other regions' titles.
 - **Downloads**: persistent queue, **resume after interruption** (Range requests), **SHA-1** verification
   (including archive contents), safe zip extraction, atomic install, live progress on the poster,
   cancellation, local deletion that never touches RomM.
@@ -52,14 +52,18 @@ Since then:
   retail case (small cases drawn larger so they stay readable) (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
-  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the console's signature colour on top and bottom, cel shaded (flat light bands, a dark side and an edge rim in the console's colour, a crisp highlight, a paper or plastic grain) inside a bold ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, up to 60° to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 5 seconds without input (turning the box counts) the library fades out and leaves the video. A letter index and LT / RT jump through the alphabet; Y opens a
+  stored by RomM: front, spine and back scans, fitted to their console's case (every case of a console has the same size). The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the spine's dominant colour on top and bottom (else the console's), cel shaded (flat light bands, a dark side and an edge rim in the console's colour, a crisp highlight, a paper or plastic grain) inside a thin ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, up to 60° to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 5 seconds without input (turning the box counts) the library fades out and leaves the video; after a minute the video pauses and the games come back, until another game is selected. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The screen sits in a frame dressed in the selected console: its blank Steam grid from ScreenScraper, in the console's own colour, which also colours the buttons, the open console tab and the A key. Rounded shapes with a thin ink edge; titles in Fredoka, text in Manrope.
 - **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
   a language chooses the version launched (English → USA, Français → the European version that has
-  French, 日本語 → Japan). Below: summary, screenshots, studios and series (RomM only).
+  French, 日本語 → Japan). Its actions: Play (or Download / Play from the network), the favourite,
+  and *Game settings*: the game's own emulator (else its console's), display, cheats, language,
+  cover, video sound and removal. Below: the summary and the screenshots side by side, then the
+  credits (studios, series, release, players) on one line.
 - **Tabs and console pictures**: the tabs bar shows Installed, Favourites and Recent when they hold
-  games, then one tab per console, named in Borne's display font; the console's logo and photo from
+  games, then one tab per console, named in Borne's display font (Game Boy and Game Boy Color share
+  one tab: the same console to their players); the console's logo and photo from
   ScreenScraper are kept for later use. Behind the
   shelf and on the game page, the game's art without any text (ScreenScraper's blank Steam grid
   and blank screen marquee) is used under the video, before the blurred cover.
@@ -70,8 +74,8 @@ Since then:
   ScreenScraper, either through RomM (`scan.media` with `box2d`, `box2d_side`, `box2d_back`,
   `physical`, `logo`, `fanart`, `video`, then rescan) or directly from Borne once your ScreenScraper
   account is connected (Settings → Game images, with a per-console report of the games found and
-  not found). On the game page, *Images* corrects a wrong match (search ScreenScraper by name) or
-  picks another region's box. Borne talks to nothing but RomM, ScreenScraper and
+  not found). On the game page, *Game settings → Change the cover* corrects a wrong match (search
+  ScreenScraper by name) or picks another region's box. Borne talks to nothing but RomM, ScreenScraper and
   GitHub (for its own updates).
 - **Diagnostics**: a persistent log (`logs/borne.log`) and Settings → Help → *Export the report*, which
   writes a shareable text report (versions, settings, server version, recent downloads, log; no
@@ -96,7 +100,7 @@ Since then:
 - **Display settings in Borne**: picture shape (the game's own, 4:3, 16:9, fill), rendering
   resolution for 3D consoles (1× to 4×), sharp, smoothed or CRT-TV pixels, whole-number scaling,
   frame rate on screen — for all games or one console in Settings → Display, and per game on its
-  page (*Display*). Borne writes them into each emulator's own configuration before the game
+  page (*Game settings → Display*). Borne writes them into each emulator's own configuration before the game
   starts (RetroArch, Dolphin, PCSX2, DuckStation, Eden, Citron, Ryubing, RPCS3, Xenia), and sets
   the controller of the standalone emulators on their first start (Dolphin, PCSX2, DuckStation).
 - **Saves on RomM**: each profile's saves follow it: taken from RomM before a game when newer,
@@ -173,7 +177,7 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | Right stick | W A S D (held) | Turn the selected game box (up to 60°) to see its spine; it comes back when let go |
 | R3 (right stick click) | Tab | Downloads |
 | Start | M or F1 | Settings |
-| Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |
+| Select | F2 | Sort and filter the library (order, genre) |
 | Select then Start | the emulator's own key (usually Esc) | Quit the game being played |
 
 The button hints on screen, and the texts that name a button, follow the device in use: gamepad

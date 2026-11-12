@@ -51,7 +51,7 @@ Rectangle {
         anchors { fill: parent; margins: -(theme.ringGap + theme.ringWidth) }
         radius: height / 2
         color: "transparent"
-        border { width: theme.ringWidth; color: chip.selected ? theme.accent : theme.focusRing }
+        border { width: theme.ringWidth; color: theme.focusRing }
         opacity: chip.focused ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }

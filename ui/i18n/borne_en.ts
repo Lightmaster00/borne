@@ -635,19 +635,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Delete from this device</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Remove from the network mount</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Download again</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Forget the local copy</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -779,23 +767,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Back to the library</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Library</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Select</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Mute the trailer</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Trailer sound</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -816,14 +788,6 @@
     </message>
     <message>
         <source>No summary for this game yet.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Credits</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Looking up the credits…</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -859,14 +823,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Cheats</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Display</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Remove from favourites</source>
         <translation type="unfinished" />
     </message>
@@ -875,11 +831,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Images</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>More…</source>
+        <source>Game settings</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1058,23 +1010,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Sync library</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>In progress…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Last: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Downloads</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Switch profile</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1086,15 +1022,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Diagnostics and measurements</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Quit Borne</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Menu</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1441,10 +1369,6 @@
         <source>Play</source>
         <translation type="unfinished" />
     </message>
-    <message>
-        <source>Systems</source>
-        <translation type="unfinished" />
-    </message>
     <message numerus="yes">
         <source>Synced at %1 · %n game(s)</source>
         <translation><numerusform>Synced at %1 · %n game</numerusform><numerusform>Synced at %1 · %n games</numerusform></translation>
@@ -1786,30 +1710,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>by name</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>recently played</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>recently added</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>most played</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Remove from favourites</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Add to favourites</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Sign in with the password</source>
         <translation type="unfinished" />
     </message>
@@ -1930,19 +1830,83 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No favourites yet. On a game, choose “Add to favourites” (%1 menu or game page).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No “%1” game here. Change the genre in %2 → Sort and filter.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Quit the game from the emulator (usually Esc, or its menu)</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Game mode (test) — Esc to go back</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>For this game only</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Display</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture, ratio, filters for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change the cover</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Another match or region on ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mute the video</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video sound</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Forget the local copy</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Same as the console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game uses its console's emulator.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game now uses %1.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No favourites yet. On a game's page, choose “Add to favourites”.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No “%1” game here. Change the genre with %2 (Sort and filter).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Tabs</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sort</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2067,7 +2031,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Menu</source>
+        <source>Settings</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2460,10 +2424,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Install, cache</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Updates</source>
         <translation type="unfinished" />
     </message>
@@ -2477,10 +2437,6 @@
     </message>
     <message>
         <source>Interface</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Sounds, trailers</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2516,23 +2472,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>RomM, profiles</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Help</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Diagnostic report</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Mount cache</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Space kept for recently played mounted games</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2561,10 +2505,6 @@
     </message>
     <message>
         <source>Short, quiet sounds when moving and choosing</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Trailers</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2673,10 +2613,6 @@
     </message>
     <message>
         <source>Synced at %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Back to the library</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2849,6 +2785,58 @@
     </message>
     <message>
         <source> is not writable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installation, saves</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sounds, videos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture, ratio, filters</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM, sync, profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Diagnostics, quit</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Space for network play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disk space Borne keeps for games played from the network (without downloading them), so they start faster next time</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installed version: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game videos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Measurements</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Graphics, memory and disk speed of this device, to understand a slow game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the system</source>
         <translation type="unfinished" />
     </message>
 </context>

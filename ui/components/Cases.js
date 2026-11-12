@@ -58,11 +58,19 @@ const MIN_SPINE = 0.07
 // Each console's own colour (its buttons, logo or body, as people know it): Borne's accent while
 // the console or one of its games is selected (buttons, active pills, the frame round the screen).
 const TINTS = {
-    switch: "#E60012", ngc: "#6A4FC4", wii: "#34BEED", wiiu: "#009AC7", ps2: "#1F55D6", psx: "#8A90A0",
-    ps: "#8A90A0", ps3: "#2F5FD0", ps4: "#2563D9", psp: "#5A6070", nes: "#D2232A", famicom: "#B8232B",
-    snes: "#6B5CA5", sfam: "#6B5CA5", n64: "#1E9E5A", gb: "#9B2257", gbc: "#7B3FC0", gba: "#4B3FA8",
-    genesis: "#D3222A", sms: "#C8102E", gamegear: "#3A6FD8", saturn: "#5B5FC7", dc: "#E26A1B",
-    xbox: "#107C10", xbox360: "#107C10", nds: "#7D8590", "3ds": "#CE1126", segacd: "#D3222A", atari2600: "#C46A1E"
+    // Nintendo: the red of the logo and the Switch, each console's own colour otherwise.
+    switch: "#E60012", nes: "#E4000F", famicom: "#B8232B", snes: "#5B4B9A", sfam: "#5B4B9A",
+    n64: "#009B48", ngc: "#5C4B9E", wii: "#34BEED", wiiu: "#009AC7", virtualboy: "#C8102E",
+    gb: "#8B1F4E", gbc: "#8B1F4E", gba: "#4C3F9B", nds: "#7D8590", "3ds": "#D12228",
+    // Sony: PlayStation blue, grey for the first console's body.
+    psx: "#A3A7AE", ps: "#A3A7AE", ps2: "#1F4BBF", ps3: "#2F5FD0", ps4: "#0070D1", ps5: "#0070D1",
+    psp: "#5A6070", psvita: "#1E5AA8",
+    // Sega: each logo's colour.
+    sms: "#C8102E", genesis: "#D3222A", segacd: "#D3222A", sega32: "#D3222A", gamegear: "#0060A8",
+    saturn: "#5B5FC7", dc: "#E26A1B",
+    // Others.
+    xbox: "#107C10", xbox360: "#107C10", atari2600: "#C46A1E", pce: "#E8612C", neogeo: "#C9A227",
+    arcade: "#F2A900"
 }
 function tint(slug) { return TINTS[slug] || "#5A6DB0" }
 

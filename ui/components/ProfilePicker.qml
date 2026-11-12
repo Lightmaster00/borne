@@ -12,7 +12,7 @@ Item {
     signal choose(var profile)
     signal add()
     signal options(var profile)
-    signal mainMenu()
+    signal settings()
 
     readonly property int count: profiles.length + 1
     function focusLastUsed() {
@@ -24,7 +24,7 @@ Item {
         else if (a === "right") index = Math.min(count - 1, index + 1)
         else if (a === "a") { if (index < profiles.length) choose(profiles[index]); else add() }
         else if (a === "y" && index < profiles.length) options(profiles[index])
-        else if (a === "start") mainMenu()
+        else if (a === "start") settings()
     }
 
     Column {
@@ -86,7 +86,7 @@ Item {
         HintBar {
             anchors.horizontalCenter: parent.horizontalCenter
             theme: picker.theme
-            hints: [["A", qsTr("Choose"), "a"], ["Y", qsTr("Profile options"), "y"], ["Start", qsTr("Menu"), "start"]]
+            hints: [["A", qsTr("Choose"), "a"], ["Y", qsTr("Profile options"), "y"], ["Start", qsTr("Settings"), "start"]]
         }
     }
 }

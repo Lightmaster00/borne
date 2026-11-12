@@ -95,6 +95,27 @@ pub fn chosen(app: &Shared, system: &str) -> Option<Engine> {
     list.iter().find(|e| Some(&e.id) == pref.as_ref()).cloned().or_else(|| list.into_iter().next())
 }
 
+/// The engine for one game: its own choice (game settings), else its console's.
+pub fn chosen_for_game(app: &Shared, system: &str, group_key: &str) -> Option<Engine> {
+    let own = app.db.setting(&format!("emu_for_game.{group_key}"));
+    engines(system).into_iter().find(|e| Some(&e.id) == own.as_ref()).or_else(|| chosen(app, system))
+}
+
+/// Sets (or, with None, clears) the engine of one game; installed at once like a console's.
+pub fn choose_for_game(app: &Shared, system: &str, group_key: &str, engine_id: Option<&str>) -> Result<(), String> {
+    let key = format!("emu_for_game.{group_key}");
+    let Some(id) = engine_id else {
+        app.db.delete_setting(&key);
+        return Ok(());
+    };
+    let e = engines(system).into_iter().find(|e| e.id == id).ok_or("unknown emulator for this console")?;
+    app.db.set_setting(&key, &e.id);
+    if find(app, &e.program).is_none() || e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false) {
+        let _ = crate::emuinstall::start(app, &e.program, e.core.into_iter().collect());
+    }
+    Ok(())
+}
+
 pub fn choose(app: &Shared, system: &str, engine_id: &str) -> Result<(), String> {
     let e = engines(system).into_iter().find(|e| e.id == engine_id).ok_or("unknown emulator for this console")?;
     app.db.set_setting(&format!("emu_for.{system}"), &e.id);
@@ -580,7 +601,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     }
     let g = app.db.game(rom_id).ok_or("unknown game")?;
     let system = g.platform_slug.clone();
-    let e = chosen(app, &system).ok_or_else(|| {
+    let e = chosen_for_game(app, &system, &g.group_key).ok_or_else(|| {
         if manifest().consoles.contains_key(&system) {
             format!("no emulator can run {} games yet", g.platform_name)
         } else {

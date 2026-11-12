@@ -117,10 +117,10 @@ Item {
         height: vertical ? box.bh : box.bd + 1
         visible: facingValue > 0.01
         transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, sd.face, false, box.dims) }
-        // Top and bottom in the console's signature colour; the sides in the case's material.
+        // Top and bottom in the spine's dominant colour (else the console's); sides in the case's material.
         Rectangle {
             anchors.fill: parent
-            color: !sd.vertical ? Cases.tint(box.game ? box.game.platform_slug : "")
+            color: !sd.vertical ? (box.game && box.game.spine_color ? box.game.spine_color : Cases.tint(box.game ? box.game.platform_slug : ""))
                  : box.mat === "card" ? Qt.darker(box.tone, 1.5) : box.mat === "jewel" ? "#101012" : box.kind.color
         }
         // The spine scan (stored upright and trimmed by the core).

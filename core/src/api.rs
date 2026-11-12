@@ -649,9 +649,25 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Get, ["api", "v1", "platforms"]) => {
             // With the console images ScreenScraper gave (logo, monochrome logo, photo, frame).
-            let list: Vec<Value> = app
-                .db
-                .platforms()
+            // Consoles that are one in practice share a tab (library::JOINED): their games are
+            // counted under the first.
+            let mut platforms = app.db.platforms();
+            for (main, parts) in library::JOINED {
+                let into = platforms.iter().position(|p| p.slug == *main || parts.contains(&p.slug.as_str()));
+                if let Some(i) = into {
+                    let (mut roms, mut local) = (0, 0);
+                    for p in platforms.iter().filter(|p| parts.contains(&p.slug.as_str())) {
+                        roms += p.rom_count;
+                        local += p.local_count;
+                    }
+                    platforms[i].rom_count = roms;
+                    platforms[i].local_count = local;
+                    platforms[i].name = library::joined_name(main).to_string();
+                    let keep = platforms[i].slug.clone();
+                    platforms.retain(|p| p.slug == keep || !parts.contains(&p.slug.as_str()));
+                }
+            }
+            let list: Vec<Value> = platforms
                 .into_iter()
                 .map(|p| {
                     let mut v = json!(p);
@@ -684,7 +700,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             let search = query(&q, "q");
             let local = query(&q, "local").as_deref() == Some("1");
             let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
-            let rows = app.db.games(platform.as_deref(), search.as_deref(), local);
+            let rows = match platform.as_deref().and_then(library::joined_parts) {
+                Some(parts) => parts.iter().flat_map(|p| app.db.games(Some(p), search.as_deref(), local)).collect(),
+                None => app.db.games(platform.as_deref(), search.as_deref(), local),
+            };
             let prefs = app
                 .active_profile()
                 .map(|p| app.db.game_prefs(&p.id))
@@ -737,6 +756,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     let m = crate::media::summary(app, &k);
                     kinds.extend(m["kinds"].as_array().cloned().unwrap_or_default());
                     v["media_sizes"] = m["sizes"].clone();
+                    v["spine_color"] = m["spine_color"].clone();
                 }
                 kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
                 v["art_kinds"] = json!(kinds);
@@ -780,6 +800,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
                     game["art_kinds"] = json!(kinds);
                     game["media_sizes"] = m["sizes"].clone();
+                    game["spine_color"] = m["spine_color"].clone();
                     if let Some(r) = game["cover_local"].as_str().and_then(cover_ratio) {
                         game["cover_ar"] = json!(r);
                     }
@@ -1046,6 +1067,26 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     Err(e) => err(req, 404, &e),
                 },
                 _ => err(req, 400, "invalid identifier"),
+            }
+        }
+        // The emulator of one game: its own choice (null: its console's), and the choices.
+        (Method::Get, ["api", "v1", "games", id, "emulator"]) => {
+            let Some(g) = id.parse::<i64>().ok().and_then(|i| app.db.game(i)) else {
+                return err(req, 404, "unknown game");
+            };
+            let choices: Vec<Value> = crate::emulators::engines(&g.platform_slug).iter().map(|e| json!({ "id": e.id, "name": e.name })).collect();
+            let own = app.db.setting(&format!("emu_for_game.{}", g.group_key)).filter(|o| choices.iter().any(|c| c["id"] == *o));
+            let console = crate::emulators::chosen(app, &g.platform_slug).map(|e| e.id);
+            ok(req, json!({ "choices": choices, "own": own, "console": console }))
+        }
+        (Method::Post, ["api", "v1", "games", id, "emulator"]) => {
+            let body = body_json(&mut req);
+            let Some(g) = id.parse::<i64>().ok().and_then(|i| app.db.game(i)) else {
+                return err(req, 404, "unknown game");
+            };
+            match crate::emulators::choose_for_game(app, &g.platform_slug, &g.group_key, body["engine"].as_str()) {
+                Ok(()) => ok(req, json!({ "ok": true })),
+                Err(e) => err(req, 400, &e),
             }
         }
         (Method::Post, ["api", "v1", "games", id, "prefs"]) => {
