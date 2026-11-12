@@ -67,7 +67,7 @@ jobs:
           core = json.loads(subprocess.run(["out/Borne/bin/borne", "--part-hashes", "out/Borne"], capture_output=True, text=True, check=True).stdout)
           assert ours == core, (ours, core)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: borne-linux-x86_64
           path: dist/
@@ -106,7 +106,7 @@ jobs:
           core = json.loads(subprocess.run(["out-macos/Borne.app/Contents/MacOS/borne", "--part-hashes", "out-macos/Borne.app"], capture_output=True, text=True, check=True).stdout)
           assert ours == core, (ours, core)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: borne-macos-arm64
           path: dist/
