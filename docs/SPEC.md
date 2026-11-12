@@ -774,19 +774,25 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Each console's games have a case profile (ui/components/Cases.js): material (cardboard, keep case,
   jewel case, clamshell), plastic color and real outer size in millimetres. Cases keep their
   proportions (PlayStation square, GameCube tall, Super Nintendo wide, or upright when its cover
-  is), and every case of a console has the same size: the scans are fitted to the case (the front
+  is), and every case of a console has the same size: its shape is the one its front scans show
+  (media::case_ratios, `case_ar` in `/platforms`: the median of the console's scans, or two shapes
+  when it was sold in two kinds of case, a Japanese Saturn jewel case and an American long box, a
+  Super Nintendo box wide or upright; a game takes the closer one), the scans are fitted to the case (the front
   fills its face: fitted whole when its proportions are within 22 % of the case's, so no title or
   logo is cut at the edges, trimmed evenly beyond; CD cases trim from the right so
   the console's band on the left of the insert stays whole; the spine scan covers the whole spine).
-  None is drawn with its longest side under 88 % of the tallest case (Cases.scale), and no spine
-  thinner than 7 % of the case's height (Cases.MIN_SPINE), so small cases and their spines stay
+  None is drawn with its longest side under 94 % of the tallest case (Cases.scale), and no spine
+  thinner than 9 % of the case's height (Cases.MIN_SPINE), so small cases and their spines stay
   readable. The ink outline is thin (1.5 to 3 units, 6 % of the spine) so it never makes a case look
-  thicker. PlayStation, Saturn, Mega-CD and Dreamcast covers are the square insert: the core cuts a
-  jewel case's hinge out of their front scans (media::cut_hinge: the columns from the left that do
-  not change from top to bottom and are not black; the insert's black band is never cut; at most
-  18 %), once for scans already stored. A white margin is trimmed from a scan only when it runs all
+  thicker. The core cuts a jewel case's hinge out of PlayStation front scans
+  (media::cut_hinge: the columns from the left that do not change from top to bottom and are light
+  or ridged; the insert's flat black band is never cut; at most 18 %), once for scans already
+  stored; Saturn, Mega-CD and Dreamcast covers are kept whole (their own band on the left), and
+  those an earlier version cut are fetched again. Corners and edges are rounded (5.5 mm on plastic,
+  3.5 on card, at most a third of the spine); the front and back prints sit on the flat part, the
+  spine's spans the whole thickness. A white margin is trimmed from a scan only when it runs all
   round it: a white case's own band on top (Wii, 3DS) stays; fronts of those consoles stored before
-  are fetched again once. Top and bottom take the console's signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture, their
+  are fetched again once. Top and bottom take the console's signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture (not for CD jewel cases, whose back insert folds into a spine on each side: their spine shows the title), their
   two folds found by edge detection around the place the front's proportions give.
 - Select opens Sort and filter (order, genre) directly; everything else lives in Settings (sync,
   server, profile in Server; measurements and quit in Help). Settings stand on a plain background

@@ -28,16 +28,17 @@ Node {
     readonly property real frontAR: game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0)
     // A spine scan lying on its side (wider than tall) is stood up.
     readonly property bool sideLying: has("side") && game.side_ar > 1
-    // Every case of a console has the same size (its real case's proportions): the scans are
-    // fitted to it, never the other way round. Only a cover that is upright where the console's
-    // boxes are usually wide (Super Nintendo in Europe) turns the case.
-    readonly property bool turned: !!kind.turns && frontAR > 0 && frontAR < 1
-    readonly property real bh: (turned ? kind.w : kind.h) * mm
-    readonly property real bw: (turned ? kind.h : kind.w) * mm
+    // Every case of a console has the same size (Cases.shape: its scans' usual proportions): the
+    // scans are fitted to it, never the other way round.
+    readonly property var shape: Cases.shape(game ? game.platform_slug : "", frontAR)
+    readonly property bool turned: shape.turned
+    readonly property real bh: shape.h * mm
+    readonly property real bw: shape.w * mm
     readonly property real bd: Math.max(bh * Cases.MIN_SPINE, kind.d * mm)
-    // Slightly rounded: a little more on plastic than on cardboard, and never so much that the
-    // curve eats into a thin spine (its print would bend away and look off centre).
-    readonly property real round: Math.min((card ? 2.2 : 3.6) * mm, bd * 0.16)
+    // Rounded corners and edges, a little more on plastic than on cardboard. The prints stay on
+    // the flat part (CaseMesh), so the curve never takes any of them; on a thin case the curve
+    // keeps a flat strip in the middle of the spine for its print.
+    readonly property real round: Math.min((card ? 3.5 : 5.5) * mm, bd * 0.32)
     readonly property color plastic: kind.color
     readonly property bool lightPlastic: plastic.hslLightness > 0.6
     readonly property color tone: theme ? theme.tone(game ? game.hue : 0) : "#444"

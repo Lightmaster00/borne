@@ -1,9 +1,11 @@
 // Geometry for the 3D game cases (fed to QtQuick3D.Helpers' ProceduralMesh): a box with slightly
 // rounded corners and edges, built face by face so each face takes its own print (cover, spine,
 // back, the console's plastic). Each face reaches to the middle of its rounded edges, where the
-// next face takes over. Its uv runs 0 → 1 across the flat part as seen from outside (v up): the
-// whole print shows on the flat face, nothing of it bends away on the rounded edges, which carry
-// the print's edge colour on.
+// next face takes over. On the large faces (front, back) its uv runs 0 → 1 across the flat part
+// as seen from outside (v up): the whole print shows on the flat face, nothing of it bends away on
+// the rounded edges, which carry the print's edge colour on. On the thin spines the print spans
+// the face across its depth, rounded edges included (a flat strip alone would be too narrow), and
+// the flat part only from top to bottom.
 // Scene coordinates: x right, y up, z toward the viewer; the box is centred on the origin.
 .pragma library
 
@@ -48,7 +50,8 @@ function face(name, w, h, d, r, n) {
             P.push(Qt.vector3d(c[0] + nn[0] * r, c[1] + nn[1] * r, c[2] + nn[2] * r))
             N.push(Qt.vector3d(nn[0], nn[1], nn[2]))
             const flat = (s, hh) => Math.max(0, Math.min(1, (s + hh - r) / (2 * (hh - r))))
-            U.push(Qt.vector2d(flat(su[i], hr), flat(sv[j], hu)))
+            const spine = name === "left" || name === "right"
+            U.push(Qt.vector2d(spine ? (su[i] + hr) / (2 * hr) : flat(su[i], hr), flat(sv[j], hu)))
         }
     }
     const cols = su.length

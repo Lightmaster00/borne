@@ -622,9 +622,11 @@ fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> us
     if app.db.media(group_key, "video").map(|m| m.stamp != video).unwrap_or(true) {
         app.db.set_media(group_key, "video", "", 0, 0, &video);
     }
-    // No spine scan: cut it from the unfolded case texture (back | spine | front).
+    // No spine scan: cut it from the unfolded case texture (back | spine | front). Not for CD
+    // jewel cases: their back insert folds into a spine on each side, and the cut would take parts
+    // of both (the title twice); their spine shows the title in the case's colour instead.
     let has_side = app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|") && !m.stamp.starts_with(OLD_SPINE_CUT)).unwrap_or(false);
-    if !has_side {
+    if !has_side && !jewel_case(group_key) {
         if let Some(ar) = front_ar {
             if cut_spine(app, c, group_key, &medias, &regions, ar) {
                 stored += 1;
@@ -632,6 +634,21 @@ fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> us
         }
     }
     stored
+}
+
+/// CD consoles whose games come in a jewel case.
+fn jewel_case(group_key: &str) -> bool {
+    matches!(group_key.split(':').next(), Some("psx" | "ps" | "saturn" | "segacd" | "dc"))
+}
+
+/// Spines cut from the case texture of jewel cases (the title twice, see fetch_game): removed once.
+fn drop_jewel_texture_spines(app: &Shared) {
+    for key in app.db.group_keys() {
+        if jewel_case(&key) && app.db.media(&key, "side").map(|m| m.stamp.starts_with("ss|texture")).unwrap_or(false) {
+            app.db.delete_media(&key, "side");
+            app.emit(json!({ "type": "media", "group_key": key }));
+        }
+    }
 }
 
 /// Stamp of spines cut before their edges were looked for (often off centre): cut again.
@@ -706,12 +723,15 @@ fn spine_span(g: &image::GrayImage, ar: f64) -> Option<(u32, u32)> {
     Some((x, width.min(g.width() - x)))
 }
 
-/// Fronts of white cases (Wii, 3DS…) stored when the case's white band on top was taken for a
-/// scanner's margin and cut: fetched again once from the kept records (see media::trim).
-fn refetch_white_fronts(app: &Shared, c: &Credentials) {
+/// Fronts stored damaged by an earlier version, fetched again once from the kept records: white
+/// cases (Wii, 3DS…) whose white band on top was taken for a scanner's margin (media::trim), and
+/// Saturn, Mega-CD and Dreamcast covers whose left band was taken for a case hinge.
+fn refetch_fronts(app: &Shared, c: &Credentials) {
     for key in app.db.ss_record_keys() {
-        let white = matches!(key.split(':').next(), Some("wii" | "wiiu" | "3ds" | "nds" | "xbox360"));
-        if !white || app.db.setting(&format!("front_v2.{key}")).is_some() {
+        let (slug, flag) = (key.split(':').next().unwrap_or(""), format!("front_v3.{key}"));
+        let damaged = matches!(slug, "wii" | "wiiu" | "3ds" | "nds" | "xbox360") && app.db.setting(&format!("front_v2.{key}")).is_none()
+            || matches!(slug, "saturn" | "segacd" | "dc");
+        if !damaged || app.db.setting(&flag).is_some() {
             continue;
         }
         let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { continue };
@@ -731,14 +751,39 @@ fn refetch_white_fronts(app: &Shared, c: &Credentials) {
                 }
             }
         }
-        app.db.set_setting(&format!("front_v2.{key}"), "1");
+        app.db.set_setting(&flag, "1");
+    }
+    // Their spines too: the white band on top of a Wii or 3DS spine was trimmed the same way.
+    for key in app.db.ss_record_keys() {
+        let flag = format!("side_v3.{key}");
+        if !matches!(key.split(':').next(), Some("wii" | "wiiu" | "3ds" | "nds" | "xbox360")) || app.db.setting(&flag).is_some() {
+            continue;
+        }
+        let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { continue };
+        let medias: Vec<Value> = rec["jeu"]["medias"].as_array().cloned().unwrap_or_default();
+        let chosen = app.db.setting(&format!("ss_region.{key}"));
+        let mut regions: Vec<&str> = chosen.as_deref().into_iter().collect();
+        regions.extend(ui_regions(&ui_lang(app)));
+        if let Some(url) = pick(&medias, &["box-2D-side"], &regions) {
+            match download(c, url).and_then(|b| crate::media::store(app, &key, "side", &b)) {
+                Ok((path, w, h)) => app.db.set_media(&key, "side", &path.to_string_lossy(), w, h, &format!("ss|{}", redact(url))),
+                Err(e) => {
+                    app.db.log("screenscraper", &format!("spine of {key}: {e}"));
+                    continue;
+                }
+            }
+        } else if let Some(ar) = app.db.media(&key, "front").filter(|m| m.h > 0).map(|m| m.w as f64 / m.h as f64) {
+            cut_spine(app, c, &key, &medias, &regions, ar);
+        }
+        app.emit(json!({ "type": "media", "group_key": key }));
+        app.db.set_setting(&flag, "1");
     }
 }
 
 /// Fronts of CD cases stored before their hinge was cut: cut once now (see media::cut_hinge).
 fn cut_stored_hinges(app: &Shared) {
     for key in app.db.group_keys() {
-        if !crate::media::cd_case(&key) || app.db.setting(&format!("hinge_cut.{key}")).is_some() {
+        if !crate::media::cd_case(&key) || app.db.setting(&format!("hinge_cut2.{key}")).is_some() {
             continue;
         }
         if let Some(m) = app.db.media(&key, "front").filter(|m| m.stamp.starts_with("ss|")) {
@@ -749,14 +794,14 @@ fn cut_stored_hinges(app: &Shared) {
                 }
             }
         }
-        app.db.set_setting(&format!("hinge_cut.{key}"), "1");
+        app.db.set_setting(&format!("hinge_cut2.{key}"), "1");
     }
 }
 
 /// Spines cut the old way (often off centre) cut again from the kept records, in the background.
 fn recut_spines(app: &Shared, c: &Credentials) {
     for key in app.db.ss_record_keys() {
-        if !app.db.media(&key, "side").map(|m| m.stamp.starts_with(OLD_SPINE_CUT)).unwrap_or(false) {
+        if jewel_case(&key) || !app.db.media(&key, "side").map(|m| m.stamp.starts_with(OLD_SPINE_CUT)).unwrap_or(false) {
             continue;
         }
         let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { continue };
@@ -807,9 +852,10 @@ pub fn start(app: &Shared, again: bool) {
                 .map(|n| n.clamp(1, 4) as usize)
                 .unwrap_or(1);
             fetch_systems(&app, &c, again);
+            drop_jewel_texture_spines(&app);
             recut_spines(&app, &c);
             cut_stored_hinges(&app);
-            refetch_white_fronts(&app, &c);
+            refetch_fronts(&app, &c);
             STOP.store(false, Ordering::SeqCst);
             PAUSED.store(false, Ordering::SeqCst);
             status_set(&app, |s| {

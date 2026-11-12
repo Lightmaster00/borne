@@ -667,10 +667,12 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     platforms.retain(|p| p.slug == keep || !parts.contains(&p.slug.as_str()));
                 }
             }
+            let ratios = crate::media::case_ratios(app);
             let list: Vec<Value> = platforms
                 .into_iter()
                 .map(|p| {
                     let mut v = json!(p);
+                    v["case_ar"] = json!(ratios.get(&p.slug));
                     let kinds: Vec<String> = app.db.media_of(&format!("system:{}", p.slug)).into_iter().filter(|m| std::path::Path::new(&m.path).is_file()).map(|m| m.kind).collect();
                     v["art_kinds"] = json!(kinds);
                     v

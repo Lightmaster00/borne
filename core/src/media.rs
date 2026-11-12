@@ -123,16 +123,17 @@ pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<
     finish(app, group_key, kind, img)
 }
 
-/// Consoles whose games come in a CD jewel case (their front scans may show the case's hinge).
+/// Consoles whose front scans may show the jewel case's hinge (PlayStation). Saturn and the
+/// others keep their scans whole: their covers carry a band of their own on the left.
 pub fn cd_case(group_key: &str) -> bool {
-    matches!(group_key.split(':').next(), Some("psx" | "ps" | "saturn" | "segacd" | "dc"))
+    matches!(group_key.split(':').next(), Some("psx" | "ps"))
 }
 
 /// A jewel case scan with the case's hinge on its left: the hinge cut, the cover insert kept whole
 /// (with the console's band, "PlayStation" and the like, on its left). The hinge is the run of
 /// columns from the left edge that do not change from top to bottom (moulded ridges run straight
-/// down) and are not black; it stops at the first column carrying a logo or text, or at the
-/// insert's black band, which is never cut. The hinge's pins at the very top and bottom are not
+/// down) and are light or ridged (changing from one column to the next); it stops at the first
+/// column carrying a logo or text, or at the insert's flat black band, which is never cut. The hinge's pins at the very top and bottom are not
 /// read, and at most 18 % is cut.
 pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
     let g = img.to_luma8();
@@ -142,21 +143,31 @@ pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
     }
     let (top, bottom) = (h * 6 / 100, h * 94 / 100);
     let step = ((bottom - top) / 120).max(1);
-    let still = |x: u32| -> bool {
-        let vals: Vec<f64> = (top..bottom).step_by(step as usize).map(|y| g.get_pixel(x, y)[0] as f64).collect();
-        let mean = vals.iter().sum::<f64>() / vals.len() as f64;
-        let var = vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / vals.len() as f64;
-        var.sqrt() < 9.0 && mean >= 40.0
-    };
     let max = w * 18 / 100;
+    // Each column's mean and spread from top to bottom.
+    let stats: Vec<(f64, f64)> = (0..(max + 3).min(w))
+        .map(|x| {
+            let vals: Vec<f64> = (top..bottom).step_by(step as usize).map(|y| g.get_pixel(x, y)[0] as f64).collect();
+            let mean = vals.iter().sum::<f64>() / vals.len() as f64;
+            let var = vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / vals.len() as f64;
+            (mean, var.sqrt())
+        })
+        .collect();
+    // Ridged: the columns around change from one to the next (moulded plastic), unlike a flat band.
+    let ridged = |x: usize| -> bool {
+        let lo = x.saturating_sub(2);
+        let hi = (x + 2).min(stats.len() - 2);
+        (lo..=hi).any(|k| (stats[k + 1].0 - stats[k].0).abs() > 6.0)
+    };
+    let hinge = |x: usize| -> bool { stats[x].1 < 9.0 && (stats[x].0 >= 40.0 || ridged(x)) };
     let mut x = 0;
-    while x < max && still(x) {
+    while x < max as usize && hinge(x) {
         x += 1;
     }
-    if x < w / 50 {
+    if x < (w / 50) as usize {
         return img.clone();
     }
-    img.crop_imm(x, 0, w - x, h)
+    img.crop_imm(x as u32, 0, w - x as u32, h)
 }
 
 /// Decodes an image from the network, refusing absurd sizes before decoding (memory bombs).
@@ -327,6 +338,39 @@ pub fn dominant_color(img: &DynamicImage) -> Option<String> {
     Some(format!("#{:02x}{:02x}{:02x}", sum[0] / n, sum[1] / n, sum[2] / n))
 }
 
+/// Per console: the proportions (width / height) of its case as its front scans show them, from
+/// at least three scans, most common first. Every case of a console is drawn to them, so the
+/// scans fit without being cut. A console sold in two kinds of case (a Japanese Saturn jewel case
+/// and an American long box, a Super Nintendo box wide or upright) gets both shapes.
+pub fn case_ratios(app: &Shared) -> HashMap<String, Vec<f64>> {
+    let mut per: HashMap<String, Vec<f64>> = HashMap::new();
+    for (key, slug, _) in app.db.groups_with_platform() {
+        if let Some(m) = app.db.media(&key, "front").filter(|m| m.w > 0 && m.h > 0) {
+            per.entry(slug).or_default().push(m.w as f64 / m.h as f64);
+        }
+    }
+    per.into_iter().filter(|(_, v)| v.len() >= 3).map(|(slug, v)| (slug, case_shapes(v))).collect()
+}
+
+/// The one or two usual proportions among scans: split at the widest gap when it is larger than
+/// 22 % and each side holds a fifth of them; the median of each side, the larger side first.
+pub fn case_shapes(mut v: Vec<f64>) -> Vec<f64> {
+    v.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let median = |s: &[f64]| s[s.len() / 2];
+    let min_side = (v.len() as f64 * 0.2).ceil() as usize;
+    let split = (min_side.max(1)..=v.len().saturating_sub(min_side.max(1)))
+        .filter(|&i| i > 0 && i < v.len())
+        .max_by(|&a, &b| (v[a] / v[a - 1]).partial_cmp(&(v[b] / v[b - 1])).unwrap_or(std::cmp::Ordering::Equal))
+        .filter(|&i| v[i] / v[i - 1] > 1.22);
+    match split {
+        Some(i) => {
+            let (a, b) = v.split_at(i);
+            if a.len() >= b.len() { vec![median(a), median(b)] } else { vec![median(b), median(a)] }
+        }
+        None => vec![median(&v)],
+    }
+}
+
 /// Per console: how many games have each kind on disk, and how many RomM has no scan for.
 pub fn report(app: &Shared) -> Value {
     let mut per: HashMap<String, (String, usize, HashMap<String, usize>)> = HashMap::new();
@@ -377,7 +421,32 @@ mod tests {
                 band.put_pixel(x, y, image::Rgb([((x * 5 + y) % 255) as u8, 60, 120]));
             }
         }
-        assert_eq!(cut_hinge(&DynamicImage::ImageRgb8(band)).width(), 130);
+        assert_eq!(cut_hinge(&DynamicImage::ImageRgb8(band.clone())).width(), 130);
+        // A dark hinge (black plastic with ridges) before that band is cut, the band kept.
+        let mut dark = image::RgbImage::from_pixel(150, 120, image::Rgb([6, 6, 6]));
+        for x in 0..150 {
+            for y in 0..120 {
+                let p = if x < 20 {
+                    if x % 3 == 0 { [45, 45, 48] } else { [12, 12, 14] }
+                } else if x < 50 {
+                    [6, 6, 6]
+                } else {
+                    [((x * 5 + y) % 255) as u8, 60, 120]
+                };
+                dark.put_pixel(x, y, image::Rgb(p));
+            }
+        }
+        let cut = cut_hinge(&DynamicImage::ImageRgb8(dark)).width();
+        assert!((128..=131).contains(&cut), "{cut}");
+    }
+
+    #[test]
+    fn case_shapes_one_or_two() {
+        assert_eq!(case_shapes(vec![0.70, 0.71, 0.72, 0.69]), vec![0.71]);
+        // Saturn: three Japanese jewel inserts, two American long boxes.
+        assert_eq!(case_shapes(vec![1.0, 0.98, 1.02, 0.72, 0.73]), vec![1.0, 0.73]);
+        // One odd scan does not make a shape.
+        assert_eq!(case_shapes(vec![0.70, 0.71, 0.72, 0.69, 0.70, 0.71, 1.3]), vec![0.71]);
     }
 
     #[test]

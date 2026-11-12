@@ -155,12 +155,14 @@ Window {
                             "gba": "Game Boy Advance", "nds": "Nintendo DS", "genesis": "Mega Drive", "sms": "Master System",
                             "ngc": "GameCube", "wii": "Wii", "wiiu": "Wii U", "switch": "Switch", "ps": "PlayStation", "psx": "PlayStation",
                             "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "dc": "Dreamcast", "saturn": "Saturn", "arcade": "Arcade" }
-            const frames = {}
+            const frames = {}, shapes = {}
             for (const p of list) {
                 sys.push({ id: p.slug, name: shortNames[p.slug] || p.name })
+                if (p.case_ar) shapes[p.slug] = p.case_ar   // the cases' shapes from their scans
                 if (p.art_kinds && p.art_kinds.indexOf("frame") >= 0) frames[p.slug] = apiBase + "/api/v1/systems/" + p.slug + "/art/frame"
             }
             consoleFrames = frames
+            Cases.setRatios(shapes)
             systems = sys
             systemIndex = Math.max(0, sys.findIndex(s => s.id === current))
             // The open tab went away (emptied) or this is the first list: show the one now open.

@@ -41,11 +41,32 @@ const CASES = {
     "3ds":     { mat: "keep",  color: "#eceef1", w: 125, h: 137, d: 13 },
     switch:    { mat: "keep",  color: "#d0202b", w: 105, h: 170, d: 11 }
 }
+// Each console's case proportions (width / height) as its front scans show them, from the core
+// (GET /platforms, case_ar: one or two shapes, most common first), set when the consoles are
+// listed, before the shelf is built.
+let ratios = {}
+function setRatios(m) { ratios = m || {} }
+// Width and height of a console's case in its own millimetres, every case of the console alike:
+// the longest side of its real case, the proportions of its scans (else of its real case). Where
+// the console was sold in two kinds of case, a game takes the one closest to its scan; with one
+// known shape, a cover upright where the console's cases are usually wide turns the case.
+function shape(slug, frontAR) {
+    const k = of(slug)
+    const known = ratios[slug] && ratios[slug].length ? ratios[slug] : [k.w / k.h]
+    let ar = known[0]
+    if (frontAR > 0 && known.length > 1)
+        ar = known.reduce((b, r) => Math.abs(Math.log(r / frontAR)) < Math.abs(Math.log(b / frontAR)) ? r : b, ar)
+    const turned = known.length === 1 && !!k.turns && frontAR > 0 && (frontAR < 1) !== (ar < 1)
+    const a = turned ? 1 / ar : ar
+    const longest = Math.max(k.w, k.h)
+    return a <= 1 ? { w: longest * a, h: longest, turned: turned } : { w: longest, h: longest / a, turned: turned }
+}
+
 const TALLEST = 191   // mm: the tallest case is drawn at the shelf's full box height
 // Small cases (a PlayStation jewel case, a Game Boy box) drawn to true scale would be too small
 // to read: every case is drawn with its longest side at least this share of the tallest, keeping
 // its own proportions. Sizes still differ between consoles, just less than in real life.
-const MIN_SIDE = 0.88
+const MIN_SIDE = 0.94
 // Scene units per millimetre for a case of that kind, on a shelf where the tallest case is boxH.
 function scale(k, boxH) {
     const longest = Math.max(k.w, k.h)
@@ -53,7 +74,7 @@ function scale(k, boxH) {
 }
 // A spine thinner than this share of the case's height is drawn this thick, so its print and
 // title stay readable (real spines of keep and jewel cases are about 6 to 8 %).
-const MIN_SPINE = 0.07
+const MIN_SPINE = 0.09
 
 // Each console's own colour (its buttons, logo or body, as people know it): Borne's accent while
 // the console or one of its games is selected (buttons, active pills, the frame round the screen).
@@ -104,6 +125,6 @@ function presence(t) {
 // Distance between the selected case and its neighbours, for a case of that console.
 function step(slug, boxH) {
     const k = of(slug)
-    const w = (k.turns ? k.h : k.w) * scale(k, boxH)
+    const w = shape(slug, 0).w * scale(k, boxH)
     return Math.max(300, w * 0.95 + 90)
 }

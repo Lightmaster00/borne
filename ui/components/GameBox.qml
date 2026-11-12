@@ -22,14 +22,15 @@ Item {
     // (Super Nintendo: wide in America, upright in Europe) follow their cover.
     readonly property var kind: Cases.of(game ? game.platform_slug : "")
     readonly property real coverAspect: cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
-    readonly property bool turned: !!kind.turns && coverAspect > 0 && coverAspect < 1
+    readonly property var shape: Cases.shape(game ? game.platform_slug : "", coverAspect)
+    readonly property bool turned: shape.turned
     readonly property real mm: Cases.scale(kind, stage.boxH)
     // Every case of a console has the same size (its real case's proportions); the scans are
     // fitted to it.
     function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
     readonly property bool frontScan: has("front")
-    readonly property real bh: (turned ? kind.w : kind.h) * mm
-    readonly property real bw: (turned ? kind.h : kind.w) * mm
+    readonly property real bh: shape.h * mm
+    readonly property real bw: shape.w * mm
     readonly property real bd: Math.max(bh * Cases.MIN_SPINE, kind.d * mm)
     readonly property string mat: kind.mat
     readonly property bool plastic: mat !== "card"

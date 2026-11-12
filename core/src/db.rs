@@ -712,6 +712,9 @@ impl Db {
             rusqlite::params![group_key, kind, path, w, h, stamp],
         );
     }
+    pub fn delete_media(&self, group_key: &str, kind: &str) {
+        let _ = self.c().execute("DELETE FROM media WHERE group_key = ?1 AND kind = ?2", rusqlite::params![group_key, kind]);
+    }
     pub fn ss_record(&self, group_key: &str) -> Option<String> {
         self.c()
             .query_row("SELECT json FROM ss_records WHERE group_key = ?1", [group_key], |r| r.get(0))
