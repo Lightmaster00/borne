@@ -45,6 +45,8 @@ pub struct App {
     pub pairing_gen: AtomicU64,
     pub sync: Mutex<SyncState>,
     pub dl_cancel: Mutex<HashMap<i64, Arc<AtomicBool>>>,
+    /// Downloads stopped by a pause rather than cancelled (their partial files are kept).
+    pub dl_pause: Mutex<std::collections::HashSet<i64>>,
     pub dl_wake: (Mutex<bool>, Condvar),
     pub online: AtomicBool,
     pub debug_input: bool,

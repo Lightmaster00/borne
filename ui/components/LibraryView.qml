@@ -31,6 +31,7 @@ Item {
         const busy = ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0
         if (busy) c.push({ text: g.dl_state === "downloading" && g.dl_total > 0 ? qsTr("Downloading %1%").arg(Math.round(100 * g.dl_received / g.dl_total)) : qsTr("Downloading"), icon: "download" })
         else if (g.dl_state === "failed") c.push({ text: qsTr("Download failed"), bad: true })
+        else if (g.dl_state === "paused") c.push({ text: qsTr("Download paused"), icon: "download" })
         else if (g.local_state === "local") c.push({ text: qsTr("Installed"), icon: "check" })
         else if (g.linked) c.push({ text: qsTr("Mounted"), icon: "link" })
         else if (g.local_state === "missing") c.push({ text: qsTr("Files missing"), bad: true })

@@ -185,6 +185,13 @@ try:
                 if f.endswith(".part") and os.path.getsize(os.path.join(root, f)) > 8 * 1024 * 1024:
                     return os.path.getsize(os.path.join(root, f))
     size_before = wait(partial, 60, "start of the large download")
+    big_dl = [d for d in call(api, "GET", "/api/v1/downloads")[1] if d["rom_id"] == big["rom_id"]][0]
+    s, _ = call(api, "POST", f"/api/v1/downloads/{big_dl['id']}/pause")
+    paused = wait(lambda: [d for d in call(api, "GET", "/api/v1/downloads")[1] if d["id"] == big_dl["id"] and d["state"] == "paused"], 20, "pause")
+    check(s == 200 and paused and partial(), "a download paused keeps its partial files")
+    s, _ = call(api, "POST", f"/api/v1/downloads/{big_dl['id']}/resume")
+    check(s == 200, "a paused download resumed")
+    size_before = wait(lambda: (lambda p: p if p and p > size_before else None)(partial()), 60, "the large download going on")
     core.send_signal(signal.SIGKILL)  # hard stop (crash, power off)
     core.wait()
     check(size_before < big["fs_size"], f"stopped mid-transfer ({size_before // 1048576} MB of {big['fs_size'] // 1048576})")
@@ -213,6 +220,8 @@ try:
     pending = [d for d in dls if d["rom_id"] == other["rom_id"] and d["state"] in ("queued", "downloading", "verifying")]
     if pending:
         call(api, "DELETE", f"/api/v1/downloads/{pending[0]['id']}")
+    s, cl = call(api, "DELETE", "/api/v1/downloads")
+    check(s == 200 and not [d for d in cl["downloads"] if d["state"] in ("done", "cancelled")], "finished and cancelled downloads cleared from the list")
     s, _ = call(api, "DELETE", f"/api/v1/games/{small['rom_id']}/local")
     check(s == 200 and call(api, "GET", f"/api/v1/games/{small['rom_id']}")[1]["game"]["local_state"] == "remote", "local deletion (the game stays on RomM)")
     check(romm("GET", f"/api/roms/{small['rom_id']}")["id"] == small["rom_id"], "game still present in RomM")

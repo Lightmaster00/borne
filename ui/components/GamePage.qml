@@ -52,6 +52,7 @@ Item {
         if (!g) return []
         if (busy) return [{ id: "cancel", label: qsTr("Cancel download"), primary: true }]
         if (g.dl_state === "failed") return [{ id: "download", label: qsTr("Retry download"), primary: true }, { id: "cancel", label: qsTr("Give up") }]
+        if (g.dl_state === "paused") return [{ id: "download", label: qsTr("Resume download"), primary: true }, { id: "cancel", label: qsTr("Cancel download") }]
         // Play (or get the game), the favourite, and the game's own settings (emulator, display,
         // cheats, language, cover, removal: see Main.gameSettings).
         const fav = { id: "fav", label: g.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites") }
@@ -129,6 +130,7 @@ Item {
         if (dl === "downloading") return qsTr("Downloading… %1%").arg(g.dl_total > 0 ? Math.round(100 * g.dl_received / g.dl_total) : 0)
         if (dl === "verifying") return qsTr("Verifying files…")
         if (dl === "extracting") return qsTr("Extracting…")
+        if (dl === "paused") return qsTr("Download paused at %1%").arg(g.dl_total > 0 ? Math.round(100 * g.dl_received / g.dl_total) : 0)
         if (dl === "failed") return qsTr("Download failed: %1").arg(g.dl_error || "")
         if (g.local_state === "local") return qsTr("Installed on this device")
         if (g.linked) return qsTr("Played from the network: nothing stored on this device")

@@ -900,13 +900,15 @@ impl Db {
         let c = self.c();
         let active: Option<i64> = c
             .query_row(
-                "SELECT id FROM downloads WHERE rom_id = ?1 AND state IN ('queued','downloading','verifying','extracting')",
+                "SELECT id FROM downloads WHERE rom_id = ?1 AND state IN ('queued','downloading','verifying','extracting','paused')",
                 [rom_id],
                 |r| r.get(0),
             )
             .optional()
             .unwrap();
         if let Some(id) = active {
+            // Downloading a paused game again resumes it.
+            let _ = c.execute("UPDATE downloads SET state = 'queued' WHERE id = ?1 AND state = 'paused'", [id]);
             return Ok(id);
         }
         c.execute(
@@ -948,6 +950,18 @@ impl Db {
             .optional()
             .ok()
             .flatten()
+    }
+    pub fn download_rom(&self, id: i64) -> Option<i64> {
+        self.c().query_row("SELECT rom_id FROM downloads WHERE id = ?1", [id], |r| r.get(0)).optional().ok().flatten()
+    }
+    pub fn download_progress(&self, id: i64) -> (i64, i64) {
+        self.c()
+            .query_row("SELECT received, total FROM downloads WHERE id = ?1", [id], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap_or((0, 0))
+    }
+    /// Removes finished and cancelled downloads from the list; returns how many.
+    pub fn clear_finished_downloads(&self) -> usize {
+        self.c().execute("DELETE FROM downloads WHERE state IN ('done','cancelled')", []).unwrap_or(0)
     }
     /// At startup: downloads interrupted by a shutdown start again (resumed through Range).
     pub fn requeue_interrupted(&self) -> usize {

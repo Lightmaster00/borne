@@ -126,6 +126,7 @@ fn main() {
         pairing_gen: AtomicU64::new(0),
         sync: Mutex::new(state::SyncState::default()),
         dl_cancel: Mutex::new(Default::default()),
+        dl_pause: Mutex::new(Default::default()),
         dl_wake: (Mutex::new(false), Condvar::new()),
         online: AtomicBool::new(false),
         debug_input: std::env::var("BORNE_DEBUG_INPUT").as_deref() == Ok("1"),

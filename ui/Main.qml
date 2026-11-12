@@ -245,7 +245,7 @@ Window {
     }
     function cancelDownload(g) {
         api("GET", "/api/v1/downloads", null, function (list) {
-            const d = (list || []).find(x => x.rom_id === g.rom_id && ["queued", "downloading", "verifying", "extracting", "failed"].indexOf(x.state) >= 0)
+            const d = (list || []).find(x => x.rom_id === g.rom_id && ["queued", "downloading", "verifying", "extracting", "failed", "paused"].indexOf(x.state) >= 0)
             if (d) api("DELETE", "/api/v1/downloads/" + d.id, null, function () { libReload.restart() })
         })
     }
@@ -753,8 +753,7 @@ Window {
         })
     }
     function openDownloads() {
-        downloadsPanel.index = 0
-        downloadsPanel.visible = true
+        downloadsPanel.open()
         refreshDownloads()
     }
     function refreshDownloads() {
@@ -1632,8 +1631,17 @@ Window {
         id: downloadsPanel
         theme: win.theme
         z: 60
-        onCancel: (d) => win.api("DELETE", "/api/v1/downloads/" + d.id, null, function () { win.refreshDownloads() })
-        onRetry: (d) => win.api("POST", "/api/v1/games/" + d.rom_id + "/download", {}, function (r, err) { if (err) toasts.show(err, "error"); win.refreshDownloads() })
+        onAct: (d, what) => {
+            sfx.play("accept")
+            const done = function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); win.refreshDownloads() }
+            if (what === "cancel") win.api("DELETE", "/api/v1/downloads/" + d.id, null, done)
+            else if (what === "retry") win.api("POST", "/api/v1/games/" + d.rom_id + "/download", {}, done)
+            else win.api("POST", "/api/v1/downloads/" + d.id + "/" + what, {}, done)
+        }
+        onClear: {
+            sfx.play("accept")
+            win.api("DELETE", "/api/v1/downloads", null, function (r, err) { if (r) downloadsPanel.downloads = r.downloads; else win.refreshDownloads() })
+        }
     }
     SearchOverlay {
         id: search

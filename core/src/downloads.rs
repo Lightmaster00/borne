@@ -64,19 +64,53 @@ pub fn enqueue(app: &Shared, rom_id: i64) -> Result<i64, String> {
 }
 
 pub fn cancel(app: &Shared, id: i64) -> bool {
+    app.dl_pause.lock().unwrap().remove(&id);
     if let Some(flag) = app.dl_cancel.lock().unwrap().get(&id) {
         flag.store(true, Ordering::SeqCst);
         return true;
     }
-    if app.db.download_state(id).as_deref() == Some("queued")
-        || app.db.download_state(id).as_deref() == Some("failed")
-    {
+    let state = app.db.download_state(id);
+    if matches!(state.as_deref(), Some("queued" | "failed" | "paused")) {
+        // Nothing will resume it: its partial files go.
+        if let Some(rom_id) = app.db.download_rom(id) {
+            let _ = std::fs::remove_dir_all(app.paths.library().join(".staging").join(rom_id.to_string()));
+        }
         app.db.update_download(id, "cancelled", 0, 0, None);
         app.emit(serde_json::json!({ "type": "download", "id": id, "state": "cancelled" }));
         app.emit(serde_json::json!({ "type": "library" }));
         return true;
     }
     false
+}
+
+/// Pauses a download: a running one stops and keeps its partial files, a queued one waits.
+pub fn pause(app: &Shared, id: i64) -> bool {
+    if let Some(flag) = app.dl_cancel.lock().unwrap().get(&id) {
+        app.dl_pause.lock().unwrap().insert(id);
+        flag.store(true, Ordering::SeqCst);
+        return true;
+    }
+    if app.db.download_state(id).as_deref() == Some("queued") {
+        let (received, total) = app.db.download_progress(id);
+        app.db.update_download(id, "paused", received, total, None);
+        app.emit(serde_json::json!({ "type": "download", "id": id, "state": "paused" }));
+        app.emit(serde_json::json!({ "type": "library" }));
+        return true;
+    }
+    false
+}
+
+/// Puts a paused (or failed) download back in the queue; it resumes where it stopped (Range).
+pub fn resume(app: &Shared, id: i64) -> bool {
+    if !matches!(app.db.download_state(id).as_deref(), Some("paused" | "failed")) {
+        return false;
+    }
+    let (received, total) = app.db.download_progress(id);
+    app.db.update_download(id, "queued", received, total, None);
+    app.emit(serde_json::json!({ "type": "download", "id": id, "state": "queued" }));
+    app.emit(serde_json::json!({ "type": "library" }));
+    app.wake_downloads();
+    true
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -109,6 +143,13 @@ fn run(app: &Shared, id: i64, rom_id: i64) {
     match result {
         Ok(Outcome::Done) => {
             let _ = std::fs::remove_dir_all(&staging);
+        }
+        Ok(Outcome::Cancelled) if app.dl_pause.lock().unwrap().remove(&id) => {
+            // Paused: the partial files stay for resuming.
+            let (received, total) = app.db.download_progress(id);
+            app.db.update_download(id, "paused", received, total, None);
+            emit(app, id, rom_id, "paused", received, total, None, 0.0);
+            app.db.log("download", &format!("game {rom_id}: paused"));
         }
         Ok(Outcome::Cancelled) => {
             let _ = std::fs::remove_dir_all(&staging);

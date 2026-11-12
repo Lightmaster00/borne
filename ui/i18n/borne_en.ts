@@ -596,11 +596,39 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Cancel / retry</source>
+        <source>Close</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Close</source>
+        <source>Paused</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Clear finished</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pause or cancel</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -949,6 +977,14 @@
         <source>Game settings</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Resume download</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download paused at %1%</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>GameSettingsPage</name>
@@ -1278,6 +1314,10 @@
     <message numerus="yes">
         <source>%n game(s)</source>
         <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
+    </message>
+    <message>
+        <source>Download paused</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

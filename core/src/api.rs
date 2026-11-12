@@ -73,7 +73,8 @@
 //!                                                 {"force": true} offers the latest even if not newer
 //!   POST   /api/v1/update/download               downloads and verifies it
 //!   POST   /api/v1/update/apply                  installs it; Borne restarts when the UI quits
-//!   GET    /api/v1/downloads  ·  DELETE /api/v1/downloads/<id>
+//!   GET    /api/v1/downloads  ·  DELETE /api/v1/downloads/<id> (cancel)  ·  DELETE /api/v1/downloads (clear finished)
+//!   POST   /api/v1/downloads/<id>/pause  ·  POST /api/v1/downloads/<id>/resume
 //! Misc
 //!   POST   /api/v1/report  ·  GET /file?path=…
 //!   POST   /api/v1/diagnostic-report             writes a shareable report (logs, no secrets)
@@ -1237,6 +1238,15 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "downloads"]) => ok(req, json!(app.db.downloads())),
+        // Finished and cancelled downloads leave the list.
+        (Method::Delete, ["api", "v1", "downloads"]) => {
+            let n = app.db.clear_finished_downloads();
+            ok(req, json!({ "cleared": n, "downloads": app.db.downloads() }))
+        }
+        (Method::Post, ["api", "v1", "downloads", id, action @ ("pause" | "resume")]) => match id.parse::<i64>() {
+            Ok(dl) if (if *action == "pause" { downloads::pause(app, dl) } else { downloads::resume(app, dl) }) => ok(req, json!({ "id": dl, "action": action })),
+            _ => err(req, 409, "this download cannot do that now"),
+        },
         (Method::Delete, ["api", "v1", "downloads", id]) => match id.parse::<i64>() {
             Ok(dl) if downloads::cancel(app, dl) => ok(req, json!({ "cancelled": dl })),
             _ => err(req, 404, "unknown or finished download"),

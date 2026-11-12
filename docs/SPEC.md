@@ -357,6 +357,11 @@ reports the offline state and syncs on reconnection according to section 6.4.
 
 - Local cached catalog with stable RomM identifiers, systems, names, covers and local presence state.
 - On-demand downloads with resume, size/hash verification and error handling.
+- Downloads panel (R3 / Tab): per download a Pause (Resume when paused, Retry when failed) and a Cancel
+  button; X or the button at the top clears finished and cancelled ones (`DELETE /api/v1/downloads`).
+  A paused download (`POST /api/v1/downloads/<id>/pause`, state `paused`) keeps its partial files and
+  resumes with a Range request (`POST …/resume`, or Download again from its page); cancelling one that
+  is not running removes them.
 - Archives and safe extraction: paths validated against path traversal.
 - Locally installed game: no needless re-download; detection of missing or modified files.
 - Switch updates and DLC handled as content attached to the base game.

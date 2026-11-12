@@ -32,7 +32,7 @@ Specification: [`docs/SPEC.md`](docs/SPEC.md).
   filter by genre (Select: Sort and filter); the search also matches other regions' titles.
 - **Downloads**: persistent queue, **resume after interruption** (Range requests), **SHA-1** verification
   (including archive contents), safe zip extraction, atomic install, live progress on the poster,
-  cancellation, local deletion that never touches RomM.
+  pause and resume, cancellation, a list that clears finished downloads, local deletion that never touches RomM.
 - **UI**: grid and detailed view, systems bar, main menu, game menu, downloads panel, notifications,
   English and French.
 

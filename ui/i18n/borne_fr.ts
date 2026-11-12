@@ -596,12 +596,40 @@
         <translation>Aucun téléchargement récent.</translation>
     </message>
     <message>
-        <source>Cancel / retry</source>
-        <translation>Annuler / réessayer</translation>
-    </message>
-    <message>
         <source>Close</source>
         <translation>Fermer</translation>
+    </message>
+    <message>
+        <source>Paused</source>
+        <translation>En pause</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Reprendre</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation>Réessayer</translation>
+    </message>
+    <message>
+        <source>Clear finished</source>
+        <translation>Effacer les terminés</translation>
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation>Choisir</translation>
+    </message>
+    <message>
+        <source>Pause or cancel</source>
+        <translation>Pause ou annuler</translation>
     </message>
 </context>
 <context>
@@ -949,6 +977,14 @@
         <source>Game settings</source>
         <translation>Paramètres du jeu</translation>
     </message>
+    <message>
+        <source>Resume download</source>
+        <translation>Reprendre le téléchargement</translation>
+    </message>
+    <message>
+        <source>Download paused at %1%</source>
+        <translation>Téléchargement en pause à %1 %</translation>
+    </message>
 </context>
 <context>
     <name>GameSettingsPage</name>
@@ -1278,6 +1314,10 @@
     <message numerus="yes">
         <source>%n game(s)</source>
         <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
+    </message>
+    <message>
+        <source>Download paused</source>
+        <translation>Téléchargement en pause</translation>
     </message>
 </context>
 <context>
