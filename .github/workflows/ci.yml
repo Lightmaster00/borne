@@ -25,7 +25,7 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: core
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/apt-cache
           key: apt-${{ runner.os }}-${{ hashFiles('scripts/ci/linux-deps.sh') }}
