@@ -106,6 +106,82 @@ pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Pat
     }
 }
 
+/// Where an emulator keeps every game's saves, relative to its data folder.
+fn save_root(program: &str) -> Option<&'static str> {
+    Some(match program {
+        "pcsx2" => "PCSX2/memcards",
+        "duckstation" => "data/duckstation/memcards",
+        "rpcs3" => "dev_hdd0/home/00000001/savedata",
+        "eden" | "citron" => "nand/user/save",
+        "ryubing" => "bis/user/save",
+        _ => return None,
+    })
+}
+
+/// Profiles never share saves. Most emulators keep theirs in each profile's own folder; on macOS,
+/// Eden, Citron, Ryujinx, RPCS3 and PCSX2 keep theirs in one folder for the whole Mac. Before a
+/// game, the saves there are set aside for the profile that last played (`profiles/<id>/stash/`)
+/// and the playing profile's own are put back, so a profile never sees, nor sends to its RomM
+/// account, another's saves.
+pub fn claim(app: &Shared, profile: &str, program: &str) {
+    let Some(rel) = save_root(program) else { return };
+    let data = crate::emulators::data_dir(app, profile, program);
+    if data.starts_with(app.paths.profiles()) {
+        return; // already per profile
+    }
+    let root = data.join(rel);
+    let key = format!("saveowner.{program}");
+    let owner = app.db.setting(&key);
+    if owner.as_deref() == Some(profile) {
+        return;
+    }
+    let stash = |p: &str| app.paths.profiles().join(p).join("stash").join(program);
+    let moved = |from: &Path, to: &Path| -> Result<(), String> {
+        if let Some(parent) = to.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        if to.exists() {
+            let _ = std::fs::remove_dir_all(to);
+        }
+        if std::fs::rename(from, to).is_ok() {
+            return Ok(());
+        }
+        // Another volume: copy, then remove.
+        copy_tree(from, to)?;
+        std::fs::remove_dir_all(from).map_err(|e| e.to_string())
+    };
+    // Saves made before Borne knew whose they were belong to the profile playing now.
+    if let Some(prev) = owner {
+        if root.exists() {
+            if let Err(e) = moved(&root, &stash(&prev).join("saves")) {
+                app.db.log("saves", &format!("{program}: saves of another profile not set aside ({e}); not playing with them"));
+                return;
+            }
+        }
+        let mine = stash(profile).join("saves");
+        if mine.exists() {
+            if let Err(e) = moved(&mine, &root) {
+                app.db.log("saves", &format!("{program}: this profile's saves not restored ({e})"));
+            }
+        }
+    }
+    let _ = std::fs::create_dir_all(&root);
+    app.db.set_setting(&key, profile);
+}
+
+fn copy_tree(from: &Path, to: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(to).map_err(|e| e.to_string())?;
+    for e in std::fs::read_dir(from).map_err(|e| e.to_string())?.flatten() {
+        let (src, dst) = (e.path(), to.join(e.file_name()));
+        if src.is_dir() {
+            copy_tree(&src, &dst)?;
+        } else {
+            std::fs::copy(&src, &dst).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 /// RetroArch's save states of this game, on this device.
 fn local_states(app: &Shared, profile: &str, system: &str, rom: &Path) -> Vec<Item> {
     let dir = app.paths.profiles().join(profile).join("states").join(system);

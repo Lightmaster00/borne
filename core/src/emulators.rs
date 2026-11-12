@@ -582,6 +582,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
     let emu_name = e.core.clone().unwrap_or_else(|| p.id.clone());
     let sync = Some((profile.clone(), system.clone(), p.id.clone(), rom.clone(), emu_name));
+    crate::savesync::claim(app, &profile, &p.id);
     crate::savesync::retry_pending(app);
     match crate::savesync::pull(app, &profile, rom_id, &system, &p.id, &rom) {
         Ok(notes) => {

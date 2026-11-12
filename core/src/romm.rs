@@ -288,13 +288,17 @@ impl Client {
 
     // ---------- pairing ----------
     pub fn device_init(&self, identifier: &str, name: &str) -> Result<DeviceInit> {
+        self.device_init_with(identifier, name, SCOPES)
+    }
+
+    pub fn device_init_with(&self, identifier: &str, name: &str, scopes: &[&str]) -> Result<DeviceInit> {
         let body = serde_json::json!({
             "client_device_identifier": identifier,
             "name": name,
             "client": "borne",
             "platform": std::env::consts::OS,
             "client_version": env!("CARGO_PKG_VERSION"),
-            "requested_scopes": SCOPES,
+            "requested_scopes": scopes,
         });
         let (code, v) = self.post_json("/api/auth/device/init", &body)?;
         if code == 404 {
@@ -333,6 +337,37 @@ impl Client {
             }
             other => return Err(RommError::Http(code, other.to_string())),
         })
+    }
+
+    /// Approves a pairing code with the account's own name and password (HTTP Basic), as the
+    /// user would in RomM's web page. Ok(false): the scopes asked exceed the account's role.
+    pub fn device_approve(&self, user_code: &str, username: &str, password: &str, scopes: &[&str], device_name: &str) -> Result<bool> {
+        let basic = format!("Basic {}", base64(&format!("{username}:{password}")));
+        let body = serde_json::json!({ "user_code": user_code, "approved_scopes": scopes, "device_name": device_name });
+        let mut resp = self
+            .api
+            .post(format!("{}/api/auth/device/approve", self.base))
+            .header("Authorization", basic)
+            .send_json(&body)
+            .map_err(map_transport)?;
+        let code = resp.status().as_u16();
+        let text = resp.body_mut().read_to_string().unwrap_or_default();
+        if (200..300).contains(&code) {
+            return Ok(true);
+        }
+        if code == 401 || code == 403 && !text.contains("exceed") {
+            return Err(RommError::Unauthorized);
+        }
+        if text.contains("exceed") {
+            return Ok(false);
+        }
+        Err(status_error(code, &text))
+    }
+
+    /// The server's accounts (needs an administrator's token): id, name, role.
+    pub fn users(&self) -> Result<Vec<Value>> {
+        let v = self.get_json("/api/users")?;
+        Ok(v.as_array().cloned().unwrap_or_default())
     }
 
     pub fn me(&self) -> Result<(i64, String)> {
@@ -652,5 +687,30 @@ mod tests {
             percent_encode("Big Test (World).md"),
             "Big%20Test%20%28World%29.md"
         );
+    }
+}
+
+/// Standard base64 (for HTTP Basic credentials).
+pub fn base64(s: &str) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let b = s.as_bytes();
+    let mut out = String::with_capacity((b.len() + 2) / 3 * 4);
+    for c in b.chunks(3) {
+        let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+        out.push(T[(n >> 18) as usize & 63] as char);
+        out.push(T[(n >> 12) as usize & 63] as char);
+        out.push(if c.len() > 1 { T[(n >> 6) as usize & 63] as char } else { '=' });
+        out.push(if c.len() > 2 { T[n as usize & 63] as char } else { '=' });
+    }
+    out
+}
+
+#[cfg(test)]
+mod base64_tests {
+    #[test]
+    fn encodes() {
+        assert_eq!(super::base64("light:gamehub-dev"), "bGlnaHQ6Z2FtZWh1Yi1kZXY=");
+        assert_eq!(super::base64("a"), "YQ==");
+        assert_eq!(super::base64("ab"), "YWI=");
     }
 }

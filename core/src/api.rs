@@ -15,7 +15,9 @@
 //!   PUT    /api/v1/profiles/<id> {name}
 //!   DELETE /api/v1/profiles/<id>
 //!   POST   /api/v1/profiles/<id>/activate
-//!   POST   /api/v1/profiles/<id>/pair            starts RomM pairing
+//!   POST   /api/v1/profiles/<id>/pair            starts RomM pairing (code approved from the phone)
+//!   POST   /api/v1/profiles/login                adds or signs in a profile: {username, password}
+//!   GET    /api/v1/romm/accounts                 the server's accounts (needs an administrator's profile)
 //!   GET    /api/v1/pairing  ·  DELETE /api/v1/pairing  ·  GET /api/v1/pairing/qr.svg
 //! Library
 //!   POST   /api/v1/sync                          syncs the catalog
@@ -568,6 +570,41 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             }
             None => err(req, 404, "unknown profile"),
         },
+        // The server's accounts, to add one as a profile (null when no profile may list them).
+        (Method::Get, ["api", "v1", "romm", "accounts"]) => ok(req, json!({ "accounts": pairing::accounts(app) })),
+        // Adds (or signs in again) a profile with a RomM account's name and password.
+        (Method::Post, ["api", "v1", "profiles", "login"]) => {
+            let body = body_json(&mut req);
+            let username = body["username"].as_str().unwrap_or("").trim().to_string();
+            let password = body["password"].as_str().unwrap_or("").to_string();
+            if username.is_empty() || password.is_empty() {
+                return err(req, 400, "user name and password needed");
+            }
+            // The profile: the one given, else the one already bound to this account, else a new one.
+            let existing = body["profile_id"].as_str().and_then(|id| app.db.profile(id))
+                .or_else(|| app.db.profiles().into_iter().find(|p| p.romm_user.as_deref() == Some(username.as_str())));
+            let (id, created) = match existing {
+                Some(p) => (p.id, false),
+                None => {
+                    let id = new_profile_id();
+                    let name: String = username.chars().take(40).collect();
+                    if let Err(e) = app.db.add_profile(&id, &name) {
+                        return err(req, 500, &e.to_string());
+                    }
+                    let _ = std::fs::create_dir_all(app.paths.profiles().join(&id));
+                    (id, true)
+                }
+            };
+            match pairing::login(app, &id, &username, &password) {
+                Ok(()) => ok(req, json!(app.db.profile(&id))),
+                Err(e) => {
+                    if created {
+                        app.db.delete_profile(&id);
+                    }
+                    err(req, 401, &e)
+                }
+            }
+        }
         (Method::Post, ["api", "v1", "profiles", id, "pair"]) => match pairing::start(app, id) {
             Ok(state) => ok(req, json!(state)),
             Err(e) => err(req, 502, &e),

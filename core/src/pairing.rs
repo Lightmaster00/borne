@@ -93,34 +93,10 @@ fn poll(
             Ok(TokenPoll::Denied) => return finish(&app, generation, "denied", None),
             Ok(TokenPoll::Expired) => return finish(&app, generation, "expired", None),
             Ok(TokenPoll::Approved { token, device_id }) => {
-                let authed = crate::romm::Client::new(&client.base, Some(token.clone()));
-                let (user_id, username) = match authed.me() {
-                    Ok(me) => me,
-                    Err(e) => return finish(&app, generation, "error", Some(e.to_string())),
+                return match complete(&app, &client, &profile_id, &token, &device_id) {
+                    Ok(()) => finish(&app, generation, "approved", None),
+                    Err(e) => finish(&app, generation, "error", Some(e)),
                 };
-                if let Err(e) = secrets::store(&app.paths, &profile_id, &token) {
-                    return finish(
-                        &app,
-                        generation,
-                        "error",
-                        Some(format!("token not saved: {e}")),
-                    );
-                }
-                app.db
-                    .set_paired(&profile_id, &username, user_id, &device_id);
-                app.db.log(
-                    "pairing",
-                    &format!("profile paired with RomM account \"{username}\""),
-                );
-                // First paired profile: it becomes the active profile and the library fills up.
-                if app.active_profile().map(|p| !p.paired).unwrap_or(true) {
-                    app.db.set_setting("active_profile", &profile_id);
-                }
-                app.set_online(true);
-                finish(&app, generation, "approved", None);
-                app.emit(serde_json::json!({ "type": "profiles", "profiles": app.db.profiles() }));
-                crate::catalog::start_sync(&app);
-                return;
             }
             Err(crate::romm::RommError::Offline(e)) => {
                 // Transient outage: keep polling until the code expires.
@@ -139,6 +115,84 @@ fn poll(
             return finish(&app, generation, "expired", None);
         }
     }
+}
+
+/// Stores the token RomM gave for this profile and makes it usable: account name, active profile
+/// if none is paired yet, library sync.
+fn complete(app: &Shared, client: &crate::romm::Client, profile_id: &str, token: &str, device_id: &str) -> Result<(), String> {
+    let authed = crate::romm::Client::new(&client.base, Some(token.to_string()));
+    let (user_id, username) = authed.me().map_err(|e| e.to_string())?;
+    secrets::store(&app.paths, profile_id, token).map_err(|e| format!("token not saved: {e}"))?;
+    app.db.set_paired(profile_id, &username, user_id, device_id);
+    app.db.log("pairing", &format!("profile paired with RomM account \"{username}\""));
+    // First paired profile: it becomes the active profile and the library fills up.
+    if app.active_profile().map(|p| !p.paired).unwrap_or(true) {
+        app.db.set_setting("active_profile", profile_id);
+    }
+    app.set_online(true);
+    app.emit(serde_json::json!({ "type": "profiles", "profiles": app.db.profiles() }));
+    crate::catalog::start_sync(app);
+    Ok(())
+}
+
+/// Pairs a profile with the RomM account's own name and password, without the phone: Borne asks
+/// for a pairing code and approves it itself with the account's credentials (which are not kept).
+/// An administrator's profile also gets the right to list the server's accounts, for the next
+/// "Add a profile".
+pub fn login(app: &Shared, profile_id: &str, username: &str, password: &str) -> Result<(), String> {
+    use crate::romm::{RommError, SCOPES};
+    let profile = app.db.profile(profile_id).ok_or("unknown profile")?;
+    let client = app.anonymous_client().ok_or("no RomM server configured")?;
+    let identifier = format!("borne:{}:{}", machine_id(&app.paths), profile.id);
+    let name = format!("Borne – {} ({})", hostname(), profile.name);
+    let mut wide: Vec<&str> = SCOPES.to_vec();
+    wide.push("users.read");
+    let init = client.device_init_with(&identifier, &name, &wide).map_err(|e| e.to_string())?;
+    let wrong = |e: RommError| match e {
+        RommError::Unauthorized => "wrong user name or password".to_string(),
+        e => e.to_string(),
+    };
+    if !client.device_approve(&init.user_code, username, password, &wide, &name).map_err(wrong)?
+        && !client.device_approve(&init.user_code, username, password, SCOPES, &name).map_err(wrong)?
+    {
+        return Err("this RomM account cannot give Borne the access it needs".into());
+    }
+    for _ in 0..20 {
+        match client.device_poll(&init.device_code).map_err(|e| e.to_string())? {
+            TokenPoll::Approved { token, device_id } => {
+                complete(app, &client, profile_id, &token, &device_id)?;
+                app.db.log("pairing", &format!("profile \"{}\" signed in with its password", profile.name));
+                return Ok(());
+            }
+            TokenPoll::Pending | TokenPoll::SlowDown => std::thread::sleep(Duration::from_millis(500)),
+            TokenPoll::Denied => return Err("RomM refused the pairing".into()),
+            TokenPoll::Expired => return Err("the pairing code expired".into()),
+        }
+    }
+    Err("RomM did not give the token in time".into())
+}
+
+/// The RomM server's accounts, when one of the paired profiles may list them (an administrator
+/// who signed in with a password). None: no profile may.
+pub fn accounts(app: &Shared) -> Option<Vec<serde_json::Value>> {
+    let base = app.anonymous_client()?.base;
+    let profiles = app.db.profiles();
+    for p in profiles.iter().filter(|p| p.paired) {
+        let Some(token) = secrets::load(&app.paths, &p.id) else { continue };
+        let Ok(users) = crate::romm::Client::new(&base, Some(token)).users() else { continue };
+        return Some(
+            users
+                .into_iter()
+                .filter(|u| u["enabled"].as_bool().unwrap_or(true))
+                .map(|u| {
+                    let name = u["username"].as_str().unwrap_or("").to_string();
+                    let added = profiles.iter().find(|q| q.paired && q.romm_user.as_deref() == Some(name.as_str()));
+                    serde_json::json!({ "id": u["id"], "username": name, "role": u["role"], "profile": added.map(|q| q.id.clone()) })
+                })
+                .collect(),
+        );
+    }
+    None
 }
 
 /// SVG QR code of the approval address (scanned with the phone).

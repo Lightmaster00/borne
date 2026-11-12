@@ -691,11 +691,16 @@ Window {
     }
     function profileOptions(p) {
         menu.open(p.name, p.paired ? qsTr("RomM account: %1").arg(p.romm_user) : qsTr("Profile not paired"),
-                  [{ id: "pair", label: p.paired ? qsTr("Pair with RomM again") : qsTr("Pair with RomM") },
+                  [{ id: "login", label: qsTr("Sign in with the password"), detail: p.romm_user ? p.romm_user : "" },
+                   { id: "pair", label: p.paired ? qsTr("Pair with RomM again") : qsTr("Pair with RomM"), detail: qsTr("With a code, from the phone") },
                    { id: "rename", label: qsTr("Rename") },
                    { id: "delete", label: qsTr("Delete profile"), detail: qsTr("Its saves stay on disk") },
                    { id: "close", label: qsTr("Close") }], function (c) {
-            if (c === "pair") startPairing(p)
+            if (c === "login") {
+                if (p.romm_user) profileLogin(p.romm_user, p.id)
+                else nameEntry.open(qsTr("RomM user name"), "", function (u) { profileLogin(u, p.id) }, qsTr("User name"))
+            }
+            else if (c === "pair") startPairing(p)
             else if (c === "rename") nameEntry.open(qsTr("Rename profile"), p.name, function (name) {
                 api("PUT", "/api/v1/profiles/" + p.id, { name: name }, function (r, err) { if (err) toasts.show(err, "error"); showProfiles() })
             })
@@ -705,13 +710,43 @@ Window {
             })
         })
     }
+    // Adding a profile: pick the RomM account in the server's list (when a profile of an
+    // administrator may read it), type its password, done. Otherwise type the account's name; or
+    // approve a code from the phone as before.
     function addProfile() {
-        nameEntry.open(qsTr("New profile"), "", function (name) {
-            api("POST", "/api/v1/profiles", { name: name }, function (p, err) {
-                if (err) { toasts.show(err, "error"); showProfiles(); return }
-                startPairing(p)
+        api("GET", "/api/v1/romm/accounts", null, function (r) {
+            const accounts = r && r.accounts ? r.accounts.filter(a => !a.profile) : null
+            const items = []
+            if (accounts) for (const a of accounts)
+                items.push({ id: "acc:" + a.username, label: a.username, detail: a.role === "admin" ? qsTr("Administrator") : a.role === "viewer" ? qsTr("Viewer") : qsTr("Player") })
+            items.push({ id: "other", label: accounts ? qsTr("Another account…") : qsTr("Sign in with name and password"), detail: qsTr("Type the RomM account's name") })
+            items.push({ id: "phone", label: qsTr("Approve from the phone"), detail: qsTr("A code to confirm in RomM, no password typed here") })
+            items.push({ id: "close", label: qsTr("Cancel") })
+            menu.open(qsTr("Add a profile"), accounts && accounts.length ? qsTr("Choose your RomM account") : qsTr("How to connect the RomM account"), items, function (c) {
+                if (c.indexOf("acc:") === 0) profileLogin(c.slice(4), "")
+                else if (c === "other") nameEntry.open(qsTr("RomM user name"), "", function (u) { profileLogin(u, "") }, qsTr("User name"))
+                else if (c === "phone") nameEntry.open(qsTr("New profile"), "", function (name) {
+                    api("POST", "/api/v1/profiles", { name: name }, function (p, err) {
+                        if (err) { toasts.show(err, "error"); showProfiles(); return }
+                        startPairing(p)
+                    })
+                })
             })
         })
+    }
+    // Signs a RomM account in with its password (not kept by Borne) and opens its library.
+    function profileLogin(username, profileId) {
+        nameEntry.open(qsTr("Password for %1").arg(username), "", function (pw) {
+            toasts.show(qsTr("Connecting %1…").arg(username), "info")
+            api("POST", "/api/v1/profiles/login", { username: username, password: pw, profile_id: profileId }, function (p, err) {
+                if (err) {
+                    toasts.show(err === "wrong user name or password" ? qsTr("Wrong user name or password.") : qsTr("RomM: %1").arg(err), "error")
+                    showProfiles()
+                    return
+                }
+                enterLibrary(p)
+            })
+        }, qsTr("Password"), true)
     }
 
     // ---------- Input ----------
