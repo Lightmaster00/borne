@@ -1,12 +1,18 @@
-# Keeps the workflow actions and the core's Rust dependencies up to date (weekly pull requests).
+# Keeps the workflow actions and the core's Rust dependencies up to date: one grouped pull
+# request per week and ecosystem, checked by CI before merging.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
   - package-ecosystem: cargo
     directory: /core
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    groups:
+      crates:
+        patterns: ["*"]
