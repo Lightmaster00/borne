@@ -231,7 +231,8 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   safe mode), on the game page and in menus. Until it plays, or when the game has no video: the game's
   blank Steam grid / marquee, else its cover blurred, enlarged and drifting slowly. One dark filter
   (about 60 %) and a deeper bottom keep the cases and the text readable. The background has no setting.
-- Attract: after 5 s without input on the library (turning the box counts as input), once the video plays, the library (cases, bars and
+- Attract: after 5 s without input on the library (Settings → Interface → Video in full screen: 5 s, 15 s,
+  30 s, 1 min or never; turning the box counts as input), once the video plays, the library (cases, bars and
   hints) fades out and the filter lightens, leaving the video; any input or the stick brings
   it back at once, and that input only wakes it.
 - Library: the selected game's platform, title and states, and the games as physical cases standing on
@@ -243,8 +244,11 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   on the left and the right, the back scan behind, the console's signature colour on the top and the bottom;
   cel shaded: the faces are printed flat (unlit), a skin just over the box (`toon.frag`, multiplied)
   gives flat light bands with a hard terminator, a dark side in the console's colour and a paper or
-  plastic grain (`grain.png`), and a second skin (`gloss.frag`, added) a crisp highlight spot and a rim
-  of the console's colour; all inside a bold ink outline (the same ink as the hard shadow under
+  plastic grain (`grain.png`), and a second skin (`gloss.frag`, added) the clear plastic seen as glass:
+  it reflects a procedural photo studio (a softbox above on the left, tall windows on the sides, a thin
+  strip, a faint diagonal sheen), weak face-on and strong at grazing angles (Fresnel), so the
+  reflections slide over the print as the case turns; a broad soft glint and a thin rim of the console's
+  colour; cardboard reflects barely; all inside a bold ink outline (the same ink as the hard shadow under
   buttons, chips, cards and panels: `Ink.qml`). A key light casts soft shadows on a floor that fades
   out (the floor alone reflects the studio light probe `studio.hdr`; both assets come from
   `scripts/gen-case-assets.py`). A slot keeps its case while the case stays in view, so moving
@@ -794,13 +798,38 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   round it: a white case's own band on top (Wii, 3DS) stays; fronts of those consoles stored before
   are fetched again once. Top and bottom take the console's signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture (not for CD jewel cases, whose back insert folds into a spine on each side: their spine shows the title), their
   two folds found by edge detection around the place the front's proportions give.
-- Select opens Sort and filter (order, genre) directly; everything else lives in Settings (sync,
-  server, profile in Server; measurements and quit in Help). Settings stand on a plain background
-  (no game art); the open section is marked by a fill and a bar in the accent colour.
-- Game page: Play (or Download / Play from the network), the favourite, and Game settings (a
-  menu: the game's own emulator, `GET`/`POST /api/v1/games/<id>/emulator`, setting
-  `emu_for_game.<group_key>`, used at launch over the console's; display; cheats; language;
-  cover; video sound; removal). About and screenshots side by side, credits on one line.
+- Select opens Sort and filter (order, genre) directly; everything else lives in Settings. Settings
+  stand on a plain background (no game art); the open section is marked by a fill and a bar in the
+  accent colour. Sections, each with a sentence under its title and its rows under group titles
+  (skipped by the focus): Games (installation, saves), Interface, Picture in games (for all games or one
+  console), Emulators, System files, Game images, RomM (server, sync, profile), Updates, Help.
+- Settings → Interface (Qt preferences, `prefs` in Main.qml): Videos — video behind the library on/off
+  (`bgVideo`), video in full screen after 5 s / 15 s / 30 s / 1 min / never (`attractDelay`), its length
+  1 / 3 / 10 min or no limit (`attractRest`), videos on the game page (`pageVideo`); Look — interface
+  size 90–120 % (`uiScale`: the 1080-unit scene scaled, never below 1600 units wide), animations
+  normal or reduced (`motion`: Theme durations × 0.4), clock shown or hidden; Sounds — interface
+  sounds, volume low / medium / high; Controls — buttons shown: last used, gamepad or keyboard
+  (`prompts`). Rows that cannot apply are hidden (no full-screen video without the background video).
+  The former single `trailers` switch is copied once to both video switches.
+- Game page: Play (or Download / Play from the network), the favourite, and Game settings: a page
+  over the game page (`GameSettingsPage.qml`), laid out like Settings. Nothing closes by itself: a
+  choice applies and stays on screen, B goes back from the rows to the sections, then to the game.
+  Sections: Emulator (the game's own, `GET`/`POST /api/v1/games/<id>/emulator`, setting
+  `emu_for_game.<group_key>`, used at launch over the console's; and that emulator's options for this
+  game), Picture (each display value, or as for its console), Cheats (on / off each, all off, a
+  .pnach for PS2), Language (when the game exists in several), Cover and video (box region, search
+  ScreenScraper by name, video sound), Storage (delete, remove from the mount, forget).
+- Emulator options of one game (`gamesettings::EMU_OPTIONS`, setting
+  `emuopt.<group_key>.<program>.<key>`, `GET`/`POST /api/v1/games/<id>/emuoptions`, "default"
+  removes one): RetroArch rewind and run-ahead (1–2 frames); Dolphin widescreen hack and CPU
+  overclock (150 / 200 %); PCSX2 widescreen patches and software renderer; DuckStation widescreen
+  hack, PGXP and texture filtering; Eden / Citron / Ryubing docked or handheld; RPCS3 write colour
+  buffers. Written before every game of that program, defaults included, so one game's choice
+  never reaches another.
+- Console names: RomM's carry the maker ("Sega Game Gear", "Sony PlayStation"); Borne drops Sega,
+  Sony, Microsoft, SNK and NEC where the console is known by its own name, and says Mega Drive,
+  Mega-CD, 32X, Master System, Dreamcast (`library::console_name`). Nintendo's names are kept.
+About and screenshots side by side on the game page, credits on one line.
 - Game Boy and Game Boy Color share one tab (library::JOINED: `/platforms` lists them as one,
   `/library?platform=gb` returns both).
 - Attract: after a minute alone on screen the video pauses (on its frame) and the games come back,

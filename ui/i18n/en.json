@@ -3,6 +3,10 @@
   "%n cheat found in the file.",
   "%n cheats found in the file."
  ],
+ "%n cheat(s) on": [
+  "%n cheat on",
+  "%n cheats on"
+ ],
  "%n cheat(s) on. They apply the next time the game starts.": [
   "%n cheat on. It applies the next time the game starts.",
   "%n cheats on. They apply the next time the game starts."
@@ -11,9 +15,17 @@
   "%n file taken from RomM.",
   "%n files taken from RomM."
  ],
+ "%n frame(s)": [
+  "%n frame",
+  "%n frames"
+ ],
  "%n game(s)": [
   "%n game",
   "%n games"
+ ],
+ "%n on": [
+  "%n on",
+  "%n on"
  ],
  "%n player(s)": [
   "%n player",

@@ -66,6 +66,31 @@ pub fn joined_name(main: &str) -> &'static str {
     }
 }
 
+/// A console's name as people say it: RomM's names carry the maker ("Sega Game Gear",
+/// "Sony PlayStation"), which is dropped where the console is known by its own name.
+/// Nintendo's are kept: "Nintendo 64" or "Nintendo DS" are the consoles' names.
+pub fn console_name(slug: &str, name: &str) -> String {
+    let own = match slug {
+        "genesis" | "megadrive" | "genesis-slash-megadrive" => Some("Mega Drive"),
+        "segacd" => Some("Mega-CD"),
+        "sega32" => Some("32X"),
+        "sms" => Some("Master System"),
+        "dc" => Some("Dreamcast"),
+        _ => None,
+    };
+    if let Some(n) = own {
+        return n.to_string();
+    }
+    for maker in ["Sega ", "SEGA ", "Sony ", "Microsoft ", "SNK ", "NEC "] {
+        if let Some(rest) = name.strip_prefix(maker) {
+            if !rest.trim().is_empty() {
+                return rest.trim().to_string();
+            }
+        }
+    }
+    name.to_string()
+}
+
 /// A file name's title without its tags and extension, normalized:
 /// "Final Fantasy VII (Europe) (Disc 2).chd" -> "final fantasy vii".
 pub fn title_key(fs_name: &str) -> String {
@@ -389,6 +414,15 @@ pub fn game_languages(versions: &[GameRow]) -> Vec<Value> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn console_names_without_the_maker() {
+        assert_eq!(console_name("gamegear", "Sega Game Gear"), "Game Gear");
+        assert_eq!(console_name("psx", "Sony PlayStation"), "PlayStation");
+        assert_eq!(console_name("genesis", "Sega Mega Drive/Genesis"), "Mega Drive");
+        assert_eq!(console_name("n64", "Nintendo 64"), "Nintendo 64");
+        assert_eq!(console_name("x", "Sega"), "Sega");
+    }
+
     #[test]
     fn shelf_order_follows_three_letters_then_date() {
         let mut l = vec![

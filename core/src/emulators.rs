@@ -410,10 +410,12 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
     let group = app.db.game(rom_id).map(|g| g.group_key).unwrap_or_default();
     let display = crate::gamesettings::resolve(app, system, &group);
+    let options = crate::gamesettings::emu_options(app, &p.id, &group);
     let config = if p.id == "retroarch" {
         let mut cheats = crate::cheats::retroarch_settings(app, rom_id, &e.name, rom);
         let crt = crate::emuinstall::crt_shader(app);
         cheats.extend(crate::gamesettings::retroarch(&display, crt.as_deref()));
+        cheats.extend(crate::gamesettings::emu_retroarch(&options));
         Some(retroarch_config(app, &profile, system, cheats)?)
     } else {
         None
@@ -421,6 +423,7 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     let userdir = app.paths.profiles().join(&profile).join(&p.id);
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     crate::gamesettings::apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &display)?;
+    crate::gamesettings::emu_apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &options)?;
     if p.id == "melonds" {
         if let Err(e) = crate::cheats::melonds_settings(app, rom_id, &data_dir(app, &profile, &p.id), rom) {
             app.db.log("cheats", &format!("melonDS: {e}"));

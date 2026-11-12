@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Walks through every screen of a running Borne with the debug pad (BORNE_DEBUG_INPUT=1) and fails
-# on any QML error in its log: library and its tabs, game page, search, quick menu, downloads,
+# on any QML error in its log: library and its tabs, game page and its settings, search, quick menu, downloads,
 # every Settings section row by row. Needs a paired profile (see integration_romm.py).
 #
 #   tests/ui_tour.sh <log of the running Borne>
@@ -12,7 +12,12 @@ pad() { for a in "$@"; do case $a in sleep:*) sleep "${a#sleep:}" ;; *) curl -sf
 start=$(wc -l < "$LOG")
 pad a sleep:4                                   # profile
 pad rb rb rb rb rb rb lb lb lb lb lb lb lt rt   # tabs, letters
-pad right right left a sleep:2 down down up up b sleep:1   # game page
+pad right right left a sleep:2 down down up up        # game page
+pad left left left right right a sleep:2             # its settings, every section row by row
+for section in 1 2 3 4 5 6; do
+  pad right; for _ in $(seq 1 10); do pad down; done; pad b down sleep:0.5
+done
+pad b sleep:0.5 b sleep:1
 pad y sleep:1 b select sleep:1 b              # search, quick menu
 pad start sleep:2                                # settings
 for section in 1 2 3 4 5 6 7 8 9 10; do

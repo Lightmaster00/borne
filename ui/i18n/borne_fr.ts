@@ -605,6 +605,121 @@
     </message>
 </context>
 <context>
+    <name>EmuOptions</name>
+    <message>
+        <source>Rewind</source>
+        <translation>Retour arrière</translation>
+    </message>
+    <message>
+        <source>Run-ahead</source>
+        <translation>Anticipation (run-ahead)</translation>
+    </message>
+    <message>
+        <source>Widescreen</source>
+        <translation>Écran large</translation>
+    </message>
+    <message>
+        <source>Emulated CPU speed</source>
+        <translation>Vitesse du processeur émulé</translation>
+    </message>
+    <message>
+        <source>Renderer</source>
+        <translation>Rendu</translation>
+    </message>
+    <message>
+        <source>Geometry correction (PGXP)</source>
+        <translation>Correction de la géométrie (PGXP)</translation>
+    </message>
+    <message>
+        <source>Texture filtering</source>
+        <translation>Filtrage des textures</translation>
+    </message>
+    <message>
+        <source>Console mode</source>
+        <translation>Mode de la console</translation>
+    </message>
+    <message>
+        <source>Write colour buffers</source>
+        <translation>Écrire les tampons de couleur</translation>
+    </message>
+    <message>
+        <source>Go back in time during play; uses a little more memory</source>
+        <translation>Revenir en arrière pendant la partie ; utilise un peu plus de mémoire</translation>
+    </message>
+    <message>
+        <source>Cuts input lag by a frame or two; needs a stronger computer</source>
+        <translation>Réduit la latence d’une ou deux images ; demande un ordinateur plus puissant</translation>
+    </message>
+    <message>
+        <source>A 16:9 picture where the game allows it; can show glitches at the edges</source>
+        <translation>Une image en 16:9 quand le jeu le permet ; peut montrer des défauts sur les bords</translation>
+    </message>
+    <message>
+        <source>Smoother for games that slow down; needs a stronger computer</source>
+        <translation>Plus fluide pour les jeux qui ralentissent ; demande un ordinateur plus puissant</translation>
+    </message>
+    <message>
+        <source>Software: slower, but exact where the graphics are wrong</source>
+        <translation>Logiciel : plus lent, mais exact quand les graphismes sont faux</translation>
+    </message>
+    <message>
+        <source>Steadier 3D, without wobbling polygons</source>
+        <translation>Une 3D plus stable, sans polygones qui tremblent</translation>
+    </message>
+    <message>
+        <source>Bilinear smooths the textures</source>
+        <translation>Le bilinéaire adoucit les textures</translation>
+    </message>
+    <message>
+        <source>On a TV (higher resolution) or handheld (faster)</source>
+        <translation>Sur une TV (meilleure résolution) ou en portable (plus rapide)</translation>
+    </message>
+    <message>
+        <source>Fixes missing graphics in some games; slower</source>
+        <translation>Corrige des graphismes manquants dans certains jeux ; plus lent</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Non</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frame(s)</source>
+        <translation><numerusform>%n image</numerusform><numerusform>%n images</numerusform></translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Normales</translation>
+    </message>
+    <message>
+        <source>Software</source>
+        <translation>Logiciel</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Automatique</translation>
+    </message>
+    <message>
+        <source>Bilinear</source>
+        <translation>Bilinéaire</translation>
+    </message>
+    <message>
+        <source>Nearest</source>
+        <translation>Au plus proche</translation>
+    </message>
+    <message>
+        <source>Handheld</source>
+        <translation>Portable</translation>
+    </message>
+    <message>
+        <source>TV</source>
+        <translation>TV</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Oui</translation>
+    </message>
+</context>
+<context>
     <name>GamePage</name>
     <message>
         <source>%1 GB</source>
@@ -833,6 +948,277 @@
     <message>
         <source>Game settings</source>
         <translation>Paramètres du jeu</translation>
+    </message>
+</context>
+<context>
+    <name>GameSettingsPage</name>
+    <message>
+        <source>Emulator</source>
+        <translation>Émulateur</translation>
+    </message>
+    <message>
+        <source>Its own</source>
+        <translation>Le sien</translation>
+    </message>
+    <message>
+        <source>As for its console</source>
+        <translation>Comme pour sa console</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Image</translation>
+    </message>
+    <message>
+        <source>Shape, sharpness, filters</source>
+        <translation>Format, netteté, filtres</translation>
+    </message>
+    <message>
+        <source>Cheats</source>
+        <translation>Cheats</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n on</source>
+        <translation><numerusform>%n activé</numerusform><numerusform>%n activés</numerusform></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Langue</translation>
+    </message>
+    <message>
+        <source>Cover and video</source>
+        <translation>Jaquette et vidéo</translation>
+    </message>
+    <message>
+        <source>ScreenScraper</source>
+        <translation>ScreenScraper</translation>
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation>Stockage</translation>
+    </message>
+    <message>
+        <source>On this device</source>
+        <translation>Sur cet appareil</translation>
+    </message>
+    <message>
+        <source>Network mount</source>
+        <translation>Monté depuis le réseau</translation>
+    </message>
+    <message>
+        <source>Loading…</source>
+        <translation>Chargement…</translation>
+    </message>
+    <message>
+        <source>Program</source>
+        <translation>Programme</translation>
+    </message>
+    <message>
+        <source>The program that runs this game</source>
+        <translation>Le programme qui fait tourner ce jeu</translation>
+    </message>
+    <message>
+        <source>As for its console (%1)</source>
+        <translation>Comme sa console (%1)</translation>
+    </message>
+    <message>
+        <source>%1 options for this game</source>
+        <translation>Options de %1 pour ce jeu</translation>
+    </message>
+    <message>
+        <source>Options for this game</source>
+        <translation>Options pour ce jeu</translation>
+    </message>
+    <message>
+        <source>This emulator has no option of its own here: the picture settings apply.</source>
+        <translation>Cet émulateur n’a pas d’option propre ici : les réglages d’image s’appliquent.</translation>
+    </message>
+    <message>
+        <source>default</source>
+        <translation>par défaut</translation>
+    </message>
+    <message>
+        <source>This game's options</source>
+        <translation>Les options de ce jeu</translation>
+    </message>
+    <message>
+        <source>Back to the emulator's defaults</source>
+        <translation>Revenir aux valeurs par défaut de l’émulateur</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation>Réinitialiser</translation>
+    </message>
+    <message>
+        <source>Applied the next time the game starts.</source>
+        <translation>Appliqué au prochain lancement du jeu.</translation>
+    </message>
+    <message>
+        <source>now: %1</source>
+        <translation>actuellement : %1</translation>
+    </message>
+    <message>
+        <source>Choose a file</source>
+        <translation>Choisir un fichier</translation>
+    </message>
+    <message>
+        <source>Type its path</source>
+        <translation>Taper son chemin</translation>
+    </message>
+    <message>
+        <source>From a link</source>
+        <translation>Depuis un lien</translation>
+    </message>
+    <message>
+        <source>Install the game or mount it from the network to choose its cheats.</source>
+        <translation>Installez le jeu ou montez-le depuis le réseau pour choisir ses cheats.</translation>
+    </message>
+    <message>
+        <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
+        <translation>Les cheats PS2 viennent d’un fichier .pnach que vous fournissez pour ce jeu (le format de PCSX2).</translation>
+    </message>
+    <message>
+        <source>Downloading the cheat databases… try again in a moment.</source>
+        <translation>Téléchargement des bases de cheats… réessaie dans un instant.</translation>
+    </message>
+    <message>
+        <source>No cheats for this version of the game in the public databases.</source>
+        <translation>Aucun cheat pour cette version du jeu dans les bases publiques.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n cheat(s) on</source>
+        <translation><numerusform>%n cheat activé</numerusform><numerusform>%n cheats activés</numerusform></translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Oui</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Non</translation>
+    </message>
+    <message>
+        <source>All cheats</source>
+        <translation>Tous les cheats</translation>
+    </message>
+    <message>
+        <source>Turn all off</source>
+        <translation>Tout désactiver</translation>
+    </message>
+    <message>
+        <source>.pnach file</source>
+        <translation>Fichier .pnach</translation>
+    </message>
+    <message>
+        <source>Cheats for this game, in PCSX2's format</source>
+        <translation>Des cheats pour ce jeu, au format de PCSX2</translation>
+    </message>
+    <message>
+        <source>Game language</source>
+        <translation>Langue du jeu</translation>
+    </message>
+    <message>
+        <source>Starts the version of the game in this language</source>
+        <translation>Lance la version du jeu dans cette langue</translation>
+    </message>
+    <message>
+        <source>Cover</source>
+        <translation>Jaquette</translation>
+    </message>
+    <message>
+        <source>Box region</source>
+        <translation>Région de la boîte</translation>
+    </message>
+    <message>
+        <source>Which edition's box is shown</source>
+        <translation>L’édition dont la boîte est affichée</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Automatique</translation>
+    </message>
+    <message>
+        <source>Not the right game?</source>
+        <translation>Ce n’est pas le bon jeu ?</translation>
+    </message>
+    <message>
+        <source>Search ScreenScraper by name and choose the right one</source>
+        <translation>Chercher sur ScreenScraper par nom et choisir le bon</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Rechercher</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Vidéo</translation>
+    </message>
+    <message>
+        <source>Video sound</source>
+        <translation>Son de la vidéo</translation>
+    </message>
+    <message>
+        <source>The trailer on this game's page</source>
+        <translation>La bande-annonce sur la page de ce jeu</translation>
+    </message>
+    <message>
+        <source>Delete from this device</source>
+        <translation>Supprimer de cet appareil</translation>
+    </message>
+    <message>
+        <source>Saves stay on RomM; the game can be downloaded again</source>
+        <translation>Les sauvegardes restent sur RomM ; le jeu peut être retéléchargé</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>Remove from the network mount</source>
+        <translation>Retirer du montage réseau</translation>
+    </message>
+    <message>
+        <source>The game stays on RomM</source>
+        <translation>Le jeu reste sur RomM</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Retirer</translation>
+    </message>
+    <message>
+        <source>Forget the local copy</source>
+        <translation>Oublier la copie locale</translation>
+    </message>
+    <message>
+        <source>Its files are no longer there</source>
+        <translation>Ses fichiers ne sont plus là</translation>
+    </message>
+    <message>
+        <source>Forget</source>
+        <translation>Oublier</translation>
+    </message>
+    <message>
+        <source>Game settings</source>
+        <translation>Paramètres du jeu</translation>
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation>Choisir</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Retour</translation>
+    </message>
+    <message>
+        <source>Change value</source>
+        <translation>Changer la valeur</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <source>Back to the game</source>
+        <translation>Retour au jeu</translation>
     </message>
 </context>
 <context>
@@ -1434,34 +1820,6 @@
         <translation>Installation de %1… le jeu se lance dès que c'est prêt.</translation>
     </message>
     <message>
-        <source>Cheats unavailable</source>
-        <translation>Cheats indisponibles</translation>
-    </message>
-    <message>
-        <source>Downloading the cheat databases… try again in a moment.</source>
-        <translation>Téléchargement des bases de cheats… réessaie dans un instant.</translation>
-    </message>
-    <message>
-        <source>No cheats for this version of the game in the public databases.</source>
-        <translation>Aucun cheat pour cette version du jeu dans les bases publiques.</translation>
-    </message>
-    <message>
-        <source>Cheats</source>
-        <translation>Cheats</translation>
-    </message>
-    <message>
-        <source>Turn all off</source>
-        <translation>Tout désactiver</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n cheat(s) on. They apply the next time the game starts.</source>
-        <translation><numerusform>%n cheat activé. Il s'applique au prochain lancement du jeu.</numerusform><numerusform>%n cheats activés. Ils s'appliquent au prochain lancement du jeu.</numerusform></translation>
-    </message>
-    <message>
-        <source>Cheats · %1</source>
-        <translation>Cheats · %1</translation>
-    </message>
-    <message>
         <source>Full path of the file</source>
         <translation>Chemin complet du fichier</translation>
     </message>
@@ -1494,22 +1852,6 @@
         <translation>Fichiers que RomM a pour cette console</translation>
     </message>
     <message>
-        <source>This game only</source>
-        <translation>Pour ce jeu seulement</translation>
-    </message>
-    <message>
-        <source>Display · %1</source>
-        <translation>Affichage · %1</translation>
-    </message>
-    <message>
-        <source>Applied the next time the game starts.</source>
-        <translation>Appliqué au prochain lancement du jeu.</translation>
-    </message>
-    <message>
-        <source>As for its console</source>
-        <translation>Comme pour sa console</translation>
-    </message>
-    <message>
         <source>Display settings for</source>
         <translation>Réglages d'affichage pour</translation>
     </message>
@@ -1530,40 +1872,8 @@
         <translation>Récents</translation>
     </message>
     <message>
-        <source>Box: automatic</source>
-        <translation>Boîte : automatique</translation>
-    </message>
-    <message>
-        <source>Current · follows the interface language</source>
-        <translation>Actuel · suit la langue de l’interface</translation>
-    </message>
-    <message>
-        <source>Follows the interface language</source>
-        <translation>Suit la langue de l’interface</translation>
-    </message>
-    <message>
-        <source>Box: %1</source>
-        <translation>Boîte : %1</translation>
-    </message>
-    <message>
         <source>Current</source>
         <translation>Actuel</translation>
-    </message>
-    <message>
-        <source>Not the right game?</source>
-        <translation>Ce n’est pas le bon jeu ?</translation>
-    </message>
-    <message>
-        <source>Search ScreenScraper by name</source>
-        <translation>Chercher sur ScreenScraper par le nom</translation>
-    </message>
-    <message>
-        <source>Images · %1</source>
-        <translation>Images · %1</translation>
-    </message>
-    <message>
-        <source>From ScreenScraper</source>
-        <translation>Depuis ScreenScraper</translation>
     </message>
     <message>
         <source>Search ScreenScraper</source>
@@ -1785,22 +2095,6 @@
         <source>No game played yet on this profile.</source>
         <translation>Aucun jeu joué pour l’instant avec ce profil.</translation>
     </message>
-    <message>
-        <source>Add a .pnach file…</source>
-        <translation>Ajouter un fichier .pnach…</translation>
-    </message>
-    <message>
-        <source>From this computer</source>
-        <translation>Depuis cet ordinateur</translation>
-    </message>
-    <message>
-        <source>Type the file's path…</source>
-        <translation>Taper le chemin du fichier…</translation>
-    </message>
-    <message>
-        <source>From a link…</source>
-        <translation>Depuis un lien…</translation>
-    </message>
     <message numerus="yes">
         <source>%n cheat(s) found in the file.</source>
         <translation><numerusform>%n cheat trouvé dans le fichier.</numerusform><numerusform>%n cheats trouvés dans le fichier.</numerusform></translation>
@@ -1812,10 +2106,6 @@
     <message>
         <source>Link to the .pnach file</source>
         <translation>Lien vers le fichier .pnach</translation>
-    </message>
-    <message>
-        <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
-        <translation>Les cheats PS2 viennent d’un fichier .pnach que vous fournissez pour ce jeu (le format de PCSX2).</translation>
     </message>
     <message>
         <source>No game installed yet. Open a game in its console’s tab to download it or play it from the network.</source>
@@ -1836,54 +2126,6 @@
     <message>
         <source>Game mode (test) — Esc to go back</source>
         <translation>Mode jeu (test) — Échap pour revenir</translation>
-    </message>
-    <message>
-        <source>Emulator</source>
-        <translation>Émulateur</translation>
-    </message>
-    <message>
-        <source>For this game only</source>
-        <translation>Pour ce jeu uniquement</translation>
-    </message>
-    <message>
-        <source>Display</source>
-        <translation>Affichage</translation>
-    </message>
-    <message>
-        <source>Picture, ratio, filters for this game</source>
-        <translation>Image, format, filtres pour ce jeu</translation>
-    </message>
-    <message>
-        <source>Game language</source>
-        <translation>Langue du jeu</translation>
-    </message>
-    <message>
-        <source>Change the cover</source>
-        <translation>Changer la jaquette</translation>
-    </message>
-    <message>
-        <source>Another match or region on ScreenScraper</source>
-        <translation>Autre correspondance ou région sur ScreenScraper</translation>
-    </message>
-    <message>
-        <source>Mute the video</source>
-        <translation>Couper le son de la vidéo</translation>
-    </message>
-    <message>
-        <source>Video sound</source>
-        <translation>Son de la vidéo</translation>
-    </message>
-    <message>
-        <source>Forget the local copy</source>
-        <translation>Oublier la copie locale</translation>
-    </message>
-    <message>
-        <source>Game settings</source>
-        <translation>Paramètres du jeu</translation>
-    </message>
-    <message>
-        <source>Same as the console</source>
-        <translation>Comme la console</translation>
     </message>
     <message>
         <source>This game uses its console's emulator.</source>
@@ -2440,10 +2682,6 @@
         <translation>Interface</translation>
     </message>
     <message>
-        <source>Display</source>
-        <translation>Affichage</translation>
-    </message>
-    <message>
         <source>Emulators</source>
         <translation>Émulateurs</translation>
     </message>
@@ -2466,10 +2704,6 @@
     <message>
         <source>ScreenScraper</source>
         <translation>ScreenScraper</translation>
-    </message>
-    <message>
-        <source>Server</source>
-        <translation>Serveur</translation>
     </message>
     <message>
         <source>Help</source>
@@ -2506,10 +2740,6 @@
     <message>
         <source>Short, quiet sounds when moving and choosing</source>
         <translation>Sons courts et discrets en navigant et en validant</translation>
-    </message>
-    <message>
-        <source>Videos of the games, muted: behind the library and on the game page</source>
-        <translation>Vidéos des jeux, sans le son : derrière la bibliothèque et sur la page du jeu</translation>
     </message>
     <message>
         <source>ScreenScraper account</source>
@@ -2618,14 +2848,6 @@
     <message>
         <source>Settings</source>
         <translation>Paramètres</translation>
-    </message>
-    <message>
-        <source>How games are installed</source>
-        <translation>Comment les jeux sont installés</translation>
-    </message>
-    <message>
-        <source>Choose once; you can switch at any time. Games already on this device stay where they are.</source>
-        <translation>Choisissez une fois ; vous pouvez changer à tout moment. Les jeux déjà sur cet appareil restent en place.</translation>
     </message>
     <message>
         <source>Download</source>
@@ -2792,18 +3014,6 @@
         <translation>Installation, sauvegardes</translation>
     </message>
     <message>
-        <source>Sounds, videos</source>
-        <translation>Sons, vidéos</translation>
-    </message>
-    <message>
-        <source>Picture, ratio, filters</source>
-        <translation>Image, format, filtres</translation>
-    </message>
-    <message>
-        <source>RomM, sync, profile</source>
-        <translation>RomM, synchro, profil</translation>
-    </message>
-    <message>
         <source>Diagnostics, quit</source>
         <translation>Diagnostic, quitter</translation>
     </message>
@@ -2820,10 +3030,6 @@
         <translation>Version installée : %1</translation>
     </message>
     <message>
-        <source>Game videos</source>
-        <translation>Vidéos des jeux</translation>
-    </message>
-    <message>
         <source>Measurements</source>
         <translation>Mesures</translation>
     </message>
@@ -2838,6 +3044,226 @@
     <message>
         <source>Back to the system</source>
         <translation>Retour au système</translation>
+    </message>
+    <message>
+        <source>%1 min</source>
+        <translation>%1 min</translation>
+    </message>
+    <message>
+        <source>%1 s</source>
+        <translation>%1 s</translation>
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation>Vidéos</translation>
+    </message>
+    <message>
+        <source>Video behind the library</source>
+        <translation>Vidéo derrière la bibliothèque</translation>
+    </message>
+    <message>
+        <source>The selected game's video plays by itself, muted, behind the boxes</source>
+        <translation>La vidéo du jeu sélectionné se lance seule, sans le son, derrière les boîtes</translation>
+    </message>
+    <message>
+        <source>Video in full screen</source>
+        <translation>Vidéo en plein écran</translation>
+    </message>
+    <message>
+        <source>Without a press for this long, the boxes fade out and leave the video</source>
+        <translation>Sans appui pendant ce temps, les boîtes s’effacent et laissent la vidéo</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Jamais</translation>
+    </message>
+    <message>
+        <source>Full-screen video length</source>
+        <translation>Durée de la vidéo en plein écran</translation>
+    </message>
+    <message>
+        <source>Then the video pauses and the games come back, until another game is selected</source>
+        <translation>Ensuite la vidéo se met en pause et les jeux reviennent, jusqu’au choix d’un autre jeu</translation>
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation>Sans limite</translation>
+    </message>
+    <message>
+        <source>Videos on the game page</source>
+        <translation>Vidéos sur la page du jeu</translation>
+    </message>
+    <message>
+        <source>A game's trailer starts on its page after a moment</source>
+        <translation>La bande-annonce d’un jeu démarre sur sa page après un instant</translation>
+    </message>
+    <message>
+        <source>Look</source>
+        <translation>Apparence</translation>
+    </message>
+    <message>
+        <source>Interface size</source>
+        <translation>Taille de l’interface</translation>
+    </message>
+    <message>
+        <source>Larger text and boxes, for a screen seen from afar</source>
+        <translation>Textes et boîtes plus grands, pour un écran vu de loin</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>Animations</translation>
+    </message>
+    <message>
+        <source>Reduced: shorter movements and fades</source>
+        <translation>Réduites : mouvements et fondus plus courts</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Normales</translation>
+    </message>
+    <message>
+        <source>Reduced</source>
+        <translation>Réduites</translation>
+    </message>
+    <message>
+        <source>Clock</source>
+        <translation>Horloge</translation>
+    </message>
+    <message>
+        <source>The time at the top of the library</source>
+        <translation>L’heure en haut de la bibliothèque</translation>
+    </message>
+    <message>
+        <source>Shown</source>
+        <translation>Affichée</translation>
+    </message>
+    <message>
+        <source>Hidden</source>
+        <translation>Masquée</translation>
+    </message>
+    <message>
+        <source>Sounds</source>
+        <translation>Sons</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Volume</translation>
+    </message>
+    <message>
+        <source>Of the interface sounds only, not of the games</source>
+        <translation>Des sons de l’interface seulement, pas des jeux</translation>
+    </message>
+    <message>
+        <source>Low</source>
+        <translation>Faible</translation>
+    </message>
+    <message>
+        <source>Medium</source>
+        <translation>Moyen</translation>
+    </message>
+    <message>
+        <source>High</source>
+        <translation>Fort</translation>
+    </message>
+    <message>
+        <source>Controls</source>
+        <translation>Commandes</translation>
+    </message>
+    <message>
+        <source>Buttons shown</source>
+        <translation>Boutons affichés</translation>
+    </message>
+    <message>
+        <source>The hints at the bottom show the gamepad's buttons or the keyboard's keys</source>
+        <translation>L’aide en bas affiche les boutons de la manette ou les touches du clavier</translation>
+    </message>
+    <message>
+        <source>Last used</source>
+        <translation>Dernier utilisé</translation>
+    </message>
+    <message>
+        <source>Gamepad</source>
+        <translation>Manette</translation>
+    </message>
+    <message>
+        <source>Keyboard</source>
+        <translation>Clavier</translation>
+    </message>
+    <message>
+        <source>Applies to</source>
+        <translation>S’applique à</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Image</translation>
+    </message>
+    <message>
+        <source>How games come to this device, and where their saves go. You can switch at any time: games already here stay.</source>
+        <translation>Comment les jeux arrivent sur cet appareil, et où vont leurs sauvegardes. Vous pouvez changer à tout moment : les jeux déjà là restent.</translation>
+    </message>
+    <message>
+        <source>Videos, look, sounds</source>
+        <translation>Vidéos, apparence, sons</translation>
+    </message>
+    <message>
+        <source>Borne itself: its videos, size, animations, sounds and the buttons it shows.</source>
+        <translation>Borne elle-même : ses vidéos, sa taille, ses animations, ses sons et les boutons qu’elle affiche.</translation>
+    </message>
+    <message>
+        <source>Picture in games</source>
+        <translation>Image en jeu</translation>
+    </message>
+    <message>
+        <source>Shape, sharpness, filters</source>
+        <translation>Format, netteté, filtres</translation>
+    </message>
+    <message>
+        <source>How games look while playing, for every game or one console. A game can also have its own, from its page.</source>
+        <translation>L’aspect des jeux pendant la partie, pour tous les jeux ou une console. Un jeu peut aussi avoir les siens, depuis sa page.</translation>
+    </message>
+    <message>
+        <source>The program that plays each console's games. A game can use another one, from its page.</source>
+        <translation>Le programme qui fait tourner les jeux de chaque console. Un jeu peut en utiliser un autre, depuis sa page.</translation>
+    </message>
+    <message>
+        <source>Some consoles need files from the console itself to start their games.</source>
+        <translation>Certaines consoles ont besoin de fichiers de la console elle-même pour lancer leurs jeux.</translation>
+    </message>
+    <message>
+        <source>Case scans, spines, cartridges and console logos, from ScreenScraper.</source>
+        <translation>Scans des boîtes, tranches, cartouches et logos des consoles, depuis ScreenScraper.</translation>
+    </message>
+    <message>
+        <source>RomM</source>
+        <translation>RomM</translation>
+    </message>
+    <message>
+        <source>Server, sync, profile</source>
+        <translation>Serveur, synchro, profil</translation>
+    </message>
+    <message>
+        <source>The server your games come from, and who is playing.</source>
+        <translation>Le serveur d’où viennent vos jeux, et qui joue.</translation>
+    </message>
+    <message>
+        <source>New versions of Borne. They never install during a game.</source>
+        <translation>Les nouvelles versions de Borne. Elles ne s’installent jamais pendant une partie.</translation>
+    </message>
+    <message>
+        <source>When something goes wrong: a report to share and measurements of this device.</source>
+        <translation>Quand quelque chose ne va pas : un rapport à partager et des mesures de cet appareil.</translation>
+    </message>
+    <message>
+        <source>Installation</source>
+        <translation>Installation</translation>
+    </message>
+    <message>
+        <source>Saves</source>
+        <translation>Sauvegardes</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>Options</translation>
     </message>
 </context>
 <context>

@@ -18,6 +18,8 @@
 //!   POST   /api/v1/profiles/<id>/pair            starts RomM pairing (code approved from the phone)
 //!   POST   /api/v1/games/<id>/cheats/file        PS2: the game's .pnach {path} | {url} | {pick}
 //!   GET    /api/v1/screenscraper/report          per console: found, not found (names), not looked up
+//!   GET    /api/v1/games/<id>/emuoptions                  the emulator's own options for this game
+//!   POST   /api/v1/games/<id>/emuoptions                  { key, value | "default" }
 //!   GET    /api/v1/screenscraper/search?q=&platform=   ScreenScraper games by name, to correct a match
 //!   GET|POST /api/v1/games/<id>/screenscraper     box regions available / correct {ss_id} or {region}
 //!   POST   /api/v1/games/<id>/favourite             {on}: in or out of the profile's favourites
@@ -943,6 +945,35 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 match crate::gamesettings::set(app, crate::gamesettings::Scope::Game(&g.group_key), b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
                     Ok(()) => ok(req, crate::gamesettings::view(app, crate::gamesettings::Scope::Game(&g.group_key), &g.platform_slug)),
                     Err(e) => err(req, 400, &e),
+                }
+            }
+            None => err(req, 404, "unknown game"),
+        },
+        // The emulator's own options for one game (its program's: gamesettings::EMU_OPTIONS).
+        (Method::Get, ["api", "v1", "games", id, "emuoptions"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => match crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key) {
+                Some(e) => {
+                    let mut v = crate::gamesettings::emu_view(app, &e.program, &g.group_key);
+                    v["engine"] = json!(e.name);
+                    ok(req, v)
+                }
+                None => ok(req, json!({ "program": "", "engine": "", "options": [] })),
+            },
+            None => err(req, 404, "unknown game"),
+        },
+        (Method::Post, ["api", "v1", "games", id, "emuoptions"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => {
+                let b = body_json(&mut req);
+                let Some(e) = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key) else {
+                    return err(req, 409, "no emulator for this console");
+                };
+                match crate::gamesettings::emu_set(app, &e.program, &g.group_key, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                    Ok(()) => {
+                        let mut v = crate::gamesettings::emu_view(app, &e.program, &g.group_key);
+                        v["engine"] = json!(e.name);
+                        ok(req, v)
+                    }
+                    Err(x) => err(req, 400, &x),
                 }
             }
             None => err(req, 404, "unknown game"),

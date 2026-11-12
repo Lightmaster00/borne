@@ -1,6 +1,6 @@
-// Settings: sections on the left, their rows on the right.
-// Gamepad: up/down moves in the focused column, right enters a section, left goes back to the
-// sections, left/right inside a row of choices, A to choose, B to go back.
+// Settings: sections on the left, their rows on the right, gathered under group titles.
+// Gamepad: up/down moves in the focused column (group titles are skipped), right enters a section,
+// left goes back to the sections, left/right inside a row of choices, A to choose, B to go back.
 import QtQuick
 import "CoreText.js" as CoreText
 import "Display.js" as Display
@@ -10,8 +10,7 @@ Item {
     property QtObject theme
     property var settings: null          // GET /api/v1/settings
     property var status: null            // GET /api/v1/status
-    property bool sounds: true
-    property bool trailers: true
+    property QtObject prefs: null        // the interface's own preferences (Main.qml, prefs)
     property string version: ""
     property var reportPaths: []
 
@@ -44,6 +43,42 @@ Item {
              : b >= 1048576 ? qsTr("%1 MB").arg(Math.round(b / 1048576)) : qsTr("%1 KB").arg(Math.max(1, Math.round(b / 1024)))
     }
     function onOff(v) { return [{ id: "on", label: qsTr("On") }, { id: "off", label: qsTr("Off") }] }
+    function group(t) { return { id: "group:" + t, kind: "header", title: t, items: [] } }
+    // A row setting one of the interface's preferences: key, choices [[value, label]…].
+    function pref(key, title, desc, choices) {
+        const v = prefs ? prefs[key] : undefined
+        return { id: "pref:" + key, kind: "chips", title: title, desc: desc, selected: String(v),
+                 items: choices.map(c => ({ id: String(c[0]), label: c[1], value: c[0] })) }
+    }
+    function secs(n) { return n >= 60 ? qsTr("%1 min").arg(n / 60) : qsTr("%1 s").arg(n) }
+    function interfaceRows() {
+        const on = [[true, qsTr("On")], [false, qsTr("Off")]]
+        const rows = [
+            group(qsTr("Videos")),
+            pref("bgVideo", qsTr("Video behind the library"), qsTr("The selected game's video plays by itself, muted, behind the boxes"), on),
+            pref("attractDelay", qsTr("Video in full screen"), qsTr("Without a press for this long, the boxes fade out and leave the video"),
+                 [[5, secs(5)], [15, secs(15)], [30, secs(30)], [60, secs(60)], [0, qsTr("Never")]]),
+            pref("attractRest", qsTr("Full-screen video length"), qsTr("Then the video pauses and the games come back, until another game is selected"),
+                 [[60, secs(60)], [180, secs(180)], [600, secs(600)], [0, qsTr("No limit")]]),
+            pref("pageVideo", qsTr("Videos on the game page"), qsTr("A game's trailer starts on its page after a moment"), on),
+            group(qsTr("Look")),
+            pref("uiScale", qsTr("Interface size"), qsTr("Larger text and boxes, for a screen seen from afar"),
+                 [[90, "90 %"], [100, "100 %"], [110, "110 %"], [120, "120 %"]]),
+            pref("motion", qsTr("Animations"), qsTr("Reduced: shorter movements and fades"), [["normal", qsTr("Normal")], ["reduced", qsTr("Reduced")]]),
+            pref("showClock", qsTr("Clock"), qsTr("The time at the top of the library"), [[true, qsTr("Shown")], [false, qsTr("Hidden")]]),
+            group(qsTr("Sounds")),
+            pref("sounds", qsTr("Interface sounds"), qsTr("Short, quiet sounds when moving and choosing"), on),
+            pref("soundVolume", qsTr("Volume"), qsTr("Of the interface sounds only, not of the games"),
+                 [["low", qsTr("Low")], ["medium", qsTr("Medium")], ["high", qsTr("High")]]),
+            group(qsTr("Controls")),
+            pref("prompts", qsTr("Buttons shown"), qsTr("The hints at the bottom show the gamepad's buttons or the keyboard's keys"),
+                 [["auto", qsTr("Last used")], ["pad", qsTr("Gamepad")], ["keyboard", qsTr("Keyboard")]])
+        ]
+        // No full-screen video without the video behind the library; no volume without sounds.
+        return rows.filter(r => !(prefs && !prefs.bgVideo && (r.id === "pref:attractDelay" || r.id === "pref:attractRest"))
+                             && !(prefs && prefs.attractDelay === 0 && r.id === "pref:attractRest")
+                             && !(prefs && !prefs.sounds && r.id === "pref:soundVolume"))
+    }
 
     readonly property string updateText: {
         if (!upd) return ""
@@ -205,9 +240,10 @@ Item {
         if (!displayData) return []
         const consoles = settings && settings.emulators ? settings.emulators.consoles : []
         const cur = consoles.find(c => c.slug === displayScope)
-        const rows = [{ id: "disp-scope", kind: "buttons", title: cur ? cur.name : qsTr("All games"),
+        const rows = [group(qsTr("Applies to")), { id: "disp-scope", kind: "buttons", title: cur ? cur.name : qsTr("All games"),
             desc: displayScope ? qsTr("This console's own values; the others follow all games") : qsTr("Every game, unless its console or the game has its own"),
             items: [{ id: "display-scope-menu", label: qsTr("Change console"), primary: false }] }]
+        rows.push(group(qsTr("Picture")))
         return rows.concat(Display.KEYS.map(k => {
             const items = Display.values(k).map(v => ({ id: v, label: Display.label(k, v) }))
             if (displayScope) items.unshift({ id: "default", label: qsTr("As for all games") })
@@ -216,39 +252,49 @@ Item {
                      selected: displayScope ? (own !== undefined ? own : "default") : displayData.effective[k], items: items }
         }))
     }
+    // Each section: its name, a hint under it in the list, and a sentence under its title.
     readonly property var sections: [
-        { id: "games", name: qsTr("Games"), hint: qsTr("Installation, saves") },
-        { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable") },
-        { id: "interface", name: qsTr("Interface"), hint: qsTr("Sounds, videos") },
-        { id: "display", name: qsTr("Display"), hint: qsTr("Picture, ratio, filters") },
-        { id: "emulators", name: qsTr("Emulators"), hint: qsTr("One per console") },
-        { id: "systemfiles", name: qsTr("System files"), hint: qsTr("BIOS, keys, firmware") },
-        { id: "screenscraper", name: qsTr("Game images"), hint: qsTr("ScreenScraper") },
-        { id: "server", name: qsTr("Server"), hint: qsTr("RomM, sync, profile") },
-        { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostics, quit") }
+        { id: "games", name: qsTr("Games"), hint: qsTr("Installation, saves"),
+          intro: qsTr("How games come to this device, and where their saves go. You can switch at any time: games already here stay.") },
+        { id: "interface", name: qsTr("Interface"), hint: qsTr("Videos, look, sounds"),
+          intro: qsTr("Borne itself: its videos, size, animations, sounds and the buttons it shows.") },
+        { id: "display", name: qsTr("Picture in games"), hint: qsTr("Shape, sharpness, filters"),
+          intro: qsTr("How games look while playing, for every game or one console. A game can also have its own, from its page.") },
+        { id: "emulators", name: qsTr("Emulators"), hint: qsTr("One per console"),
+          intro: qsTr("The program that plays each console's games. A game can use another one, from its page.") },
+        { id: "systemfiles", name: qsTr("System files"), hint: qsTr("BIOS, keys, firmware"),
+          intro: qsTr("Some consoles need files from the console itself to start their games.") },
+        { id: "screenscraper", name: qsTr("Game images"), hint: qsTr("ScreenScraper"),
+          intro: qsTr("Case scans, spines, cartridges and console logos, from ScreenScraper.") },
+        { id: "server", name: qsTr("RomM"), hint: qsTr("Server, sync, profile"),
+          intro: qsTr("The server your games come from, and who is playing.") },
+        { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable"),
+          intro: qsTr("New versions of Borne. They never install during a game.") },
+        { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostics, quit"),
+          intro: qsTr("When something goes wrong: a report to share and measurements of this device.") }
     ]
     readonly property var cacheSizes: [5, 10, 20, 50, 100]
     readonly property var rows: {
         const id = sections[section].id
         if (id === "games") return [
+            group(qsTr("Installation")),
             { id: "install", kind: "cards", selected: installMode },
-            { id: "savesync", kind: "chips", title: qsTr("Saves on RomM"), desc: qsTr("Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived."),
-              selected: settings && settings.save_sync === false ? "off" : "on", items: onOff() },
             { id: "cache", kind: "chips", title: qsTr("Space for network play"), desc: qsTr("Disk space Borne keeps for games played from the network (without downloading them), so they start faster next time"),
               selected: settings && settings.stream.cache_limit_mb ? String(Math.round(settings.stream.cache_limit_mb / 1024)) : "20",
-              items: cacheSizes.map(g => ({ id: String(g), label: qsTr("%1 GB").arg(g) })) }
+              items: cacheSizes.map(g => ({ id: String(g), label: qsTr("%1 GB").arg(g) })) },
+            group(qsTr("Saves")),
+            { id: "savesync", kind: "chips", title: qsTr("Saves on RomM"), desc: qsTr("Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived."),
+              selected: settings && settings.save_sync === false ? "off" : "on", items: onOff() }
         ].filter(r => r.id !== "cache" || installMode === "stream")   // network play only
         if (id === "updates") return [
+            { id: "update", kind: "buttons", title: qsTr("Installed version: %1").arg(page.version), desc: updateText, items: updateButtons },
+            group(qsTr("Options")),
             { id: "channel", kind: "chips", title: qsTr("Update channel"), desc: qsTr("Stable gets tested releases; Development gets every build"),
               selected: upd ? upd.channel : "stable", items: [{ id: "stable", label: qsTr("Stable") }, { id: "dev", label: qsTr("Development") }] },
             { id: "auto", kind: "chips", title: qsTr("Check automatically"), desc: qsTr("Every 6 hours, never while you play"),
-              selected: upd && upd.auto_check ? "on" : "off", items: onOff() },
-            { id: "update", kind: "buttons", title: qsTr("Installed version: %1").arg(page.version), desc: updateText, items: updateButtons }
+              selected: upd && upd.auto_check ? "on" : "off", items: onOff() }
         ]
-        if (id === "interface") return [
-            { id: "sounds", kind: "chips", title: qsTr("Interface sounds"), desc: qsTr("Short, quiet sounds when moving and choosing"), selected: sounds ? "on" : "off", items: onOff() },
-            { id: "trailers", kind: "chips", title: qsTr("Game videos"), desc: qsTr("Videos of the games, muted: behind the library and on the game page"), selected: trailers ? "on" : "off", items: onOff() }
-        ]
+        if (id === "interface") return interfaceRows()
         if (id === "display") return displayRows()
         if (id === "emulators") return emulatorRows()
         if (id === "systemfiles") return sysFileRows()
@@ -295,9 +341,25 @@ Item {
     function itemsOf(r) { return r.kind === "cards" ? installItems : r.items }
     function colOf(id) { return cols[id] !== undefined ? cols[id] : 0 }
     function setCol(id, c) { const n = Object.assign({}, cols); n[id] = c; cols = n }
+    // The next row that can be focused from i in direction d (group titles are skipped).
+    function step(i, d) {
+        for (let j = i + d; j >= 0 && j < rows.length; j += d) if (rows[j].kind !== "header") return j
+        return i
+    }
+    function firstRow() { return step(-1, 1) }
+    // Rows come and go (a choice can show or hide others): keep the focus on a real row, and give
+    // new rows their current choice.
+    onRowsChanged: {
+        if (row >= rows.length || (rows[row] && rows[row].kind === "header"))
+            row = row >= rows.length ? step(rows.length, -1) : step(row, 1) !== row ? step(row, 1) : step(row, -1)
+        const c = Object.assign({}, cols)
+        let changed = false
+        for (const r of rows) if (c[r.id] === undefined) { c[r.id] = Math.max(0, itemsOf(r).findIndex(x => x.id === r.selected)); changed = true }
+        if (changed) cols = c
+    }
     function selectSection(i) {
         section = i
-        row = 0
+        row = firstRow()
         const c = {}
         for (const r of rows) c[r.id] = Math.max(0, itemsOf(r).findIndex(x => x.id === r.selected))
         cols = c
@@ -311,12 +373,11 @@ Item {
         else if (r.id === "channel") page.action("channel", item.id)
         else if (r.id === "auto") page.action("auto", item.id === "on")
         else if (r.id === "savesync") page.action("savesync", item.id === "on")
-        else if (r.id === "sounds") page.action("sounds", item.id === "on")
+        else if (r.id.startsWith("pref:")) page.action("pref", { key: r.id.substring(5), value: item.value })
         else if (r.id.startsWith("disp:")) page.action("display", { console: page.displayScope, key: r.id.substring(5), value: item.id })
         else if (r.id.startsWith("console:")) page.action("console-emu", { slug: r.id.substring(8), engine: item.id })
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
-        else if (r.id === "trailers") page.action("trailers", item.id === "on")
         else page.action(item.id, null)
     }
     function handle(a) {
@@ -328,13 +389,13 @@ Item {
         if (!inRows) {
             if (a === "up") selectSection(Math.max(0, section - 1))
             else if (a === "down") selectSection(Math.min(sections.length - 1, section + 1))
-            else if (a === "right" || a === "a") { inRows = true; row = 0 }
+            else if (a === "right" || a === "a") { inRows = true; row = firstRow() }
             return
         }
         const r = rows[Math.min(row, rows.length - 1)]
         const n = itemsOf(r).length
-        if (a === "up") row = Math.max(0, row - 1)
-        else if (a === "down") row = Math.min(rows.length - 1, row + 1)
+        if (a === "up") row = step(row, -1)
+        else if (a === "down") row = step(row, 1)
         else if (a === "left") { if (colOf(r.id) === 0) inRows = false; else setCol(r.id, colOf(r.id) - 1) }
         else if (a === "right") setCol(r.id, Math.min(n - 1, colOf(r.id) + 1))
         else if (a === "a") activate(r, colOf(r.id))
@@ -424,17 +485,10 @@ Item {
         spacing: 18
 
         Column {
-            visible: page.sections[page.section].id === "games"
             width: parent.width
             spacing: 10
-            Text { text: qsTr("How games are installed"); color: theme.fg; font { family: theme.displayFont; pixelSize: 34; weight: Font.Bold } }
-            Text { width: parent.width; wrapMode: Text.WordWrap; text: qsTr("Choose once; you can switch at any time. Games already on this device stay where they are."); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 18 } }
-        }
-        Text {
-            visible: page.sections[page.section].id !== "games"
-            text: page.sections[page.section].name
-            color: theme.fg
-            font { family: theme.displayFont; pixelSize: 34; weight: Font.Bold }
+            Text { text: page.sections[page.section].name; color: theme.fg; font { family: theme.displayFont; pixelSize: 34; weight: Font.Bold } }
+            Text { width: parent.width; wrapMode: Text.WordWrap; text: page.sections[page.section].intro || ""; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 18 } }
         }
 
         Repeater {
@@ -446,7 +500,24 @@ Item {
                 readonly property bool current: page.row === index
                 onCurrentChanged: if (current) rowsView.ensure(rowItem)
                 width: parent.width
-                height: modelData.kind === "cards" ? cards.height : Math.max(96, line.height + 52)
+                height: modelData.kind === "cards" ? cards.height : modelData.kind === "header" ? 58 : Math.max(96, line.height + 52)
+
+                // A group title: small capitals, a thin line after it; never focused.
+                Item {
+                    visible: rowItem.modelData.kind === "header"
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 6; leftMargin: 8 }
+                    height: groupTitle.height
+                    Text {
+                        id: groupTitle
+                        text: (rowItem.modelData.title || "").toUpperCase()
+                        color: theme.fgFaint
+                        font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold; letterSpacing: 1.6 }
+                    }
+                    Rectangle {
+                        anchors { left: groupTitle.right; leftMargin: 16; right: parent.right; rightMargin: 8; verticalCenter: groupTitle.verticalCenter }
+                        height: 1; color: Qt.rgba(1, 1, 1, 0.1)
+                    }
+                }
 
                 // Install method: two explained cards.
                 Row {
@@ -480,7 +551,7 @@ Item {
 
                 // Each setting is a card, as in the redesign; the current one stands out.
                 Rectangle {
-                    visible: rowItem.modelData.kind !== "cards"
+                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header"
                     anchors.fill: parent
                     radius: 26
                     color: rowItem.current ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.045)
@@ -489,7 +560,7 @@ Item {
                 // A setting: title and explanation, choices or buttons on the right.
                 Item {
                     id: line
-                    visible: rowItem.modelData.kind !== "cards"
+                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header"
                     x: 32
                     width: parent.width - 64
                     height: Math.max(texts.height, choices.height)

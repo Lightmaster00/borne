@@ -267,7 +267,7 @@ fn game_from_row(r: &rusqlite::Row) -> rusqlite::Result<GameRow> {
     Ok(GameRow {
         rom_id: r.get(0)?,
         platform_slug: r.get(1)?,
-        platform_name: r.get(2)?,
+        platform_name: crate::library::console_name(&r.get::<_, String>(1)?, &r.get::<_, String>(2)?),
         name: r.get(3)?,
         fs_name: r.get(4)?,
         fs_size: r.get(5)?,
@@ -484,7 +484,7 @@ impl Db {
             Ok(Platform {
                 id: r.get(0)?,
                 slug: r.get(1)?,
-                name: r.get(2)?,
+                name: crate::library::console_name(&r.get::<_, String>(1)?, &r.get::<_, String>(2)?),
                 rom_count: r.get(3)?,
                 local_count: r.get(4)?,
             })

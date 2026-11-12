@@ -605,6 +605,121 @@
     </message>
 </context>
 <context>
+    <name>EmuOptions</name>
+    <message>
+        <source>Rewind</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run-ahead</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Widescreen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulated CPU speed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Renderer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Geometry correction (PGXP)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Texture filtering</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Console mode</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Write colour buffers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Go back in time during play; uses a little more memory</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cuts input lag by a frame or two; needs a stronger computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A 16:9 picture where the game allows it; can show glitches at the edges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Smoother for games that slow down; needs a stronger computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Software: slower, but exact where the graphics are wrong</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Steadier 3D, without wobbling polygons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Bilinear smooths the textures</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On a TV (higher resolution) or handheld (faster)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fixes missing graphics in some games; slower</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n frame(s)</source>
+        <translation><numerusform>%n frame</numerusform><numerusform>%n frames</numerusform></translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Software</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Bilinear</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nearest</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Handheld</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>TV</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>GamePage</name>
     <message>
         <source>%1 GB</source>
@@ -832,6 +947,277 @@
     </message>
     <message>
         <source>Game settings</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>GameSettingsPage</name>
+    <message>
+        <source>Emulator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Its own</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As for its console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shape, sharpness, filters</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cheats</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n on</source>
+        <translation><numerusform>%n on</numerusform><numerusform>%n on</numerusform></translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cover and video</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Storage</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On this device</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Network mount</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Loading…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The program that runs this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As for its console (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 options for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Options for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This emulator has no option of its own here: the picture settings apply.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>default</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game's options</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the emulator's defaults</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Applied the next time the game starts.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>now: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose a file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Type its path</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From a link</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install the game or mount it from the network to choose its cheats.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading the cheat databases… try again in a moment.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No cheats for this version of the game in the public databases.</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n cheat(s) on</source>
+        <translation><numerusform>%n cheat on</numerusform><numerusform>%n cheats on</numerusform></translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>All cheats</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Turn all off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>.pnach file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cheats for this game, in PCSX2's format</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Starts the version of the game in this language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cover</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Box region</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Which edition's box is shown</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not the right game?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Search ScreenScraper by name and choose the right one</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Search</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video sound</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The trailer on this game's page</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Delete from this device</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saves stay on RomM; the game can be downloaded again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove from the network mount</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The game stays on RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Forget the local copy</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Its files are no longer there</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Forget</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change value</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the game</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1434,34 +1820,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Cheats unavailable</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Downloading the cheat databases… try again in a moment.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No cheats for this version of the game in the public databases.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Cheats</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Turn all off</source>
-        <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n cheat(s) on. They apply the next time the game starts.</source>
-        <translation><numerusform>%n cheat on. It applies the next time the game starts.</numerusform><numerusform>%n cheats on. They apply the next time the game starts.</numerusform></translation>
-    </message>
-    <message>
-        <source>Cheats · %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Full path of the file</source>
         <translation type="unfinished" />
     </message>
@@ -1494,22 +1852,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>This game only</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Display · %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Applied the next time the game starts.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>As for its console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Display settings for</source>
         <translation type="unfinished" />
     </message>
@@ -1530,39 +1872,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Box: automatic</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Current · follows the interface language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Follows the interface language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Box: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Current</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Not the right game?</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Search ScreenScraper by name</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Images · %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>From ScreenScraper</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1785,22 +2095,6 @@
         <source>No game played yet on this profile.</source>
         <translation type="unfinished" />
     </message>
-    <message>
-        <source>Add a .pnach file…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>From this computer</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Type the file's path…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>From a link…</source>
-        <translation type="unfinished" />
-    </message>
     <message numerus="yes">
         <source>%n cheat(s) found in the file.</source>
         <translation><numerusform>%n cheat found in the file.</numerusform><numerusform>%n cheats found in the file.</numerusform></translation>
@@ -1811,10 +2105,6 @@
     </message>
     <message>
         <source>Link to the .pnach file</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1835,54 +2125,6 @@
     </message>
     <message>
         <source>Game mode (test) — Esc to go back</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Emulator</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>For this game only</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Display</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Picture, ratio, filters for this game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Change the cover</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Another match or region on ScreenScraper</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Mute the video</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Video sound</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Forget the local copy</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Game settings</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Same as the console</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2440,10 +2682,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Display</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Emulators</source>
         <translation type="unfinished" />
     </message>
@@ -2465,10 +2703,6 @@
     </message>
     <message>
         <source>ScreenScraper</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Server</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2505,10 +2739,6 @@
     </message>
     <message>
         <source>Short, quiet sounds when moving and choosing</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Videos of the games, muted: behind the library and on the game page</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2617,14 +2847,6 @@
     </message>
     <message>
         <source>Settings</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>How games are installed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Choose once; you can switch at any time. Games already on this device stay where they are.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2792,18 +3014,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Sounds, videos</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Picture, ratio, filters</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>RomM, sync, profile</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Diagnostics, quit</source>
         <translation type="unfinished" />
     </message>
@@ -2820,10 +3030,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Game videos</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Measurements</source>
         <translation type="unfinished" />
     </message>
@@ -2837,6 +3043,226 @@
     </message>
     <message>
         <source>Back to the system</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 min</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 s</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Videos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video behind the library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The selected game's video plays by itself, muted, behind the boxes</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video in full screen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Without a press for this long, the boxes fade out and leave the video</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Never</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Full-screen video length</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Then the video pauses and the games come back, until another game is selected</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Videos on the game page</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A game's trailer starts on its page after a moment</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Interface size</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Larger text and boxes, for a screen seen from afar</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reduced: shorter movements and fades</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reduced</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Clock</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The time at the top of the library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shown</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hidden</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sounds</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Of the interface sounds only, not of the games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Low</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Medium</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>High</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controls</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons shown</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The hints at the bottom show the gamepad's buttons or the keyboard's keys</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Last used</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Gamepad</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Keyboard</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Applies to</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How games come to this device, and where their saves go. You can switch at any time: games already here stay.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Videos, look, sounds</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne itself: its videos, size, animations, sounds and the buttons it shows.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture in games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shape, sharpness, filters</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How games look while playing, for every game or one console. A game can also have its own, from its page.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The program that plays each console's games. A game can use another one, from its page.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some consoles need files from the console itself to start their games.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Case scans, spines, cartridges and console logos, from ScreenScraper.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Server, sync, profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The server your games come from, and who is playing.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>New versions of Borne. They never install during a game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>When something goes wrong: a report to share and measurements of this device.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installation</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saves</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Options</source>
         <translation type="unfinished" />
     </message>
 </context>

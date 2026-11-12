@@ -62,9 +62,11 @@ QtObject {
 
     // ---------- Shape and motion ----------
     readonly property int radius: 14
-    readonly property int focusMs: 160
-    readonly property int fadeMs: 600
-    readonly property int scrollMs: 220
+    // Animations: 1 normal, less for reduced motion (Settings → Interface).
+    property real motion: 1
+    readonly property int focusMs: Math.round(160 * motion)
+    readonly property int fadeMs: Math.round(600 * motion)
+    readonly property int scrollMs: Math.round(220 * motion)
     readonly property int ringWidth: 2
     readonly property int ringGap: 3
 
@@ -78,7 +80,7 @@ QtObject {
 
     // ---------- Sounds ----------
     readonly property string soundSet: "soft"
-    readonly property real soundVolume: 0.45
+    property real soundVolume: 0.45
 
     /// Placeholder tone for a game without a cover: muted, stable per game.
     function tone(hue) {

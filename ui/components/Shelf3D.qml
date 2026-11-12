@@ -84,7 +84,7 @@ Item {
         // Key light: above, left and in front; soft shadows on the floor.
         DirectionalLight {
             eulerRotation: Qt.vector3d(-38, -28, 0)
-            brightness: 1.25
+            brightness: 1.0
             color: "#fff6ea"
             castsShadow: true
             shadowMapQuality: Light.ShadowMapQualityHigh
@@ -102,7 +102,7 @@ Item {
         // Rim light from behind, to separate the edges from the background.
         DirectionalLight {
             eulerRotation: Qt.vector3d(-20, 170, 0)
-            brightness: 0.6
+            brightness: 0.35
         }
 
         // Floor: dark, faintly glossy, fading out toward the edges so it has no visible border;

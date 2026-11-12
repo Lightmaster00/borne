@@ -264,6 +264,122 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
     }
 }
 
+// ---------- Emulator options of one game ----------
+//
+// Settings of the emulator itself, chosen for one game (a widescreen hack, docked mode, rewind…):
+// (program, key, values, default). Written before every game of that program, the default when
+// the game has none, so one game's choice never leaks into the next.
+pub const EMU_OPTIONS: &[(&str, &str, &[&str], &str)] = &[
+    ("retroarch", "rewind", &["off", "on"], "off"),
+    ("retroarch", "runahead", &["off", "1", "2"], "off"),
+    ("dolphin", "widescreen", &["off", "on"], "off"),
+    ("dolphin", "overclock", &["off", "150", "200"], "off"),
+    ("pcsx2", "widescreen", &["off", "on"], "off"),
+    ("pcsx2", "renderer", &["auto", "software"], "auto"),
+    ("duckstation", "widescreen", &["off", "on"], "off"),
+    ("duckstation", "pgxp", &["off", "on"], "off"),
+    ("duckstation", "filtering", &["nearest", "bilinear"], "nearest"),
+    ("eden", "docked", &["on", "off"], "on"),
+    ("citron", "docked", &["on", "off"], "on"),
+    ("ryubing", "docked", &["on", "off"], "on"),
+    ("rpcs3", "colorbuffers", &["off", "on"], "off"),
+];
+
+fn emu_key(group: &str, program: &str, key: &str) -> String {
+    format!("emuopt.{group}.{program}.{key}")
+}
+
+fn emu_own(app: &Shared, group: &str, program: &str, key: &str, values: &[&str]) -> Option<String> {
+    app.db.setting(&emu_key(group, program, key)).filter(|v| values.contains(&v.as_str()))
+}
+
+/// The emulator options in effect for a game run by `program`.
+pub fn emu_options(app: &Shared, program: &str, group: &str) -> Map<String, Value> {
+    EMU_OPTIONS
+        .iter()
+        .filter(|o| o.0 == program)
+        .map(|(p, k, vals, d)| (k.to_string(), json!(emu_own(app, group, p, k, vals).unwrap_or_else(|| d.to_string()))))
+        .collect()
+}
+
+/// The options offered for a game run by `program`: each with its values, the one in effect and
+/// whether the game has its own.
+pub fn emu_view(app: &Shared, program: &str, group: &str) -> Value {
+    let list: Vec<Value> = EMU_OPTIONS
+        .iter()
+        .filter(|o| o.0 == program)
+        .map(|(p, k, vals, d)| {
+            let own = emu_own(app, group, p, k, vals);
+            json!({ "key": k, "values": vals, "default": d, "value": own.clone().unwrap_or_else(|| d.to_string()), "own": own.is_some() })
+        })
+        .collect();
+    json!({ "program": program, "options": list })
+}
+
+/// Sets a game's option ("default" removes it).
+pub fn emu_set(app: &Shared, program: &str, group: &str, key: &str, value: &str) -> Result<(), String> {
+    let (_, _, vals, _) = EMU_OPTIONS.iter().find(|o| o.0 == program && o.1 == key).ok_or("unknown option")?;
+    if value == "default" {
+        app.db.set_setting(&emu_key(group, program, key), "");
+        return Ok(());
+    }
+    if !vals.contains(&value) {
+        return Err("unknown value".into());
+    }
+    app.db.set_setting(&emu_key(group, program, key), value);
+    Ok(())
+}
+
+/// RetroArch settings for a game's options.
+pub fn emu_retroarch(m: &Map<String, Value>) -> Vec<(String, String)> {
+    let ahead = s(m, "runahead");
+    vec![
+        ("rewind_enable".to_string(), (s(m, "rewind") == "on").to_string()),
+        ("run_ahead_enabled".into(), (ahead != "off" && !ahead.is_empty()).to_string()),
+        ("run_ahead_frames".into(), if ahead == "2" { "2".into() } else { "1".into() }),
+    ]
+}
+
+/// Writes a game's options into a standalone emulator's configuration (its Borne-owned folder).
+pub fn emu_apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>) -> Result<(), String> {
+    let ini = crate::emulators::ini_set;
+    let on = |k: &str| s(m, k) == "on";
+    match program {
+        "dolphin" => {
+            let oc = s(m, "overclock");
+            let ratio = match oc {
+                "150" => "1.5",
+                "200" => "2",
+                _ => "1",
+            };
+            ini(&userdir.join("Config/GFX.ini"), &[("Settings", "wideScreenHack", if on("widescreen") { "True" } else { "False" })])?;
+            ini(&userdir.join("Config/Dolphin.ini"), &[("Core", "OverclockEnable", if oc == "off" { "False" } else { "True" }), ("Core", "Overclock", ratio)])
+        }
+        "pcsx2" => ini(
+            &data.join("PCSX2/inis/PCSX2.ini"),
+            &[
+                ("EmuCore", "EnableWideScreenPatches", if on("widescreen") { "true" } else { "false" }),
+                ("EmuCore/GS", "Renderer", if s(m, "renderer") == "software" { "13" } else { "-1" }),
+            ],
+        ),
+        "duckstation" => ini(
+            &data.join("data/duckstation/settings.ini"),
+            &[
+                ("GPU", "WidescreenHack", if on("widescreen") { "true" } else { "false" }),
+                ("GPU", "PGXPEnable", if on("pgxp") { "true" } else { "false" }),
+                ("GPU", "TextureFilter", if s(m, "filtering") == "bilinear" { "Bilinear" } else { "Nearest" }),
+            ],
+        ),
+        "eden" | "citron" => {
+            let path = if cfg!(target_os = "macos") { data.join("config/qt-config.ini") } else { userdir.join("config").join(program).join("qt-config.ini") };
+            ini(&path, &[("System", "use_docked_mode\\default", "false"), ("System", "use_docked_mode", if s(m, "docked") == "off" { "false" } else { "true" })])
+        }
+        "ryubing" => json_patch(&data.join("Config.json"), &[("docked_mode", json!(s(m, "docked") != "off"))]),
+        "rpcs3" => yaml_set(&data.join("config.yml"), &[("Video", "Write Color Buffers", if on("colorbuffers") { "true" } else { "false" })]),
+        _ => Ok(()),
+    }
+}
+
 /// First start of an emulator: its controller set to the gamepad Borne sees (SDL), so it plays at
 /// once. A mapping already there (changed by the user) is kept.
 pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>, guid: Option<&str>) -> Result<(), String> {
@@ -434,6 +550,18 @@ fn dotnet_guid(sdl: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn emu_options_for_retroarch() {
+        let mut m = Map::new();
+        m.insert("rewind".into(), json!("on"));
+        m.insert("runahead".into(), json!("2"));
+        let v = emu_retroarch(&m);
+        assert!(v.contains(&("rewind_enable".into(), "true".into())));
+        assert!(v.contains(&("run_ahead_enabled".into(), "true".into())));
+        assert!(v.contains(&("run_ahead_frames".into(), "2".into())));
+        assert!(EMU_OPTIONS.iter().all(|o| o.2.contains(&o.3)));
+    }
+
     use super::*;
 
     #[test]

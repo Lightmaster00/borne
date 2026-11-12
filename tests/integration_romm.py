@@ -344,6 +344,19 @@ try:
     check(s == 200 and gd["effective"]["upscale"] == "3" and gd["own"]["upscale"] == "3", "a game's own display setting")
     s, gd = call(api, "POST", f"/api/v1/games/{rid}/display", {"key": "upscale", "value": "default"})
     check(s == 200 and "upscale" not in gd["own"], "a game's own setting back to the one for all games")
+    s, eo = call(api, "GET", f"/api/v1/games/{rid}/emuoptions")
+    check(s == 200 and isinstance(eo.get("options"), list), "a game's emulator options listed")
+    if eo.get("options"):
+        o = eo["options"][0]
+        other = [v for v in o["values"] if v != o["default"]][0]
+        s, eo2 = call(api, "POST", f"/api/v1/games/{rid}/emuoptions", {"key": o["key"], "value": other})
+        mine = next(x for x in eo2["options"] if x["key"] == o["key"])
+        check(s == 200 and mine["own"] and mine["value"] == other, "a game's own emulator option")
+        s, e = call(api, "POST", f"/api/v1/games/{rid}/emuoptions", {"key": o["key"], "value": "nonsense"})
+        check(s == 400, "an unknown emulator option value refused")
+        s, eo2 = call(api, "POST", f"/api/v1/games/{rid}/emuoptions", {"key": o["key"], "value": "default"})
+        mine = next(x for x in eo2["options"] if x["key"] == o["key"])
+        check(s == 200 and not mine["own"] and mine["value"] == o["default"], "a game's emulator option back to the default")
     s, e = call(api, "POST", "/api/v1/games/999999/play", {})
     check(s == 409 and "unknown game" in e.get("error", ""), "playing an unknown game refused")
     s, e = call(api, "POST", "/api/v1/emulators/dolphin/path", {"path": "relative/dolphin"})

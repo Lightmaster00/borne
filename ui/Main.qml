@@ -57,14 +57,24 @@ Window {
     property double clock: Date.now()
 
     ListModel { id: libModel }
-    Theme { id: graphite }
+    // The hints show the keys of the last device used, unless the settings choose one.
+    property string inputSeen: "pad"
+    Theme {
+        id: graphite
+        input: prefs.prompts === "auto" ? win.inputSeen : prefs.prompts
+        motion: prefs.motion === "reduced" ? 0.4 : 1
+        soundVolume: prefs.soundVolume === "low" ? 0.22 : prefs.soundVolume === "high" ? 0.7 : 0.45
+    }
     readonly property QtObject theme: graphite
 
     readonly property var focusedGame: {
         libRevision
         return libModel.count ? libModel.get(Math.min(focusIndex, libModel.count - 1)) : null
     }
-    readonly property bool trailers: prefs.trailers
+    // Videos: the selected game's behind the library (it plays by itself) and those on a game page.
+    readonly property bool bgVideos: prefs.bgVideo
+    readonly property bool trailers: prefs.pageVideo
+    readonly property bool anyVideo: bgVideos || trailers
     readonly property var activeProfile: status ? status.active_profile : null
     readonly property bool textEntry: screen === "server" || nameEntry.visible
     readonly property string uiLang: Qt.locale().name.substring(0, 2)
@@ -283,7 +293,7 @@ Window {
     // played (ScreenScraper's gameplay capture, else RomM's trailer) and the library plays it.
     property string bgVideo: ""
     property int bgVideoFor: -1
-    readonly property bool bgVideoWanted: win.trailers
+    readonly property bool bgVideoWanted: win.bgVideos
                                           && win.screen === "library" && win.overlay === ""
     Timer {
         id: bgVideoDelay
@@ -305,13 +315,13 @@ Window {
         if (bgVideoWanted) bgVideoDelay.restart()
     }
     onBgVideoWantedChanged: if (bgVideoWanted && bgVideoFor === -1) bgVideoDelay.restart()
-    // Attract: after 5 s without input on the library, once the selected game's video plays, the
+    // Attract: after a few seconds without input on the library (5 by default, prefs.attractDelay; 0: never), once the selected game's video plays, the
     // library fades out and leaves the video; any input brings it back (that input only wakes it),
     // and so does a minute of it (see videoRested).
     // Turning the box (stick or W A S D) counts as input.
     property double lastActivity: Date.now()
     property bool attract: false
-    readonly property bool attractAllowed: screen === "library" && overlay === "" && ready && !gameMode
+    readonly property bool attractAllowed: prefs.attractDelay > 0 && screen === "library" && overlay === "" && ready && !gameMode
                                            && !menu.visible && !search.visible && !downloadsPanel.visible
                                            && !nameEntry.visible && !turning
                                            && libModel.count > 0 && ambience.videoShown && !videoRested
@@ -325,14 +335,14 @@ Window {
     Timer {
         interval: 250; repeat: true
         running: win.attractAllowed && !win.attract
-        onTriggered: if (Date.now() - win.lastActivity >= 5000) win.attract = true
+        onTriggered: if (Date.now() - win.lastActivity >= prefs.attractDelay * 1000) win.attract = true
     }
-    // After a minute alone on screen, the video pauses and the games come back; it stays paused
-    // until another game is selected.
+    // After a minute alone on screen (prefs.attractRest; 0: never), the video pauses and the games
+    // come back; it stays paused until another game is selected.
     property bool videoRested: false
     Timer {
-        interval: 60000
-        running: win.attract
+        interval: Math.max(1, prefs.attractRest) * 1000
+        running: win.attract && prefs.attractRest > 0
         onTriggered: { win.videoRested = true; win.attract = false }
     }
     onTurnXChanged: touch()
@@ -403,134 +413,89 @@ Window {
             armed = false
         }
     }
-    // Cheats of the shown version: a list to turn them on and off (kept per profile).
-    function cheatsMenu(g, at) {
-        api("GET", "/api/v1/games/" + g.rom_id + "/cheats", null, function (c, err) {
-            if (err || !c) { toasts.show(err || qsTr("Cheats unavailable"), "error"); return }
-            // PS2: no public database; the player gives a .pnach for the game.
-            const ps2 = g.platform_slug === "ps2"
-            const pnachItems = ps2 ? [{ id: "pnach-pick", label: qsTr("Add a .pnach file…"), detail: qsTr("From this computer") },
-                                      { id: "pnach-path", label: qsTr("Type the file's path…") },
-                                      { id: "pnach-url", label: qsTr("From a link…") }] : []
-            function pnach(id) {
-                const send = function (body) {
-                    api("POST", "/api/v1/games/" + g.rom_id + "/cheats/file", body, function (r, err) {
-                        if (err) toasts.show(err, "error")
-                        else { toasts.show(qsTr("%n cheat(s) found in the file.", "", r.cheats), "info"); cheatsMenu(g) }
-                    })
-                }
-                if (id === "pnach-pick") send({ pick: true })
-                else if (id === "pnach-path") nameEntry.open(qsTr("Path of the .pnach file"), "", function (t) { send({ path: t }) }, "/home/…/game.pnach")
-                else if (id === "pnach-url") nameEntry.open(qsTr("Link to the .pnach file"), "", function (t) { send({ url: t }) }, "https://…")
-            }
-            if (!c.cheats.length) {
-                const why = ps2 ? qsTr("PS2 cheats come from a .pnach file you give for this game (PCSX2's format).")
-                          : c.updating ? qsTr("Downloading the cheat databases… try again in a moment.")
-                          : c.error ? CoreText.tr(c.error) : qsTr("No cheats for this version of the game in the public databases.")
-                menu.open(qsTr("Cheats"), why, pnachItems.concat([{ id: "close", label: qsTr("Close") }]), function (id) { pnach(id) })
-                return
-            }
-            const on = c.cheats.filter(x => x.on).map(x => x.name)
-            const items = c.cheats.map((x, i) => ({ id: String(i), label: (x.on ? "● " : "○ ") + x.name }))
-            items.push({ id: "none", label: qsTr("Turn all off"), disabled: on.length === 0 })
-            for (const p of pnachItems) items.push(p)
-            items.push({ id: "close", label: qsTr("Close") })
-            const sub = qsTr("%n cheat(s) on. They apply the next time the game starts.", "", on.length)
-            menu.open(qsTr("Cheats · %1").arg(g.name), sub, items, function (id) {
-                if (id === "close") return
-                if (id.indexOf("pnach-") === 0) { pnach(id); return }
-                let next = on.slice()
-                let idx = items.findIndex(x => x.id === id)
-                if (id === "none") next = []
-                else {
-                    const name = c.cheats[Number(id)].name
-                    next = next.indexOf(name) >= 0 ? next.filter(n => n !== name) : next.concat([name])
-                }
-                api("POST", "/api/v1/games/" + g.rom_id + "/cheats", { on: next }, function (r, err2) {
-                    if (err2) toasts.show(err2, "error")
-                    cheatsMenu(g, idx)
-                })
-            }, at)
-        })
+    // A game's own settings (GameSettingsPage): emulator and its options, picture, cheats,
+    // language, cover, storage. Each part is fetched from the core and refreshed after a change.
+    function gameSettings(g) {
+        gameSettingsPage.emulator = null; gameSettingsPage.emuOptions = null; gameSettingsPage.display = null
+        gameSettingsPage.cheats = null; gameSettingsPage.images = null
+        gameSettingsPage.open()
+        loadGameSettings(g, ["emulator", "emuoptions", "display", "cheats", "screenscraper"])
     }
-    // A game's own display settings: each line cycles through the values, then back to the one
-    // for all games.
-    function displayMenu(g, at) {
-        api("GET", "/api/v1/games/" + g.rom_id + "/display", null, function (d, err) {
-            if (err || !d) { toasts.show(err || "", "error"); return }
-            const items = Display.KEYS.map(k => ({ id: k, label: qsTr("%1: %2").arg(Display.title(k)).arg(Display.label(k, d.effective[k])),
-                detail: d.own[k] !== undefined ? qsTr("This game only") : qsTr("As for its console") }))
-            items.push({ id: "close", label: qsTr("Close") })
-            menu.open(qsTr("Display · %1").arg(g.name), qsTr("Applied the next time the game starts."), items, function (k) {
-                if (k === "close") return
-                const vals = Display.values(k)
-                const own = d.own[k]
-                // as for all games → the next value → … → the last value → as for all games
-                const next = own === undefined ? vals[(vals.indexOf(d.effective[k]) + 1) % vals.length]
-                           : vals.indexOf(own) + 1 < vals.length ? vals[vals.indexOf(own) + 1] : "default"
-                api("POST", "/api/v1/games/" + g.rom_id + "/display", { key: k, value: next }, function (r, e2) {
-                    if (e2) toasts.show(e2, "error")
-                    displayMenu(g, Display.KEYS.indexOf(k))
-                })
-            }, at)
-        })
-    }
-    // A game's own settings: its emulator, display, cheats, language, cover, removal.
-    function gameSettings(g, at) {
-        const playable = g.local_state === "local" || g.linked
-        const items = [{ id: "emulator", label: qsTr("Emulator"), detail: qsTr("For this game only") },
-                       { id: "display", label: qsTr("Display"), detail: qsTr("Picture, ratio, filters for this game") }]
-        if (playable) items.push({ id: "cheats", label: qsTr("Cheats") })
-        if (gamePage.gameLanguages.length > 1)
-            items.push({ id: "language", label: qsTr("Game language"), detail: gamePage.languageName(gamePage.currentLang) })
-        items.push({ id: "images", label: qsTr("Change the cover"), detail: qsTr("Another match or region on ScreenScraper") })
-        if (gamePage.hasTrailer && trailers)
-            items.push({ id: "sound", label: gamePage.sound ? qsTr("Mute the video") : qsTr("Video sound") })
-        if (g.local_state === "local") items.push({ id: "delete", label: qsTr("Delete from this device"), detail: fmtSize(g.fs_size) })
-        else if (g.linked) items.push({ id: "unlink", label: qsTr("Remove from the network mount") })
-        else if (g.local_state === "missing") items.push({ id: "delete", label: qsTr("Forget the local copy") })
-        items.push({ id: "close", label: qsTr("Close") })
-        menu.open(qsTr("Game settings"), g.name, items, function (c) {
-            if (c === "sound") gamePage.sound = !gamePage.sound
-            else if (c === "language") {
-                const langs = gamePage.gameLanguages
-                menu.open(qsTr("Game language"), g.name, langs.map((l, i) => ({ id: String(i), label: gamePage.languageName(l.code), detail: l.code === gamePage.currentLang ? qsTr("Current") : "" })),
-                          function (k) { pageAction("lang", langs[Number(k)]) })
-            }
-            else if (c !== "close") pageAction(c, null)
-        }, at)
-    }
-    // The emulator of one game: its console's (default) or another one offered for the console.
-    function gameEmulatorMenu(g) {
-        api("GET", "/api/v1/games/" + g.rom_id + "/emulator", null, function (e, err) {
-            if (!e) { toasts.show(CoreText.tr(err), "error"); return }
-            const consoleName = (e.choices.find(c => c.id === e.console) || {}).name || ""
-            const items = [{ id: "", label: qsTr("Same as the console"), detail: (e.own ? "" : qsTr("Current") + " · ") + consoleName }]
-                .concat(e.choices.map(c => ({ id: c.id, label: c.name, detail: e.own === c.id ? qsTr("Current") : "" })))
-            menu.open(qsTr("Emulator"), g.name, items, function (c) {
-                api("POST", "/api/v1/games/" + g.rom_id + "/emulator", { engine: c === "" ? null : c }, function (r, err2) {
-                    if (err2) toasts.show(CoreText.tr(err2), "error")
-                    else toasts.show(c === "" ? qsTr("This game uses its console's emulator.") : qsTr("This game now uses %1.").arg(items.find(i => i.id === c).label), "info")
-                })
+    function loadGameSettings(g, parts) {
+        const target = { emulator: "emulator", emuoptions: "emuOptions", display: "display", cheats: "cheats", screenscraper: "images" }
+        for (const p of parts) {
+            if (p === "cheats" && !(g.local_state === "local" || g.linked)) continue
+            api("GET", "/api/v1/games/" + g.rom_id + "/" + p, null, function (r, err) {
+                if (!pageGame || pageGame.rom_id !== g.rom_id) return
+                if (err && p !== "screenscraper") { toasts.show(CoreText.tr(err), "error"); return }
+                gameSettingsPage[target[p]] = r || {}
             })
+        }
+    }
+    function gameSettingsAction(id, payload) {
+        const g = pageGame
+        if (id === "close") { sfx.play("back"); gameSettingsPage.close(); return }
+        if (!g) return
+        sfx.play("accept")
+        const base = "/api/v1/games/" + g.rom_id + "/"
+        const failed = function (err) { if (err) toasts.show(CoreText.tr(err), "error"); return !!err }
+        if (id === "engine") api("POST", base + "emulator", { engine: payload === "" ? null : payload }, function (r, err) {
+            if (!failed(err)) toasts.show(payload === "" ? qsTr("This game uses its console's emulator.") : qsTr("This game now uses %1.").arg(gameSettingsPage.emulator.choices.find(c => c.id === payload).name), "info")
+            loadGameSettings(g, ["emulator", "emuoptions"])
         })
+        else if (id === "opt") api("POST", base + "emuoptions", payload, function (r, err) { if (!failed(err)) gameSettingsPage.emuOptions = r })
+        else if (id === "opt-reset") {
+            const own = gameSettingsPage.emuOptions.options.filter(o => o.own)
+            let left = own.length
+            for (const o of own) api("POST", base + "emuoptions", { key: o.key, value: "default" }, function (r, err) {
+                failed(err)
+                if (--left === 0) loadGameSettings(g, ["emuoptions"])
+            })
+        }
+        else if (id === "display") api("POST", base + "display", payload, function (r, err) { if (!failed(err)) gameSettingsPage.display = r })
+        else if (id === "cheat" || id === "cheats-off") {
+            const list = gameSettingsPage.cheats.cheats
+            const on = id === "cheats-off" ? [] : list.filter((x, i) => i === payload.index ? payload.on : x.on).map(x => x.name)
+            api("POST", base + "cheats", { on: on }, function (r, err) { failed(err); loadGameSettings(g, ["cheats"]) })
+        }
+        else if (id.indexOf("pnach-") === 0) {
+            const send = function (body) {
+                api("POST", base + "cheats/file", body, function (r, err) {
+                    if (!failed(err)) toasts.show(qsTr("%n cheat(s) found in the file.", "", r.cheats), "info")
+                    loadGameSettings(g, ["cheats"])
+                })
+            }
+            if (id === "pnach-pick") send({ pick: true })
+            else if (id === "pnach-path") nameEntry.open(qsTr("Path of the .pnach file"), "", function (t) { send({ path: t }) }, "/home/…/game.pnach")
+            else if (id === "pnach-url") nameEntry.open(qsTr("Link to the .pnach file"), "", function (t) { send({ url: t }) }, "https://…")
+        }
+        else if (id === "lang") pageAction("lang", payload)
+        else if (id === "region") {
+            correctImages(g, { region: payload })
+            const im = Object.assign({}, gameSettingsPage.images); im.chosen = payload; gameSettingsPage.images = im
+        }
+        else if (id === "ss-search") nameEntry.open(qsTr("Search ScreenScraper"), g.name, function (name) { searchScreenScraper(g, name) }, qsTr("Game name"))
+        else if (id === "sound") gamePage.sound = payload
+        else if (id === "delete") deleteLocal(g)
+        else if (id === "unlink") unlink(g)
+    }
+    // The settings follow the version shown (a language can open another one).
+    onPageGameChanged: if (gameSettingsPage.visible) {
+        if (pageGame) loadGameSettings(pageGame, ["emulator", "emuoptions", "display", "cheats", "screenscraper"])
+        else gameSettingsPage.close()
     }
     function pageAction(id, payload) {
         const g = pageGame
         if (id === "back") { sfx.play("back"); closeGame(); return }
         if (!g) return
         if (id === "settings") gameSettings(g)
-        else if (id === "emulator") gameEmulatorMenu(g)
         else if (id === "download") download(g)
         else if (id === "link") link(g)
         else if (id === "unlink") unlink(g)
         else if (id === "delete") deleteLocal(g)
         else if (id === "cancel") cancelDownload(g)
         else if (id === "play") play(g)
-        else if (id === "cheats") cheatsMenu(g)
-        else if (id === "display") displayMenu(g)
         else if (id === "fav") setFavourite(g, !g.favourite)
-        else if (id === "images") imagesMenu(g)
         else if (id === "lang") {
             // A language picks the version launched for it.
             api("POST", "/api/v1/games/" + g.rom_id + "/prefs", { version: payload.version, emu_language: payload.code }, function (r, err) {
@@ -605,8 +570,7 @@ Window {
         else if (id === "channel") post({ update_channel: payload })
         else if (id === "auto") post({ update_auto: payload })
         else if (id === "savesync") post({ save_sync: payload })
-        else if (id === "sounds") prefs.sounds = payload
-        else if (id === "trailers") prefs.trailers = payload
+        else if (id === "pref") prefs[payload.key] = payload.value
         else if (id === "sf-all") api("POST", "/api/v1/system-files/from-romm", {}, function (r, err) {
             if (err) toasts.show(err, "error")
             else toasts.show(r.added > 0 ? qsTr("%n file(s) taken from RomM.", "", r.added) : qsTr("Nothing new to take from RomM."), "info")
@@ -721,23 +685,7 @@ Window {
             toasts.show(qsTr("Version %1 is available: Settings → Updates.").arg(u.available.version), "info")
         }
     }
-    // ScreenScraper corrections from the game page: the box region, or the right game.
-    function imagesMenu(g) {
-        api("GET", "/api/v1/games/" + g.rom_id + "/screenscraper", null, function (r) {
-            const items = []
-            const regions = r && r.regions ? r.regions : []
-            if (regions.length > 1) {
-                items.push({ id: "region:", label: qsTr("Box: automatic"), detail: !r.chosen ? qsTr("Current · follows the interface language") : qsTr("Follows the interface language") })
-                for (const x of regions) items.push({ id: "region:" + x, label: qsTr("Box: %1").arg(regionName(x)), detail: r.chosen === x ? qsTr("Current") : "" })
-            }
-            items.push({ id: "search", label: qsTr("Not the right game?"), detail: qsTr("Search ScreenScraper by name") })
-            items.push({ id: "close", label: qsTr("Close") })
-            menu.open(qsTr("Images · %1").arg(g.name), qsTr("From ScreenScraper"), items, function (c) {
-                if (c.indexOf("region:") === 0) correctImages(g, { region: c.slice(7) })
-                else if (c === "search") nameEntry.open(qsTr("Search ScreenScraper"), g.name, function (name) { searchScreenScraper(g, name) }, qsTr("Game name"))
-            })
-        })
-    }
+    // ScreenScraper corrections from the game settings: the box region, or the right game.
     function regionName(code) {
         const names = { eu: qsTr("Europe"), us: qsTr("USA"), jp: qsTr("Japan"), wor: qsTr("World"), fr: qsTr("France"), de: qsTr("Germany"),
                         uk: qsTr("United Kingdom"), es: qsTr("Spain"), it: qsTr("Italy"), au: qsTr("Australia"), kr: qsTr("Korea"), br: qsTr("Brazil"), ss: qsTr("ScreenScraper") }
@@ -973,7 +921,7 @@ Window {
 
     function dispatch(a, source) {
         inputCounts[source] = (inputCounts[source] || 0) + 1
-        if (source === "pad") graphite.input = "pad"
+        if (source === "pad") win.inputSeen = "pad"
         inputCountsChanged()
         lastInput = a + " via " + source
         if (touch() && screen === "library" && overlay === "") return
@@ -986,6 +934,7 @@ Window {
         if (overlay === "diag") return diag.handle(a)
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
         if (overlay === "settings") { if (a !== "a" && a !== "b") sfx.play("move"); return settingsPage.handle(a) }
+        if (gameSettingsPage.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return gameSettingsPage.handle(a) }
         if (overlay === "game") { if (a !== "a" && a !== "b") sfx.play("move"); return gamePage.handle(a) }
         if (screen === "server") return setup.handle(a)
         if (screen === "profiles") return picker.handle(a)
@@ -1178,7 +1127,7 @@ Window {
                 const verdict = f.fps_avg >= 58 && f.ms_p99 <= 25 ? "OK — smooth (NFR-16)" : f.fps_avg >= 50 ? "Watch — a few stutters" : "Insufficient"
                 diag.report = {
                     when: new Date().toISOString(), frontend: "qml", qt: win.qtVersion, platform: Qt.platform.pluginName,
-                    games: libModel.count, theme: "graphite", trailers: win.trailers,
+                    games: libModel.count, theme: "graphite", trailers: win.anyVideo,
                     frames: f, video_frames: videoFrames,
                     rss_mb: d ? Math.round(d.rss_mb) : null, vram_used_mb: d ? d.vram_used_mb : null,
                     verdict: verdict, diagnostics: d, game_mode_test: diag.vramTest
@@ -1197,7 +1146,9 @@ Window {
         // 1080 logical pixels high; the width follows the screen's shape (16:10, 21:9…) so there
         // are no bars, never narrower than 1600.
         // Inside the console's frame (ConsoleFrame).
-        readonly property real k: Math.min((win.height - 2 * win.frameMargin) / 1080, (win.width - 2 * win.frameMargin) / 1600)
+        // Interface size (prefs.uiScale, %) enlarges everything, never below 1600 wide.
+        readonly property real k: Math.min(Math.min((win.height - 2 * win.frameMargin) / 1080, (win.width - 2 * win.frameMargin) / 1600) * prefs.uiScale / 100,
+                                           (win.width - 2 * win.frameMargin) / 1600)
         width: (win.width - 2 * win.frameMargin) / k
         height: (win.height - 2 * win.frameMargin) / k
         anchors.centerIn: parent
@@ -1211,7 +1162,7 @@ Window {
             // Not behind the settings: they stand on a plain, neutral background.
             visible: !win.gameMode && win.overlay !== "settings" && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.focusedGame
-            trailers: win.trailers && win.screen === "library" && win.overlay === ""
+            trailers: win.bgVideos && win.screen === "library" && win.overlay === ""
             videoUrl: win.bgVideo
             paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible
             rest: win.videoRested
@@ -1225,7 +1176,7 @@ Window {
         anchors.fill: parent
         focus: true
         Keys.onPressed: (e) => {
-            graphite.input = "keyboard"   // hints now show keyboard keys
+            win.inputSeen = "keyboard"   // hints now show keyboard keys
             // Text entry: the physical keyboard types directly.
             if (win.textEntry && !menu.visible) {
                 const target = nameEntry.visible ? nameEntry : setup
@@ -1385,6 +1336,7 @@ Window {
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: prefs.showClock
                 text: win.playTimeText()
                 color: theme.fgSoft
                 font { family: theme.fontFamily; pixelSize: 20; features: { "tnum": 1 } }
@@ -1633,6 +1585,20 @@ Window {
         onAction: (id, payload) => win.pageAction(id, payload)
     }
 
+    GameSettingsPage {
+        id: gameSettingsPage
+        anchors.fill: parent
+        z: 24
+        theme: win.theme
+        game: win.pageGame
+        languages: gamePage.gameLanguages
+        currentLang: gamePage.currentLang
+        languageName: function (c) { return gamePage.languageName(c) }
+        regionName: function (c) { return win.regionName(c) }
+        hasVideo: gamePage.hasTrailer && win.trailers
+        videoSound: gamePage.sound
+        onAction: (id, payload) => win.gameSettingsAction(id, payload)
+    }
     SettingsPage {
         id: settingsPage
         anchors.fill: parent
@@ -1643,8 +1609,7 @@ Window {
         status: win.status
         version: win.coreVersion
         reportPaths: win.reportPaths
-        sounds: prefs.sounds
-        trailers: win.trailers
+        prefs: prefs
         onAction: (id, payload) => win.settingsAction(id, payload)
     }
 
@@ -1802,7 +1767,17 @@ Window {
         id: prefs
         category: "ui"
         property bool sounds: true
-        property bool trailers: true
+        property bool trailers: true          // older builds: one switch for every video (copied once to the two below)
+        property bool videosSplit: false
+        property bool bgVideo: true           // the selected game's video behind the library
+        property bool pageVideo: true         // videos on the game page
+        property int attractDelay: 5          // s without input before the video fills the screen; 0: never
+        property int attractRest: 60          // s of full-screen video before the games come back; 0: never
+        property int uiScale: 100             // interface size, %
+        property string motion: "normal"      // "normal" | "reduced"
+        property string soundVolume: "medium" // "low" | "medium" | "high"
+        property string prompts: "auto"       // buttons shown in the hints: "auto" | "pad" | "keyboard"
+        property bool showClock: true
         property string librarySort: "name"
         property string libraryGenre: ""
         property int notifiedBuild: 0
@@ -1816,7 +1791,8 @@ Window {
             if (h.api !== 1) { fatal = qsTr("Incompatible API version: core %1, UI 1").arg(h.api); return }
             coreVersion = h.core || ""
             // Safe mode: no video and no sound, the likeliest causes of repeated crashes.
-            if (safeMode) { prefs.trailers = false; prefs.sounds = false }
+            if (!prefs.videosSplit) { prefs.bgVideo = prefs.trailers; prefs.pageVideo = prefs.trailers; prefs.videosSplit = true }
+            if (safeMode) { prefs.bgVideo = false; prefs.pageVideo = false; prefs.sounds = false }
             refreshStatus(function (s) {
                 if (!s) { fatal = qsTr("Borne core unreachable"); return }
                 if (!s.server_url) showServer()

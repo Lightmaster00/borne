@@ -45,21 +45,26 @@ Since then:
   virtual mount (`~/.local/share/borne/mount`). Only the games you pick appear there; their files
   are read from RomM on demand with the profile's token, through a bounded cache. No NFS export,
   no root. Settings → Games chooses what A does by default (download or network).
-- **Settings**: how games are installed (download or network, with what each brings), network cache
-  size, updates, interface sounds and trailers.
+- **Settings**: grouped and explained section by section: how games are installed (download or
+  network, with what each brings) and saves, the interface (video behind the library on or off,
+  when it fills the screen and for how long, videos on the game page, interface size, animations,
+  clock, sounds and their volume, gamepad or keyboard buttons shown), the picture in games, emulators,
+  system files, game images, RomM, updates and help.
 - **Gamepad or keyboard only**: the mouse pointer stays hidden and mouse input is ignored.
 - **One look, "Halo"**: the games stand as physical cases in the shape of their console's
   retail case (small cases drawn larger so they stay readable) (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
-  stored by RomM: front, spine and back scans, fitted to their console's case (every case of a console has the same size). The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the spine's dominant colour on top and bottom (else the console's), cel shaded (flat light bands, a dark side and an edge rim in the console's colour, a crisp highlight, a paper or plastic grain) inside a thin ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, up to 60° to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 5 seconds without input (turning the box counts) the library fades out and leaves the video; after a minute the video pauses and the games come back, until another game is selected. A letter index and LT / RT jump through the alphabet; Y opens a
+  stored by RomM: front, spine and back scans, fitted to their console's case (every case of a console has the same size). The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the spine's dominant colour on top and bottom (else the console's), cel shaded (flat light bands, a dark side and a thin edge rim in the console's colour, a paper or plastic grain) under clear plastic that reflects a photo studio like glass, the reflections sliding over the cover as the case turns inside a thin ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, up to 60° to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 5 seconds without input (turning the box counts; adjustable or off in Settings → Interface) the library fades out and leaves the video; after a minute (adjustable) the video pauses and the games come back, until another game is selected. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The screen sits in a frame dressed in the selected console: its blank Steam grid from ScreenScraper, in the console's own colour, which also colours the buttons, the open console tab and the A key. Rounded shapes with a thin ink edge; titles in Fredoka, text in Manrope.
 - **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
   a language chooses the version launched (English → USA, Français → the European version that has
   French, 日本語 → Japan). Its actions: Play (or Download / Play from the network), the favourite,
-  and *Game settings*: the game's own emulator (else its console's), display, cheats, language,
-  cover, video sound and removal. Below: the summary and the screenshots side by side, then the
+  and *Game settings*, a page laid out like Settings where nothing closes by itself (B goes back one
+  level): the game's own emulator (else its console's) and that emulator's options for this game
+  (rewind, run-ahead, widescreen hacks, CPU overclock, docked mode…), picture, cheats, language,
+  cover and video sound, storage. Below: the summary and the screenshots side by side, then the
   credits (studios, series, release, players) on one line.
 - **Tabs and console pictures**: the tabs bar shows Installed, Favourites and Recent when they hold
   games, then one tab per console, named in Borne's display font (Game Boy and Game Boy Color share
@@ -99,8 +104,8 @@ Since then:
   before launching. Borne never downloads such files by itself.
 - **Display settings in Borne**: picture shape (the game's own, 4:3, 16:9, fill), rendering
   resolution for 3D consoles (1× to 4×), sharp, smoothed or CRT-TV pixels, whole-number scaling,
-  frame rate on screen — for all games or one console in Settings → Display, and per game on its
-  page (*Game settings → Display*). Borne writes them into each emulator's own configuration before the game
+  frame rate on screen — for all games or one console in Settings → Picture in games, and per game on its
+  page (*Game settings → Picture*). Borne writes them into each emulator's own configuration before the game
   starts (RetroArch, Dolphin, PCSX2, DuckStation, Eden, Citron, Ryubing, RPCS3, Xenia), and sets
   the controller of the standalone emulators on their first start (Dolphin, PCSX2, DuckStation).
 - **Saves on RomM**: each profile's saves follow it: taken from RomM before a game when newer,
