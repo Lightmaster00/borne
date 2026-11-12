@@ -1,0 +1,29 @@
+name: Qt for Linux
+description: >
+  Qt 6.8 to build against and to bundle, from the PySide6 wheels (essentials + add-ons), cached.
+  Outputs: qt-ess/PySide6 (tools: lupdate, qmllint) and qt/ (lib, plugins, qml merged).
+inputs:
+  version:
+    description: PySide6 / Qt version
+    default: "6.8.3"
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      id: cache
+      with:
+        path: |
+          qt
+          qt-ess
+        key: qt-linux-${{ inputs.version }}
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        pip download --no-deps -d qt-wheels "pyside6-essentials==${{ inputs.version }}" "pyside6-addons==${{ inputs.version }}"
+        mkdir -p qt-ess qt-add qt
+        python3 -m zipfile -e qt-wheels/PySide6_Essentials-*.whl qt-ess
+        python3 -m zipfile -e qt-wheels/PySide6_Addons-*.whl qt-add
+        cp -a qt-ess/PySide6/Qt/. qt/ && cp -a qt-add/PySide6/Qt/. qt/
+        rm -rf qt-wheels qt-add
+    - shell: bash
+      run: chmod +x qt-ess/PySide6/lupdate qt-ess/PySide6/qmllint 2>/dev/null || true

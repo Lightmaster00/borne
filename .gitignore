@@ -1,12 +1,14 @@
+# Build outputs
 core/target/
-build/
-out/
-qt/
-qt-*/
-qt-wheels/
+/build/
+/build-macos/
+/out/
+/out-macos/
+/dist/
+/notes.md
 *.tar.gz
+# Qt fetched for local builds (README / docs/DEVELOPMENT.md)
+/qt/
+/qt-*/
+/qt-wheels/
 __pycache__/
-build-macos/
-out-macos/
-dist/
-notes.md
