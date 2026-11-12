@@ -22,7 +22,7 @@ rand = "0.9"
 sha1_smol = "1"
 sha2 = "0.10"
 md-5 = "0.10"
-zip = { version = "4", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 sevenz-rust2 = { version = "0.25", default-features = false, features = ["util"] }
 quick-xml = "0.37"
 crc32fast = "1"
