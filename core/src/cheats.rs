@@ -25,6 +25,8 @@ use std::sync::Mutex;
 
 const LIBRETRO_ZIP: &str = "https://buildbot.libretro.com/assets/frontend/cheats.zip";
 const DS_REPO: &str = "DeadSkullzJr/NDS-i-Cheat-Databases";
+/// Switch: HamletDuFromage's database in Atmosphère's layout (contents/<title id>/cheats/<build id>.txt).
+const SWITCH_ZIP: &str = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents.zip";
 
 /// libretro database folders per console.
 fn libretro_folder(slug: &str) -> Option<&'static str> {
@@ -131,6 +133,20 @@ fn refresh(app: &Shared) {
                 }
                 Err(e) => errors.push(format!("DS: {e}")),
             }
+        }
+        // The Switch database is large: only with Switch games in the library.
+        let has_switch = app.db.platforms().iter().any(|p| p.slug == "switch");
+        if has_switch && !fresh(&dir.join("switch.stamp")) {
+            let part = dir.join("switch-contents.zip.part");
+            match crate::emuinstall::fetch_file(SWITCH_ZIP, &part)
+                .and_then(|_| std::fs::rename(&part, dir.join("switch-contents.zip")).map_err(|e| e.to_string()))
+            {
+                Ok(()) => {
+                    let _ = std::fs::write(dir.join("switch.stamp"), "");
+                }
+                Err(e) => errors.push(format!("Switch: {e}")),
+            }
+            let _ = std::fs::remove_file(&part);
         }
         for e in &errors {
             app.db.log("cheats", e);
@@ -299,6 +315,25 @@ fn game_cheats(app: &Shared, rom_id: i64) -> Result<(Vec<Cheat>, &'static str), 
         let xml = std::fs::read_to_string(root(app).join("nds-cheats.xml")).map_err(|_| "the DS cheat database is not here yet".to_string())?;
         return Ok((ds_cheats(&xml, &code, crc).unwrap_or_default(), "ds"));
     }
+    if g.platform_slug == "ps2" {
+        let file = ps2_file(app, &g.group_key);
+        let text = std::fs::read_to_string(&file).unwrap_or_default();
+        return Ok((parse_pnach(&text), "pnach"));
+    }
+    if g.platform_slug == "switch" {
+        let name = g.local_main.clone().unwrap_or_else(|| g.fs_name.clone());
+        let tid = crate::savesync::title_id(Path::new(&name)).ok_or("the game's title id is not in its file name ([0100…])")?;
+        let files = switch_cheat_files(app, &tid);
+        let mut list: Vec<Cheat> = vec![];
+        for (_, text) in &files {
+            for c in parse_atmosphere(text) {
+                if !c.name.is_empty() && !list.iter().any(|x| x.name == c.name) {
+                    list.push(c);
+                }
+            }
+        }
+        return Ok((list, "switch-cheats-db"));
+    }
     if g.platform_slug == "ngc" || g.platform_slug == "wii" {
         let rom = g.local_main.clone().filter(|m| Path::new(m).is_file()).ok_or("download the game first: its exact version is read from the file")?;
         let id = disc_id(Path::new(&rom)).ok_or("the game ID could not be read from this file")?;
@@ -358,6 +393,233 @@ pub fn retroarch_settings(app: &Shared, rom_id: i64, core_name: &str, rom: &Path
         out.push(("cheat_settings_path".into(), dir.to_string_lossy().into_owned()));
     }
     out
+}
+
+/// Standalone melonDS: the chosen DS cheats in "<game>.mch" next to the game file (melonDS's own
+/// cheat file), and cheats turned on in its settings when they exist.
+pub fn melonds_settings(app: &Shared, rom_id: i64, data: &Path, rom: &Path) -> Result<(), String> {
+    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    let mch = rom.with_extension("mch");
+    // melonDS 1.x keeps its settings in melonDS.toml (its config folder, per profile on Linux).
+    for file in [data.join("config/melonDS/melonDS.toml"), data.join("melonDS.toml")] {
+        if file.exists() {
+            let _ = crate::emulators::ini_set(&file, &[("Instance0", "EnableCheats", if on.is_empty() { "false" } else { "true" })]);
+        }
+    }
+    if on.is_empty() {
+        let _ = std::fs::remove_file(&mch);
+        return Ok(());
+    }
+    let cheats = game_cheats(app, rom_id).map(|c| c.0).unwrap_or_default();
+    let mut text = String::from("CAT Borne\n\n");
+    for c in cheats.iter().filter(|c| on.contains(&c.name)) {
+        text += &format!("CHEAT {}\nON\n{}\n\n", c.name, c.code.split('+').collect::<Vec<_>>().join("\n"));
+    }
+    std::fs::write(&mch, text).map_err(|e| e.to_string())
+}
+
+// ---------- PlayStation 2 ----------
+// No public cheat database is maintained for PCSX2: the user gives a .pnach for the game (a file
+// or a link); Borne lists its cheats and writes the chosen ones under the game's CRC.
+
+fn ps2_file(app: &Shared, group_key: &str) -> PathBuf {
+    let safe: String = group_key.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '_' }).collect();
+    root(app).join("ps2").join(format!("{safe}.pnach"))
+}
+
+/// Keeps the .pnach given for this game (a path on the computer, or a link).
+pub fn add_ps2_file(app: &Shared, group_key: &str, path: Option<&str>, url: Option<&str>) -> Result<usize, String> {
+    let dst = ps2_file(app, group_key);
+    std::fs::create_dir_all(dst.parent().unwrap()).map_err(|e| e.to_string())?;
+    let tmp = dst.with_extension("part");
+    match (path, url) {
+        (Some(p), _) => {
+            std::fs::copy(p, &tmp).map_err(|e| format!("{p}: {e}"))?;
+        }
+        (None, Some(u)) => crate::emuinstall::fetch_file(u, &tmp)?,
+        _ => return Err("a file or a link expected".into()),
+    }
+    let text = std::fs::read_to_string(&tmp).map_err(|_| "not a text file".to_string())?;
+    let n = parse_pnach(&text).len();
+    if n == 0 {
+        let _ = std::fs::remove_file(&tmp);
+        return Err("no cheat (patch= line) in this file".into());
+    }
+    std::fs::rename(&tmp, &dst).map_err(|e| e.to_string())?;
+    Ok(n)
+}
+
+/// Cheats of a .pnach: each "[Name]" section (pnach 2), else each run of patch lines under its
+/// comment ("// Name" or "comment=Name").
+pub fn parse_pnach(text: &str) -> Vec<Cheat> {
+    let mut out: Vec<Cheat> = vec![];
+    let mut name = String::new();
+    let mut open = false;
+    for line in text.lines() {
+        let l = line.trim();
+        if l.starts_with('[') && l.ends_with(']') {
+            name = l[1..l.len() - 1].trim().to_string();
+            open = false;
+        } else if let Some(c) = l.strip_prefix("//").or_else(|| l.strip_prefix("comment=")) {
+            if !c.trim().is_empty() {
+                name = c.trim().to_string();
+                open = false;
+            }
+        } else if l.starts_with("patch=") || l.starts_with("patch =") {
+            if !open || out.is_empty() {
+                let n = if name.is_empty() { format!("Cheat {}", out.len() + 1) } else { name.clone() };
+                out.push(Cheat { name: n, code: String::new() });
+                open = true;
+            }
+            let c = out.last_mut().unwrap();
+            c.code += l;
+            c.code.push('\n');
+        }
+    }
+    out
+}
+
+/// PCSX2: the chosen cheats in `cheats/<CRC>.pnach` (unnamed, so PCSX2 applies them all) and
+/// cheats turned on; the CRC is read from the game's main program on the disc (ISO only).
+pub fn ps2_settings(app: &Shared, rom_id: i64, data: &Path, rom: &Path, group_key: &str) -> Result<(), String> {
+    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    let ini = data.join("PCSX2/inis/PCSX2.ini");
+    crate::emulators::ini_set(&ini, &[("EmuCore", "EnableCheats", if on.is_empty() { "false" } else { "true" })])?;
+    if on.is_empty() {
+        return Ok(());
+    }
+    let crc = ps2_crc(rom).ok_or("the game's CRC could not be read (cheats need an .iso)")?;
+    let text = std::fs::read_to_string(ps2_file(app, group_key)).unwrap_or_default();
+    let mut out = String::from("// Cheats chosen in Borne\n");
+    for c in parse_pnach(&text).into_iter().filter(|c| on.contains(&c.name)) {
+        out += &format!("// {}\n{}", c.name, c.code);
+    }
+    let dir = data.join("PCSX2/cheats");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    std::fs::write(dir.join(format!("{crc:08X}.pnach")), out).map_err(|e| e.to_string())
+}
+
+/// PCSX2's CRC of a PS2 disc image: the XOR of the 32-bit words of the program SYSTEM.CNF boots.
+pub fn ps2_crc(iso: &Path) -> Option<u32> {
+    use std::io::{Seek, SeekFrom};
+    let mut f = std::fs::File::open(iso).ok()?;
+    let mut read = |lba: u64, len: usize| -> Option<Vec<u8>> {
+        let mut b = vec![0u8; len];
+        f.seek(SeekFrom::Start(lba * 2048)).ok()?;
+        f.read_exact(&mut b).ok()?;
+        Some(b)
+    };
+    let pvd = read(16, 2048)?;
+    if &pvd[1..6] != b"CD001" {
+        return None;
+    }
+    let le = |b: &[u8], o: usize| u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]]);
+    let (root_lba, root_len) = (le(&pvd, 156 + 2) as u64, le(&pvd, 156 + 10) as usize);
+    let root = read(root_lba, root_len.min(1 << 20))?;
+    let find = |dir: &[u8], want: &str| -> Option<(u64, usize)> {
+        let mut o = 0;
+        while o < dir.len() {
+            let n = dir[o] as usize;
+            if n == 0 {
+                o = (o / 2048 + 1) * 2048; // records do not cross sectors
+                continue;
+            }
+            let name_len = *dir.get(o + 32)? as usize;
+            let name = String::from_utf8_lossy(dir.get(o + 33..o + 33 + name_len)?).to_uppercase();
+            if name.split(';').next() == Some(want) {
+                return Some((le(dir, o + 2) as u64, le(dir, o + 10) as usize));
+            }
+            o += n;
+        }
+        None
+    };
+    let (cnf_lba, cnf_len) = find(&root, "SYSTEM.CNF")?;
+    let cnf = String::from_utf8_lossy(&read(cnf_lba, cnf_len.min(4096))?).to_string();
+    let boot = cnf.lines().find(|l| l.trim_start().starts_with("BOOT2"))?.split('=').nth(1)?.trim().to_string();
+    let elf_name = boot.rsplit(['\\', ':']).next()?.split(';').next()?.to_uppercase();
+    let (elf_lba, elf_len) = find(&root, &elf_name)?;
+    let elf = read(elf_lba, elf_len.min(64 << 20))?;
+    Some(elf.chunks(4).fold(0u32, |acc, w| {
+        let mut b = [0u8; 4];
+        b[..w.len()].copy_from_slice(w);
+        acc ^ u32::from_le_bytes(b)
+    }))
+}
+
+// ---------- Switch ----------
+
+/// The database's cheat files for this title: (build id, text), one per version of the game.
+fn switch_cheat_files(app: &Shared, tid: &str) -> Vec<(String, String)> {
+    let zip_path = root(app).join("switch-contents.zip");
+    let Ok(f) = std::fs::File::open(&zip_path) else { return vec![] };
+    let Ok(mut z) = zip::ZipArchive::new(f) else { return vec![] };
+    let want = format!("/{}/cheats/", tid.to_lowercase());
+    let names: Vec<String> = z.file_names().filter(|n| format!("/{}", n.to_lowercase()).contains(&want) && n.to_lowercase().ends_with(".txt")).map(String::from).collect();
+    let mut out = vec![];
+    for n in names {
+        let Ok(mut e) = z.by_name(&n) else { continue };
+        let mut text = String::new();
+        if e.read_to_string(&mut text).is_ok() {
+            let bid = Path::new(&n).file_stem().map(|s| s.to_string_lossy().to_uppercase()).unwrap_or_default();
+            out.push((bid, text));
+        }
+    }
+    out
+}
+
+/// Atmosphère cheat text: "[Name]" then its code lines; "{Master}" codes are always kept with
+/// any cheat (their code holds "{master}").
+pub fn parse_atmosphere(text: &str) -> Vec<Cheat> {
+    let mut out: Vec<Cheat> = vec![];
+    for line in text.lines() {
+        let l = line.trim();
+        if l.starts_with('[') && l.ends_with(']') {
+            out.push(Cheat { name: l[1..l.len() - 1].trim().to_string(), code: String::new() });
+        } else if l.starts_with('{') && l.ends_with('}') {
+            out.push(Cheat { name: String::new(), code: "{master}\n".into() });
+        } else if !l.is_empty() {
+            if let Some(c) = out.last_mut() {
+                c.code += l;
+                c.code.push('\n');
+            }
+        }
+    }
+    out
+}
+
+/// Eden, Citron, Ryujinx: the chosen cheats written for every version of the game in the
+/// emulator's mod folder (Borne cannot read the game's build id, so each version gets its file).
+pub fn switch_settings(app: &Shared, rom_id: i64, program: &str, data: &Path, rom: &Path) -> Result<(), String> {
+    let Some(tid) = crate::savesync::title_id(rom) else { return Ok(()) };
+    let on: Vec<String> = app.db.setting(&enabled_key(&profile(app), rom_id)).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+    let dir = match program {
+        "ryubing" => data.join("mods/contents").join(tid.to_lowercase()).join("Borne").join("cheats"),
+        _ => data.join("load").join(&tid).join("Borne").join("cheats"),
+    };
+    let _ = std::fs::remove_dir_all(&dir);
+    if on.is_empty() {
+        return Ok(());
+    }
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let mut enabled = String::new();
+    for (bid, text) in switch_cheat_files(app, &tid) {
+        let mut out = String::new();
+        for c in parse_atmosphere(&text) {
+            if c.name.is_empty() {
+                out += "{Master Code}\n";
+                out += &c.code.replace("{master}\n", "");
+            } else if on.contains(&c.name) {
+                out += &format!("[{}]\n{}\n", c.name, c.code);
+                enabled += &format!("{bid}-{}\n", c.name);
+            }
+        }
+        std::fs::write(dir.join(format!("{bid}.txt")), out).map_err(|e| e.to_string())?;
+    }
+    // Ryujinx turns on only the cheats listed in enabled.txt.
+    if program == "ryubing" {
+        std::fs::write(dir.join("enabled.txt"), enabled).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 // ---------- Dolphin ----------
@@ -437,6 +699,47 @@ pub fn dolphin_settings(app: &Shared, rom_id: i64, userdir: &Path, rom: &Path) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pnach_cheats_and_crc() {
+        let c = parse_pnach("gametitle=Test\n[Infinite HP]\npatch=1,EE,00100000,word,00000001\n// Max money\npatch=1,EE,00200000,word,00000002\npatch=1,EE,00200004,word,00000003\n");
+        assert_eq!(c.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(), vec!["Infinite HP", "Max money"]);
+        assert_eq!(c[1].code.lines().count(), 2);
+        // A tiny ISO: PVD at sector 16, root at sector 18 holding SYSTEM.CNF (sector 19) and the ELF (sector 20).
+        let mut iso = vec![0u8; 2048 * 21];
+        let pvd = 16 * 2048;
+        iso[pvd] = 1;
+        iso[pvd + 1..pvd + 6].copy_from_slice(b"CD001");
+        iso[pvd + 158..pvd + 162].copy_from_slice(&18u32.to_le_bytes());
+        iso[pvd + 166..pvd + 170].copy_from_slice(&2048u32.to_le_bytes());
+        let cnf = b"BOOT2 = cdrom0:\\SLUS_123.45;1\r\nVER = 1.00\r\n";
+        iso[19 * 2048..19 * 2048 + cnf.len()].copy_from_slice(cnf);
+        let elf: Vec<u8> = [0x11111111u32, 0x22222222, 0x44444444].iter().flat_map(|w| w.to_le_bytes()).collect();
+        iso[20 * 2048..20 * 2048 + elf.len()].copy_from_slice(&elf);
+        let mut o = 18 * 2048;
+        for (name, lba, len) in [("SYSTEM.CNF;1", 19u32, cnf.len() as u32), ("SLUS_123.45;1", 20, elf.len() as u32)] {
+            let rec = 33 + name.len() + (name.len() + 1) % 2;
+            iso[o] = rec as u8;
+            iso[o + 2..o + 6].copy_from_slice(&lba.to_le_bytes());
+            iso[o + 10..o + 14].copy_from_slice(&len.to_le_bytes());
+            iso[o + 32] = name.len() as u8;
+            iso[o + 33..o + 33 + name.len()].copy_from_slice(name.as_bytes());
+            o += rec;
+        }
+        let p = std::env::temp_dir().join(format!("borne-ps2-{}.iso", std::process::id()));
+        std::fs::write(&p, &iso).unwrap();
+        assert_eq!(ps2_crc(&p), Some(0x77777777));
+        let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn atmosphere_cheats() {
+        let c = parse_atmosphere("{Master Code}\n04000000 00000000\n\n[Infinite HP]\n04000000 11111111\n[Max money]\n04000000 22222222\n");
+        assert_eq!(c.len(), 3);
+        assert_eq!(c[0].name, "");
+        assert_eq!(c[1].name, "Infinite HP");
+        assert_eq!(c[1].code, "04000000 11111111\n");
+    }
 
     #[test]
     fn dolphin_codes_and_disc_ids() {

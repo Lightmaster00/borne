@@ -411,6 +411,10 @@
         <source>Images</source>
         <translation>Images</translation>
     </message>
+    <message>
+        <source>More…</source>
+        <translation>Plus…</translation>
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -1425,6 +1429,38 @@
     <message>
         <source>No “%1” game here. Change the genre in Select → Sort and filter.</source>
         <translation>Aucun jeu « %1 » ici. Changez le genre dans Select → Trier et filtrer.</translation>
+    </message>
+    <message>
+        <source>Add a .pnach file…</source>
+        <translation>Ajouter un fichier .pnach…</translation>
+    </message>
+    <message>
+        <source>From this computer</source>
+        <translation>Depuis cet ordinateur</translation>
+    </message>
+    <message>
+        <source>Type the file's path…</source>
+        <translation>Taper le chemin du fichier…</translation>
+    </message>
+    <message>
+        <source>From a link…</source>
+        <translation>Depuis un lien…</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n cheat(s) found in the file.</source>
+        <translation><numerusform>%n cheat trouvé dans le fichier.</numerusform><numerusform>%n cheats trouvés dans le fichier.</numerusform></translation>
+    </message>
+    <message>
+        <source>Path of the .pnach file</source>
+        <translation>Chemin du fichier .pnach</translation>
+    </message>
+    <message>
+        <source>Link to the .pnach file</source>
+        <translation>Lien vers le fichier .pnach</translation>
+    </message>
+    <message>
+        <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
+        <translation>Les cheats PS2 viennent d’un fichier .pnach que vous fournissez pour ce jeu (le format de PCSX2).</translation>
     </message>
 </context>
 <context>

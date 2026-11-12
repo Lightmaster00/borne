@@ -379,19 +379,38 @@ Window {
     function cheatsMenu(g, at) {
         api("GET", "/api/v1/games/" + g.rom_id + "/cheats", null, function (c, err) {
             if (err || !c) { toasts.show(err || qsTr("Cheats unavailable"), "error"); return }
+            // PS2: no public database; the player gives a .pnach for the game.
+            const ps2 = g.platform_slug === "ps2"
+            const pnachItems = ps2 ? [{ id: "pnach-pick", label: qsTr("Add a .pnach file…"), detail: qsTr("From this computer") },
+                                      { id: "pnach-path", label: qsTr("Type the file's path…") },
+                                      { id: "pnach-url", label: qsTr("From a link…") }] : []
+            function pnach(id) {
+                const send = function (body) {
+                    api("POST", "/api/v1/games/" + g.rom_id + "/cheats/file", body, function (r, err) {
+                        if (err) toasts.show(err, "error")
+                        else { toasts.show(qsTr("%n cheat(s) found in the file.", "", r.cheats), "info"); cheatsMenu(g) }
+                    })
+                }
+                if (id === "pnach-pick") send({ pick: true })
+                else if (id === "pnach-path") nameEntry.open(qsTr("Path of the .pnach file"), "", function (t) { send({ path: t }) }, "/home/…/game.pnach")
+                else if (id === "pnach-url") nameEntry.open(qsTr("Link to the .pnach file"), "", function (t) { send({ url: t }) }, "https://…")
+            }
             if (!c.cheats.length) {
-                const why = c.updating ? qsTr("Downloading the cheat databases… try again in a moment.")
+                const why = ps2 ? qsTr("PS2 cheats come from a .pnach file you give for this game (PCSX2's format).")
+                          : c.updating ? qsTr("Downloading the cheat databases… try again in a moment.")
                           : c.error ? c.error : qsTr("No cheats for this version of the game in the public databases.")
-                menu.open(qsTr("Cheats"), why, [{ id: "close", label: qsTr("Close") }], function () {})
+                menu.open(qsTr("Cheats"), why, pnachItems.concat([{ id: "close", label: qsTr("Close") }]), function (id) { pnach(id) })
                 return
             }
             const on = c.cheats.filter(x => x.on).map(x => x.name)
             const items = c.cheats.map((x, i) => ({ id: String(i), label: (x.on ? "● " : "○ ") + x.name }))
             items.push({ id: "none", label: qsTr("Turn all off"), disabled: on.length === 0 })
+            for (const p of pnachItems) items.push(p)
             items.push({ id: "close", label: qsTr("Close") })
             const sub = qsTr("%n cheat(s) on. They apply the next time the game starts.", "", on.length)
             menu.open(qsTr("Cheats · %1").arg(g.name), sub, items, function (id) {
                 if (id === "close") return
+                if (id.indexOf("pnach-") === 0) { pnach(id); return }
                 let next = on.slice()
                 let idx = items.findIndex(x => x.id === id)
                 if (id === "none") next = []
@@ -432,7 +451,13 @@ Window {
         const g = pageGame
         if (id === "back") { sfx.play("back"); closeGame(); return }
         if (!g) return
-        if (id === "download") download(g)
+        if (id === "more") {
+            menu.open(g.name, "", payload.concat([{ id: "close", label: qsTr("Close") }]), function (c) {
+                if (c === "sound") gamePage.sound = !gamePage.sound
+                else if (c !== "close") pageAction(c, null)
+            })
+        }
+        else if (id === "download") download(g)
         else if (id === "link") link(g)
         else if (id === "unlink") unlink(g)
         else if (id === "delete") deleteLocal(g)

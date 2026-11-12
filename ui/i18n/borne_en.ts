@@ -411,6 +411,10 @@
         <source>Images</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -1424,6 +1428,38 @@
     </message>
     <message>
         <source>No “%1” game here. Change the genre in Select → Sort and filter.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add a .pnach file…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From this computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Type the file's path…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From a link…</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n cheat(s) found in the file.</source>
+        <translation><numerusform>%n cheat found in the file.</numerusform><numerusform>%n cheats found in the file.</numerusform></translation>
+    </message>
+    <message>
+        <source>Path of the .pnach file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Link to the .pnach file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PS2 cheats come from a .pnach file you give for this game (PCSX2's format).</source>
         <translation type="unfinished" />
     </message>
 </context>

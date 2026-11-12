@@ -6,7 +6,7 @@ priority: **P0** blocks everyday use, **P1** next, **P2** later.
 
 State of the checks (2026-11-12):
 
-- Core unit tests: 53 passed.
+- Core unit tests: 58 passed.
 - Integration test against a real RomM server: 98 checks passed (pairing with a code or with the
   account's password, the server's accounts listed for an administrator, sync, library, versions
   and languages, downloads with resume and integrity checks, network mount, game details, media,
@@ -66,16 +66,19 @@ Select + Start to quit.
 
 Next:
 - Cheats: done for RetroArch consoles (libretro database, exact dump name), the DS
-  (DeadSkullzJr's cheats.xml, game ID from the header) and Dolphin (the codes Dolphin ships in
-  Sys/GameSettings, enabled in the game's INI of Borne's Dolphin folder, game ID read from ISO,
-  RVZ, WIA, CISO, WBFS). Still to do: PCSX2 (`.pnach` by serial and CRC: no public database chosen
-  yet), standalone melonDS (`.mch`), Switch emulators (`load/<title id>/<name>/cheats`). Check on
-  the real RetroArch that the `.cht` is loaded with the game.
+  (DeadSkullzJr's cheats.xml, game ID from the header; through RetroArch, or standalone melonDS
+  with a `.mch` next to the game), GameCube and Wii (the codes Dolphin ships, game ID read from
+  ISO, RVZ, WIA, CISO, WBFS), Switch (HamletDuFromage's switch-cheats-db, by title id; every
+  version's file written since the build id cannot be read: Eden / Citron `load/`, Ryujinx
+  `mods/` with `enabled.txt`) and PS2 (no public database: the player gives a `.pnach` for the
+  game; the chosen cheats are written under the CRC read from the ISO's boot program). To check on
+  the real emulators: that each picks its file up, and Ryujinx's `enabled.txt` format.
 - Display settings: done for all games, per console and per game for RetroArch, Dolphin, PCSX2,
   DuckStation, Eden, Citron, Ryubing (once its Config.json exists), RPCS3, Xenia. Controllers:
-  Dolphin, PCSX2, DuckStation, Eden / Citron (Pro Controller on the SDL pad, by its GUID) and RPCS3
-  (SDL handler) set on their first start. Still to do: Ryubing and Xenia controllers. All of these
-  formats must be checked on the real emulators.
+  Dolphin, PCSX2, DuckStation, Eden / Citron (Pro Controller on the SDL pad, by its GUID), Ryujinx
+  (Pro Controller on the SDL pad in its Config.json) and RPCS3 (SDL handler) set on their first
+  start; Xenia finds gamepads by itself. All of these formats must be checked on the real
+  emulators.
 - System files: done (from a file, a link or RomM; placed for RetroArch, PCSX2, Eden, Citron,
   Ryubing keys and firmware, RPCS3 firmware, shadPS4 system modules); BIOS dumps checked against
   known MD5s (model and region shown, "(?)" for an unknown dump).
@@ -88,10 +91,12 @@ Next:
 Done (`savesync.rs`, per profile, newest wins, replaced copies archived, pending sends retried):
 RetroArch battery saves and save states; Dolphin, PCSX2 and DuckStation with a memory card per
 game; Eden and Citron save folders per title (zip); RPCS3 save folders by serial; shadPS4 save
-folders by title id (from param.sfo). Saves never mix between profiles: where an emulator keeps one
+folders by title id (from param.sfo); Ryujinx save folders found by the program id in their
+extra data; Xenia save folders by the title id read from default.xex (game folder, .xex or
+ISO). Saves never mix between profiles: where an emulator keeps one
 save folder for the whole Mac (Eden, Citron, Ryujinx, RPCS3, PCSX2), the previous profile's are set
-aside before a game. Still to do: Ryubing and Xenia saves (their folders are named by internal
-indexes, not by game); RomM's Device Sync; a conflict screen when both sides changed close together.
+aside before a game. Ryujinx and Xenia saves exist once the game has saved on that computer. Still
+to do: RomM's Device Sync; a conflict screen when both sides changed close together.
 
 ## 4. Library and navigation
 

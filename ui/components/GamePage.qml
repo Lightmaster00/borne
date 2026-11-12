@@ -62,13 +62,16 @@ Item {
         dl.primary = true
         return [dl, net]
     }
-    readonly property var allActions: {
-        let a = actions
-        if (game && !busy) a = a.concat([{ id: "fav", label: game.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites") }])
-        if (game && !busy) a = a.concat([{ id: "images", label: qsTr("Images") }])
-        if (hasTrailer && trailers) a = a.concat([{ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") }])
+    // The secondary actions: shown in the row when there is room, else behind "More…".
+    readonly property var moreActions: {
+        let a = []
+        if (game && !busy) a.push({ id: "fav", label: game.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites") })
+        if (game && !busy) a.push({ id: "images", label: qsTr("Images") })
+        if (hasTrailer && trailers) a.push({ id: "sound", label: page.sound ? qsTr("Mute the trailer") : qsTr("Trailer sound") })
         return a
     }
+    readonly property var allActions: actions.length + moreActions.length <= 5 ? actions.concat(moreActions)
+                                    : actions.concat([{ id: "more", label: qsTr("More…") }])
 
     // Credits: from RomM (studios, series), with the year and the number of players.
     readonly property var credits: {
@@ -155,6 +158,7 @@ Item {
             const a = allActions[i]
             if (!a || a.disabled) return
             if (a.id === "sound") sound = !sound
+            else if (a.id === "more") page.action("more", moreActions)
             else page.action(a.id, null)
         } else if (name === "language") {
             const l = gameLanguages[i]

@@ -376,6 +376,35 @@ pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>
             let refs: Vec<(&str, &str, &str)> = v.iter().map(|(k, x)| ("Controls", k.as_str(), x.as_str())).collect();
             ini(&path, &refs)
         }
+        // Ryujinx: player 1 as a Pro Controller on the SDL pad, in the Config.json Ryujinx made on
+        // its first start (kept if the user already set a gamepad).
+        "ryubing" => {
+            let (Some(_), Some(guid)) = (pad, guid) else { return Ok(()) };
+            let path = data.join("Config.json");
+            let Ok(text) = std::fs::read_to_string(&path) else { return Ok(()) };
+            let Ok(mut cfg) = serde_json::from_str::<serde_json::Value>(&text) else { return Ok(()) };
+            let list = cfg["input_config"].as_array().cloned().unwrap_or_default();
+            if list.iter().any(|c| c["backend"].as_str() == Some("GamepadSDL2")) {
+                return Ok(());
+            }
+            let Some(id) = dotnet_guid(guid) else { return Ok(()) };
+            let pad_cfg = serde_json::json!({
+                "left_joycon_stick": { "joystick": "Left", "invert_stick_x": false, "invert_stick_y": false, "rotate90_cw": false, "stick_button": "LeftStick" },
+                "right_joycon_stick": { "joystick": "Right", "invert_stick_x": false, "invert_stick_y": false, "rotate90_cw": false, "stick_button": "RightStick" },
+                "deadzone_left": 0.1, "deadzone_right": 0.1, "range_left": 1.0, "range_right": 1.0, "trigger_threshold": 0.5,
+                "motion": { "motion_backend": "GamepadDriver", "sensitivity": 100, "gyro_deadzone": 1, "enable_motion": true },
+                "rumble": { "strong_rumble": 1.0, "weak_rumble": 1.0, "enable_rumble": false },
+                "left_joycon": { "button_minus": "Back", "button_l": "LeftShoulder", "button_zl": "LeftTrigger", "button_sl": "Unbound", "button_sr": "Unbound",
+                                 "dpad_up": "DpadUp", "dpad_down": "DpadDown", "dpad_left": "DpadLeft", "dpad_right": "DpadRight" },
+                "right_joycon": { "button_plus": "Start", "button_r": "RightShoulder", "button_zr": "RightTrigger", "button_sl": "Unbound", "button_sr": "Unbound",
+                                  "button_x": "Y", "button_b": "A", "button_y": "X", "button_a": "B" },
+                "version": 1, "backend": "GamepadSDL2", "id": format!("0-{id}"), "controller_type": "ProController", "player_index": "Player1"
+            });
+            let mut rest: Vec<serde_json::Value> = list.into_iter().filter(|c| c["player_index"].as_str() != Some("Player1")).collect();
+            rest.insert(0, pad_cfg);
+            cfg["input_config"] = serde_json::Value::Array(rest);
+            std::fs::write(&path, serde_json::to_string_pretty(&cfg).unwrap_or_default()).map_err(|e| e.to_string())
+        }
         // RPCS3: player 1 on the SDL handler, its default mapping for that pad.
         "rpcs3" => {
             let Some(pad) = pad else { return Ok(()) };
@@ -389,6 +418,18 @@ pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>
         }
         _ => Ok(()),
     }
+}
+
+/// An SDL GUID (32 hex digits) as .NET writes a Guid made from those 16 bytes (the first three
+/// groups little endian), the form Ryujinx names gamepads with.
+fn dotnet_guid(sdl: &str) -> Option<String> {
+    if sdl.len() != 32 || !sdl.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    let b: Vec<u8> = (0..16).map(|i| u8::from_str_radix(&sdl[2 * i..2 * i + 2], 16).unwrap()).collect();
+    let h = |r: &[u8]| r.iter().map(|x| format!("{x:02x}")).collect::<String>();
+    let rev = |r: &[u8]| h(&r.iter().rev().cloned().collect::<Vec<u8>>());
+    Some(format!("{}-{}-{}-{}-{}", rev(&b[0..4]), rev(&b[4..6]), rev(&b[6..8]), h(&b[8..10]), h(&b[10..16])))
 }
 
 #[cfg(test)]
@@ -422,6 +463,20 @@ mod tests {
         let t = std::fs::read_to_string(&p).unwrap();
         assert!(t.contains("  Resolution Scale: 300") && t.contains("  Aspect ratio: 16:9") && t.contains("    Adapter:") && t.contains("Audio:\n  Renderer: Cubeb"));
         let _ = std::fs::remove_file(p);
+    }
+
+    #[test]
+    fn ryujinx_pad() {
+        assert_eq!(dotnet_guid("030000005e0400008e02000014010000").as_deref(), Some("00000003-045e-0000-8e02-000014010000"));
+        let d = std::env::temp_dir().join(format!("borne-ryu-pad-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        std::fs::write(d.join("Config.json"), r#"{"version": 50, "input_config": [{"backend": "WindowKeyboard", "player_index": "Player1"}]}"#).unwrap();
+        controllers("ryubing", &d, &d, Some("Pad"), Some("030000005e0400008e02000014010000")).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(d.join("Config.json")).unwrap()).unwrap();
+        assert_eq!(v["input_config"][0]["id"], "0-00000003-045e-0000-8e02-000014010000");
+        assert_eq!(v["input_config"].as_array().unwrap().len(), 1);
+        assert_eq!(v["version"], 50);
+        let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]

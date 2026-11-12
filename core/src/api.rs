@@ -16,6 +16,7 @@
 //!   DELETE /api/v1/profiles/<id>
 //!   POST   /api/v1/profiles/<id>/activate
 //!   POST   /api/v1/profiles/<id>/pair            starts RomM pairing (code approved from the phone)
+//!   POST   /api/v1/games/<id>/cheats/file        PS2: the game's .pnach {path} | {url} | {pick}
 //!   GET    /api/v1/screenscraper/report          per console: found, not found (names), not looked up
 //!   GET    /api/v1/screenscraper/search?q=&platform=   ScreenScraper games by name, to correct a match
 //!   GET|POST /api/v1/games/<id>/screenscraper     box regions available / correct {ss_id} or {region}
@@ -849,6 +850,16 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             }
             Err(_) => err(req, 400, "invalid identifier"),
         },
+        // PS2: the .pnach giving the game's cheats {path} | {url} | {pick}.
+        (Method::Post, ["api", "v1", "games", id, "cheats", "file"]) => {
+            let b = body_json(&mut req);
+            let Some(g) = id.parse::<i64>().ok().and_then(|i| app.db.game(i)) else { return err(req, 404, "unknown game") };
+            let picked = if b["pick"].as_bool().unwrap_or(false) { crate::systemfiles::pick_file("Borne – .pnach").ok() } else { None };
+            match crate::cheats::add_ps2_file(app, &g.group_key, picked.as_deref().or(b["path"].as_str()), b["url"].as_str()) {
+                Ok(n) => ok(req, json!({ "cheats": n })),
+                Err(e) => err(req, 400, &e),
+            }
+        }
         (Method::Get, ["api", "v1", "system-files"]) => ok(req, crate::systemfiles::status(app)),
         (Method::Post, ["api", "v1", "system-files", console, item]) => {
             let b = body_json(&mut req);

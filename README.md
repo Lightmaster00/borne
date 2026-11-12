@@ -103,13 +103,15 @@ Since then:
   (Settings → Games). Covered: RetroArch battery saves and save states (with the core's name,
   like RomM's own player), a memory card per game for Dolphin, PCSX2 and DuckStation, the Switch
   save folder of each game (Eden, Citron), the PS3 save folders (RPCS3, by the serial in the
-  game's name) and the PS4 save folders (shadPS4, by title id). Profiles never share saves, even
+  game's name), the PS4 save folders (shadPS4, by title id), Ryujinx's and Xenia's save folders. Profiles never share saves, even
   where an emulator keeps one save folder for the whole computer.
 - **Cheats**: *Cheats* on the game page lists the codes of that exact version of the game, from
   public databases — the libretro cheat database for the consoles run by RetroArch (matched by
   the dump's full name, region and revision included) and DeadSkullzJr's NDS(i) database for the
   DS (matched by the game ID read from the cartridge header: game code and header CRC), and for
-  GameCube and Wii the Action Replay and Gecko codes Dolphin ships (matched by the disc's game ID). Turn them
+  GameCube and Wii the Action Replay and Gecko codes Dolphin ships (matched by the disc's game ID),
+  for the Switch HamletDuFromage's switch-cheats-db (by title id), and for the PS2 a `.pnach` file
+  you give for the game (no public database exists). Turn them
   on per profile; they apply the next time the game starts.
 
 ## Try it on a Mac (Apple Silicon)

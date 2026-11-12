@@ -58,6 +58,81 @@ pub fn ps3_serial(rom: &Path) -> Option<String> {
     })
 }
 
+/// An Xbox 360 game's title id (8 hex digits), from its default.xex: a game folder, a .xex, or
+/// an ISO (XDVDFS at any of the usual partition offsets).
+pub fn xenia_title_id(rom: &Path) -> Option<String> {
+    use std::io::{Read, Seek, SeekFrom};
+    let xex: Vec<u8> = if rom.is_dir() {
+        std::fs::read(rom.join("default.xex")).ok()?
+    } else if rom.extension().map(|e| e.eq_ignore_ascii_case("xex")).unwrap_or(false) {
+        std::fs::read(rom).ok()?
+    } else {
+        let mut f = std::fs::File::open(rom).ok()?;
+        let mut at = |o: u64, n: usize| -> Option<Vec<u8>> {
+            let mut b = vec![0u8; n];
+            f.seek(SeekFrom::Start(o)).ok()?;
+            f.read_exact(&mut b).ok()?;
+            Some(b)
+        };
+        let mut found = None;
+        for base in [0u64, 0xFD90000, 0x2080000, 0x18300000] {
+            let Some(vd) = at(base + 0x10000, 0x20) else { continue };
+            if &vd[..20] != b"MICROSOFT*XBOX*MEDIA" {
+                continue;
+            }
+            let le = |b: &[u8], o: usize| u32::from_le_bytes([b[o], b[o + 1], b[o + 2], b[o + 3]]) as u64;
+            let (sector, size) = (le(&vd, 0x14), le(&vd, 0x18) as usize);
+            let dir = at(base + sector * 2048, size.min(1 << 20))?;
+            let mut o = 0;
+            while o + 14 <= dir.len() {
+                if dir[o] == 0xFF && dir[o + 1] == 0xFF {
+                    o = (o / 2048 + 1) * 2048;
+                    continue;
+                }
+                let n = dir[o + 13] as usize;
+                let name = String::from_utf8_lossy(dir.get(o + 14..o + 14 + n)?).to_lowercase();
+                if name == "default.xex" {
+                    let (s2, len) = (le(&dir, o + 4), le(&dir, o + 8) as usize);
+                    found = at(base + s2 * 2048, len.min(1 << 20).max(0x1000));
+                    break;
+                }
+                o = (o + 14 + n + 3) & !3;
+            }
+            if found.is_some() {
+                break;
+            }
+        }
+        found?
+    };
+    let be = |o: usize| xex.get(o..o + 4).map(|b| u32::from_be_bytes([b[0], b[1], b[2], b[3]]));
+    if xex.get(0..4)? != b"XEX2" {
+        return None;
+    }
+    let count = be(0x14)? as usize;
+    for i in 0..count.min(64) {
+        let (key, val) = (be(0x18 + i * 8)?, be(0x1C + i * 8)?);
+        if key == 0x0004_0006 {
+            return be(val as usize + 0xC).filter(|t| *t != 0).map(|t| format!("{t:08X}"));
+        }
+    }
+    None
+}
+
+/// Ryujinx's save folder of a game: the numbered folder whose ExtraData0/1 starts with the
+/// game's program id (the save's attribute, little endian), for an account save (type 1).
+pub fn ryujinx_save_dir(root: &Path, program_id: u64) -> Option<PathBuf> {
+    for e in std::fs::read_dir(root).ok()?.flatten() {
+        let dir = e.path();
+        for x in ["ExtraData0", "ExtraData1"] {
+            let Ok(b) = std::fs::read(dir.join(x)) else { continue };
+            if b.len() >= 0x21 && u64::from_le_bytes(b[0..8].try_into().unwrap()) == program_id && b[0x20] == 1 {
+                return Some(dir);
+            }
+        }
+    }
+    None
+}
+
 /// A PS4 game's title id (CUSA…), from its param.sfo (the game folder, or the folder of its
 /// eboot.bin).
 pub fn ps4_title_id(rom: &Path) -> Option<String> {
@@ -129,6 +204,31 @@ pub fn items(app: &Shared, profile: &str, system: &str, program: &str, rom: &Pat
                 .collect(),
             None => vec![],
         },
+        // Xenia: the game's saves (content/<profile>/<title id>/00000001), by the title id read
+        // from its program; the game must have saved once on this computer.
+        "xenia" => match xenia_title_id(rom) {
+            Some(tid) => {
+                let content = data.join("content");
+                let mut found = content.join(&tid).join("00000001");
+                for e in std::fs::read_dir(&content).into_iter().flatten().flatten() {
+                    let d = e.path().join(&tid).join("00000001");
+                    if d.is_dir() {
+                        found = d;
+                        break;
+                    }
+                }
+                if found.is_dir() { vec![Item { kind: "saves", local: found, remote_name: format!("{tid}.zip"), folder: true }] } else { vec![] }
+            }
+            None => vec![],
+        },
+        // Ryujinx: the save folder whose extra data names the game's title id (folders are
+        // numbered; the game must have made its save once on this computer).
+        "ryubing" => match title_id(rom).and_then(|t| u64::from_str_radix(&t, 16).ok().map(|n| (t, n))) {
+            Some((tid, n)) => ryujinx_save_dir(&data.join("bis/user/save"), n)
+                .map(|dir| vec![Item { kind: "saves", local: dir, remote_name: format!("{tid}.zip"), folder: true }])
+                .unwrap_or_default(),
+            None => vec![],
+        },
         // shadPS4: the game's save folder, named after its title id (CUSA…).
         "shadps4" => match ps4_title_id(rom) {
             Some(id) => {
@@ -154,6 +254,7 @@ fn save_root(program: &str) -> Option<&'static str> {
         "eden" | "citron" => "nand/user/save",
         "ryubing" => "bis/user/save",
         "shadps4" => "savedata",
+        "xenia" => "content",
         _ => return None,
     })
 }
@@ -528,6 +629,39 @@ mod tests {
         ];
         assert_eq!(newest_remote(&saves, "game (world).srm").unwrap()["id"], 2);
         assert!(newest_remote(&saves, "None.srm").is_none());
+    }
+
+    #[test]
+    fn xbox360_title_id() {
+        let mut xex = b"XEX2".to_vec();
+        xex.resize(0x14, 0);
+        xex.extend(1u32.to_be_bytes());
+        xex.extend(0x0004_0006u32.to_be_bytes());
+        xex.extend(0x40u32.to_be_bytes());
+        xex.resize(0x40 + 0xC, 0);
+        xex.extend(0x4D5307E6u32.to_be_bytes());
+        xex.resize(0x100, 0);
+        let p = std::env::temp_dir().join(format!("borne-xex-{}.xex", std::process::id()));
+        std::fs::write(&p, &xex).unwrap();
+        assert_eq!(super::xenia_title_id(&p).as_deref(), Some("4D5307E6"));
+        let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn ryujinx_saves_found_by_program_id() {
+        let root = std::env::temp_dir().join(format!("borne-ryu-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        for (dir, id, kind) in [("0000000000000001", 0x0100000000010000u64, 1u8), ("0000000000000002", 0x01007EF00011E000, 1), ("0000000000000003", 0x0100000000010000, 3)] {
+            std::fs::create_dir_all(root.join(dir)).unwrap();
+            let mut b = id.to_le_bytes().to_vec();
+            b.resize(0x40, 0);
+            b[0x20] = kind;
+            std::fs::write(root.join(dir).join("ExtraData0"), b).unwrap();
+        }
+        assert_eq!(super::ryujinx_save_dir(&root, 0x01007EF00011E000), Some(root.join("0000000000000002")));
+        assert_eq!(super::ryujinx_save_dir(&root, 0x0100000000010000), Some(root.join("0000000000000001")));
+        assert_eq!(super::ryujinx_save_dir(&root, 0x0100000000099000), None);
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

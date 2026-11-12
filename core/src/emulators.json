@@ -266,6 +266,7 @@
       "name": "Xenia Canary",
       "args": [
         "--fullscreen=true",
+        "--content_root={data}/content",
         "--draw_resolution_scale_x={upscale3}",
         "--draw_resolution_scale_y={upscale3}",
         "{rom}"

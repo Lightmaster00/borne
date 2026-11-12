@@ -210,6 +210,7 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "rpcs3" => if mac_os { mac.join("rpcs3") } else { xdg_config.join("rpcs3") },
         "pcsx2" => if mac_os { mac } else { xdg_config },
         "shadps4" => if mac_os { mac.join("shadPS4") } else { xdg_data.join("shadPS4") },
+        "xenia" => xdg_data.join("Xenia"),
         _ => base,
     }
 }
@@ -399,6 +400,25 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
     let userdir = app.paths.profiles().join(&profile).join(&p.id);
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     crate::gamesettings::apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &display)?;
+    if p.id == "melonds" {
+        if let Err(e) = crate::cheats::melonds_settings(app, rom_id, &data_dir(app, &profile, &p.id), rom) {
+            app.db.log("cheats", &format!("melonDS: {e}"));
+        }
+    }
+    // PCSX2: the chosen cheats from the .pnach given for the game.
+    if p.id == "pcsx2" {
+        if let Some(g) = app.db.game(rom_id) {
+            if let Err(e) = crate::cheats::ps2_settings(app, rom_id, &data_dir(app, &profile, &p.id), rom, &g.group_key) {
+                app.db.log("cheats", &format!("PCSX2: {e}"));
+            }
+        }
+    }
+    // Switch emulators: the chosen cheats in their mod folder.
+    if matches!(p.id.as_str(), "eden" | "citron" | "ryubing") {
+        if let Err(e) = crate::cheats::switch_settings(app, rom_id, &p.id, &data_dir(app, &profile, &p.id), rom) {
+            app.db.log("cheats", &format!("{}: {e}", p.name));
+        }
+    }
     // Dolphin: the cheats chosen in Borne, from Dolphin's own code list.
     if p.id == "dolphin" {
         if let Err(e) = crate::cheats::dolphin_settings(app, rom_id, &userdir, rom) {
@@ -433,6 +453,7 @@ fn command(app: &Shared, p: &Program, e: &Engine, found: &Found, system: &str, r
             .replace("{core}", &core.as_ref().map(|c| c.to_string_lossy().into_owned()).unwrap_or_default())
             .replace("{config}", &config.as_ref().map(|c| c.to_string_lossy().into_owned()).unwrap_or_default())
             .replace("{userdir}", &userdir.to_string_lossy())
+            .replace("{data}", &data_dir(app, &profile, &p.id).to_string_lossy())
             .replace("{lang_dolphin}", lang_dolphin)
             .replace("{upscale3}", &display.get("upscale").and_then(|v| v.as_str()).and_then(|v| v.parse::<u32>().ok()).unwrap_or(1).min(3).to_string());
         // An option left without its value (no language chosen…) goes with its flag.
