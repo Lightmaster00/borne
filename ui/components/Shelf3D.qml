@@ -152,7 +152,10 @@ Item {
             Node {
                 id: slot
                 required property int index
-                readonly property int gameIndex: Math.round(shelf.flow) + index - Math.floor(shelf.slots / 2)
+                // Each slot keeps its game while that game stays in the window (slot = index modulo
+                // the slot count): moving by one changes one case, the others keep their prints.
+                readonly property int first: Math.round(shelf.flow) - Math.floor(shelf.slots / 2)
+                readonly property int gameIndex: first + ((index - first) % shelf.slots + shelf.slots) % shelf.slots
                 readonly property bool valid: shelf.games && gameIndex >= 0 && gameIndex < shelf.games.count
                 readonly property var game: valid ? (shelf.revision, shelf.games.count, shelf.games.get(gameIndex)) : null
                 readonly property real t: gameIndex - shelf.flow

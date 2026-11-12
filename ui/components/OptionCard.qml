@@ -18,6 +18,7 @@ Rectangle {
 
     height: col.height + 64
     radius: 20
+    Ink { z: -1; theme: card.theme; radius: card.radius }
     color: selected ? Qt.rgba(1, 1, 1, 0.1) : mouse.containsMouse && !disabled ? theme.glass : Qt.rgba(1, 1, 1, 0.03)
     border { width: 1; color: selected ? Qt.rgba(1, 1, 1, 0.22) : theme.glassEdge }
     opacity: disabled ? 0.6 : 1

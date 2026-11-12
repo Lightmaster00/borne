@@ -47,7 +47,7 @@ Since then:
   retail case (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
-  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are real 3D models of each console's retail case (keep case with its clear sleeve and seam, jewel case with tray and hinge, clamshell, cardboard box), lit in a virtual photo studio with soft shadows, turnable with the right stick or Z Q S D; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over a wall of large pixels made from its cover. A letter index and LT / RT jump through the alphabet; Y opens a
+  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the console's plastic colour on top and bottom, lit in a virtual photo studio with soft shadows and drawn with a thin ink outline, turnable with the right stick or Z Q S D; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 7 seconds without input the library fades out and leaves the video. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The accent color is taken from each game's cover; type is Manrope.
 - **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
@@ -56,7 +56,7 @@ Since then:
 - **Console logos and pictures**: the systems bar shows each console's logo from ScreenScraper
   (its name until the logo is fetched); the console's photo is kept for later use. Behind the
   shelf and on the game page, the game's art without any text (ScreenScraper's blank Steam grid
-  and blank screen marquee) is used under the video, before RomM's artwork or the pixel mosaic.
+  and blank screen marquee) is used under the video, before the blurred cover.
 - **Titles and covers in your language**: with ScreenScraper, each game shows the title and the case
   of the language Borne is displayed in (French → the French case and title, else the European one;
   Japanese → the Japanese ones; English → the US ones), and the library is sorted on those titles.

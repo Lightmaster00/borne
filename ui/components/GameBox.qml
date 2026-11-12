@@ -136,7 +136,8 @@ Item {
             fillMode: Image.Stretch
         }
         Text {
-            visible: sd.spine && !sd.printed
+            // The title only when there is no scan (not while it loads: no flash of text).
+            visible: sd.spine && (scan.source == "" || scan.status === Image.Error)
             anchors.centerIn: parent
             width: box.bh - 40
             height: box.bd
@@ -220,7 +221,7 @@ Item {
             clip: true
             Rectangle { anchors.fill: parent; color: box.tone }
             Text {
-                visible: cover.status !== Image.Ready
+                visible: cover.source == "" || cover.status === Image.Error
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 18 }
                 text: box.game ? box.game.name : ""
                 wrapMode: Text.WordWrap

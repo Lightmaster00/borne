@@ -31,6 +31,7 @@ Column {
             radius: 14
             color: kind === "error" ? Qt.rgba(0.2, 0.07, 0.08, 0.92) : toasts.theme.panel
             border { width: 1; color: toasts.theme.glassEdge }
+            Ink { z: -1; theme: toasts.theme; radius: 14 }
             Accessible.role: kind === "error" ? Accessible.AlertMessage : Accessible.StaticText
             Accessible.name: text
             // Status dot: color for the kind, never color alone (the text says it too).

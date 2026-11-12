@@ -32,6 +32,7 @@ Item {
         autoPaddingEnabled: true
         blurEnabled: true; blur: 1.0; blurMax: 48
     }
+    Ink { theme: btn.theme; radius: height / 2 }
     Rectangle {
         id: face
         anchors.fill: parent

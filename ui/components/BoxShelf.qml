@@ -152,7 +152,9 @@ Item {
             id: slot
             required property int index
             anchors.fill: parent
-            readonly property int gameIndex: Math.round(shelf.flow) + index - Math.floor(shelf.slots / 2)
+            // Each slot keeps its game while it stays in the window (see Shelf3D).
+            readonly property int first: Math.round(shelf.flow) - Math.floor(shelf.slots / 2)
+            readonly property int gameIndex: first + ((index - first) % shelf.slots + shelf.slots) % shelf.slots
             readonly property bool valid: shelf.games && gameIndex >= 0 && gameIndex < shelf.games.count
             readonly property var game: valid ? (shelf.revision, shelf.games.count, shelf.games.get(gameIndex)) : null
             readonly property real t: gameIndex - shelf.flow

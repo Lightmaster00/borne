@@ -1,17 +1,9 @@
-// One game case as a real 3D object (Qt Quick 3D), modelled after the retail case of its console
-// and lit by the shelf's studio. Real proportions in millimetres (Cases.js), and the small
-// details that make each one read as an object you could pick up:
-//  keep case  — two plastic halves with the seam groove round the opening edges, rounded
-//               corners, the printed insert folded round the spine (creases at the folds) and the
-//               clear sleeve over everything, lifting off the bevel at the opening edge;
-//  clamshell  — the same build in thicker, matte textured plastic with rounder corners;
-//  jewel case — clear lid and base, the black tray inside, the booklet under the lid, the hinge
-//               strip with its ribs and the two knuckles, the back insert seen through the base
-//               with its two folded spine labels;
-//  cardboard  — printed on every face, the corners slightly worn to the board, tuck flaps
-//               marked on the top and bottom.
-// Printed faces are the ScreenScraper scans (front, spine, back) or the cover; a missing spine is
-// drawn as a band in the case's colour with the title. Coordinates: x right, y up, z toward you.
+// One game case as a 3D object (Qt Quick 3D): a box to the case's real proportions with slightly
+// rounded corners and edges, lit by the shelf's studio, with a thin ink outline (Borne's touch of
+// cel shading). The front is the cover scan, the same spine on the left and the right, the back
+// scan behind, and the console's plastic colour on the top and the bottom. Prints have a fine
+// grain and a varnish (cardboard: matte paper), the plastic a satin grain.
+// Coordinates: x right, y up, z toward you.
 import QtQuick
 import QtQuick3D
 import QtQuick3D.Helpers
@@ -28,48 +20,49 @@ Node {
 
     function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
     readonly property var kind: Cases.of(game ? game.platform_slug : "")
-    readonly property string mat: kind.mat
-    readonly property bool plastic: mat === "keep" || mat === "clam"
+    readonly property bool card: kind.mat === "card"
     readonly property real mm: boxH / Cases.TALLEST
     readonly property bool frontScan: has("front")
     readonly property real frontAR: frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0)
     readonly property real sideAR: has("side") && game.side_ar > 0 ? game.side_ar : 0
     readonly property bool turned: !!kind.turns && frontAR > 0 && frontAR < 1
-    // Plastic left visible round the printed insert, and the jewel case's hinge strip.
-    readonly property real rim: (mat === "keep" ? 3.2 : mat === "clam" ? 4.2 : mat === "jewel" ? 1.4 : 0) * mm
-    readonly property real hinge: mat === "jewel" ? 9 * mm : 0
     readonly property real bh: (turned ? kind.w : kind.h) * mm
-    readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * (bh - 2 * rim) + 2 * rim + hinge
-                                           : (turned ? kind.h : kind.w) * mm
-    readonly property real bd: sideAR > 0 && mat !== "jewel" ? Math.max(5, Math.min(bh * 0.3, sideAR * bh)) : Math.max(6, kind.d * mm)
+    readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * bh : (turned ? kind.h : kind.w) * mm
+    readonly property real bd: sideAR > 0 ? Math.max(5, Math.min(bh * 0.3, sideAR * bh)) : Math.max(6, kind.d * mm)
+    // Slightly rounded: a little more on plastic than on cardboard.
+    readonly property real round: (card ? 0.9 : 1.8) * mm
+    readonly property color plastic: kind.color
+    readonly property bool lightPlastic: plastic.hslLightness > 0.6
     readonly property color tone: theme ? theme.tone(game ? game.hue : 0) : "#444"
-    readonly property color shell: mat === "card" ? Qt.darker(tone, 1.6) : kind.color
-    readonly property bool lightShell: shell.hslLightness > 0.6
+    readonly property color ink: theme && theme.ink ? theme.ink : "#06070a"
     readonly property string frontUrl: frontScan ? game.art + "front" : (game && game.cover ? game.cover : "")
     readonly property string sideUrl: has("side") ? game.art + "side" : ""
     readonly property string backUrl: has("back") ? game.art + "back" : ""
-
-    // Corner radius seen from the front, and the radius of the edges round the faces.
-    readonly property real cornerR: (mat === "keep" ? 4 : mat === "clam" ? 6 : mat === "jewel" ? 1.2 : 0.9) * mm
-    readonly property real edgeR: (mat === "keep" ? 1.8 : mat === "clam" ? 2.6 : mat === "jewel" ? 0.5 : 0.7) * mm
-    readonly property real eps: 0.14 * mm
-
-    // ---- geometry (recomputed when the case's size changes) ----
-    readonly property real seam: 0.35 * mm
-    readonly property var shellFrontMesh: plastic ? Mesh.slab(bw, bh, seam, bd / 2, cornerR, edgeR) : null
-    readonly property var shellBackMesh: plastic ? Mesh.slab(bw, bh, -bd / 2, -seam, cornerR, edgeR) : null
-    readonly property var coreMesh: plastic ? Mesh.slab(bw - 1.4 * mm, bh - 1.4 * mm, -seam - 1.5 * mm, seam + 1.5 * mm, cornerR - 0.7 * mm, 0.2 * mm) : null
-    readonly property var insertMesh: plastic ? Mesh.wrap(bw / 2 + eps, bd / 2 + eps, bw / 2 - rim, bh / 2 - rim, edgeR + eps) : null
-    readonly property var sleeveMesh: plastic ? Mesh.wrap(bw / 2 + 2 * eps, bd / 2 + 2 * eps, bw / 2 - 0.35 * mm, bh / 2 - 0.25 * mm, edgeR + 2 * eps) : null
-    readonly property var solidMesh: mat === "card" || mat === "jewel" ? Mesh.slab(bw, bh, -bd / 2, bd / 2, cornerR, edgeR) : null
-    readonly property var trayMesh: mat === "jewel" ? Mesh.slab(bw - 1.8 * mm, bh - 1.6 * mm, -bd / 2 + 0.9 * mm, bd / 2 - 2.4 * mm, 0.8 * mm, 0.3 * mm) : null
 
     // Bottom on the floor (y = 0 at the shelf's middle line, cases standing on boxH / 2 below).
     position: Qt.vector3d(place.x, -(place.y || 0) - boxH / 2 + bh / 2, place.z)
     eulerRotation.y: place.ang
 
-    // ---- printed pieces ----
-    // A scan, or a plain print in the platform's tone with the title until it arrives.
+    // A face of the box with its material.
+    component Face: Model {
+        property string side
+        property var mesh: Mesh.face(side, box.bw, box.bh, box.bd, box.round, 4)
+        geometry: ProceduralMesh {
+            positions: mesh.positions
+            normals: mesh.normals
+            uv0s: mesh.uv0s
+            indexes: mesh.indexes
+        }
+    }
+    // The fine grain of the prints and the plastic (a tiling normal map).
+    component Grain: Texture {
+        source: "grain.png"
+        scaleU: box.bw / 40
+        scaleV: box.bh / 40
+        tilingModeHorizontal: Texture.Repeat
+        tilingModeVertical: Texture.Repeat
+    }
+    // A print: the scan over the game's tone; the title only when there is no scan to show.
     component Print: Rectangle {
         property string src
         property bool titled: true
@@ -78,7 +71,7 @@ Node {
             GradientStop { position: 1; color: Qt.darker(box.tone, 1.9) }
         }
         Text {
-            visible: parent.titled && img.status !== Image.Ready
+            visible: parent.titled && (parent.src === "" || img.status === Image.Error)
             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; margins: parent.width * 0.07 }
             text: box.game ? box.game.name : ""
             color: "white"; font.pixelSize: parent.width / 8; font.bold: true
@@ -93,9 +86,9 @@ Node {
             asynchronous: true
         }
     }
-    // The spine: its scan, else a band in the case's colour with the title.
+    // The spine: its scan, else a band in the console's colour with the title.
     component Spine: Rectangle {
-        color: box.mat === "card" ? Qt.darker(box.tone, 1.4) : box.shell
+        color: box.plastic
         Image {
             id: sImg
             anchors.fill: parent
@@ -105,7 +98,7 @@ Node {
             sourceSize: Qt.size(Math.max(32, parent.width), parent.height)
         }
         Text {
-            visible: sImg.status !== Image.Ready
+            visible: box.sideUrl === "" || sImg.status === Image.Error
             anchors.centerIn: parent
             width: parent.height * 0.86; height: parent.width
             rotation: -90
@@ -113,291 +106,101 @@ Node {
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
-            color: box.lightShell && box.mat !== "card" ? "#26282d" : "#eceef2"
+            color: box.lightPlastic ? "#26282d" : "#eceef2"
             font { family: box.theme ? box.theme.fontFamily : "sans"; pixelSize: Math.max(12, parent.width * 0.42); weight: Font.Bold }
-        }
-    }
-    // A fold in the printed paper: a soft shadow line with a highlight beside it.
-    component Crease: Item {
-        width: 10
-        Rectangle { x: 0; width: 5; height: parent.height; gradient: Gradient { orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: "#00000000" } GradientStop { position: 1; color: "#38000000" } } }
-        Rectangle { x: 5; width: 5; height: parent.height; gradient: Gradient { orientation: Gradient.Horizontal
-            GradientStop { position: 0; color: "#24ffffff" } GradientStop { position: 1; color: "#00ffffff" } } }
-    }
-
-    component MeshModel: Model {
-        property var mesh
-        geometry: ProceduralMesh {
-            positions: mesh ? mesh.positions : []
-            normals: mesh ? mesh.normals : []
-            uv0s: mesh ? mesh.uv0s : []
-            indexes: mesh ? mesh.indexes : []
         }
     }
 
     Node {
         eulerRotation.x: -(box.place.pitch || 0)
-        // Only the parts of this case's kind exist.
-        Loader3D { sourceComponent: box.plastic ? keepBody : box.mat === "jewel" ? jewelBody : cardBody }
-    }
 
-    Component {
-        id: keepBody
-        Node {
-            // ================= keep case and clamshell =================
-            // Front and back halves, the darker core showing in the seam between them.
-            MeshModel {
-                mesh: box.shellFrontMesh
-                materials: plasticMat
+        // Ink outline: the box grown a little and drawn inside out, flat dark.
+        Model {
+            id: outline
+            castsShadows: false
+            pickable: false
+            readonly property real t: 2.2
+            readonly property var mesh: Mesh.hull(box.bw + 2 * t, box.bh + 2 * t, box.bd + 2 * t, box.round + t, 2)
+            geometry: ProceduralMesh {
+                positions: outline.mesh.positions
+                normals: outline.mesh.normals
+                uv0s: outline.mesh.uv0s
+                indexes: outline.mesh.indexes
             }
-            MeshModel {
-                mesh: box.shellBackMesh
-                materials: plasticMat
-            }
-            MeshModel {
-                mesh: box.coreMesh
-                materials: PrincipledMaterial { baseColor: Qt.darker(box.shell, 2.2); roughness: 0.7 }
-            }
-            PrincipledMaterial {
-                id: plasticMat
-                baseColor: box.shell
-                // Keep cases are a fine satin plastic; the Mega Drive clamshell a coarser matte grain.
-                roughness: box.mat === "clam" ? 0.62 : box.lightShell ? 0.36 : 0.42
-                specularAmount: 0.55
-                clearcoatAmount: box.mat === "clam" ? 0 : 0.25
-                clearcoatRoughnessAmount: 0.35
-            }
-            // The printed insert: back, spine and front in one sheet folded round the spine.
-            MeshModel {
-                id: insert
-                property int slotIndex: box.slotIndex
-                pickable: true
-                castsShadows: false
-                mesh: box.insertMesh
-                materials: PrincipledMaterial {
-                    roughness: 0.55
-                    specularAmount: 0.3
-                    baseColorMap: Texture {
-                        generateMipmaps: true
-                        mipFilter: Texture.Linear
-                        sourceItem: Sheet { }
-                    }
-                }
-            }
-            // Clear sleeve over the whole case: thin, glossy, it catches the studio's softboxes.
-            MeshModel {
-                castsShadows: false
-                pickable: false
-                mesh: box.sleeveMesh
-                materials: clearMat
-            }
-            PrincipledMaterial {
-                id: clearMat
-                // Black and screen-blended: only the reflections show, added over the print,
-                // stronger at grazing angles as on real clear plastic.
-                baseColor: "black"
-                blendMode: PrincipledMaterial.Screen
-                roughness: 0.04
-                specularAmount: 1
-                clearcoatAmount: 1
-                clearcoatRoughnessAmount: 0.02
-                cullMode: Material.NoCulling
+            materials: PrincipledMaterial {
+                lighting: PrincipledMaterial.NoLighting
+                baseColor: box.ink
+                cullMode: Material.FrontFaceCulling
             }
         }
-    }
-    Component {
-        id: jewelBody
-        Node {
-            // ================= jewel case =================
-            // Black tray inside the clear case.
-            MeshModel {
-                mesh: box.trayMesh
-                materials: PrincipledMaterial { baseColor: box.shell; roughness: 0.3; specularAmount: 0.6 }
-            }
-            // The booklet under the lid.
-            Model {
-                property int slotIndex: box.slotIndex
-                pickable: true
-                source: "#Rectangle"
-                position: Qt.vector3d(box.hinge / 2 - box.rim / 2 + 0.3 * box.mm, 0, box.bd / 2 - 1.0 * box.mm)
-                scale: Qt.vector3d((box.bw - box.hinge - box.rim - 0.6 * box.mm) / 100, (box.bh - 2 * box.rim) / 100, 1)
-                materials: PrincipledMaterial {
-                    roughness: 0.5
-                    specularAmount: 0.35
-                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Print { width: 640; height: 640; src: box.mat === "jewel" ? box.frontUrl : "" } }
-                }
-            }
-            // The lid's hinge strip on the left of the front: ribbed clear plastic over the tray.
-            Model {
-                source: "#Rectangle"
-                position: Qt.vector3d(-box.bw / 2 + box.hinge / 2 + 0.3 * box.mm, 0, box.bd / 2 - 1.1 * box.mm)
-                scale: Qt.vector3d((box.hinge - 0.6 * box.mm) / 100, (box.bh - 1.6 * box.mm) / 100, 1)
-                materials: PrincipledMaterial {
-                    roughness: 0.25
-                    specularAmount: 0.8
-                    baseColorMap: Texture { sourceItem: Ribs { } }
-                }
-            }
-            // The two hinge knuckles at the ends of the left edge.
-            Repeater3D {
-                model: 2
-                Model {
-                    required property int index
-                    source: "#Cylinder"
-                    position: Qt.vector3d(-box.bw / 2 + 1.7 * box.mm, (index ? -1 : 1) * (box.bh / 2 - 8.5 * box.mm), box.bd / 2 - 2.3 * box.mm)
-                    scale: Qt.vector3d(3.0 * box.mm / 100, 13 * box.mm / 100, 3.0 * box.mm / 100)
-                    materials: PrincipledMaterial {
-                        baseColor: Qt.rgba(0.82, 0.85, 0.88, 0.35)
-                        alphaMode: PrincipledMaterial.Blend
-                        roughness: 0.08
-                        specularAmount: 1
-                    }
-                }
-            }
-            // The back insert seen through the base, and its spine labels folded up both sides.
-            Model {
-                source: "#Rectangle"
-                position: Qt.vector3d(0, 0, -box.bd / 2 + 0.6 * box.mm)
-                eulerRotation.y: 180
-                scale: Qt.vector3d((box.bw - 3 * box.mm) / 100, (box.bh - 2.6 * box.mm) / 100, 1)
-                materials: PrincipledMaterial {
-                    roughness: 0.55
-                    baseColorMap: Texture { generateMipmaps: true; sourceItem: Print { width: 640; height: 560; src: box.mat === "jewel" ? box.backUrl : ""; titled: false } }
-                }
-            }
-            Repeater3D {
-                model: 2
-                Model {
-                    required property int index
-                    source: "#Rectangle"
-                    position: Qt.vector3d((index ? 1 : -1) * (box.bw / 2 - 0.7 * box.mm), 0, -0.6 * box.mm)
-                    eulerRotation.y: index ? 90 : -90
-                    scale: Qt.vector3d((box.bd - 2.6 * box.mm) / 100, (box.bh - 2.6 * box.mm) / 100, 1)
-                    materials: PrincipledMaterial {
-                        roughness: 0.5
-                        baseColorMap: Texture { generateMipmaps: true; sourceItem: Spine { width: 48; height: 640 } }
-                    }
-                }
-            }
 
-            // The clear case itself, over everything.
-            MeshModel {
-                castsShadows: false
-                mesh: box.solidMesh
-                materials: PrincipledMaterial {
-                    // screen-blended reflections and a faint haze: the clear plastic and its edges
-                    baseColor: "#0d0f12"
-                    blendMode: PrincipledMaterial.Screen
-                    roughness: 0.02
-                    specularAmount: 1
-                    clearcoatAmount: 1
-                    clearcoatRoughnessAmount: 0.01
-                    cullMode: Material.NoCulling
+        // Front: the cover, varnished (or under the keep case's sleeve).
+        Face {
+            side: "front"
+            property int slotIndex: box.slotIndex
+            pickable: true
+            materials: PrincipledMaterial {
+                baseColorMap: Texture {
+                    generateMipmaps: true
+                    mipFilter: Texture.Linear
+                    sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl }
                 }
+                roughness: box.card ? 0.62 : 0.45
+                specularAmount: 0.35
+                clearcoatAmount: box.card ? 0.15 : 0.6
+                clearcoatRoughnessAmount: box.card ? 0.4 : 0.06
+                normalMap: Grain { }
+                normalStrength: box.card ? 0.22 : 0.1
             }
         }
-    }
-    Component {
-        id: cardBody
-        Node {
-            // ================= cardboard box =================
-            MeshModel {
-                mesh: box.solidMesh
-                materials: boardMat
-            }
-            // Board showing at the worn corners and edges: the print's own colour faded toward grey.
-            PrincipledMaterial {
-                id: boardMat
-                baseColor: Qt.tint(Qt.darker(box.tone, 1.3), "#8cc9c2b4")
-                roughness: 0.9
-            }
-            // Printed faces of the box, over the board: front, back, both sides, top and bottom.
-            Model {
-                property int slotIndex: box.slotIndex
-                pickable: true
-                source: "#Rectangle"
-                position: Qt.vector3d(0, 0, box.bd / 2 + 0.05 * box.mm)
-                scale: Qt.vector3d((box.bw - 1.3 * box.mm) / 100, (box.bh - 1.3 * box.mm) / 100, 1)
+        // The same spine on both sides.
+        Repeater3D {
+            model: ["left", "right"]
+            Face {
+                required property string modelData
+                side: modelData
                 materials: PrincipledMaterial {
-                    roughness: 0.62; specularAmount: 0.4; clearcoatAmount: 0.12; clearcoatRoughnessAmount: 0.45
-                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Print { width: 560; height: 800; src: box.mat === "card" ? box.frontUrl : "" } }
-                }
-            }
-            Model {
-                source: "#Rectangle"
-                position: Qt.vector3d(0, 0, -box.bd / 2 - 0.05 * box.mm)
-                eulerRotation.y: 180
-                scale: Qt.vector3d((box.bw - 1.3 * box.mm) / 100, (box.bh - 1.3 * box.mm) / 100, 1)
-                materials: PrincipledMaterial {
-                    roughness: 0.62; specularAmount: 0.4; clearcoatAmount: 0.12; clearcoatRoughnessAmount: 0.45
-                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Print { width: 560; height: 800; src: box.mat === "card" ? box.backUrl : ""; titled: false } }
-                }
-            }
-            Repeater3D {
-                model: 2
-                Model {
-                    required property int index
-                    source: "#Rectangle"
-                    position: Qt.vector3d((index ? 1 : -1) * (box.bw / 2 + 0.05 * box.mm), 0, 0)
-                    eulerRotation.y: index ? 90 : -90
-                    scale: Qt.vector3d((box.bd - 1.3 * box.mm) / 100, (box.bh - 1.3 * box.mm) / 100, 1)
-                    materials: PrincipledMaterial {
-                    roughness: 0.62; specularAmount: 0.4; clearcoatAmount: 0.12; clearcoatRoughnessAmount: 0.45
                     baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Spine { width: 96; height: 800 } }
-                }
-                }
-            }
-            Repeater3D {
-                model: 2
-                Model {
-                    required property int index
-                    source: "#Rectangle"
-                    position: Qt.vector3d(0, (index ? -1 : 1) * (box.bh / 2 + 0.05 * box.mm), 0)
-                    eulerRotation.x: index ? 90 : -90
-                    scale: Qt.vector3d((box.bw - 1.3 * box.mm) / 100, (box.bd - 1.3 * box.mm) / 100, 1)
-                    materials: PrincipledMaterial {
-                    roughness: 0.62; specularAmount: 0.4; clearcoatAmount: 0.12; clearcoatRoughnessAmount: 0.45
-                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Flap { } }
-                }
+                    roughness: box.card ? 0.62 : 0.45
+                    specularAmount: 0.35
+                    clearcoatAmount: box.card ? 0.15 : 0.6
+                    clearcoatRoughnessAmount: box.card ? 0.4 : 0.06
                 }
             }
         }
-    }
-
-    // ---- the textures' item trees ----
-    // Keep case insert: back | spine | front, as wide as their share of the folded sheet.
-    component Sheet: Item {
-        id: sheet
-        readonly property real share: box.insertMesh ? box.insertMesh.back : 0.45
-        readonly property real faceW: 560
-        width: Math.round(faceW / Math.max(0.2, share)); height: 800
-        Print { x: 0; width: sheet.faceW; height: sheet.height; src: box.backUrl; titled: false }
-        Spine { x: sheet.faceW; width: sheet.width - 2 * sheet.faceW; height: sheet.height }
-        Print { x: sheet.width - sheet.faceW; width: sheet.faceW; height: sheet.height; src: box.frontUrl }
-        Crease { x: sheet.faceW - 5; height: sheet.height }
-        Crease { x: sheet.width - sheet.faceW - 5; height: sheet.height }
-    }
-    // Hinge strip: dark tray seen through clear plastic moulded in fine vertical ribs.
-    component Ribs: Canvas {
-        width: 64; height: 256
-        onPaint: {
-            const c = getContext("2d")
-            c.fillStyle = "#101114"; c.fillRect(0, 0, width, height)
-            for (let x = 3; x < width; x += 6) {
-                c.fillStyle = "rgba(255,255,255,0.10)"; c.fillRect(x, 0, 2, height)
-                c.fillStyle = "rgba(0,0,0,0.35)"; c.fillRect(x + 2, 0, 1, height)
+        // Back: the back scan, else the console's plastic.
+        Face {
+            side: "back"
+            materials: PrincipledMaterial {
+                baseColor: box.backUrl !== "" ? "white" : box.plastic
+                baseColorMap: box.backUrl !== "" ? backTex : null
+                roughness: box.card ? 0.62 : 0.45
+                specularAmount: 0.35
+                clearcoatAmount: box.card ? 0.15 : 0.5
+                clearcoatRoughnessAmount: box.card ? 0.4 : 0.08
             }
-            // the lid's edge where it meets the booklet
-            c.fillStyle = "rgba(255,255,255,0.22)"; c.fillRect(width - 3, 0, 2, height)
+            Texture {
+                id: backTex
+                generateMipmaps: true
+                sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.backUrl; titled: false }
+            }
         }
-    }
-    // Top and bottom of the box: the tuck flap's fold and its cut edge.
-    component Flap: Rectangle {
-        width: 512; height: 96
-        color: Qt.darker(box.tone, 1.5)
-        Rectangle { y: parent.height * 0.12; width: parent.width; height: 3; color: "#40000000" }
-        Rectangle { y: parent.height * 0.12 + 3; width: parent.width; height: 2; color: "#18ffffff" }
-        Rectangle { y: parent.height * 0.86; width: parent.width; height: 2; color: "#55000000" }
+        // Top and bottom: the console's plastic, satin with a grain.
+        Repeater3D {
+            model: ["top", "bottom"]
+            Face {
+                required property string modelData
+                side: modelData
+                materials: PrincipledMaterial {
+                    baseColor: box.plastic
+                    roughness: box.lightPlastic ? 0.34 : 0.4
+                    specularAmount: 0.5
+                    clearcoatAmount: 0.2
+                    clearcoatRoughnessAmount: 0.3
+                    normalMap: Grain { }
+                    normalStrength: 0.35
+                }
+            }
+        }
     }
 }

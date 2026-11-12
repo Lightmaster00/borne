@@ -16,6 +16,10 @@ QtObject {
     readonly property color glassRaised: Qt.rgba(1, 1, 1, 0.14)
     readonly property color glassEdge: Qt.rgba(1, 1, 1, 0.15)
     readonly property color scrim: Qt.rgba(0.047, 0.051, 0.063, 0.92)
+    // Ink: the dark line of Borne's touch of cel shading (case outlines, the hard shadow under
+    // buttons, chips and panels).
+    readonly property color ink: "#05060A"
+    readonly property int inkOffset: 4
     readonly property color bad: "#FF7B7B"
     readonly property color badTint: Qt.rgba(1, 0.48, 0.48, 0.16)
 

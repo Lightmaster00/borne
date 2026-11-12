@@ -227,22 +227,25 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   (`video-normalized`, else `video`; its address is noted without credentials during the media fetch
   and downloaded on first use, credentials added only for that request, ScreenScraper hosts only),
   else RomM's trailer. Stored in `media/videos` with the trailers (pruned beyond 2 GB). Played muted,
-  looping, cropped to fill, darkened by half with a deeper bottom for the text; it fades in on its
-  first frames and stays off with trailers off (and in safe mode), on the game page and in menus.
-  Until it plays, or when the game has no video, the pixel mosaic below shows.
-- Pixel mosaic, Borne's identity: the selected game's cover decoded at one pixel per 56-unit
-  tile and drawn unsmoothed as a wall of large dark pixels, re-colouring tile by tile (each tile flashes
-  at its own moment) when the selection settles, a slow diagonal light wave across it, a dark glossy
-  floor under the cases; it shows under the video, while it loads or when a game has none. The
-  background has no setting (the earlier styles and the arcade-room home were removed).
+  looping, cropped to fill; it fades in on its first frames and stays off with trailers off (and in
+  safe mode), on the game page and in menus. Until it plays, or when the game has no video: the game's
+  blank Steam grid / marquee, else its cover blurred, enlarged and drifting slowly. One dark filter
+  (about 60 %) and a deeper bottom keep the cases and the text readable. The background has no setting.
+- Attract: after 7 s without input on the library, once the video plays, the library (cases, bars and
+  hints) fades out and the filter lightens, leaving the video; any input, the mouse or the stick brings
+  it back at once, and that input only wakes it.
 - Library: the selected game's platform, title and states, and the games as physical cases standing on
   the stage below (cover inset under a plastic rim with gloss, spines with the system's color band and the
   title, a contact shadow, a faint floor reflection; the case follows the cover's aspect ratio). The
   selected box faces the camera, a little forward, swaying gently; the others turn toward it and recede.
-  Rendered in real 3D with Qt Quick 3D (`Shelf3D`, `Case3D`): each case is modelled after its console's
-  retail case (`CaseMesh.js` meshes: keep case halves with seam, insert folded round the spine under a
-  clear sleeve; jewel case with tray, booklet, hinge; clamshell; cardboard box with worn edges and flaps),
-  lit by a studio light probe (`studio.hdr`) and a key light casting soft shadows on a floor that fades out. Only the 13
+  Rendered in real 3D with Qt Quick 3D (`Shelf3D`, `Case3D`): each case is a box to its console's
+  proportions with slightly rounded corners and edges (`CaseMesh.js`): cover on the front, the same spine
+  on the left and the right, the back scan behind, the console's plastic colour on the top and the bottom;
+  varnished prints and satin plastic with a fine grain (`grain.png`), a thin ink outline (Borne's touch of
+  cel shading, also the hard ink shadow under buttons, chips, cards and panels: `Ink.qml`), lit by a
+  studio light probe (`studio.hdr`, both from `scripts/gen-case-assets.py`) and a key light casting soft
+  shadows on a floor that fades out. A slot keeps its case while the case stays in view, so moving
+  reloads one print only; a title is drawn only where a game has no scan, never while one loads. Only the 13
   cases around the selection exist. Fallback: the earlier 2D drawing (`BoxShelf`, six flat faces
   through one perspective matrix), used when Qt Quick 3D cannot load; `ShelfView` picks one and forwards the same properties. A letter index; LT / RT jump between letters and show the letter
   large for a moment. Y opens the search: on-screen keyboard (or the physical keyboard, where typing any

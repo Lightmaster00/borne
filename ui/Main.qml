@@ -262,6 +262,26 @@ Window {
         if (bgVideoWanted) bgVideoDelay.restart()
     }
     onBgVideoWantedChanged: if (bgVideoWanted && bgVideoFor === -1) bgVideoDelay.restart()
+    // Attract: after 7 s without input on the library, once the selected game's video plays, the
+    // library fades out and leaves the video; any input brings it back (that input only wakes it).
+    property double lastActivity: Date.now()
+    property bool attract: false
+    readonly property bool attractAllowed: screen === "library" && overlay === "" && ready && !gameMode
+                                           && !menu.visible && !search.visible && !downloadsPanel.visible
+                                           && !nameEntry.visible && !turning && !pointerActive
+                                           && libModel.count > 0 && ambience.videoShown
+    onAttractAllowedChanged: if (!attractAllowed) attract = false
+    function touch() {
+        lastActivity = Date.now()
+        if (!attract) return false
+        attract = false
+        return true
+    }
+    Timer {
+        interval: 250; repeat: true
+        running: win.attractAllowed && !win.attract
+        onTriggered: if (Date.now() - win.lastActivity >= 7000) win.attract = true
+    }
     // Studios, series and screenshots (RomM).
     property var pageFacts: null
     function loadFacts(romId) {
@@ -735,13 +755,14 @@ Window {
     readonly property bool turnActive: Math.abs(turnX) > 0.01 || Math.abs(turnY) > 0.01
     function setTurnKey(k, down) { const t = Object.assign({}, turnKeys); t[k] = down; turnKeys = t }
     function resetTurn() { turnKeys = ({}) }
-    onFocusIndexChanged: resetTurn()
+    onFocusIndexChanged: { resetTurn(); lastActivity = Date.now() }
 
     function dispatch(a, source) {
         inputCounts[source] = (inputCounts[source] || 0) + 1
         inputCountsChanged()
         lastInput = a + " via " + source
         if (source === "pad" && win.pointerActive) pointer.hide()
+        if (touch() && screen === "library" && overlay === "") return
         if (session && session.running) { quitChord.feed(a); return }
         if (bench.running && a !== "start") return
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
@@ -976,6 +997,7 @@ Window {
             videoUrl: win.bgVideo
             paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible
             scrims: win.overlay === ""
+            attract: win.attract
             dim: win.overlay === "settings" || win.overlay === "diag" ? 0.5 : win.overlay === "game" ? 0.55 : 0
         }
         Palette {
@@ -1045,6 +1067,8 @@ Window {
     // ---------- Library ----------
     Item {
         id: topbar
+        opacity: win.attract ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: win.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
         y: 40
         width: parent.width; height: 52
         visible: win.screen === "library" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
@@ -1173,6 +1197,8 @@ Window {
 
     LibraryView {
         id: libraryView
+        opacity: win.attract ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: win.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
         anchors.fill: parent
         boxYaw: win.boxYaw
         boxPitch: win.boxPitch
@@ -1198,6 +1224,7 @@ Window {
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         property real acc: 0
         onWheel: (e) => {
+            if (win.touch()) return
             acc += (e.angleDelta.y !== 0 ? e.angleDelta.y : -e.angleDelta.x)
             while (Math.abs(acc) >= 120) {
                 const back = acc > 0
@@ -1209,6 +1236,8 @@ Window {
 
     Rectangle {
         id: hintsBar
+        opacity: win.attract ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: win.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 20 }
         height: 48
         color: "transparent"

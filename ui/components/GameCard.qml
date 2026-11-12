@@ -47,6 +47,7 @@ Item {
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }
 
+    Ink { theme: card.theme; radius: 16 }
     Rectangle {
         anchors.fill: parent
         radius: 16
@@ -54,7 +55,7 @@ Item {
         layer.enabled: img.status === Image.Ready
         layer.effect: MultiEffect { maskEnabled: true; maskSource: mask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
         Text {
-            visible: img.status !== Image.Ready
+            visible: img.source == "" || img.status === Image.Error
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 16 }
             text: card.game ? card.game.name : ""
             wrapMode: Text.WordWrap

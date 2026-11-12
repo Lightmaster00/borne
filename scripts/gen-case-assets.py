@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Writes ui/components/studio.hdr: the photo studio the 3D game cases are lit by (an
+"""Writes the assets of the 3D game cases in ui/components:
+- grain.png: a tiling normal map, the fine grain of the prints and the plastic;
+- studio.hdr: the photo studio the 3D game cases are lit by (an
 equirectangular Radiance HDR used as the scene's light probe). A dark room, a large softbox
 above and in front on the left (the key), a tall strip on the right (the fill), a long overhead
 panel and two narrow strips behind the cases (the rims). Their reflections are what make the
 clear sleeves, the jewel cases and the plastic read as real.
 
-Run it again after changing the layout:  python3 scripts/gen-studio-hdr.py
+Run it again after changing them:  python3 scripts/gen-case-assets.py
 """
 import math
 import os
@@ -127,9 +129,52 @@ def rle_scanline(px):
     return out
 
 
+def grain(dst, size=256, seed=7):
+    """Tiling normal map from smoothed value noise (two octaves), written as an 8-bit PNG."""
+    import random
+    import zlib
+    rnd = random.Random(seed)
+
+    def octave(cell):
+        n = size // cell
+        g = [[rnd.random() for _ in range(n)] for _ in range(n)]
+
+        def at(x, y):
+            fx, fy = x / cell, y / cell
+            x0, y0 = int(fx) % n, int(fy) % n
+            x1, y1 = (x0 + 1) % n, (y0 + 1) % n
+            tx, ty = fx - int(fx), fy - int(fy)
+            tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
+            a = g[y0][x0] + (g[y0][x1] - g[y0][x0]) * tx
+            b = g[y1][x0] + (g[y1][x1] - g[y1][x0]) * tx
+            return a + (b - a) * ty
+        return at
+
+    o1, o2 = octave(4), octave(16)
+    hgt = [[0.65 * o1(x, y) + 0.35 * o2(x, y) for x in range(size)] for y in range(size)]
+    rows = bytearray()
+    for y in range(size):
+        rows.append(0)
+        for x in range(size):
+            dx = hgt[y][(x + 1) % size] - hgt[y][(x - 1) % size]
+            dy = hgt[(y + 1) % size][x] - hgt[(y - 1) % size][x]
+            nx, ny, nz = -dx * 2.0, -dy * 2.0, 1.0
+            l = math.sqrt(nx * nx + ny * ny + nz * nz)
+            rows += bytes(int((c / l * 0.5 + 0.5) * 255) for c in (nx, ny, nz))
+
+    def chunk(t, d):
+        return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0))
+    png += chunk(b"IDAT", zlib.compress(bytes(rows), 9)) + chunk(b"IEND", b"")
+    with open(dst, "wb") as f:
+        f.write(png)
+    print("wrote", dst, len(png), "bytes")
+
+
 def main():
-    dst = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-        os.path.dirname(__file__), "..", "ui", "components", "studio.hdr")
+    here = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ui", "components")
+    grain(os.path.join(here, "grain.png"))
+    dst = os.path.join(here, "studio.hdr")
     body = bytearray()
     for y in range(H):
         line = []
@@ -141,7 +186,7 @@ def main():
                 c = [a + b for a, b in zip(c, l)]
             line.append(rgbe(*c))
         body += rle_scanline(line)
-    head = b"#?RADIANCE\n# Borne studio light probe, scripts/gen-studio-hdr.py\nFORMAT=32-bit_rle_rgbe\n\n"
+    head = b"#?RADIANCE\n# Borne studio light probe, scripts/gen-case-assets.py\nFORMAT=32-bit_rle_rgbe\n\n"
     head += ("-Y %d +X %d\n" % (H, W)).encode()
     with open(dst, "wb") as f:
         f.write(head + body)

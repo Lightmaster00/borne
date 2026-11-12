@@ -20,6 +20,7 @@ Rectangle {
     color: selected ? theme.fg : mouse.containsMouse ? theme.glassRaised : Qt.rgba(1, 1, 1, 0.05)
     border { width: selected ? 0 : 1; color: theme.glassEdge }
     Behavior on color { ColorAnimation { duration: 150 } }
+    Ink { z: -1; theme: chip.theme; radius: chip.radius }
     Accessible.role: Accessible.RadioButton
     Accessible.name: text + (detail ? " " + detail : "")
     Accessible.checked: selected

@@ -40,6 +40,7 @@ Rectangle {
         width: Math.min(1100, parent.width - 80)
         height: Math.min(parent.height - 80, col.height + 72)
         radius: 28; color: theme.panel; border.color: theme.panelBorder
+        Ink { z: -1; theme: panel.theme; radius: 28 }
         clip: true
         MouseArea { anchors.fill: parent }
         Column {

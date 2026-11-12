@@ -57,6 +57,7 @@ Rectangle {
         height: col.height + 72
         radius: 28
         color: theme.panel
+        Ink { z: -1; theme: menu.theme; radius: 28 }
         border.color: theme.panelBorder
         MouseArea { anchors.fill: parent }   // clicks on the panel itself do not close it
         Column {

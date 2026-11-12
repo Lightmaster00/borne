@@ -25,6 +25,7 @@ Column {
             color: cur ? theme.fg : mouse.containsMouse && !modelData.disabled ? theme.glass : "transparent"
             opacity: modelData.disabled ? 0.45 : 1
             Behavior on color { ColorAnimation { duration: 120 } }
+            Ink { z: -1; theme: menu.theme; radius: 14; visible: row.cur }
             Column {
                 id: col
                 x: 20; y: 14
