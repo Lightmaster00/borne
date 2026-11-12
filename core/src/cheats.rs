@@ -406,6 +406,11 @@ pub fn melonds_settings(app: &Shared, rom_id: i64, data: &Path, rom: &Path) -> R
             let _ = crate::emulators::ini_set(&file, &[("Instance0", "EnableCheats", if on.is_empty() { "false" } else { "true" })]);
         }
     }
+    // Only a file Borne wrote is replaced or removed; one the player put there stays.
+    let ours = |p: &Path| !p.exists() || std::fs::read(p).map(|t| t.starts_with(b"CAT Borne")).unwrap_or(false);
+    if !ours(&mch) {
+        return Ok(());
+    }
     if on.is_empty() {
         let _ = std::fs::remove_file(&mch);
         return Ok(());
@@ -439,7 +444,14 @@ pub fn add_ps2_file(app: &Shared, group_key: &str, path: Option<&str>, url: Opti
         (None, Some(u)) => crate::emuinstall::fetch_file(u, &tmp)?,
         _ => return Err("a file or a link expected".into()),
     }
-    let text = std::fs::read_to_string(&tmp).map_err(|_| "not a text file".to_string())?;
+    let small = std::fs::metadata(&tmp).map(|m| m.len() <= 4 << 20).unwrap_or(false);
+    let text = match std::fs::read_to_string(&tmp) {
+        Ok(t) if small => t,
+        _ => {
+            let _ = std::fs::remove_file(&tmp);
+            return Err("not a text file".into());
+        }
+    };
     let n = parse_pnach(&text).len();
     if n == 0 {
         let _ = std::fs::remove_file(&tmp);

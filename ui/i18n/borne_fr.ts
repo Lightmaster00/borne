@@ -12,6 +12,473 @@
     </message>
 </context>
 <context>
+    <name>CoreText</name>
+    <message>
+        <source>a game is already running</source>
+        <translation>un jeu est déjà lancé</translation>
+    </message>
+    <message>
+        <source>a game is running: quit it first</source>
+        <translation>un jeu est lancé : quittez-le d’abord</translation>
+    </message>
+    <message>
+        <source>the downloaded copy is missing: download the game again</source>
+        <translation>la copie téléchargée a disparu : téléchargez le jeu à nouveau</translation>
+    </message>
+    <message>
+        <source>download the game or play it from the network first</source>
+        <translation>téléchargez le jeu ou jouez-y depuis le réseau d’abord</translation>
+    </message>
+    <message>
+        <source>download the game first: its exact version is read from the file</source>
+        <translation>téléchargez d’abord le jeu : sa version exacte est lue dans le fichier</translation>
+    </message>
+    <message>
+        <source>Borne cannot run %1 games yet</source>
+        <translation>Borne ne peut pas encore lancer les jeux %1</translation>
+    </message>
+    <message>
+        <source>no emulator can run %1 games yet</source>
+        <translation>aucun émulateur ne lance encore les jeux %1</translation>
+    </message>
+    <message>
+        <source>unknown emulator for this console</source>
+        <translation>émulateur inconnu pour cette console</translation>
+    </message>
+    <message>
+        <source>unknown emulator</source>
+        <translation>émulateur inconnu</translation>
+    </message>
+    <message>
+        <source>the %1 core is missing</source>
+        <translation>le cœur %1 manque</translation>
+    </message>
+    <message>
+        <source>%1 is missing: add it in Settings → System files</source>
+        <translation>%1 manque : ajoutez-le dans Paramètres → Fichiers système</translation>
+    </message>
+    <message>
+        <source>game already installed</source>
+        <translation>jeu déjà installé</translation>
+    </message>
+    <message>
+        <source>game not installed</source>
+        <translation>jeu non installé</translation>
+    </message>
+    <message>
+        <source>game not linked</source>
+        <translation>jeu non relié</translation>
+    </message>
+    <message>
+        <source>unknown game</source>
+        <translation>jeu inconnu</translation>
+    </message>
+    <message>
+        <source>unknown game or no profile</source>
+        <translation>jeu inconnu ou pas de profil</translation>
+    </message>
+    <message>
+        <source>unknown game or no active profile</source>
+        <translation>jeu inconnu ou pas de profil actif</translation>
+    </message>
+    <message>
+        <source>this version belongs to another game</source>
+        <translation>cette version appartient à un autre jeu</translation>
+    </message>
+    <message>
+        <source>no game file found</source>
+        <translation>aucun fichier de jeu trouvé</translation>
+    </message>
+    <message>
+        <source>RomM lists no game file for this title</source>
+        <translation>RomM n’a aucun fichier de jeu pour ce titre</translation>
+    </message>
+    <message>
+        <source>not enough disk space: %1 MB needed, %2 MB free</source>
+        <translation>pas assez d’espace disque : %1 Mo nécessaires, %2 Mo libres</translation>
+    </message>
+    <message>
+        <source>corrupted file: %1 (SHA-1 mismatch twice)</source>
+        <translation>fichier corrompu : %1 (SHA-1 différent deux fois)</translation>
+    </message>
+    <message>
+        <source>download failed (HTTP %1)</source>
+        <translation>échec du téléchargement (HTTP %1)</translation>
+    </message>
+    <message>
+        <source>download failed (%1)</source>
+        <translation>échec du téléchargement (%1)</translation>
+    </message>
+    <message>
+        <source>download interrupted (%1)</source>
+        <translation>téléchargement interrompu (%1)</translation>
+    </message>
+    <message>
+        <source>transfer interrupted: %1</source>
+        <translation>transfert interrompu : %1</translation>
+    </message>
+    <message>
+        <source>the virtual mount is only available on Linux</source>
+        <translation>jouer depuis le réseau n’est disponible que sous Linux</translation>
+    </message>
+    <message>
+        <source>the virtual mount is not available on this system</source>
+        <translation>jouer depuis le réseau n’est pas disponible sur ce système</translation>
+    </message>
+    <message>
+        <source>network play unavailable (%1); FUSE (fusermount3) is required</source>
+        <translation>jeu depuis le réseau indisponible (%1) ; FUSE (fusermount3) est nécessaire</translation>
+    </message>
+    <message>
+        <source>no trailer in RomM for this game</source>
+        <translation>pas de bande-annonce dans RomM pour ce jeu</translation>
+    </message>
+    <message>
+        <source>no gameplay video on ScreenScraper for this game</source>
+        <translation>pas de vidéo de jeu sur ScreenScraper pour ce jeu</translation>
+    </message>
+    <message>
+        <source>an installation is already running</source>
+        <translation>une installation est déjà en cours</translation>
+    </message>
+    <message>
+        <source>no installation source for this system</source>
+        <translation>aucune source d’installation pour ce système</translation>
+    </message>
+    <message>
+        <source>no build for this system in %1's releases</source>
+        <translation>aucune version pour ce système dans les publications de %1</translation>
+    </message>
+    <message>
+        <source>no build for this platform</source>
+        <translation>aucune version pour cette plateforme</translation>
+    </message>
+    <message>
+        <source>the download does not match its published checksum</source>
+        <translation>le téléchargement ne correspond pas à sa somme de contrôle publiée</translation>
+    </message>
+    <message>
+        <source>the archive could not be extracted</source>
+        <translation>l’archive n’a pas pu être extraite</translation>
+    </message>
+    <message>
+        <source>the archive could not be extracted: %1</source>
+        <translation>l’archive n’a pas pu être extraite : %1</translation>
+    </message>
+    <message>
+        <source>no program in the download</source>
+        <translation>aucun programme dans le téléchargement</translation>
+    </message>
+    <message>
+        <source>no application in the download</source>
+        <translation>aucune application dans le téléchargement</translation>
+    </message>
+    <message>
+        <source>Flatpak is not available on this system</source>
+        <translation>Flatpak n’est pas disponible sur ce système</translation>
+    </message>
+    <message>
+        <source>this path is not a program</source>
+        <translation>ce chemin n’est pas un programme</translation>
+    </message>
+    <message>
+        <source>RPCS3 could not install the PS3 firmware</source>
+        <translation>RPCS3 n’a pas pu installer le firmware PS3</translation>
+    </message>
+    <message>
+        <source>RPCS3 could not install the firmware: %1</source>
+        <translation>RPCS3 n’a pas pu installer le firmware : %1</translation>
+    </message>
+    <message>
+        <source>install Dolphin first (Settings → Emulators): its own code list is used</source>
+        <translation>installez d’abord Dolphin (Paramètres → Émulateurs) : sa propre liste de codes est utilisée</translation>
+    </message>
+    <message>
+        <source>the game ID could not be read from this file</source>
+        <translation>l’identifiant du jeu n’a pas pu être lu dans ce fichier</translation>
+    </message>
+    <message>
+        <source>the game's title id is not in its file name ([0100…])</source>
+        <translation>l’identifiant du jeu n’est pas dans le nom du fichier ([0100…])</translation>
+    </message>
+    <message>
+        <source>the game's CRC could not be read (cheats need an .iso)</source>
+        <translation>le CRC du jeu n’a pas pu être lu (les cheats demandent un .iso)</translation>
+    </message>
+    <message>
+        <source>the DS cheat database is not here yet</source>
+        <translation>la base de cheats DS n’est pas encore là</translation>
+    </message>
+    <message>
+        <source>no cheat (patch= line) in this file</source>
+        <translation>aucun cheat (ligne patch=) dans ce fichier</translation>
+    </message>
+    <message>
+        <source>not a text file</source>
+        <translation>ce n’est pas un fichier texte</translation>
+    </message>
+    <message>
+        <source>this file is not a DS game</source>
+        <translation>ce fichier n’est pas un jeu DS</translation>
+    </message>
+    <message>
+        <source>a file is already being added</source>
+        <translation>un fichier est déjà en cours d’ajout</translation>
+    </message>
+    <message>
+        <source>a file or a link expected</source>
+        <translation>un fichier ou un lien est attendu</translation>
+    </message>
+    <message>
+        <source>a %1 file is expected</source>
+        <translation>un fichier %1 est attendu</translation>
+    </message>
+    <message>
+        <source>this file cannot be found</source>
+        <translation>ce fichier est introuvable</translation>
+    </message>
+    <message>
+        <source>this file is too small</source>
+        <translation>ce fichier est trop petit</translation>
+    </message>
+    <message>
+        <source>this file is too large for a keys file</source>
+        <translation>ce fichier est trop gros pour un fichier de clés</translation>
+    </message>
+    <message>
+        <source>this file is %1 bytes, %2 expected: is it the right file?</source>
+        <translation>ce fichier fait %1 octets, %2 attendus : est-ce le bon fichier ?</translation>
+    </message>
+    <message>
+        <source>this is not a keys file (lines of name = key expected)</source>
+        <translation>ce n’est pas un fichier de clés (lignes nom = clé attendues)</translation>
+    </message>
+    <message>
+        <source>this is not a keys file (text expected)</source>
+        <translation>ce n’est pas un fichier de clés (texte attendu)</translation>
+    </message>
+    <message>
+        <source>this is not a .zip archive of the firmware</source>
+        <translation>ce n’est pas une archive .zip du firmware</translation>
+    </message>
+    <message>
+        <source>no .nca file in this archive: it is not a Switch firmware</source>
+        <translation>aucun fichier .nca dans cette archive : ce n’est pas un firmware Switch</translation>
+    </message>
+    <message>
+        <source>this is not a PS3 update file (PS3UPDAT.PUP)</source>
+        <translation>ce n’est pas un fichier de mise à jour PS3 (PS3UPDAT.PUP)</translation>
+    </message>
+    <message>
+        <source>the link must start with http:// or https://</source>
+        <translation>le lien doit commencer par http:// ou https://</translation>
+    </message>
+    <message>
+        <source>the link answered %1</source>
+        <translation>le lien a répondu %1</translation>
+    </message>
+    <message>
+        <source>the link cannot be reached: %1</source>
+        <translation>le lien est injoignable : %1</translation>
+    </message>
+    <message>
+        <source>the file could not be read: %1</source>
+        <translation>le fichier n’a pas pu être lu : %1</translation>
+    </message>
+    <message>
+        <source>no file chooser on this system: type the file's path</source>
+        <translation>pas de sélecteur de fichiers sur ce système : tapez le chemin du fichier</translation>
+    </message>
+    <message>
+        <source>no file chosen</source>
+        <translation>aucun fichier choisi</translation>
+    </message>
+    <message>
+        <source>RomM has no such file for this console</source>
+        <translation>RomM n’a pas ce fichier pour cette console</translation>
+    </message>
+    <message>
+        <source>wrong user name or password</source>
+        <translation>nom d’utilisateur ou mot de passe incorrect</translation>
+    </message>
+    <message>
+        <source>user name and password needed</source>
+        <translation>nom d’utilisateur et mot de passe nécessaires</translation>
+    </message>
+    <message>
+        <source>this RomM account cannot give Borne the access it needs</source>
+        <translation>ce compte RomM ne peut pas donner à Borne l’accès nécessaire</translation>
+    </message>
+    <message>
+        <source>RomM refused the pairing</source>
+        <translation>RomM a refusé l’appairage</translation>
+    </message>
+    <message>
+        <source>the pairing code expired</source>
+        <translation>le code d’appairage a expiré</translation>
+    </message>
+    <message>
+        <source>RomM did not give the token in time</source>
+        <translation>RomM n’a pas donné le jeton à temps</translation>
+    </message>
+    <message>
+        <source>this RomM version does not support device pairing</source>
+        <translation>cette version de RomM ne gère pas l’appairage d’appareils</translation>
+    </message>
+    <message>
+        <source>access denied by RomM: pair again</source>
+        <translation>accès refusé par RomM : appairez à nouveau</translation>
+    </message>
+    <message>
+        <source>no RomM server configured</source>
+        <translation>aucun serveur RomM configuré</translation>
+    </message>
+    <message>
+        <source>no paired profile</source>
+        <translation>aucun profil appairé</translation>
+    </message>
+    <message>
+        <source>no paired profile or server offline</source>
+        <translation>aucun profil appairé ou serveur hors ligne</translation>
+    </message>
+    <message>
+        <source>RomM server unreachable</source>
+        <translation>serveur RomM injoignable</translation>
+    </message>
+    <message>
+        <source>RomM server unreachable (%1)</source>
+        <translation>serveur RomM injoignable (%1)</translation>
+    </message>
+    <message>
+        <source>RomM unreachable</source>
+        <translation>RomM injoignable</translation>
+    </message>
+    <message>
+        <source>this server does not look like RomM</source>
+        <translation>ce serveur ne ressemble pas à RomM</translation>
+    </message>
+    <message>
+        <source>the server took too long to answer (%1)</source>
+        <translation>le serveur a mis trop de temps à répondre (%1)</translation>
+    </message>
+    <message>
+        <source>the server's HTTPS certificate is not trusted by this system; install its certificate authority or use http (%1)</source>
+        <translation>le certificat HTTPS du serveur n’est pas reconnu par ce système ; installez son autorité de certification ou utilisez http (%1)</translation>
+    </message>
+    <message>
+        <source>invalid address</source>
+        <translation>adresse invalide</translation>
+    </message>
+    <message>
+        <source>empty address</source>
+        <translation>adresse vide</translation>
+    </message>
+    <message>
+        <source>invalid profile name (1 to 40 characters)</source>
+        <translation>nom de profil invalide (1 à 40 caractères)</translation>
+    </message>
+    <message>
+        <source>unknown profile</source>
+        <translation>profil inconnu</translation>
+    </message>
+    <message>
+        <source>RomM answered %1: %2</source>
+        <translation>RomM a répondu %1 : %2</translation>
+    </message>
+    <message>
+        <source>no ScreenScraper account</source>
+        <translation>aucun compte ScreenScraper</translation>
+    </message>
+    <message>
+        <source>credentials refused: check the account and the password</source>
+        <translation>identifiants refusés : vérifiez le compte et le mot de passe</translation>
+    </message>
+    <message>
+        <source>ScreenScraper unreachable (network)</source>
+        <translation>ScreenScraper injoignable (réseau)</translation>
+    </message>
+    <message>
+        <source>ScreenScraper's API is closed for now</source>
+        <translation>l’API de ScreenScraper est fermée pour le moment</translation>
+    </message>
+    <message>
+        <source>ScreenScraper is closed to non-members for now (server saturated)</source>
+        <translation>ScreenScraper est fermé aux non-membres pour le moment (serveur saturé)</translation>
+    </message>
+    <message>
+        <source>ScreenScraper's daily quota for this account is used up</source>
+        <translation>le quota quotidien ScreenScraper de ce compte est épuisé</translation>
+    </message>
+    <message>
+        <source>too many unknown games for today on ScreenScraper</source>
+        <translation>trop de jeux inconnus aujourd’hui sur ScreenScraper</translation>
+    </message>
+    <message>
+        <source>this build of Borne has no ScreenScraper developer access</source>
+        <translation>cette version de Borne n’a pas d’accès développeur ScreenScraper</translation>
+    </message>
+    <message>
+        <source>this version of the software is refused by ScreenScraper</source>
+        <translation>cette version du logiciel est refusée par ScreenScraper</translation>
+    </message>
+    <message>
+        <source>ScreenScraper answered %1</source>
+        <translation>ScreenScraper a répondu %1</translation>
+    </message>
+    <message>
+        <source>an update is already in progress</source>
+        <translation>une mise à jour est déjà en cours</translation>
+    </message>
+    <message>
+        <source>no update available</source>
+        <translation>aucune mise à jour disponible</translation>
+    </message>
+    <message>
+        <source>no update ready to install</source>
+        <translation>aucune mise à jour prête à installer</translation>
+    </message>
+    <message>
+        <source>no version published on this channel yet</source>
+        <translation>aucune version publiée sur ce canal pour l’instant</translation>
+    </message>
+    <message>
+        <source>update server unreachable (%1)</source>
+        <translation>serveur de mises à jour injoignable (%1)</translation>
+    </message>
+    <message>
+        <source>the downloaded file is damaged (SHA-256 mismatch)</source>
+        <translation>le fichier téléchargé est endommagé (SHA-256 différent)</translation>
+    </message>
+    <message>
+        <source>this copy was built locally; updates come with the builds published on GitHub</source>
+        <translation>cette copie a été compilée localement ; les mises à jour viennent des versions publiées sur GitHub</translation>
+    </message>
+    <message>
+        <source>macOS runs Borne from a temporary read-only copy: move Borne.app to Applications and open it again</source>
+        <translation>macOS lance Borne depuis une copie temporaire en lecture seule : déplacez Borne.app dans Applications et rouvrez-le</translation>
+    </message>
+    <message>
+        <source>installed with Flatpak: update it with Flatpak</source>
+        <translation>installé avec Flatpak : mettez-le à jour avec Flatpak</translation>
+    </message>
+    <message>
+        <source>installation folder not recognized</source>
+        <translation>dossier d’installation non reconnu</translation>
+    </message>
+    <message>
+        <source>%1 is not writable</source>
+        <translation>%1 n’est pas modifiable</translation>
+    </message>
+    <message>
+        <source>sent later: %1</source>
+        <translation>envoyé plus tard : %1</translation>
+    </message>
+    <message>
+        <source>save sent to RomM</source>
+        <translation>sauvegarde envoyée à RomM</translation>
+    </message>
+</context>
+<context>
     <name>Display</name>
     <message>
         <source>Picture shape</source>
@@ -2070,7 +2537,7 @@
     </message>
     <message>
         <source>Trailers</source>
-        <translation>Trailers</translation>
+        <translation>Bandes-annonces</translation>
     </message>
     <message>
         <source>Videos of the games, muted: behind the library and on the game page</source>
@@ -2283,6 +2750,78 @@
     <message>
         <source>See the report</source>
         <translation>Voir le bilan</translation>
+    </message>
+    <message>
+        <source>DS ARM7 BIOS</source>
+        <translation>BIOS DS ARM7</translation>
+    </message>
+    <message>
+        <source>DS ARM9 BIOS</source>
+        <translation>BIOS DS ARM9</translation>
+    </message>
+    <message>
+        <source>DS firmware</source>
+        <translation>Firmware DS</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance BIOS</source>
+        <translation>BIOS Game Boy Advance</translation>
+    </message>
+    <message>
+        <source>Mega-CD / Sega CD BIOS</source>
+        <translation>BIOS Mega-CD / Sega CD</translation>
+    </message>
+    <message>
+        <source>PS3 firmware (PS3UPDAT.PUP)</source>
+        <translation>Firmware PS3 (PS3UPDAT.PUP)</translation>
+    </message>
+    <message>
+        <source>PS4 system modules (.sprx)</source>
+        <translation>Modules système PS4 (.sprx)</translation>
+    </message>
+    <message>
+        <source>PlayStation 2 BIOS</source>
+        <translation>BIOS PlayStation 2</translation>
+    </message>
+    <message>
+        <source>PlayStation BIOS</source>
+        <translation>BIOS PlayStation</translation>
+    </message>
+    <message>
+        <source>Saturn BIOS</source>
+        <translation>BIOS Saturn</translation>
+    </message>
+    <message>
+        <source>Switch firmware (archive of .nca files)</source>
+        <translation>Firmware Switch (archive de fichiers .nca)</translation>
+    </message>
+    <message>
+        <source>Switch keys (prod.keys)</source>
+        <translation>Clés Switch (prod.keys)</translation>
+    </message>
+    <message>
+        <source>Switch title keys (title.keys)</source>
+        <translation>Clés de titres Switch (title.keys)</translation>
+    </message>
+    <message>
+        <source>this copy was built locally; updates come with the builds published on GitHub</source>
+        <translation>cette copie a été compilée localement ; les mises à jour viennent des versions publiées sur GitHub</translation>
+    </message>
+    <message>
+        <source>macOS runs Borne from a temporary read-only copy: move Borne.app to Applications and open it again</source>
+        <translation>macOS lance Borne depuis une copie temporaire en lecture seule : déplacez Borne.app dans Applications et rouvrez-le</translation>
+    </message>
+    <message>
+        <source>installed with Flatpak: update it with Flatpak</source>
+        <translation>installé avec Flatpak : mettez-le à jour avec Flatpak</translation>
+    </message>
+    <message>
+        <source>installation folder not recognized</source>
+        <translation>dossier d’installation non reconnu</translation>
+    </message>
+    <message>
+        <source> is not writable</source>
+        <translation> n’est pas modifiable</translation>
     </message>
 </context>
 </TS>

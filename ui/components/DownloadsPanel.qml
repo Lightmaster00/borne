@@ -1,5 +1,6 @@
 // Download list: progress, errors, cancellation.
 import QtQuick
+import "CoreText.js" as CoreText
 
 Rectangle {
     id: panel
@@ -79,14 +80,14 @@ Rectangle {
                             width: parent.width; height: 4; radius: 2; color: Qt.rgba(1, 1, 1, 0.16)
                             Rectangle { height: parent.height; radius: 2; color: theme.fg; width: parent.width * (modelData.total > 0 ? Math.min(1, modelData.received / modelData.total) : 0) }
                         }
-                        Text { visible: modelData.state === "failed"; width: parent.width; elide: Text.ElideRight; text: modelData.error || ""; color: theme.bad; font { family: theme.fontFamily; pixelSize: 16 } }
+                        Text { visible: modelData.state === "failed"; width: parent.width; elide: Text.ElideRight; text: CoreText.tr(modelData.error || ""); color: theme.bad; font { family: theme.fontFamily; pixelSize: 16 } }
                     }
                 }
             }
             HintBar {
                 theme: panel.theme
                 pointerActive: panel.pointerActive
-                hints: [["A", qsTr("Cancel / retry"), "a"], ["B", qsTr("Close"), "b"]]
+                hints: (panel.downloads.length ? [["A", qsTr("Cancel / retry"), "a"]] : []).concat([["B", qsTr("Close"), "b"]])
                 onTriggered: (a) => panel.handle(a)
             }
         }

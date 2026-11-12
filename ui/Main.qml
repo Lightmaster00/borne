@@ -12,6 +12,7 @@ import Borne.Theme
 import "components"
 import "components/Display.js" as Display
 import "components/Cases.js" as Cases
+import "components/CoreText.js" as CoreText
 
 Window {
     id: win
@@ -82,7 +83,7 @@ Window {
             let data = null
             try { data = xhr.responseText ? JSON.parse(xhr.responseText) : null } catch (e) { data = null }
             if (xhr.status >= 200 && xhr.status < 300) cb && cb(data, null)
-            else cb && cb(null, data && data.error ? data.error : (xhr.status === 0 ? qsTr("core unreachable") : qsTr("error %1").arg(xhr.status)))
+            else cb && cb(null, data && data.error ? CoreText.tr(data.error) : (xhr.status === 0 ? qsTr("core unreachable") : qsTr("error %1").arg(xhr.status)))
         }
         xhr.open(method, apiBase + path)
         if (body !== null && body !== undefined) xhr.setRequestHeader("Content-Type", "application/json")
@@ -201,12 +202,12 @@ Window {
             libModel.setProperty(i, "dl_state", m.state === "done" || m.state === "cancelled" ? "" : m.state)
             libModel.setProperty(i, "dl_received", m.received || 0)
             libModel.setProperty(i, "dl_total", m.total || 0)
-            libModel.setProperty(i, "dl_error", m.error || "")
+            libModel.setProperty(i, "dl_error", CoreText.tr(m.error || ""))
             libRevision++
         }
         const name = i !== undefined && i < libModel.count ? libModel.get(i).name : qsTr("The game")
         if (m.state === "done") toasts.show(qsTr("%1 is installed.").arg(name), "ok")
-        if (m.state === "failed") toasts.show(qsTr("%1: %2").arg(name).arg(m.error || qsTr("download failed")), "error")
+        if (m.state === "failed") toasts.show(qsTr("%1: %2").arg(name).arg(m.error ? CoreText.tr(m.error) : qsTr("download failed")), "error")
         if (downloadsPanel.visible) downloadsRefresh.restart()
         if (page && page.versions.some(v => v.rom_id === m.rom_id)) pageReload.restart()
     }
@@ -355,7 +356,7 @@ Window {
         if (s && s.running) { gameMode = true; quitChord.armed = false }
         else {
             gameMode = false
-            if (s && s.error) toasts.show(s.error, "error")
+            if (s && s.error) toasts.show(CoreText.tr(s.error), "error")
             else if (s && s.saves) toasts.show(s.saves === "save sent to RomM" ? qsTr("Save sent to RomM.") : qsTr("RomM unreachable: the save will be sent later."), "info")
             reloadGame(); libReload.restart()
         }
@@ -398,7 +399,7 @@ Window {
             if (!c.cheats.length) {
                 const why = ps2 ? qsTr("PS2 cheats come from a .pnach file you give for this game (PCSX2's format).")
                           : c.updating ? qsTr("Downloading the cheat databases… try again in a moment.")
-                          : c.error ? c.error : qsTr("No cheats for this version of the game in the public databases.")
+                          : c.error ? CoreText.tr(c.error) : qsTr("No cheats for this version of the game in the public databases.")
                 menu.open(qsTr("Cheats"), why, pnachItems.concat([{ id: "close", label: qsTr("Close") }]), function (id) { pnach(id) })
                 return
             }
@@ -505,7 +506,7 @@ Window {
         else if (g.linked) items.push({ id: "unlink", label: qsTr("Remove from the network mount") })
         else {
             items.push({ id: "download", label: qsTr("Download"), detail: fmtSize(g.fs_size) })
-            items.push({ id: "link", label: qsTr("Play from the network"), disabled: !settings.stream.available, detail: settings.stream.available ? "" : settings.stream.error || "" })
+            items.push({ id: "link", label: qsTr("Play from the network"), disabled: !settings.stream.available, detail: settings.stream.available ? "" : CoreText.tr(settings.stream.error || "") })
         }
         items.push({ id: "close", label: qsTr("Close") })
         menu.open(g.name, g.platform_name + (g.year > 0 ? " · " + g.year : "") + (g.version_count > 1 ? " · " + qsTr("%n version(s)", "", g.version_count) : ""), items, function (c) {
@@ -532,7 +533,7 @@ Window {
         sfx.play("accept")
         if (id === "install") {
             if (payload === "stream" && !settings.stream.available) {
-                toasts.show(qsTr("Playing from the network is unavailable here: %1").arg(settings.stream.error || ""), "error")
+                toasts.show(qsTr("Playing from the network is unavailable here: %1").arg(CoreText.tr(settings.stream.error || "")), "error")
                 return
             }
             post({ install_mode: payload })
@@ -971,7 +972,7 @@ Window {
     readonly property string emptyLibraryText: {
         const st = win.status ? win.status.sync : null
         if (st && st.running) return qsTr("Syncing the library…")
-        if (st && st.error && libModel.count === 0) return qsTr("The library could not be synced: %1").arg(st.error)
+        if (st && st.error && libModel.count === 0) return qsTr("The library could not be synced: %1").arg(CoreText.tr(st.error))
         const tabId = win.systems[win.systemIndex] ? win.systems[win.systemIndex].id : ""
         if (tabId === "fav") return qsTr("No favourites yet. On a game, choose “Add to favourites” (Select menu or game page).")
         if (tabId === "recent") return qsTr("No game played yet on this profile.")
@@ -1012,7 +1013,7 @@ Window {
             else if (m.type === "screenscraper") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "sync") {
                 if (win.status) { const s = win.status; s.sync = m.sync; win.status = s; win.statusChanged() }
-                if (!m.sync.running && m.sync.error) toasts.show(qsTr("Sync: %1").arg(m.sync.error), "error")
+                if (!m.sync.running && m.sync.error) toasts.show(qsTr("Sync: %1").arg(CoreText.tr(m.sync.error)), "error")
                 if (!m.sync.running) libReload.restart()
             }
             else if (m.type === "status") win.refreshStatus()
@@ -1621,7 +1622,7 @@ Window {
         uiLang: win.uiLang
         installMode: win.page ? win.page.install_mode : "download"
         streamAvailable: win.page ? win.page.stream.available : false
-        streamError: win.page && win.page.stream.error ? win.page.stream.error : ""
+        streamError: win.page && win.page.stream.error ? CoreText.tr(win.page.stream.error) : ""
         pointerActive: win.pointerActive
         trailers: win.trailers
         trailerUrl: win.pageTrailer

@@ -11,7 +11,9 @@
 //! - DuckStation: the game's own memory card (`memcards/<game>_1.mcd`, cards per game file);
 //! - PCSX2: a memory card per game (`memcards/<game>.ps2`, set by Borne);
 //! - Eden and Citron: the game's save folder in the emulated console (by its title id), as a zip;
-//! - RPCS3: the game's save folders (by the serial in its name), as zips.
+//! - RPCS3: the game's save folders (by the serial in its name), as zips;
+//! - shadPS4, Ryujinx, Xenia: the game's save folder (title id), as a zip.
+//!
 //! Offline, the game starts with the local copy; sends are retried at the next start.
 
 use crate::state::Shared;
@@ -93,7 +95,7 @@ pub fn xenia_title_id(rom: &Path) -> Option<String> {
                 let name = String::from_utf8_lossy(dir.get(o + 14..o + 14 + n)?).to_lowercase();
                 if name == "default.xex" {
                     let (s2, len) = (le(&dir, o + 4), le(&dir, o + 8) as usize);
-                    found = at(base + s2 * 2048, len.min(1 << 20).max(0x1000));
+                    found = at(base + s2 * 2048, len.clamp(0x1000, 1 << 20));
                     break;
                 }
                 o = (o + 14 + n + 3) & !3;
@@ -282,7 +284,16 @@ pub fn claim(app: &Shared, profile: &str, program: &str) {
             std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
         if to.exists() {
-            let _ = std::fs::remove_dir_all(to);
+            // Never delete saves: an older copy left there (an earlier move that failed half
+            // way) is kept beside it rather than overwritten.
+            let empty = std::fs::read_dir(to).map(|mut d| d.next().is_none()).unwrap_or(false);
+            if empty {
+                let _ = std::fs::remove_dir(to);
+            } else {
+                let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+                let aside = to.with_file_name(format!("{}-{secs}", to.file_name().and_then(|n| n.to_str()).unwrap_or("saves")));
+                std::fs::rename(to, &aside).map_err(|e| e.to_string())?;
+            }
         }
         if std::fs::rename(from, to).is_ok() {
             return Ok(());
@@ -302,6 +313,7 @@ pub fn claim(app: &Shared, profile: &str, program: &str) {
         let mine = stash(profile).join("saves");
         if mine.exists() {
             if let Err(e) = moved(&mine, &root) {
+                // They stay in the stash; a later move there keeps them aside (see `moved`).
                 app.db.log("saves", &format!("{program}: this profile's saves not restored ({e})"));
             }
         }

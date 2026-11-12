@@ -556,8 +556,6 @@ impl Db {
             .flatten()
     }
 
-    /// Game facts fetched from Wikipedia / Wikidata, cached by key (game + language).
-
     /// Removes games that disappeared from RomM from the catalog (unless installed locally).
     pub fn prune_games(&self, sync_id: i64) -> usize {
         self.c()

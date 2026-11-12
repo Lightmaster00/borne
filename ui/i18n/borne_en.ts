@@ -12,6 +12,473 @@
     </message>
 </context>
 <context>
+    <name>CoreText</name>
+    <message>
+        <source>a game is already running</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a game is running: quit it first</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the downloaded copy is missing: download the game again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download the game or play it from the network first</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download the game first: its exact version is read from the file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne cannot run %1 games yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no emulator can run %1 games yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unknown emulator for this console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unknown emulator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the %1 core is missing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is missing: add it in Settings → System files</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>game already installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>game not installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>game not linked</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unknown game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unknown game or no profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unknown game or no active profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this version belongs to another game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no game file found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM lists no game file for this title</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>not enough disk space: %1 MB needed, %2 MB free</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>corrupted file: %1 (SHA-1 mismatch twice)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download failed (HTTP %1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download failed (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download interrupted (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>transfer interrupted: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the virtual mount is only available on Linux</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the virtual mount is not available on this system</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>network play unavailable (%1); FUSE (fusermount3) is required</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no trailer in RomM for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no gameplay video on ScreenScraper for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>an installation is already running</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no installation source for this system</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no build for this system in %1's releases</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no build for this platform</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the download does not match its published checksum</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the archive could not be extracted</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the archive could not be extracted: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no program in the download</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no application in the download</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Flatpak is not available on this system</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this path is not a program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RPCS3 could not install the PS3 firmware</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RPCS3 could not install the firmware: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>install Dolphin first (Settings → Emulators): its own code list is used</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game ID could not be read from this file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game's title id is not in its file name ([0100…])</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game's CRC could not be read (cheats need an .iso)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the DS cheat database is not here yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no cheat (patch= line) in this file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>not a text file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file is not a DS game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a file is already being added</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a file or a link expected</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a %1 file is expected</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file cannot be found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file is too small</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file is too large for a keys file</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file is %1 bytes, %2 expected: is it the right file?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this is not a keys file (lines of name = key expected)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this is not a keys file (text expected)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this is not a .zip archive of the firmware</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no .nca file in this archive: it is not a Switch firmware</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this is not a PS3 update file (PS3UPDAT.PUP)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the link must start with http:// or https://</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the link answered %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the link cannot be reached: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the file could not be read: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no file chooser on this system: type the file's path</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no file chosen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM has no such file for this console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>wrong user name or password</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>user name and password needed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this RomM account cannot give Borne the access it needs</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM refused the pairing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the pairing code expired</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM did not give the token in time</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this RomM version does not support device pairing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>access denied by RomM: pair again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no RomM server configured</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no paired profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no paired profile or server offline</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM server unreachable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM server unreachable (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM unreachable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this server does not look like RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the server took too long to answer (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the server's HTTPS certificate is not trusted by this system; install its certificate authority or use http (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>invalid address</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>empty address</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>invalid profile name (1 to 40 characters)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unknown profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM answered %1: %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no ScreenScraper account</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>credentials refused: check the account and the password</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper unreachable (network)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper's API is closed for now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper is closed to non-members for now (server saturated)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper's daily quota for this account is used up</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>too many unknown games for today on ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this build of Borne has no ScreenScraper developer access</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this version of the software is refused by ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper answered %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>an update is already in progress</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no update available</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no update ready to install</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no version published on this channel yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>update server unreachable (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the downloaded file is damaged (SHA-256 mismatch)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this copy was built locally; updates come with the builds published on GitHub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>macOS runs Borne from a temporary read-only copy: move Borne.app to Applications and open it again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>installed with Flatpak: update it with Flatpak</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>installation folder not recognized</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is not writable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>sent later: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>save sent to RomM</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>Display</name>
     <message>
         <source>Picture shape</source>
@@ -2282,6 +2749,78 @@
     </message>
     <message>
         <source>See the report</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>DS ARM7 BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>DS ARM9 BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>DS firmware</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game Boy Advance BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mega-CD / Sega CD BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PS3 firmware (PS3UPDAT.PUP)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PS4 system modules (.sprx)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PlayStation 2 BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PlayStation BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saturn BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Switch firmware (archive of .nca files)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Switch keys (prod.keys)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Switch title keys (title.keys)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this copy was built locally; updates come with the builds published on GitHub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>macOS runs Borne from a temporary read-only copy: move Borne.app to Applications and open it again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>installed with Flatpak: update it with Flatpak</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>installation folder not recognized</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source> is not writable</source>
         <translation type="unfinished" />
     </message>
 </context>

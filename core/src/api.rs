@@ -30,8 +30,7 @@
 //!   GET    /api/v1/library?platform=&q=&local=1&fav=1&recent=1&genre=&sort=name|played|added|time&lang=fr
 //!                                                 one entry per game, versions grouped
 //!   GET    /api/v1/games/<rom_id>?lang=fr        game page: shown version, all versions, choices
-//!   GET    /api/v1/games/<rom_id>/facts?lang=fr  credits, introduction, anecdotes (Wikidata,
-//!                                                Wikipedia), studios, series, screenshots (RomM)
+//!   GET    /api/v1/games/<rom_id>/facts?lang=fr  credits, studios, series, screenshots (RomM)
 //!   GET    /api/v1/games/<rom_id>/screenshots/<n>  a screenshot, fetched from RomM and cached
 //!   POST   /api/v1/games/<rom_id>/download
 //!   DELETE /api/v1/games/<rom_id>/local          deletes the local copy (never on RomM)

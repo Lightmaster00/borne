@@ -2,6 +2,7 @@
 // Gamepad: up/down moves in the focused column, right enters a section, left goes back to the
 // sections, left/right inside a row of choices, A to choose, B to go back. Mouse: all clickable.
 import QtQuick
+import "CoreText.js" as CoreText
 import "Display.js" as Display
 
 Item {
@@ -27,6 +28,18 @@ Item {
     readonly property bool streamAvailable: settings ? settings.stream.available : false
     readonly property string installMode: settings ? settings.install_mode : "download"
 
+    // The system files' names (Borne's list, in English) in the interface's language.
+    function fileName(n) {
+        const t = {
+            "DS ARM7 BIOS": qsTr("DS ARM7 BIOS"), "DS ARM9 BIOS": qsTr("DS ARM9 BIOS"), "DS firmware": qsTr("DS firmware"),
+            "Game Boy Advance BIOS": qsTr("Game Boy Advance BIOS"), "Mega-CD / Sega CD BIOS": qsTr("Mega-CD / Sega CD BIOS"),
+            "PS3 firmware (PS3UPDAT.PUP)": qsTr("PS3 firmware (PS3UPDAT.PUP)"), "PS4 system modules (.sprx)": qsTr("PS4 system modules (.sprx)"),
+            "PlayStation 2 BIOS": qsTr("PlayStation 2 BIOS"), "PlayStation BIOS": qsTr("PlayStation BIOS"), "Saturn BIOS": qsTr("Saturn BIOS"),
+            "Switch firmware (archive of .nca files)": qsTr("Switch firmware (archive of .nca files)"),
+            "Switch keys (prod.keys)": qsTr("Switch keys (prod.keys)"), "Switch title keys (title.keys)": qsTr("Switch title keys (title.keys)")
+        }
+        return t[n] || n
+    }
     function fmtSize(b) {
         return b >= 1073741824 ? qsTr("%1 GB").arg(Number(b / 1073741824).toLocaleString(Qt.locale(), "f", 1))
              : b >= 1048576 ? qsTr("%1 MB").arg(Math.round(b / 1048576)) : qsTr("%1 KB").arg(Math.max(1, Math.round(b / 1024)))
@@ -36,7 +49,15 @@ Item {
     readonly property string updateText: {
         if (!upd) return ""
         const st = updState ? updState.state : "idle"
-        const manual = upd.unsupported ? qsTr("Borne cannot install it itself here (%1): download it from GitHub.").arg(upd.unsupported) : ""
+        // The core says why in English; the known reasons are said in the interface's language.
+        const reasons = {
+            "this copy was built locally; updates come with the builds published on GitHub": qsTr("this copy was built locally; updates come with the builds published on GitHub"),
+            "macOS runs Borne from a temporary read-only copy: move Borne.app to Applications and open it again": qsTr("macOS runs Borne from a temporary read-only copy: move Borne.app to Applications and open it again"),
+            "installed with Flatpak: update it with Flatpak": qsTr("installed with Flatpak: update it with Flatpak"),
+            "installation folder not recognized": qsTr("installation folder not recognized")
+        }
+        const why = upd.unsupported ? (reasons[upd.unsupported] || upd.unsupported.replace(/ is not writable$/, qsTr(" is not writable"))) : ""
+        const manual = upd.unsupported ? qsTr("Borne cannot install it itself here (%1): download it from GitHub.").arg(why) : ""
         if (st === "available") {
             const v = updState.available
             const newer = v.build > upd.current.build
@@ -46,7 +67,7 @@ Item {
         if (st === "ready") return qsTr("Downloaded and verified. Borne restarts to install it.")
         if (st === "checking") return qsTr("Checking…")
         if (st === "uptodate") return qsTr("Borne is up to date.")
-        if (st === "error") return qsTr("Update failed: %1").arg(updState.error || "")
+        if (st === "error") return qsTr("Update failed: %1").arg(CoreText.tr(updState.error || ""))
         return manual
     }
     readonly property var ss: settings && settings.screenscraper ? settings.screenscraper : null
@@ -60,7 +81,7 @@ Item {
             if (t.step === "unpack") return qsTr("Installing…")
             return qsTr("Preparing…")
         }
-        return t.error ? qsTr("Installation failed: %1").arg(t.error) : ""
+        return t.error ? qsTr("Installation failed: %1").arg(CoreText.tr(t.error)) : ""
     }
     function programText(p) {
         const t = emuTaskText(p.id)
@@ -111,7 +132,7 @@ Item {
         if (st.running && st.paused) return qsTr("Paused: %1 / %2 games, %3 found").arg(st.done).arg(st.total).arg(st.found)
         if (st.running) return qsTr("Asking ScreenScraper… %1 / %2 games, %3 found").arg(st.done).arg(st.total).arg(st.found)
                + (st.threads > 1 ? " · " + qsTr("%1 at a time").arg(st.threads) : "")
-        if (st.error) return qsTr("Stopped: %1").arg(st.error)
+        if (st.error) return qsTr("Stopped: %1").arg(CoreText.tr(st.error))
         if (ss.asked) return qsTr("%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.").arg(ss.found).arg(ss.asked).arg(Math.max(0, ss.games - ss.asked))
         return qsTr("Fetched after each sync for new games.")
     }
@@ -161,13 +182,13 @@ Item {
             let desc = busy ? qsTr("Adding…")
                      : i.files.length ? qsTr("Here: %1").arg(i.files.join(", "))
                      : i.required ? qsTr("Missing — needed to play") : qsTr("Optional")
-            if (failed) desc = qsTr("Not added: %1").arg(t.error)
+            if (failed) desc = qsTr("Not added: %1").arg(CoreText.tr(t.error))
             const key = c.slug + "/" + i.id
             const b = [{ id: "sf-romm:" + key, label: qsTr("From RomM"), primary: !i.files.length && i.required, disabled: !!(t && t.running) },
                        { id: "sf-pick:" + key, label: qsTr("Choose a file"), disabled: !!(t && t.running) },
                        { id: "sf-url:" + key, label: qsTr("From a link"), disabled: !!(t && t.running) }]
             if (i.files.length) b.push({ id: "sf-remove:" + key, label: qsTr("Remove") })
-            rows.push({ id: "sf:" + key, kind: "buttons", title: c.name + " · " + i.name, desc: desc, items: b })
+            rows.push({ id: "sf:" + key, kind: "buttons", title: c.name + " · " + fileName(i.name), desc: desc, items: b })
         }))
         if (rows.length) rows.unshift({ id: "sf-all", kind: "buttons", title: qsTr("From RomM"),
             desc: qsTr("Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask."),
@@ -262,7 +283,7 @@ Item {
         const s = status ? status.sync : null
         if (!s) return ""
         if (s.running) return qsTr("Syncing %1 of %2…").arg(s.done).arg(s.total)
-        if (s.error) return qsTr("Last sync failed: %1").arg(s.error)
+        if (s.error) return qsTr("Last sync failed: %1").arg(CoreText.tr(s.error))
         if (s.last_sync) return qsTr("Synced at %1").arg(new Date(s.last_sync * 1000).toLocaleTimeString(Qt.locale(), Locale.ShortFormat))
         return ""
     }
@@ -471,7 +492,7 @@ Item {
                         badge: page.installMode === "stream" ? qsTr("Current") : page.streamAvailable ? "" : qsTr("Linux only")
                         summary: qsTr("Borne reads the game from RomM while you play. Only games you pick are exposed.")
                         points: [qsTr("Starts in seconds, even for large games"), qsTr("Keeps the disk free; a small cache speeds up replays"), qsTr("Needs the server reachable during play")]
-                        note: !page.streamAvailable && page.settings && page.settings.stream.error ? qsTr("Unavailable here: %1").arg(page.settings.stream.error) : ""
+                        note: !page.streamAvailable && page.settings && page.settings.stream.error ? qsTr("Unavailable here: %1").arg(CoreText.tr(page.settings.stream.error)) : ""
                         selected: page.installMode === "stream"
                         disabled: !page.streamAvailable
                         focused: page.focused("install", 1)
