@@ -25,15 +25,16 @@ Node {
     readonly property bool card: kind.mat === "card"
     readonly property real mm: Cases.scale(kind, boxH)
     readonly property bool frontScan: has("front")
-    readonly property var front: Cases.frontRatio(game ? game.platform_slug : "", game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0))
-    readonly property real frontAR: front ? front.ar : 0
-    // A spine scan lying on its side (wider than tall) is stood up: its proportions are turned.
+    readonly property real frontAR: game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0)
+    // A spine scan lying on its side (wider than tall) is stood up.
     readonly property bool sideLying: has("side") && game.side_ar > 1
-    readonly property real sideAR: has("side") && game.side_ar > 0 ? (sideLying ? 1 / game.side_ar : game.side_ar) : 0
+    // Every case of a console has the same size (its real case's proportions): the scans are
+    // fitted to it, never the other way round. Only a cover that is upright where the console's
+    // boxes are usually wide (Super Nintendo in Europe) turns the case.
     readonly property bool turned: !!kind.turns && frontAR > 0 && frontAR < 1
     readonly property real bh: (turned ? kind.w : kind.h) * mm
-    readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * bh : (turned ? kind.h : kind.w) * mm
-    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, sideAR > 0 ? Math.min(bh * 0.3, sideAR * bh) : kind.d * mm)
+    readonly property real bw: (turned ? kind.h : kind.w) * mm
+    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, kind.d * mm)
     // Slightly rounded: a little more on plastic than on cardboard, and never so much that the
     // curve eats into a thin spine (its print would bend away and look off centre).
     readonly property real round: Math.min((card ? 2.2 : 3.6) * mm, bd * 0.16)
@@ -70,7 +71,13 @@ Node {
     component Print: Rectangle {
         property string src
         property bool titled: true
-        property bool cropLeft: false   // the scan is wider than the face: its left part is cut
+        // The scan fills the face. Off the case's proportions by up to 22 % (a 3:4 RomM cover on a
+        // Switch case), it is fitted whole, so no title or logo is cut at the edges; further off,
+        // it is trimmed evenly (CD cases: from the right, so the console's band on the left of the
+        // insert stays whole).
+        property bool keepLeft: false
+        property real srcAR: 0   // the scan's width / height, when known
+        readonly property bool trimmed: srcAR > 0 && Math.abs(srcAR / (width / height) - 1) > 0.22
         gradient: Gradient {
             GradientStop { position: 0; color: Qt.lighter(box.tone, 1.25) }
             GradientStop { position: 1; color: Qt.darker(box.tone, 1.9) }
@@ -87,8 +94,8 @@ Node {
             anchors.fill: parent
             source: parent.src
             sourceSize: Qt.size(parent.width, parent.height)
-            fillMode: parent.cropLeft ? Image.PreserveAspectCrop : Image.Stretch
-            horizontalAlignment: Image.AlignRight
+            fillMode: parent.trimmed ? Image.PreserveAspectCrop : Image.Stretch
+            horizontalAlignment: parent.keepLeft ? Image.AlignLeft : Image.AlignHCenter
             asynchronous: true
             // Printed flat and unlit, scans look harsh: their colours toned down like ink on card.
             layer.enabled: true
@@ -106,9 +113,8 @@ Node {
             rotation: box.sideLying ? 90 : 0
             source: box.sideUrl
             asynchronous: true
-            // Never stretched: a spine drawn thicker than its scan keeps the scan's shape, centred
-            // on a band of the console's plastic.
-            fillMode: Image.PreserveAspectFit
+            // The scan covers the whole spine, edge to edge (no band of plastic beside it).
+            fillMode: Image.Stretch
             sourceSize: Qt.size(Math.max(32, width), Math.max(32, height))
             layer.enabled: true
             layer.effect: MultiEffect { saturation: box.printSaturation }
@@ -148,7 +154,8 @@ Node {
             id: outline
             castsShadows: false
             pickable: false
-            readonly property real t: 5.5
+            // Thin, and thinner on thin cases: the ink must not make a case look thicker.
+            readonly property real t: Math.max(1.5, Math.min(3, box.bd * 0.06))
             readonly property var mesh: Mesh.hull(box.bw + 2 * t, box.bh + 2 * t, box.bd + 2 * t, box.round + t, 2)
             geometry: ProceduralMesh {
                 positions: outline.mesh.positions
@@ -172,7 +179,7 @@ Node {
                 baseColorMap: Texture {
                     generateMipmaps: true
                     mipFilter: Texture.Linear
-                    sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl; cropLeft: !!box.front && box.front.cropLeft }
+                    sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl; keepLeft: box.kind.mat === "jewel"; srcAR: box.frontAR }
                 }
             }
         }

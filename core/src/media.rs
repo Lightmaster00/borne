@@ -64,7 +64,9 @@ fn file_name(group_key: &str, kind: &str) -> String {
 }
 
 /// Trims the white or transparent margins scans often carry, at most 6% per side. Colored edges
-/// are artwork (a console band, a dark header) and are never trimmed.
+/// are artwork (a console band, a dark header) and are never trimmed. A white margin is a scanner's
+/// only when it runs all round the picture: white at the top alone is a white case's own band (Wii,
+/// 3DS) and stays.
 fn trim(img: &DynamicImage) -> DynamicImage {
     let rgba = img.to_rgba8();
     let (w, h) = rgba.dimensions();
@@ -102,6 +104,9 @@ fn trim(img: &DynamicImage) -> DynamicImage {
     while right < mx && col_uniform(w - 1 - right) {
         right += 1;
     }
+    if !transparent && (top == 0 || bottom == 0 || left == 0 || right == 0) {
+        return img.clone();
+    }
     if top + bottom + left + right == 0 {
         return img.clone();
     }
@@ -111,8 +116,47 @@ fn trim(img: &DynamicImage) -> DynamicImage {
 /// Cleans a downloaded image and writes it; returns (path, width, height).
 pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(PathBuf, u32, u32), String> {
     let img = decode(bytes)?;
-    let img = if matches!(kind, "logo" | "logo-mono" | "physical" | "steamgrid" | "marquee" | "fanart") { img } else { trim(&img) };
+    let mut img = if matches!(kind, "logo" | "logo-mono" | "physical" | "steamgrid" | "marquee" | "fanart") { img } else { trim(&img) };
+    if kind == "front" && cd_case(group_key) {
+        img = cut_hinge(&img);
+    }
     finish(app, group_key, kind, img)
+}
+
+/// Consoles whose games come in a CD jewel case (their front scans may show the case's hinge).
+pub fn cd_case(group_key: &str) -> bool {
+    matches!(group_key.split(':').next(), Some("psx" | "ps" | "saturn" | "segacd" | "dc"))
+}
+
+/// A jewel case scan with the case's hinge on its left: the hinge cut, the cover insert kept whole
+/// (with the console's band, "PlayStation" and the like, on its left). The hinge is the run of
+/// columns from the left edge that do not change from top to bottom (moulded ridges run straight
+/// down) and are not black; it stops at the first column carrying a logo or text, or at the
+/// insert's black band, which is never cut. The hinge's pins at the very top and bottom are not
+/// read, and at most 18 % is cut.
+pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
+    let g = img.to_luma8();
+    let (w, h) = (g.width(), g.height());
+    if w < 40 || h < 40 || (w as f64) < h as f64 * 1.02 {
+        return img.clone(); // a square insert (or narrower): no hinge
+    }
+    let (top, bottom) = (h * 6 / 100, h * 94 / 100);
+    let step = ((bottom - top) / 120).max(1);
+    let still = |x: u32| -> bool {
+        let vals: Vec<f64> = (top..bottom).step_by(step as usize).map(|y| g.get_pixel(x, y)[0] as f64).collect();
+        let mean = vals.iter().sum::<f64>() / vals.len() as f64;
+        let var = vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / vals.len() as f64;
+        var.sqrt() < 9.0 && mean >= 40.0
+    };
+    let max = w * 18 / 100;
+    let mut x = 0;
+    while x < max && still(x) {
+        x += 1;
+    }
+    if x < w / 50 {
+        return img.clone();
+    }
+    img.crop_imm(x, 0, w - x, h)
 }
 
 /// Decodes an image from the network, refusing absurd sizes before decoding (memory bombs).
@@ -268,6 +312,47 @@ pub fn report(app: &Shared) -> Value {
 mod tests {
     use super::*;
     use image::RgbaImage;
+
+    #[test]
+    fn cuts_a_jewel_case_hinge_only() {
+        // 140 x 120: a 16 px hinge of vertical ridges, then the insert (a band with a logo).
+        let mut img = image::RgbImage::new(140, 120);
+        for (x, y, p) in img.enumerate_pixels_mut() {
+            *p = if x < 16 {
+                if x % 4 == 0 { image::Rgb([200, 200, 205]) } else { image::Rgb([90, 90, 95]) }
+            } else if x < 40 {
+                if (30..50).contains(&y) { image::Rgb([255, 255, 255]) } else { image::Rgb([5, 5, 5]) }
+            } else {
+                image::Rgb([((x * 7 + y * 3) % 255) as u8, (y * 2 % 255) as u8, 80])
+            };
+        }
+        let out = cut_hinge(&DynamicImage::ImageRgb8(img.clone()));
+        assert_eq!((out.width(), out.height()), (124, 120));
+        // A square insert is left alone.
+        let sq = DynamicImage::ImageRgb8(image::imageops::crop_imm(&img, 16, 0, 120, 120).to_image());
+        assert_eq!(cut_hinge(&sq).width(), 120);
+        // A black band whose logo sits at the very top is not taken for a hinge.
+        let mut band = image::RgbImage::from_pixel(130, 120, image::Rgb([6, 6, 6]));
+        for x in 30..130 {
+            for y in 0..120 {
+                band.put_pixel(x, y, image::Rgb([((x * 5 + y) % 255) as u8, 60, 120]));
+            }
+        }
+        assert_eq!(cut_hinge(&DynamicImage::ImageRgb8(band)).width(), 130);
+    }
+
+    #[test]
+    fn white_band_at_the_top_stays() {
+        // A white case's band on top (with a grey logo further down), art below.
+        let mut img = image::RgbImage::from_pixel(100, 140, image::Rgb([255, 255, 255]));
+        for (_, y, p) in img.enumerate_pixels_mut() {
+            if y >= 20 {
+                *p = image::Rgb([40, 90, 160]);
+            }
+        }
+        let out = trim(&DynamicImage::ImageRgb8(img));
+        assert_eq!((out.width(), out.height()), (100, 140));
+    }
 
     #[test]
     fn trims_uniform_borders_only() {

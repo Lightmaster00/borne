@@ -24,19 +24,13 @@ Item {
     readonly property real coverAspect: cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
     readonly property bool turned: !!kind.turns && coverAspect > 0 && coverAspect < 1
     readonly property real mm: Cases.scale(kind, stage.boxH)
-    // Rebuilt from ScreenScraper's case scans (RomM): the front scan gives the width, the spine
-    // scan the thickness; the console's real case size fills in what is missing.
+    // Every case of a console has the same size (its real case's proportions); the scans are
+    // fitted to it.
     function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
     readonly property bool frontScan: has("front")
-    // The front follows its image (the scan, else the cover); a PlayStation scan that includes the
-    // case's hinge is cut to the cover insert (Cases.frontRatio).
-    readonly property var front: Cases.frontRatio(game ? game.platform_slug : "", game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0))
-    readonly property real frontAR: front ? front.ar : 0
-    readonly property real sideAR: has("side") && game.side_ar > 0 ? (game.side_ar > 1 ? 1 / game.side_ar : game.side_ar) : 0
     readonly property real bh: (turned ? kind.w : kind.h) * mm
-    readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * (bh - 2 * rim) + rim + (hinge ? bh * 0.075 : rim)
-                                           : (turned ? kind.h : kind.w) * mm
-    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, sideAR > 0 ? Math.min(bh * 0.3, sideAR * bh) : kind.d * mm)
+    readonly property real bw: (turned ? kind.h : kind.w) * mm
+    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, kind.d * mm)
     readonly property string mat: kind.mat
     readonly property bool plastic: mat !== "card"
     // The jewel case's ribbed hinge on the left (not on PlayStation cases: the cover insert alone).
@@ -141,7 +135,7 @@ Item {
             visible: sd.spine
             source: sd.spine && box.has("side") ? box.game.art + "side" : ""
             asynchronous: true
-            fillMode: Image.PreserveAspectFit
+            fillMode: Image.Stretch
         }
         Text {
             // The title only when there is no scan (not while it loads: no flash of text).
@@ -243,8 +237,9 @@ Item {
                 anchors.fill: parent
                 source: box.frontScan ? box.game.art + "front" : box.game && box.game.cover ? box.game.cover : ""
                 asynchronous: true
-                fillMode: Image.PreserveAspectCrop
-                horizontalAlignment: box.front && box.front.cropLeft ? Image.AlignRight : Image.AlignHCenter
+                // Fitted whole when close to the case's proportions (no edge of the art cut).
+                fillMode: box.coverAspect > 0 && Math.abs(box.coverAspect / (width / Math.max(1, height)) - 1) > 0.22 ? Image.PreserveAspectCrop : Image.Stretch
+                horizontalAlignment: box.mat === "jewel" ? Image.AlignLeft : Image.AlignHCenter
                 sourceSize: Qt.size(600, 900)
                 mipmap: true
             }

@@ -774,13 +774,19 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Each console's games have a case profile (ui/components/Cases.js): material (cardboard, keep case,
   jewel case, clamshell), plastic color and real outer size in millimetres. Cases keep their
   proportions (PlayStation square, GameCube tall, Super Nintendo wide, or upright when its cover
-  is), but none is drawn with its longest side under 88 % of the tallest case (Cases.scale), and no
-  spine thinner than 9.5 % of the case's height (Cases.MIN_SPINE), so small cases and their spines
-  stay readable. A spine scan is never stretched (centred on the case's plastic) and one lying on its
-  side is stood up (in 3D and in the 2D fallback). PlayStation, Saturn, Mega-CD and Dreamcast covers
-  are the square insert: a scan wider than that (the case's
-  hinge on its left) has its left part cut (Cases.frontRatio). Top and bottom take the console's
-  signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture, their
+  is), and every case of a console has the same size: the scans are fitted to the case (the front
+  fills its face: fitted whole when its proportions are within 22 % of the case's, so no title or
+  logo is cut at the edges, trimmed evenly beyond; CD cases trim from the right so
+  the console's band on the left of the insert stays whole; the spine scan covers the whole spine).
+  None is drawn with its longest side under 88 % of the tallest case (Cases.scale), and no spine
+  thinner than 7 % of the case's height (Cases.MIN_SPINE), so small cases and their spines stay
+  readable. The ink outline is thin (1.5 to 3 units, 6 % of the spine) so it never makes a case look
+  thicker. PlayStation, Saturn, Mega-CD and Dreamcast covers are the square insert: the core cuts a
+  jewel case's hinge out of their front scans (media::cut_hinge: the columns from the left that do
+  not change from top to bottom and are not black; the insert's black band is never cut; at most
+  18 %), once for scans already stored. A white margin is trimmed from a scan only when it runs all
+  round it: a white case's own band on top (Wii, 3DS) stays; fronts of those consoles stored before
+  are fetched again once. Top and bottom take the console's signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture, their
   two folds found by edge detection around the place the front's proportions give.
 - Order "by name" (library::shelf_order): the first three letters of the title in the interface
   language (articles and accents set aside), then the release date (games without one last), then

@@ -706,6 +706,53 @@ fn spine_span(g: &image::GrayImage, ar: f64) -> Option<(u32, u32)> {
     Some((x, width.min(g.width() - x)))
 }
 
+/// Fronts of white cases (Wii, 3DS…) stored when the case's white band on top was taken for a
+/// scanner's margin and cut: fetched again once from the kept records (see media::trim).
+fn refetch_white_fronts(app: &Shared, c: &Credentials) {
+    for key in app.db.ss_record_keys() {
+        let white = matches!(key.split(':').next(), Some("wii" | "wiiu" | "3ds" | "nds" | "xbox360"));
+        if !white || app.db.setting(&format!("front_v2.{key}")).is_some() {
+            continue;
+        }
+        let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { continue };
+        let medias: Vec<Value> = rec["jeu"]["medias"].as_array().cloned().unwrap_or_default();
+        let chosen = app.db.setting(&format!("ss_region.{key}"));
+        let mut regions: Vec<&str> = chosen.as_deref().into_iter().collect();
+        regions.extend(ui_regions(&ui_lang(app)));
+        if let Some(url) = pick(&medias, &["box-2D"], &regions) {
+            match download(c, url).and_then(|b| crate::media::store(app, &key, "front", &b)) {
+                Ok((path, w, h)) => {
+                    app.db.set_media(&key, "front", &path.to_string_lossy(), w, h, &format!("ss|{}", redact(url)));
+                    app.emit(json!({ "type": "media", "group_key": key }));
+                }
+                Err(e) => {
+                    app.db.log("screenscraper", &format!("front of {key}: {e}"));
+                    continue; // tried again next time
+                }
+            }
+        }
+        app.db.set_setting(&format!("front_v2.{key}"), "1");
+    }
+}
+
+/// Fronts of CD cases stored before their hinge was cut: cut once now (see media::cut_hinge).
+fn cut_stored_hinges(app: &Shared) {
+    for key in app.db.group_keys() {
+        if !crate::media::cd_case(&key) || app.db.setting(&format!("hinge_cut.{key}")).is_some() {
+            continue;
+        }
+        if let Some(m) = app.db.media(&key, "front").filter(|m| m.stamp.starts_with("ss|")) {
+            if let Ok(bytes) = std::fs::read(&m.path) {
+                if let Ok((path, w, h)) = crate::media::store(app, &key, "front", &bytes) {
+                    app.db.set_media(&key, "front", &path.to_string_lossy(), w, h, &m.stamp);
+                    app.emit(json!({ "type": "media", "group_key": key }));
+                }
+            }
+        }
+        app.db.set_setting(&format!("hinge_cut.{key}"), "1");
+    }
+}
+
 /// Spines cut the old way (often off centre) cut again from the kept records, in the background.
 fn recut_spines(app: &Shared, c: &Credentials) {
     for key in app.db.ss_record_keys() {
@@ -761,6 +808,8 @@ pub fn start(app: &Shared, again: bool) {
                 .unwrap_or(1);
             fetch_systems(&app, &c, again);
             recut_spines(&app, &c);
+            cut_stored_hinges(&app);
+            refetch_white_fronts(&app, &c);
             STOP.store(false, Ordering::SeqCst);
             PAUSED.store(false, Ordering::SeqCst);
             status_set(&app, |s| {

@@ -20,8 +20,8 @@ const CASES = {
     genesis:   { mat: "clam",  color: "#121214", w: 135, h: 184, d: 23 },
     sms:       { mat: "clam",  color: "#121214", w: 135, h: 184, d: 23 },
     gamegear:  { mat: "clam",  color: "#121214", w: 112, h: 160, d: 20 },
-    // CD consoles: only the square cover insert is shown (scans that include the case's hinge on
-    // the left are cut to it, see frontRatio), so the case is drawn square.
+    // CD consoles: the square cover insert alone (the core cuts a case hinge out of the scans,
+    // media::cut_hinge), so the case is drawn square.
     psx:       { mat: "jewel", color: "#0b0b0d", w: 125, h: 125, d: 10, insert: 1.0 },
     ps:        { mat: "jewel", color: "#0b0b0d", w: 125, h: 125, d: 10, insert: 1.0 },
     // Saturn, Mega-CD and Dreamcast jewel cases hold the same square insert.
@@ -41,15 +41,6 @@ const CASES = {
     "3ds":     { mat: "keep",  color: "#eceef1", w: 125, h: 137, d: 13 },
     switch:    { mat: "keep",  color: "#d0202b", w: 105, h: 170, d: 11 }
 }
-// A front scan's proportions as drawn on the case: { ar, cropLeft }. Where the console's cover is
-// an insert of known shape (kind.insert, width / height) and the scan is clearly wider, the scan
-// includes the case's hinge on its left: the left part is cut and the insert's shape kept.
-function frontRatio(slug, ar) {
-    const k = of(slug)
-    if (k.insert && ar > k.insert * 1.04) return { ar: k.insert, cropLeft: true }
-    return { ar: ar, cropLeft: false }
-}
-
 const TALLEST = 191   // mm: the tallest case is drawn at the shelf's full box height
 // Small cases (a PlayStation jewel case, a Game Boy box) drawn to true scale would be too small
 // to read: every case is drawn with its longest side at least this share of the tallest, keeping
@@ -62,7 +53,7 @@ function scale(k, boxH) {
 }
 // A spine thinner than this share of the case's height is drawn this thick, so its print and
 // title stay readable (real spines of keep and jewel cases are about 6 to 8 %).
-const MIN_SPINE = 0.095
+const MIN_SPINE = 0.07
 
 // Each console's own colour (its buttons, logo or body, as people know it): Borne's accent while
 // the console or one of its games is selected (buttons, active pills, the frame round the screen).
