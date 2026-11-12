@@ -1,6 +1,6 @@
-// Borne's single look: "Halo".
-// A quiet dark stage with a soft light behind the selected game; panels are glass (translucent
-// white with a fine edge); the accent is taken from the game's cover, faintly. Type: Manrope.
+// Borne's single look: a dark stage inside the selected console's frame, rounded shapes with an ink
+// edge (a touch of cel shading), the console's own colour for what you act on. Type: Fredoka for
+// titles, Manrope for the rest.
 // Focus: a white ring.
 // Designed at 1920×1080; the window scales the whole scene.
 import QtQuick
@@ -23,9 +23,10 @@ QtObject {
     readonly property color bad: "#FF7B7B"
     readonly property color badTint: Qt.rgba(1, 0.48, 0.48, 0.16)
 
-    // Accent: set from the selected game's cover (see Palette.qml); light enough for text.
+    // Accent: the colour of the selected console (Cases.js), set by Main.
     property color accent: "#8CCBFF"
-    readonly property color accentFg: bg
+    // Text on the accent: white on the consoles' strong colours, dark on light ones.
+    readonly property color accentFg: accent.hslLightness > 0.62 ? bg : "#FFFFFF"
     readonly property color halo: Qt.rgba(accent.r, accent.g, accent.b, 0.45)
     readonly property color focusRing: fg
     Behavior on accent { ColorAnimation { duration: 600 } }
@@ -46,7 +47,7 @@ QtObject {
 
     // ---------- Type ----------
     readonly property string fontFamily: "Manrope"
-    readonly property string displayFont: "Manrope"
+    readonly property string displayFont: "Fredoka"   // titles: rounded, playful
 
     // ---------- Shape and motion ----------
     readonly property int radius: 14

@@ -37,7 +37,7 @@ Item {
         id: face
         anchors.fill: parent
         radius: height / 2
-        color: btn.primary ? theme.fg : mouse.containsMouse && !btn.disabled ? theme.glassRaised : theme.glass
+        color: btn.primary ? theme.accent : mouse.containsMouse && !btn.disabled ? theme.glassRaised : theme.glass
         border { width: btn.primary ? 0 : 1; color: theme.glassEdge }
         Behavior on color { ColorAnimation { duration: 150 } }
     }
@@ -49,7 +49,7 @@ Item {
             visible: btn.key !== ""
             anchors.verticalCenter: parent.verticalCenter
             width: 40; height: 40; radius: 20
-            color: btn.primary ? theme.bg : theme.glassRaised
+            color: btn.primary ? theme.ink : theme.glassRaised
             Text {
                 anchors.centerIn: parent
                 text: btn.key
@@ -60,7 +60,7 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: btn.text
-            color: btn.primary ? theme.bg : theme.fg
+            color: btn.primary ? theme.accentFg : theme.fg
             font { family: theme.fontFamily; pixelSize: btn.primary ? 20 : 18; weight: btn.primary ? Font.Bold : Font.DemiBold }
         }
     }
@@ -68,7 +68,7 @@ Item {
         anchors { fill: parent; margins: -(theme.ringGap + theme.ringWidth) }
         radius: height / 2
         color: "transparent"
-        border { width: theme.ringWidth; color: btn.primary ? theme.accent : theme.focusRing }
+        border { width: theme.ringWidth; color: theme.focusRing }
         opacity: btn.focused ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
     }

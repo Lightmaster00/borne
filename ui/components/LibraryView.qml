@@ -44,18 +44,30 @@ Item {
     }
 
     // ---------- section header (top left) and the selected game (under its case) ----------
-    Column {
-        x: 96; y: 112
-        spacing: 6
+    Row {
+        x: 96; y: 124
+        spacing: 20
         Text {
-            text: (root.sectionTitle || qsTr("All games")).toUpperCase()
-            color: Qt.rgba(1, 1, 1, 0.92)
-            font { family: theme.displayFont; pixelSize: 40; weight: Font.ExtraBold; letterSpacing: 6 }
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.sectionTitle || qsTr("All games")
+            color: theme.fg
+            font { family: theme.displayFont; pixelSize: 54; weight: Font.Bold }
         }
-        Text {
-            text: root.games ? qsTr("%n game(s)", "", root.games.count) : ""
-            color: theme.fgMuted
-            font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium; letterSpacing: 2 }
+        // How many games, on the console's colour.
+        Rectangle {
+            id: countPill
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !!root.games
+            width: count.implicitWidth + 28; height: 34; radius: 17
+            color: theme.accent
+            Ink { z: -1; theme: root.theme; radius: 17 }
+            Text {
+                id: count
+                anchors.centerIn: parent
+                text: root.games ? qsTr("%n game(s)", "", root.games.count) : ""
+                color: theme.accentFg
+                font { family: theme.fontFamily; pixelSize: 16; weight: Font.ExtraBold }
+            }
         }
     }
 
@@ -69,7 +81,7 @@ Item {
         id: info
         anchors { top: boxes.bottom; topMargin: 0; horizontalCenter: parent.horizontalCenter }
         width: Math.min(1100, parent.width - 400)
-        spacing: 12
+        spacing: 18
         visible: root.game !== null
         Text {
             width: parent.width
@@ -79,7 +91,7 @@ Item {
             minimumPixelSize: 32
             elide: Text.ElideRight
             color: theme.fg
-            font { family: theme.displayFont; pixelSize: 50; weight: Font.Bold; letterSpacing: -0.5 }
+            font { family: theme.displayFont; pixelSize: 54; weight: Font.Bold }
         }
         Row {
             anchors.horizontalCenter: parent.horizontalCenter

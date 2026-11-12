@@ -40,16 +40,47 @@ const CASES = {
 }
 const TALLEST = 191   // mm: the tallest case is drawn at the shelf's full box height
 
-// Each console's color, for the stage behind its cases.
+// Each console's own colour (its buttons, logo or body, as people know it): Borne's accent while
+// the console or one of its games is selected (buttons, active pills, the frame round the screen).
 const TINTS = {
-    switch: "#c4161f", ngc: "#5a3fb0", wii: "#7f8fa3", wiiu: "#1f7fc4", ps2: "#1d3c94", psx: "#4a4f5c",
-    ps: "#4a4f5c", ps3: "#253f86", ps4: "#1f4aa8", psp: "#3b3f4c", nes: "#a3242b", famicom: "#a3242b",
-    snes: "#5b4b9a", sfam: "#5b4b9a", n64: "#2e7d4f", gb: "#6c7a3a", gbc: "#7a3fa0", gba: "#4b3fa8",
-    genesis: "#1e3f9a", sms: "#a3242b", gamegear: "#2b2f38", saturn: "#3a3f8a", dc: "#e26a1b",
-    xbox: "#3d8b2f", xbox360: "#5aa832", nds: "#5c6470", "3ds": "#b3262d"
+    switch: "#E60012", ngc: "#6A4FC4", wii: "#34BEED", wiiu: "#009AC7", ps2: "#1F55D6", psx: "#8A90A0",
+    ps: "#8A90A0", ps3: "#2F5FD0", ps4: "#2563D9", psp: "#5A6070", nes: "#D2232A", famicom: "#B8232B",
+    snes: "#6B5CA5", sfam: "#6B5CA5", n64: "#1E9E5A", gb: "#9B2257", gbc: "#7B3FC0", gba: "#4B3FA8",
+    genesis: "#D3222A", sms: "#C8102E", gamegear: "#3A6FD8", saturn: "#5B5FC7", dc: "#E26A1B",
+    xbox: "#107C10", xbox360: "#107C10", nds: "#7D8590", "3ds": "#CE1126", segacd: "#D3222A", atari2600: "#C46A1E"
 }
-function tint(slug) { return TINTS[slug] || "#3a4a6a" }
+function tint(slug) { return TINTS[slug] || "#5A6DB0" }
 
 function of(slug) {
     return CASES[slug] || { mat: "keep", color: "#18191c", w: 135, h: 190, d: 14 }
+}
+
+// Where the case t places from the selection stands on the shelf (t = 0: the selected case, which
+// faces you, a little forward; ±1, ±2: the next cases, turned about 18° then 26° toward it, set
+// back and well apart). step: the distance between the selected case and its neighbours, from
+// the width of the selected case. Returns x, z (scene units), the turn (degrees) and a lift.
+function place(t, step) {
+    const a = Math.abs(t), s = t < 0 ? -1 : 1
+    let x, z, ang
+    if (a <= 1) {
+        x = t * step
+        z = 150 * (1 - a) - 90 * a
+        ang = -t * 18
+    } else {
+        x = s * (step + (a - 1) * step * 0.95)
+        z = -90 - (a - 1) * 90
+        ang = -s * Math.min(26, 18 + (a - 1) * 8)
+    }
+    return { x: x, z: z, ang: ang, lift: a < 1 ? 14 * (1 - a) : 0 }
+}
+// How visible the case t places away is: whole for the selection and its neighbours, fainter for
+// the next ones, gone beyond.
+function presence(t) {
+    return Math.max(0, Math.min(1, (3.2 - Math.abs(t)) / 2))
+}
+// Distance between the selected case and its neighbours, for a case of that console.
+function step(slug, boxH) {
+    const k = of(slug)
+    const w = (k.turns ? k.h : k.w) * boxH / TALLEST
+    return Math.max(300, w * 0.95 + 90)
 }

@@ -3,8 +3,9 @@
 //
 // Real 3D without Qt Quick 3D: each face of a box is a flat item drawn through one perspective
 // matrix (face → box → world → screen), so boxes stay light (a few textured quads each).
-// Only the boxes around the selection exist (13 slots), however large the library.
+// Only the boxes around the selection exist (7 slots), however large the library.
 import QtQuick
+import "Cases.js" as Cases
 
 Item {
     id: shelf
@@ -23,7 +24,7 @@ Item {
     readonly property real cx: width / 2
     readonly property real cy: height / 2
     readonly property real baseY: 0       // box centers sit on the shelf's middle line
-    readonly property int slots: 13
+    readonly property int slots: 7
 
     // Selection, smoothed: every box derives its place from (index - flow), so moving the
     // selection makes the whole row glide instead of jumping.
@@ -47,25 +48,20 @@ Item {
     }
 
     // Place of a box at offset t from the selection (continuous).
+    // Same placement as the other shelf (Cases.place); the selected case sways gently, or turns with
+    // the right stick.
+    readonly property real step: Cases.step(shelf.games && shelf.games.count > shelf.currentIndex && shelf.currentIndex >= 0
+                                            ? (shelf.revision, shelf.games.get(shelf.currentIndex).platform_slug) : "", shelf.boxH)
     function placeOf(t) {
-        const a = Math.abs(t), s = t < 0 ? -1 : 1
-        let x, z, ang
-        if (a <= 1) {
-            x = t * 340
-            z = 210 * (1 - a) - 60 * a
-            ang = -t * 64
-        } else {
-            x = s * (330 + (a - 1) * 76)
-            z = -60 - (a - 1) * 18
-            ang = -s * 64
-        }
-        let pitch = 0
+        const p = Cases.place(t, shelf.step)
+        const a = Math.abs(t)
+        let ang = p.ang, pitch = 0
         if (a < 0.5) {
             const k = 1 - 2 * a
             ang += (shelf.userTurned ? shelf.userYaw : shelf.sway * shelf.swayAmp) * k
             pitch = shelf.userPitch * k
         }
-        return { x: x, y: shelf.baseY + (a < 1 ? -8 * (1 - a) : 0), z: z, ang: ang, pitch: pitch }
+        return { x: p.x, y: shelf.baseY - p.lift, z: p.z, ang: ang, pitch: pitch }
     }
 
     // Rotation of a box: pitch (about its horizontal axis) then yaw (about the vertical one).
@@ -163,7 +159,7 @@ Item {
             visible: valid && Math.abs(t) < shelf.slots / 2
             z: 100 - Math.abs(t) * 10
             // Boxes fade out toward the edges instead of being cut.
-            opacity: Math.max(0, Math.min(1, (5.2 - Math.abs(t)) / 1.8))
+            opacity: Cases.presence(t)
 
             GameBox {
                 anchors.fill: parent

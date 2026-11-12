@@ -492,16 +492,39 @@ fn now() -> i64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 
-/// The consoles' own images (logo, monochrome logo, photo), from ScreenScraper's list of systems,
-/// for the consoles of the library. Kept as media of "system:<slug>".
+/// Short names of ScreenScraper's system media without any text on them whose name has all the
+/// given words (from its list of system media types, "… vierge" in French), most specific first.
+fn system_blank_types(c: &Credentials, words: &[&str]) -> Vec<String> {
+    let Ok(v) = call(c, "mediasSystemeListe.php", &[]) else { return Vec::new() };
+    v["response"]["medias"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|m| {
+            let n = m["nom"].as_str().unwrap_or("").to_lowercase();
+            n.contains("vierge") && words.iter().all(|w| n.contains(w))
+        })
+        .filter_map(|m| m["nomcourt"].as_str().map(String::from))
+        .collect()
+}
+
+/// The consoles' own images (logo, monochrome logo, photo, and the frame drawn round the screen:
+/// the console's blank Steam grid, else its Steam grid or fan art), from ScreenScraper's list of
+/// systems, for the consoles of the library. Kept as media of "system:<slug>".
 fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
     let ids: Value = app.db.setting("ss_systems").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or(Value::Null);
     let slugs: Vec<(String, i64)> = app.db.platforms().into_iter().filter_map(|p| ids[&p.slug].as_i64().map(|id| (p.slug, id))).collect();
     let missing = |slug: &str| app.db.media(&format!("system:{slug}"), "logo").is_none();
-    if slugs.is_empty() || !(again || slugs.iter().any(|(s, _)| missing(s))) {
+    // Frames came later than the logos: look once for every console already fetched.
+    let frames_asked = app.db.setting("ss_system_frames").is_some();
+    if slugs.is_empty() || !(again || !frames_asked || slugs.iter().any(|(s, _)| missing(s))) {
         return;
     }
+    let mut frame_types = system_blank_types(c, &["steam"]);
+    frame_types.extend(["steamgrid".to_string(), "fanart".to_string()]);
+    let frame_types: Vec<&str> = frame_types.iter().map(String::as_str).collect();
     let Ok(v) = call(c, "systemesListe.php", &[]) else { return };
+    app.db.set_setting("ss_system_frames", "1");
     let systems = v["response"]["systemes"].as_array().cloned().unwrap_or_default();
     let regions = ui_regions(&ui_lang(app));
     for (slug, id) in slugs {
@@ -515,7 +538,7 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
             m
         }).collect();
         let key = format!("system:{slug}");
-        for (kind, types) in [("logo", &["wheel", "wheel-hd"][..]), ("logo-mono", &["logo-monochrome", "wheel-carbon"][..]), ("photo", &["photo", "illustration"][..])] {
+        for (kind, types) in [("logo", &["wheel", "wheel-hd"][..]), ("logo-mono", &["logo-monochrome", "wheel-carbon"][..]), ("photo", &["photo", "illustration"][..]), ("frame", &frame_types[..])] {
             let Some(url) = pick(&medias, types, &regions) else { continue };
             let stamp = format!("ss|{url}");
             if !again && app.db.media(&key, kind).map(|m| m.stamp == stamp && std::path::Path::new(&m.path).is_file()).unwrap_or(false) {

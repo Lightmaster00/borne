@@ -7,9 +7,11 @@ import QtQuick.Window
 import QtCore
 import QtWebSockets
 import QtMultimedia
+import QtQuick.Effects
 import Borne.Theme
 import "components"
 import "components/Display.js" as Display
+import "components/Cases.js" as Cases
 
 Window {
     id: win
@@ -119,6 +121,19 @@ Window {
             cover_ar: g.cover_ar || 0
         }
     }
+    // The console the screen is dressed in: the open game's, else the selected console tab's, else
+    // the selected game's. Its colour is the accent; its blank Steam grid frames the screen.
+    property var consoleFrames: ({})
+    readonly property string consoleSlug: {
+        if (overlay === "game" && pageGame) return pageGame.platform_slug || ""
+        const s = systems[systemIndex]
+        if (s && s.id !== "all" && s.id !== "local") return s.id
+        return focusedGame ? focusedGame.platform_slug || "" : ""
+    }
+    readonly property color consoleTint: Cases.tint(consoleSlug)
+    onConsoleTintChanged: graphite.accent = consoleTint
+    readonly property bool framed: !gameMode
+    readonly property real frameMargin: framed ? Math.round(Math.min(width, height) * 0.036) : 0
     function loadPlatforms() {
         api("GET", "/api/v1/platforms", null, function (list) {
             if (!list) return
@@ -130,8 +145,13 @@ Window {
                             "ngc": "GameCube", "wii": "Wii", "wiiu": "Wii U", "switch": "Switch", "ps": "PlayStation", "psx": "PlayStation",
                             "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "dc": "Dreamcast", "saturn": "Saturn", "arcade": "Arcade" }
             // The console's logo from ScreenScraper when there is one, else its name.
-            for (const p of list) sys.push({ id: p.slug, name: shortNames[p.slug] || p.name,
-                logo: p.art_kinds && p.art_kinds.indexOf("logo") >= 0 ? apiBase + "/api/v1/systems/" + p.slug + "/art/logo" : "" })
+            const frames = {}
+            for (const p of list) {
+                sys.push({ id: p.slug, name: shortNames[p.slug] || p.name,
+                    logo: p.art_kinds && p.art_kinds.indexOf("logo") >= 0 ? apiBase + "/api/v1/systems/" + p.slug + "/art/logo" : "" })
+                if (p.art_kinds && p.art_kinds.indexOf("frame") >= 0) frames[p.slug] = apiBase + "/api/v1/systems/" + p.slug + "/art/frame"
+            }
+            consoleFrames = frames
             systems = sys
             systemIndex = Math.max(0, sys.findIndex(s => s.id === current))
         })
@@ -980,9 +1000,10 @@ Window {
         id: scene
         // 1080 logical pixels high; the width follows the screen's shape (16:10, 21:9…) so there
         // are no bars, never narrower than 1600.
-        readonly property real k: Math.min(win.height / 1080, win.width / 1600)
-        width: win.width / k
-        height: win.height / k
+        // Inside the console's frame (ConsoleFrame).
+        readonly property real k: Math.min((win.height - 2 * win.frameMargin) / 1080, (win.width - 2 * win.frameMargin) / 1600)
+        width: (win.width - 2 * win.frameMargin) / k
+        height: (win.height - 2 * win.frameMargin) / k
         anchors.centerIn: parent
         scale: k
 
@@ -999,12 +1020,6 @@ Window {
             scrims: win.overlay === ""
             attract: win.attract
             dim: win.overlay === "settings" || win.overlay === "diag" ? 0.5 : win.overlay === "game" ? 0.55 : 0
-        }
-        Palette {
-            id: palette
-            source: ambience.cover
-            fallbackHue: ambience.game ? ambience.game.hue : 210
-            onColorChanged: graphite.accent = color
         }
 
     Item {
@@ -1070,7 +1085,7 @@ Window {
         opacity: win.attract ? 0 : 1
         Behavior on opacity { NumberAnimation { duration: win.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
         y: 40
-        width: parent.width; height: 52
+        width: parent.width; height: 56
         visible: win.screen === "library" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
         // Systems: scrolls to keep the active system visible, without overflowing.
         ListView {
@@ -1078,9 +1093,9 @@ Window {
             x: 96
             anchors.verticalCenter: parent.verticalCenter
             width: Math.min(contentWidth, rightGroup.x - x - 40)
-            height: 44
+            height: 56
             orientation: ListView.Horizontal
-            spacing: 36
+            spacing: 14
             clip: true
             interactive: false
             model: win.systems
@@ -1094,13 +1109,15 @@ Window {
                 required property var modelData
                 required property int index
                 readonly property bool cur: index === win.systemIndex
-                width: sysLogo.visible ? sysLogo.paintedWidth : lbl.implicitWidth; height: 44
+                // A pill: filled with the console's colour when it is the open tab.
+                width: (sysLogo.visible ? sysLogo.width : lbl.implicitWidth) + 44; height: 48
+                y: 2
+                Ink { theme: win.theme; radius: 24; visible: parent.cur }
                 Rectangle {
-                    anchors.bottom: parent.bottom
-                    width: parent.width; height: 2; radius: 1
-                    color: theme.accent
-                    opacity: parent.cur ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
+                    anchors.fill: parent
+                    radius: 24
+                    color: parent.cur ? theme.accent : sysMouse.containsMouse ? theme.glassRaised : Qt.rgba(1, 1, 1, 0.06)
+                    Behavior on color { ColorAnimation { duration: theme.focusMs } }
                 }
                 Accessible.role: Accessible.PageTab
                 Accessible.name: modelData.name
@@ -1120,15 +1137,18 @@ Window {
                     sourceSize.height: 56
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
-                    opacity: parent.cur || sysMouse.containsMouse ? 1 : 0.5
+                    opacity: parent.cur || sysMouse.containsMouse ? 1 : 0.6
                     Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
+                    // On the console's colour, the logo in white.
+                    layer.enabled: parent.cur
+                    layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
                 }
                 Text {
                     id: lbl; anchors.centerIn: parent
                     visible: !sysLogo.visible
                     text: modelData.name
-                    color: parent.cur || sysMouse.containsMouse ? theme.fg : theme.fgFaint
-                    font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
+                    color: parent.cur ? theme.accentFg : sysMouse.containsMouse ? theme.fg : theme.fgSoft
+                    font { family: theme.fontFamily; pixelSize: 18; weight: Font.Bold }
                 }
             }
         }
@@ -1157,9 +1177,9 @@ Window {
             }
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: dlRow.implicitWidth + 32; height: 44; radius: 22
+                width: dlRow.implicitWidth + 36; height: 48; radius: 24
                 color: dlMouse.containsMouse ? theme.glassRaised : theme.glass
-                border { width: 1; color: theme.glassEdge }
+                Ink { z: -1; theme: win.theme; radius: 24; opacity: 0.5 }
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Downloads")
                 Row {
@@ -1179,16 +1199,16 @@ Window {
             }
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 44; height: 44; radius: 22
-                color: theme.glassRaised
-                border { width: 1; color: Qt.rgba(1, 1, 1, 0.2) }
+                width: 48; height: 48; radius: 24
+                color: theme.accent
+                Ink { z: -1; theme: win.theme; radius: 24 }
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Profile: %1").arg(win.activeProfile ? win.activeProfile.name : "")
                 Text {
                     anchors.centerIn: parent
                     text: win.activeProfile ? win.activeProfile.name.charAt(0).toUpperCase() : ""
-                    color: theme.fg
-                    font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
+                    color: theme.accentFg
+                    font { family: theme.displayFont; pixelSize: 22; weight: Font.Bold }
                 }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.showProfiles() }
             }
@@ -1606,6 +1626,17 @@ Window {
     }
     }
 
+    // The console's frame round the screen, over everything.
+    ConsoleFrame {
+        anchors.fill: parent
+        visible: win.framed
+        tint: win.consoleTint
+        art: win.consoleFrames[win.consoleSlug] || ""
+        margin: win.frameMargin
+        radius: win.frameMargin * 1.1
+        ink: graphite.ink
+    }
+
     // Light preferences stored by Qt (~/.config/Borne/Borne.conf).
     Settings {
         id: prefs
@@ -1616,6 +1647,7 @@ Window {
     }
 
     Component.onCompleted: {
+        graphite.accent = consoleTint
         if (!apiBase) return
         api("GET", "/api/v1/hello", null, function (h, err) {
             if (err || !h) { fatal = qsTr("Borne core unreachable (%1)").arg(err); return }

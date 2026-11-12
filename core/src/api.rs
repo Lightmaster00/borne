@@ -41,7 +41,7 @@
 //!   DELETE /api/v1/system-files/<console>/<item>  removes it
 //!   GET    /api/v1/display[?console=]  POST {console?, key, value | "default"}   for all games or a console
 //!   GET    /api/v1/games/<rom_id>/display  POST {key, value | "default"}   this game's own
-//!   GET    /api/v1/systems/<slug>/art/<kind>      a console's logo, logo-mono or photo (ScreenScraper)
+//!   GET    /api/v1/systems/<slug>/art/<kind>      a console's logo, logo-mono, photo or frame (ScreenScraper)
 //!   GET    /api/v1/session                        the running game, if any
 //!   POST   /api/v1/session/stop                   ends the running game
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
@@ -604,7 +604,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             ok(req, json!(*app.sync.lock().unwrap()))
         }
         (Method::Get, ["api", "v1", "platforms"]) => {
-            // With the console images ScreenScraper gave (logo, monochrome logo, photo).
+            // With the console images ScreenScraper gave (logo, monochrome logo, photo, frame).
             let list: Vec<Value> = app
                 .db
                 .platforms()

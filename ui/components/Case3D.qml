@@ -30,7 +30,7 @@ Node {
     readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * bh : (turned ? kind.h : kind.w) * mm
     readonly property real bd: sideAR > 0 ? Math.max(5, Math.min(bh * 0.3, sideAR * bh)) : Math.max(6, kind.d * mm)
     // Slightly rounded: a little more on plastic than on cardboard.
-    readonly property real round: (card ? 0.9 : 1.8) * mm
+    readonly property real round: (card ? 2.2 : 3.6) * mm
     readonly property color plastic: kind.color
     readonly property bool lightPlastic: plastic.hslLightness > 0.6
     readonly property color tone: theme ? theme.tone(game ? game.hue : 0) : "#444"
@@ -119,7 +119,7 @@ Node {
             id: outline
             castsShadows: false
             pickable: false
-            readonly property real t: 2.2
+            readonly property real t: 3
             readonly property var mesh: Mesh.hull(box.bw + 2 * t, box.bh + 2 * t, box.bd + 2 * t, box.round + t, 2)
             geometry: ProceduralMesh {
                 positions: outline.mesh.positions

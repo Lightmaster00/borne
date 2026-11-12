@@ -257,9 +257,16 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   version has none, another version of the same game is used; without a trailer the case stands on the
   right), then the choices and an introduction,
   the studios and series (RomM only), and the screenshots from RomM (fetched through the core with the profile's token).
-- Accent: the cover's dominant hue, lifted to a light tone, colors the eyebrow text, the systems underline,
-  halos and the language marks. Panels are glass (translucent white, fine edge).
-- Type: Manrope (static Regular to ExtraBold instances). The scene keeps a 1080-unit height (or 1600
+- Console frame and accent: the screen sits in a frame dressed in the selected console (the open game's,
+  else the open console tab's, else the selected game's): its blank Steam grid from ScreenScraper
+  (system media "frame": the blank Steam grid type found by name in `mediasSystemeListe.php`, else
+  Steam grid or fan art) over a gradient of the console's own colour (`Cases.js`), with a rounded hole
+  and an ink edge (`ConsoleFrame.qml`). That colour is the accent: primary buttons, the open console
+  tab, the game count, the A key, the radio marks. Keycaps are coloured (A accent, B red, X yellow,
+  Y blue). Rounded pills and cards with a hard ink shadow (`Ink.qml`). Shelf: the selected case faces
+  you in the middle, two cases each side turned about 18° and 26° toward it, well apart (`Cases.place`).
+- Type: Fredoka for titles (static Medium, SemiBold and Bold instances), Manrope for the rest (static
+  Regular to ExtraBold instances). The scene keeps a 1080-unit height (or 1600
   units of width on narrow screens) and widens with the window, so 16:10, 21:9, 4:3 and 4K fill the screen.
 - Safe mode: repeated UI crashes restart Borne with trailers and sounds off.
 
