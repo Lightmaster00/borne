@@ -623,27 +623,103 @@ fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> us
         app.db.set_media(group_key, "video", "", 0, 0, &video);
     }
     // No spine scan: cut it from the unfolded case texture (back | spine | front).
-    let has_side = app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|")).unwrap_or(false);
+    let has_side = app.db.media(group_key, "side").map(|m| m.stamp.starts_with("ss|") && !m.stamp.starts_with(OLD_SPINE_CUT)).unwrap_or(false);
     if !has_side {
-        if let (Some(ar), Some(url)) = (front_ar, pick(&medias, &["box-texture"], &regions)) {
-            if let Ok(img) = download(c, url).and_then(|b| crate::media::decode(&b)) {
-                let (w, h) = (img.width() as f64, img.height() as f64);
-                let face = h * ar;
-                let spine = w - 2.0 * face;
-                if spine > w * 0.01 && spine < w * 0.25 {
-                    let cut = img.crop_imm(face.round() as u32, 0, spine.round().max(1.0) as u32, h as u32);
-                    let mut png = std::io::Cursor::new(vec![]);
-                    if cut.write_to(&mut png, image::ImageFormat::Png).is_ok() {
-                        if let Ok((path, sw, sh)) = crate::media::store(app, group_key, "side", png.get_ref()) {
-                            app.db.set_media(group_key, "side", &path.to_string_lossy(), sw, sh, &format!("ss|texture|{}", redact(url)));
-                            stored += 1;
-                        }
-                    }
-                }
+        if let Some(ar) = front_ar {
+            if cut_spine(app, c, group_key, &medias, &regions, ar) {
+                stored += 1;
             }
         }
     }
     stored
+}
+
+/// Stamp of spines cut before their edges were looked for (often off centre): cut again.
+const OLD_SPINE_CUT: &str = "ss|texture|";
+
+/// Cuts the spine out of the unfolded case texture (back | spine | front) and stores it.
+/// `ar` is the front's width / height, which gives the spine's place; its two folds are then
+/// looked for near there, so the cut sits exactly on the spine.
+fn cut_spine(app: &Shared, c: &Credentials, group_key: &str, medias: &[Value], regions: &[&str], ar: f64) -> bool {
+    let Some(url) = pick(medias, &["box-texture"], regions) else { return false };
+    let Ok(img) = download(c, url).and_then(|b| crate::media::decode(&b)) else { return false };
+    let Some((x, w)) = spine_span(&img.to_luma8(), ar) else { return false };
+    let cut = img.crop_imm(x, 0, w, img.height());
+    let mut png = std::io::Cursor::new(vec![]);
+    if cut.write_to(&mut png, image::ImageFormat::Png).is_err() {
+        return false;
+    }
+    match crate::media::store(app, group_key, "side", png.get_ref()) {
+        Ok((path, sw, sh)) => {
+            app.db.set_media(group_key, "side", &path.to_string_lossy(), sw, sh, &format!("ss|texture2|{}", redact(url)));
+            true
+        }
+        Err(_) => false,
+    }
+}
+
+/// Where the spine lies in an unfolded case texture: (left edge, width) in pixels. The front's
+/// proportions give a first guess (the spine in the middle, between two faces as wide as the
+/// front); each fold is then the sharpest vertical edge near that guess, and the cut stays a pixel
+/// inside the folds.
+fn spine_span(g: &image::GrayImage, ar: f64) -> Option<(u32, u32)> {
+    let (w, h) = (g.width() as f64, g.height() as f64);
+    let face = h * ar;
+    let spine = w - 2.0 * face;
+    if !(spine > w * 0.01 && spine < w * 0.25) {
+        return None;
+    }
+    // How sharp a vertical edge is between columns x - 1 and x (rows sampled).
+    let step = (g.height() / 200).max(1);
+    let edge = |x: u32| -> f64 {
+        let mut s = 0u64;
+        let mut n = 0u64;
+        let mut y = 0;
+        while y < g.height() {
+            s += (g.get_pixel(x, y)[0] as i32 - g.get_pixel(x - 1, y)[0] as i32).unsigned_abs() as u64;
+            n += 1;
+            y += step;
+        }
+        s as f64 / n.max(1) as f64
+    };
+    let tol = (spine * 0.45).max(2.0);
+    let best = |guess: f64| -> f64 {
+        let lo = (guess - tol).max(1.0) as u32;
+        let hi = (guess + tol).min(w - 1.0) as u32;
+        let mut pick = (guess, -1.0);
+        for x in lo..=hi {
+            let e = edge(x);
+            // A slight preference for the guess, so an even texture keeps it.
+            let score = e - (x as f64 - guess).abs() * 0.02;
+            if score > pick.1 {
+                pick = (x as f64, score);
+            }
+        }
+        pick.0
+    };
+    let (mut l, mut r) = (best(face), best(w - face));
+    if !(r - l > spine * 0.6 && r - l < spine * 1.5) {
+        (l, r) = (face, w - face);
+    }
+    let x = (l + 1.0).round() as u32;
+    let width = ((r - 1.0) - (l + 1.0)).round().max(1.0) as u32;
+    Some((x, width.min(g.width() - x)))
+}
+
+/// Spines cut the old way (often off centre) cut again from the kept records, in the background.
+fn recut_spines(app: &Shared, c: &Credentials) {
+    for key in app.db.ss_record_keys() {
+        if !app.db.media(&key, "side").map(|m| m.stamp.starts_with(OLD_SPINE_CUT)).unwrap_or(false) {
+            continue;
+        }
+        let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { continue };
+        let Some(ar) = app.db.media(&key, "front").filter(|m| m.h > 0).map(|m| m.w as f64 / m.h as f64) else { continue };
+        let medias: Vec<Value> = rec["jeu"]["medias"].as_array().cloned().unwrap_or_default();
+        let chosen = app.db.setting(&format!("ss_region.{key}"));
+        let mut regions: Vec<&str> = chosen.as_deref().into_iter().collect();
+        regions.extend(ui_regions(&ui_lang(app)));
+        cut_spine(app, c, &key, &medias, &regions, ar);
+    }
 }
 
 /// Asks ScreenScraper for every game not asked yet (all of them with `again`), in the background.
@@ -684,6 +760,7 @@ pub fn start(app: &Shared, again: bool) {
                 .map(|n| n.clamp(1, 4) as usize)
                 .unwrap_or(1);
             fetch_systems(&app, &c, again);
+            recut_spines(&app, &c);
             STOP.store(false, Ordering::SeqCst);
             PAUSED.store(false, Ordering::SeqCst);
             status_set(&app, |s| {
@@ -739,6 +816,8 @@ pub fn start(app: &Shared, again: bool) {
             PAUSED.store(false, Ordering::SeqCst);
             status_set(&app, |s| s.paused = false);
             status_set(&app, |s| s.running = false);
+            // Games ScreenScraper knows as one: their versions joined.
+            crate::catalog::merge_groups(&app);
             app.emit(json!({ "type": "library" }));
             let st = status_get();
             app.db.log("screenscraper", &format!("{} of {} game(s) found", st.found, st.done));
@@ -752,6 +831,18 @@ pub fn start(app: &Shared, again: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn spine_cut_sits_on_the_folds() {
+        // back 300 px | spine 40 px | front 280 px, 400 px high; the front scan's proportions are
+        // a little off (as after trimming), so the first guess misses the folds.
+        let mut g = image::GrayImage::new(620, 400);
+        for (x, _, p) in g.enumerate_pixels_mut() {
+            p[0] = if x < 300 { 90 } else if x < 340 { 220 } else { 40 };
+        }
+        let (x, w) = spine_span(&g, 290.0 / 400.0).unwrap();
+        assert_eq!((x, w), (301, 38));
+    }
 
     #[test]
     fn regions_follow_the_interface_language() {

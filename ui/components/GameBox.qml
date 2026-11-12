@@ -23,20 +23,24 @@ Item {
     readonly property var kind: Cases.of(game ? game.platform_slug : "")
     readonly property real coverAspect: cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
     readonly property bool turned: !!kind.turns && coverAspect > 0 && coverAspect < 1
-    readonly property real mm: stage.boxH / Cases.TALLEST
+    readonly property real mm: Cases.scale(kind, stage.boxH)
     // Rebuilt from ScreenScraper's case scans (RomM): the front scan gives the width, the spine
     // scan the thickness; the console's real case size fills in what is missing.
     function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
     readonly property bool frontScan: has("front")
-    // The front follows its image exactly (the scan, else the cover): nothing is cropped.
-    readonly property real frontAR: frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0)
+    // The front follows its image (the scan, else the cover); a PlayStation scan that includes the
+    // case's hinge is cut to the cover insert (Cases.frontRatio).
+    readonly property var front: Cases.frontRatio(game ? game.platform_slug : "", game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0))
+    readonly property real frontAR: front ? front.ar : 0
     readonly property real sideAR: has("side") && game.side_ar > 0 ? game.side_ar : 0
     readonly property real bh: (turned ? kind.w : kind.h) * mm
-    readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * (bh - 2 * rim) + rim + (mat === "jewel" ? bh * 0.075 : rim)
+    readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * (bh - 2 * rim) + rim + (hinge ? bh * 0.075 : rim)
                                            : (turned ? kind.h : kind.w) * mm
-    readonly property real bd: sideAR > 0 ? Math.max(5, Math.min(bh * 0.3, sideAR * bh)) : Math.max(6, kind.d * mm)
+    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, sideAR > 0 ? Math.min(bh * 0.3, sideAR * bh) : kind.d * mm)
     readonly property string mat: kind.mat
     readonly property bool plastic: mat !== "card"
+    // The jewel case's ribbed hinge on the left (not on PlayStation cases: the cover insert alone).
+    readonly property bool hinge: mat === "jewel" && !kind.insert
     readonly property real rim: mat === "keep" ? 7 : mat === "clam" ? 4 : mat === "jewel" ? 2 : 0
     readonly property var dims: ({ w: bw, h: bh, d: bd })
 
@@ -119,10 +123,11 @@ Item {
         height: vertical ? box.bh : box.bd + 1
         visible: facingValue > 0.01
         transform: Matrix4x4 { matrix: box.stage.faceMatrix(box.place, sd.face, false, box.dims) }
-        // Material: plastic in the case's color, or the box's printed cardboard.
+        // Top and bottom in the console's signature colour; the sides in the case's material.
         Rectangle {
             anchors.fill: parent
-            color: box.mat === "card" ? Qt.darker(box.tone, 1.5) : box.mat === "jewel" ? "#101012" : box.kind.color
+            color: !sd.vertical ? Cases.tint(box.game ? box.game.platform_slug : "")
+                 : box.mat === "card" ? Qt.darker(box.tone, 1.5) : box.mat === "jewel" ? "#101012" : box.kind.color
         }
         // The spine scan (stored upright and trimmed by the core).
         Image {
@@ -215,7 +220,7 @@ Item {
         Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : box.mat === "card" ? 1 : 3; color: box.kind.color }
         Item {
             id: art
-            anchors { fill: parent; margins: box.rim; leftMargin: box.mat === "jewel" ? box.bw * 0.07 : box.rim }
+            anchors { fill: parent; margins: box.rim; leftMargin: box.hinge ? box.bw * 0.07 : box.rim }
             clip: true
             Rectangle { anchors.fill: parent; color: box.tone }
             Text {
@@ -234,13 +239,14 @@ Item {
                 source: box.frontScan ? box.game.art + "front" : box.game && box.game.cover ? box.game.cover : ""
                 asynchronous: true
                 fillMode: Image.PreserveAspectCrop
+                horizontalAlignment: box.front && box.front.cropLeft ? Image.AlignRight : Image.AlignHCenter
                 sourceSize: Qt.size(600, 900)
                 mipmap: true
             }
         }
         // Jewel case hinge: clear ribbed strip on the left.
         Rectangle {
-            visible: box.mat === "jewel"
+            visible: box.hinge
             width: box.bw * 0.07; height: parent.height
             gradient: Gradient {
                 orientation: Gradient.Horizontal

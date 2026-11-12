@@ -231,7 +231,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   safe mode), on the game page and in menus. Until it plays, or when the game has no video: the game's
   blank Steam grid / marquee, else its cover blurred, enlarged and drifting slowly. One dark filter
   (about 60 %) and a deeper bottom keep the cases and the text readable. The background has no setting.
-- Attract: after 7 s without input on the library, once the video plays, the library (cases, bars and
+- Attract: after 5 s without input on the library (turning the box counts as input), once the video plays, the library (cases, bars and
   hints) fades out and the filter lightens, leaving the video; any input or the stick brings
   it back at once, and that input only wakes it.
 - Library: the selected game's platform, title and states, and the games as physical cases standing on
@@ -240,7 +240,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   selected box faces the camera, a little forward, swaying gently; the others turn toward it and recede.
   Rendered in real 3D with Qt Quick 3D (`Shelf3D`, `Case3D`): each case is a box to its console's
   proportions with slightly rounded corners and edges (`CaseMesh.js`): cover on the front, the same spine
-  on the left and the right, the back scan behind, the console's plastic colour on the top and the bottom;
+  on the left and the right, the back scan behind, the console's signature colour on the top and the bottom;
   cel shaded: the faces are printed flat (unlit), a skin just over the box (`toon.frag`, multiplied)
   gives flat light bands with a hard terminator, a dark side in the console's colour and a paper or
   plastic grain (`grain.png`), and a second skin (`gloss.frag`, added) a crisp highlight spot and a rim
@@ -772,9 +772,18 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 ## Cases, art and languages
 
 - Each console's games have a case profile (ui/components/Cases.js): material (cardboard, keep case,
-  jewel case, clamshell), plastic color and real outer size in millimetres; cases are drawn to scale
-  against each other (PlayStation jewel case small and nearly square, GameCube case tall, Super
-  Nintendo box wide, or upright when its cover is). Logos and printed art
+  jewel case, clamshell), plastic color and real outer size in millimetres. Cases keep their
+  proportions (PlayStation square, GameCube tall, Super Nintendo wide, or upright when its cover
+  is), but none is drawn with its longest side under 88 % of the tallest case (Cases.scale), and no
+  spine thinner than 9.5 % of the case's height (Cases.MIN_SPINE), so small cases and their spines
+  stay readable. A spine scan is never stretched (centred on the case's plastic) and one lying on its
+  side is stood up. PlayStation covers are the square insert: a scan wider than that (the case's
+  hinge on its left) has its left part cut (Cases.frontRatio). Top and bottom take the console's
+  signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture, their
+  two folds found by edge detection around the place the front's proportions give.
+- Versions RomM matched differently (one by IGDB, another by ScreenScraper, another not at all),
+  the discs of one game, and versions ScreenScraper knows as one game are joined after each sync
+  and each ScreenScraper run (library::merge_groups): one entry per game. Logos and printed art
   come only from the user's RomM scans.
 - Game media (core/src/media.rs): after each sync the core fetches, for every game, the case scans
   (front `box2d`, spine `box2d_side`, back `box2d_back`), the cartridge or disc (`physical`) and the

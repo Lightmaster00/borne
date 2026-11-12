@@ -1,7 +1,7 @@
 // One game case as a 3D object (Qt Quick 3D): a box to the case's real proportions with slightly
 // rounded corners and edges, cel shaded inside a bold ink outline. The front is the cover scan, the
-// same spine on the left and the right, the back scan behind, and the console's plastic colour on
-// the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
+// same spine on the left and the right, the back scan behind, and the console's signature colour
+// on the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
 // them by flat light bands whose dark side takes the console's colour, with a paper or plastic grain;
 // a second one (gloss.frag) adds a crisp highlight and a rim of the console's colour on the edges.
 // Coordinates: x right, y up, z toward you.
@@ -23,16 +23,20 @@ Node {
     function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
     readonly property var kind: Cases.of(game ? game.platform_slug : "")
     readonly property bool card: kind.mat === "card"
-    readonly property real mm: boxH / Cases.TALLEST
+    readonly property real mm: Cases.scale(kind, boxH)
     readonly property bool frontScan: has("front")
-    readonly property real frontAR: frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0)
-    readonly property real sideAR: has("side") && game.side_ar > 0 ? game.side_ar : 0
+    readonly property var front: Cases.frontRatio(game ? game.platform_slug : "", game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0))
+    readonly property real frontAR: front ? front.ar : 0
+    // A spine scan lying on its side (wider than tall) is stood up: its proportions are turned.
+    readonly property bool sideLying: has("side") && game.side_ar > 1
+    readonly property real sideAR: has("side") && game.side_ar > 0 ? (sideLying ? 1 / game.side_ar : game.side_ar) : 0
     readonly property bool turned: !!kind.turns && frontAR > 0 && frontAR < 1
     readonly property real bh: (turned ? kind.w : kind.h) * mm
     readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * bh : (turned ? kind.h : kind.w) * mm
-    readonly property real bd: sideAR > 0 ? Math.max(5, Math.min(bh * 0.3, sideAR * bh)) : Math.max(6, kind.d * mm)
-    // Slightly rounded: a little more on plastic than on cardboard.
-    readonly property real round: (card ? 2.2 : 3.6) * mm
+    readonly property real bd: Math.max(bh * Cases.MIN_SPINE, sideAR > 0 ? Math.min(bh * 0.3, sideAR * bh) : kind.d * mm)
+    // Slightly rounded: a little more on plastic than on cardboard, and never so much that the
+    // curve eats into a thin spine (its print would bend away and look off centre).
+    readonly property real round: Math.min((card ? 2.2 : 3.6) * mm, bd * 0.16)
     readonly property color plastic: kind.color
     readonly property bool lightPlastic: plastic.hslLightness > 0.6
     readonly property color tone: theme ? theme.tone(game ? game.hue : 0) : "#444"
@@ -66,6 +70,7 @@ Node {
     component Print: Rectangle {
         property string src
         property bool titled: true
+        property bool cropLeft: false   // the scan is wider than the face: its left part is cut
         gradient: Gradient {
             GradientStop { position: 0; color: Qt.lighter(box.tone, 1.25) }
             GradientStop { position: 1; color: Qt.darker(box.tone, 1.9) }
@@ -82,7 +87,8 @@ Node {
             anchors.fill: parent
             source: parent.src
             sourceSize: Qt.size(parent.width, parent.height)
-            fillMode: Image.Stretch
+            fillMode: parent.cropLeft ? Image.PreserveAspectCrop : Image.Stretch
+            horizontalAlignment: Image.AlignRight
             asynchronous: true
             // Printed flat and unlit, scans look harsh: their colours toned down like ink on card.
             layer.enabled: true
@@ -94,11 +100,16 @@ Node {
         color: box.plastic
         Image {
             id: sImg
-            anchors.fill: parent
+            anchors.centerIn: parent
+            width: box.sideLying ? parent.height : parent.width
+            height: box.sideLying ? parent.width : parent.height
+            rotation: box.sideLying ? 90 : 0
             source: box.sideUrl
             asynchronous: true
-            fillMode: Image.Stretch
-            sourceSize: Qt.size(Math.max(32, parent.width), parent.height)
+            // Never stretched: a spine drawn thicker than its scan keeps the scan's shape, centred
+            // on a band of the console's plastic.
+            fillMode: Image.PreserveAspectFit
+            sourceSize: Qt.size(Math.max(32, width), Math.max(32, height))
             layer.enabled: true
             layer.effect: MultiEffect { saturation: box.printSaturation }
         }
@@ -161,7 +172,7 @@ Node {
                 baseColorMap: Texture {
                     generateMipmaps: true
                     mipFilter: Texture.Linear
-                    sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl }
+                    sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl; cropLeft: !!box.front && box.front.cropLeft }
                 }
             }
         }
@@ -172,7 +183,7 @@ Node {
                 required property string modelData
                 side: modelData
                 materials: Flat {
-                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Spine { width: 96; height: 800 } }
+                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Spine { width: Math.max(24, Math.round(800 * box.bd / box.bh)); height: 800 } }
                 }
             }
         }
@@ -189,13 +200,13 @@ Node {
                 sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.backUrl; titled: false }
             }
         }
-        // Top and bottom: the console's plastic.
+        // Top and bottom: the console's signature colour.
         Repeater3D {
             model: ["top", "bottom"]
             Face {
                 required property string modelData
                 side: modelData
-                materials: Flat { baseColor: box.plastic }
+                materials: Flat { baseColor: box.consoleTint }
             }
         }
 

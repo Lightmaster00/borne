@@ -49,6 +49,104 @@ pub fn group_key(v: &Value) -> String {
     format!("{platform}:name:{}", normalize_title(title))
 }
 
+/// A file name's title without its tags and extension, normalized:
+/// "Final Fantasy VII (Europe) (Disc 2).chd" -> "final fantasy vii".
+pub fn title_key(fs_name: &str) -> String {
+    let stem = match fs_name.rfind('.') {
+        Some(i) if fs_name.len() - i <= 6 => &fs_name[..i],
+        _ => fs_name,
+    };
+    let mut out = String::new();
+    let mut depth = 0;
+    for c in stem.chars() {
+        match c {
+            '(' | '[' => depth += 1,
+            ')' | ']' => depth = (depth - 1).max(0),
+            _ if depth == 0 => out.push(c),
+            _ => {}
+        }
+    }
+    normalize_title(&out)
+}
+
+/// One entry per game: versions RomM matched differently (one by IGDB, another by ScreenScraper,
+/// another not at all), the discs of one game and versions ScreenScraper knows as the same game
+/// end up in separate groups, and the game shows two or three times. Rows (rom id, platform,
+/// group key, file name, ScreenScraper game id) are joined when they share a group key, a title
+/// (on the same console) or a ScreenScraper id; each joined group takes the key most of its
+/// versions had (an id rather than a title), so existing groups keep theirs. Returns the rows
+/// whose key changes.
+pub fn merge_groups(rows: &[(i64, String, String, String, Option<String>)]) -> Vec<(i64, String)> {
+    let n = rows.len();
+    let mut parent: Vec<usize> = (0..n).collect();
+    fn find(p: &mut Vec<usize>, i: usize) -> usize {
+        let mut r = i;
+        while p[r] != r {
+            r = p[r];
+        }
+        let mut j = i;
+        while p[j] != r {
+            let next = p[j];
+            p[j] = r;
+            j = next;
+        }
+        r
+    }
+    let mut first: HashMap<String, usize> = HashMap::new();
+    for (i, (_, platform, key, fs_name, ss)) in rows.iter().enumerate() {
+        let title = title_key(fs_name);
+        let mut links = vec![format!("k|{key}")];
+        if !title.is_empty() {
+            links.push(format!("t|{platform}|{title}"));
+        }
+        if let Some(id) = ss {
+            links.push(format!("s|{platform}|{id}"));
+        }
+        for l in links {
+            match first.get(&l) {
+                Some(&j) => {
+                    let (a, b) = (find(&mut parent, i), find(&mut parent, j));
+                    if a != b {
+                        parent[a] = b;
+                    }
+                }
+                None => {
+                    first.insert(l, i);
+                }
+            }
+        }
+    }
+    let mut clusters: HashMap<usize, Vec<usize>> = HashMap::new();
+    for i in 0..n {
+        let r = find(&mut parent, i);
+        clusters.entry(r).or_default().push(i);
+    }
+    let mut out = vec![];
+    for members in clusters.values() {
+        let mut count: HashMap<&str, usize> = HashMap::new();
+        for &i in members {
+            *count.entry(rows[i].2.as_str()).or_default() += 1;
+        }
+        if count.len() < 2 {
+            continue;
+        }
+        let best = count
+            .iter()
+            .max_by(|a, b| {
+                let id = |k: &str| !k.contains(":name:");
+                (id(a.0), a.1, std::cmp::Reverse(*a.0)).cmp(&(id(b.0), b.1, std::cmp::Reverse(*b.0)))
+            })
+            .map(|(k, _)| k.to_string())
+            .unwrap();
+        for &i in members {
+            if rows[i].2 != best {
+                out.push((rows[i].0, best.clone()));
+            }
+        }
+    }
+    out
+}
+
 /// RomM language names for a UI language code, and the regions that usually carry it.
 fn language_hints(lang: &str) -> (&'static str, &'static [&'static str]) {
     match lang {
@@ -263,6 +361,27 @@ pub fn game_languages(versions: &[GameRow]) -> Vec<Value> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn versions_left_apart_are_joined() {
+        let r = |id: i64, key: &str, file: &str, ss: Option<&str>| (id, "psx".to_string(), key.to_string(), file.to_string(), ss.map(String::from));
+        let rows = vec![
+            // Discs and regions matched differently by RomM.
+            r(1, "psx:igdb_id:427", "Final Fantasy VII (Europe) (Disc 1).chd", None),
+            r(2, "psx:igdb_id:427", "Final Fantasy VII (Europe) (Disc 2).chd", None),
+            r(3, "psx:name:final fantasy vii", "Final Fantasy VII (Europe) (Disc 3).chd", None),
+            r(4, "psx:ss_id:5", "Final Fantasy VII (USA) (Disc 1).chd", None),
+            // Another title, same ScreenScraper game.
+            r(5, "psx:igdb_id:9", "Crash Bandicoot (Europe).chd", Some("77")),
+            r(6, "psx:name:crash bandicoot japan", "Crash Bandicoot Japan.chd", Some("77")),
+            // Another game stays apart.
+            r(7, "psx:igdb_id:1", "Spyro the Dragon (Europe).chd", None),
+        ];
+        let mut changes = super::merge_groups(&rows);
+        changes.sort();
+        assert_eq!(changes, vec![(3, "psx:igdb_id:427".to_string()), (4, "psx:igdb_id:427".to_string()), (6, "psx:igdb_id:9".to_string())]);
+        assert_eq!(super::title_key("Final Fantasy VII (Europe) (Disc 2).chd"), "final fantasy vii");
+    }
+
     use super::*;
 
     #[test]

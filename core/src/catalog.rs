@@ -288,6 +288,7 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         }
     }
     let removed = app.db.prune_games(sync_id);
+    merge_groups(app);
     app.db
         .log("sync", &format!("{offset} games synced, {removed} removed"));
     app.emit(serde_json::json!({ "type": "library" }));
@@ -300,6 +301,27 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         crate::systemfiles::fill_from_romm(&a);
     });
     Ok(())
+}
+
+/// Joins the versions of one game that RomM's ids left apart (see library::merge_groups).
+pub fn merge_groups(app: &Shared) {
+    let rows: Vec<(i64, String, String, String, Option<String>)> = app
+        .db
+        .games(None, None, false)
+        .into_iter()
+        .map(|g| {
+            let ss = app
+                .db
+                .media(&g.group_key, "ss")
+                .and_then(|m| m.stamp.strip_prefix("found|").map(String::from));
+            (g.rom_id, g.platform_slug, g.group_key, g.fs_name, ss)
+        })
+        .collect();
+    let changes = crate::library::merge_groups(&rows);
+    if !changes.is_empty() {
+        app.db.set_group_keys(&changes);
+        app.db.log("sync", &format!("{} version(s) joined to the game they belong to", changes.len()));
+    }
 }
 
 /// Downloads missing or changed covers with 4 threads.

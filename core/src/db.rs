@@ -567,6 +567,16 @@ impl Db {
             .unwrap_or(0)
     }
 
+    /// Moves versions into another game group (see library::merge_groups).
+    pub fn set_group_keys(&self, changes: &[(i64, String)]) {
+        let mut c = self.c();
+        let Ok(tx) = c.transaction() else { return };
+        for (rom_id, key) in changes {
+            let _ = tx.execute("UPDATE games SET group_key = ?2 WHERE rom_id = ?1", params![rom_id, key]);
+        }
+        let _ = tx.commit();
+    }
+
     pub fn set_cover(&self, rom_id: i64, local: &str, stamp: &str) {
         let _ = self.c().execute(
             "UPDATE games SET cover_local = ?2, cover_stamp = ?3 WHERE rom_id = ?1",

@@ -164,6 +164,7 @@ Window {
           })
         })
     }
+    property int libSeq: 0
     // Reloads the list keeping the selection; updates in place if the list did not change.
     function loadLibrary(resetFocus) {
         const s = systems[systemIndex] || systems[0]
@@ -174,7 +175,10 @@ Window {
         const q = "?lang=" + uiLang + tab + "&sort=" + order + (prefs.libraryGenre ? "&genre=" + encodeURIComponent(prefs.libraryGenre) : "")
         const keep = !resetFocus && focusedGame ? focusedGame.rom_id : -1
         const t0 = Date.now()
+        // Tabs switched quickly: only the latest request's answer is shown (answers can cross).
+        const seq = ++libSeq
         api("GET", "/api/v1/library" + q, null, function (list, err) {
+            if (seq !== libSeq) return
             if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); return }
             const rows = list.map(toRow)
             const same = rows.length === libModel.count && rows.every((r, i) => libModel.get(i).rom_id === r.rom_id)
@@ -294,8 +298,9 @@ Window {
         if (bgVideoWanted) bgVideoDelay.restart()
     }
     onBgVideoWantedChanged: if (bgVideoWanted && bgVideoFor === -1) bgVideoDelay.restart()
-    // Attract: after 7 s without input on the library, once the selected game's video plays, the
+    // Attract: after 5 s without input on the library, once the selected game's video plays, the
     // library fades out and leaves the video; any input brings it back (that input only wakes it).
+    // Turning the box (stick or W A S D) counts as input.
     property double lastActivity: Date.now()
     property bool attract: false
     readonly property bool attractAllowed: screen === "library" && overlay === "" && ready && !gameMode
@@ -312,8 +317,10 @@ Window {
     Timer {
         interval: 250; repeat: true
         running: win.attractAllowed && !win.attract
-        onTriggered: if (Date.now() - win.lastActivity >= 7000) win.attract = true
+        onTriggered: if (Date.now() - win.lastActivity >= 5000) win.attract = true
     }
+    onTurnXChanged: touch()
+    onTurnYChanged: touch()
     // Studios, series and screenshots (RomM).
     property var pageFacts: null
     function loadFacts(romId) {
