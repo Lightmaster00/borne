@@ -32,13 +32,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/build-identity
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: core
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/apt-cache
           key: apt-${{ runner.os }}-${{ hashFiles('scripts/ci/linux-deps.sh') }}
@@ -67,7 +67,7 @@ jobs:
           core = json.loads(subprocess.run(["out/Borne/bin/borne", "--part-hashes", "out/Borne"], capture_output=True, text=True, check=True).stdout)
           assert ours == core, (ours, core)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: borne-linux-x86_64
           path: dist/
@@ -78,7 +78,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/build-identity
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
@@ -106,7 +106,7 @@ jobs:
           core = json.loads(subprocess.run(["out-macos/Borne.app/Contents/MacOS/borne", "--part-hashes", "out-macos/Borne.app"], capture_output=True, text=True, check=True).stdout)
           assert ours == core, (ours, core)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: borne-macos-arm64
           path: dist/
@@ -119,11 +119,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: ./.github/actions/build-identity
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
