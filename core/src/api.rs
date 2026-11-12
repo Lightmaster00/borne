@@ -1199,9 +1199,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             ok(req, json!({ "ok": true }))
         }
         (Method::Post, ["api", "v1", "debug", "pad"]) if app.debug_input => {
-            const OK: [&str; 14] = [
+            const OK: [&str; 15] = [
                 "up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "lb", "rb",
-                "lt", "rt",
+                "lt", "rt", "r3",
             ];
             match query(&q, "action") {
                 Some(a) if OK.contains(&a.as_str()) => {

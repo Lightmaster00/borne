@@ -51,7 +51,7 @@ Since then:
   retail case (cardboard boxes
   for NES / SNES / N64 / Game Boy, clamshells for Mega Drive, jewel cases for PlayStation / Saturn /
   Dreamcast, colored keep cases for GameCube, PS2, Wii, Switch…), rebuilt from ScreenScraper's case elements
-  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the console's plastic colour on top and bottom, cel shaded (flat light bands, a dark side and an edge rim in the console's colour, a crisp highlight, a paper or plastic grain) inside a bold ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, far enough to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 7 seconds without input the library fades out and leaves the video. A letter index and LT / RT jump through the alphabet; Y opens a
+  stored by RomM: front, spine and back scans, their proportions giving the case's width and thickness. The cases are 3D boxes with slightly rounded edges, the cover in front, the spine on both sides and the console's plastic colour on top and bottom, cel shaded (flat light bands, a dark side and an edge rim in the console's colour, a crisp highlight, a paper or plastic grain) inside a bold ink outline, with soft shadows on the floor, turnable with the right stick or W A S D, up to 60° to see the spine; a lighter flat drawing is used when 3D is unavailable. Behind them, a video of the selected game being played (ScreenScraper's gameplay capture, else RomM's trailer) over its blurred cover while it loads, under a dark filter; after 7 seconds without input the library fades out and leaves the video. A letter index and LT / RT jump through the alphabet; Y opens a
   search with results as you type. The screen sits in a frame dressed in the selected console: its blank Steam grid from ScreenScraper, in the console's own colour, which also colours the buttons, the open console tab and the A key. Rounded shapes with a thin ink edge; titles in Fredoka, text in Manrope.
 - **Game page**: laid out like a film poster: the trailer (or the game's artwork) across the screen,
   the game's logo, its actions and the languages it really exists in, its case turning in 3D. Choosing
@@ -169,11 +169,13 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | D-pad | Arrows | Move through the covers |
 | LT / RT | R / C, Home / End | Previous / next letter |
 | LB / RB | Page Up / Page Down, Q / E | Previous / next tab |
-| Right stick | W A S D (held) | Turn the selected game box, up to its spine; it comes back when let go |
+| Right stick | W A S D (held) | Turn the selected game box (up to 60°) to see its spine; it comes back when let go |
+| R3 (right stick click) | Tab | Downloads |
 | Start | M or F1 | Settings |
 | Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |
 
-In text fields, type directly on the keyboard; Enter confirms. Borne is played with a gamepad or a
+The button hints on screen follow the device in use: gamepad buttons, or the keyboard's keys as soon
+as a key is pressed. In text fields, type directly on the keyboard; Enter confirms. Borne is played with a gamepad or a
 keyboard only: the mouse pointer is hidden and mouse input is ignored.
 
 ## Language

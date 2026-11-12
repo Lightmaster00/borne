@@ -48,7 +48,7 @@ Item {
         }
         HintBar {
             theme: setup.theme
-            hints: [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["X", qsTr("Shift"), "x"], ["Y", qsTr("Space"), "y"], ["Start", qsTr("Confirm"), "start"]]
+            hints: [["A", qsTr("Key"), "a", ""], ["B", qsTr("Erase"), "b", "⌫"], ["X", qsTr("Shift"), "x", ""], ["Y", qsTr("Space"), "y", ""], ["Start", qsTr("Confirm"), "start", qsTr("Enter")]]
         }
     }
 }

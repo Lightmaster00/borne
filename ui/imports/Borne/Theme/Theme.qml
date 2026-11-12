@@ -25,6 +25,8 @@ QtObject {
 
     // Accent: the colour of the selected console (Cases.js), set by Main.
     property color accent: "#8CCBFF"
+    // The input in use ("pad" or "keyboard"): button hints show that device's keys.
+    property string input: "pad"
     // Text on the accent: white on the consoles' strong colours, dark on light ones.
     readonly property color accentFg: accent.hslLightness > 0.62 ? bg : "#FFFFFF"
     readonly property color halo: Qt.rgba(accent.r, accent.g, accent.b, 0.45)

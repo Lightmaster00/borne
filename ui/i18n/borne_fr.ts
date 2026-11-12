@@ -884,6 +884,17 @@
     </message>
 </context>
 <context>
+    <name>HintBar</name>
+    <message>
+        <source>Enter</source>
+        <translation>Entrée</translation>
+    </message>
+    <message>
+        <source>Esc</source>
+        <translation>Échap</translation>
+    </message>
+</context>
+<context>
     <name>LibraryView</name>
     <message>
         <source>No games here.</source>
@@ -1929,6 +1940,14 @@
         <source>No game installed yet. Open a game in its console’s tab to download it or play it from the network.</source>
         <translation>Aucun jeu installé pour l'instant. Ouvrez un jeu dans l'onglet de sa console pour le télécharger ou y jouer depuis le réseau.</translation>
     </message>
+    <message>
+        <source>Enter</source>
+        <translation>Entrée</translation>
+    </message>
+    <message>
+        <source>Esc</source>
+        <translation>Échap</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -2101,6 +2120,14 @@
         <source>Close</source>
         <translation>Fermer</translation>
     </message>
+    <message>
+        <source>Enter</source>
+        <translation>Entrée</translation>
+    </message>
+    <message>
+        <source>Esc</source>
+        <translation>Échap</translation>
+    </message>
 </context>
 <context>
     <name>ServerSetup</name>
@@ -2135,6 +2162,10 @@
     <message>
         <source>Confirm</source>
         <translation>Valider</translation>
+    </message>
+    <message>
+        <source>Enter</source>
+        <translation>Entrée</translation>
     </message>
 </context>
 <context>

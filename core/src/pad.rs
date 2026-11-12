@@ -49,6 +49,7 @@ fn map_button(b: Button) -> Option<&'static str> {
         Button::RightTrigger => "rb",
         Button::LeftTrigger2 => "lt",
         Button::RightTrigger2 => "rt",
+        Button::RightThumb => "r3",
         _ => return None,
     })
 }

@@ -280,6 +280,10 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   (Automatic follows the UI language), summary. Choices are stored per profile.
 - Everything works with the gamepad or the keyboard (focus rings, row/column navigation). The mouse is
   not used: the launcher hides the pointer and drops mouse, wheel and touch events.
+- Button hints follow the device in use (`theme.input`): the gamepad's buttons, or the keyboard's
+  keys from the first key press (Enter, Esc, T, M, F2, Q E, R C, Tab), back to the gamepad on its
+  next button. The downloads panel has its own button, shown on its pill in the top bar: R3 (right
+  stick click), Tab on the keyboard.
 - Original synthesized UI sounds; bundled OFL font.
 
 ### 5.5 Media and trailers
@@ -836,6 +840,6 @@ says so in Settings; development builds can set the same variables in the enviro
   Materials: keep case (rim, rounded edges, moulded ridges on bare edges), jewel case (hinge, black
   tray under a clear lid), clamshell, cardboard (matte, crisp folds).
 - The selected box (library and game page) leans with the right stick (core event `stick`, dead
-  zone 0.18, steps of 0.05) or W A S D held: the stick sets the angle, within ±82° of turn and ±40°
-  of tilt, far enough to face the spine (never the back); released, the box comes straight
+  zone 0.18, steps of 0.05) or W A S D held: the stick sets the angle, within ±60° of turn and ±40°
+  of tilt, enough to show the spine (never the back); released, the box comes straight
   back. `POST /api/v1/debug/stick?x=&y=` drives it in tests.

@@ -219,7 +219,7 @@ Item {
                 theme: root.theme
                 hints: root.showKeyboard
                     ? [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["LB/RB", qsTr("Result"), "rb"], ["Start", qsTr("Go to game"), "start"]]
-                    : [["↑↓", qsTr("Result"), "down"], ["Enter", qsTr("Go to game"), "start"], ["Esc", qsTr("Close"), "select"]]
+                    : [["↑↓", qsTr("Result"), "down"], ["Enter", qsTr("Go to game"), "start", qsTr("Enter")], ["Esc", qsTr("Close"), "select", qsTr("Esc")]]
             }
         }
     }

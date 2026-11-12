@@ -926,8 +926,8 @@ Window {
     readonly property real turnX: Math.max(-1, Math.min(1, padTurnX + (turnKeys.d ? 1 : 0) - (turnKeys.a ? 1 : 0)))
     readonly property real turnY: Math.max(-1, Math.min(1, padTurnY + (turnKeys.s ? 1 : 0) - (turnKeys.w ? 1 : 0)))
     // The stick sets the angle directly (not a speed): the box turns toward where you push, far
-    // enough to face its spine (never its back), and comes back as soon as you let go.
-    readonly property real maxYaw: 82
+    // enough to show its spine well (never its back), and comes back as soon as you let go.
+    readonly property real maxYaw: 60
     readonly property real maxPitch: 40
     property real boxYaw: turnX * maxYaw
     property real boxPitch: turnY * maxPitch
@@ -941,6 +941,7 @@ Window {
 
     function dispatch(a, source) {
         inputCounts[source] = (inputCounts[source] || 0) + 1
+        if (source === "pad") graphite.input = "pad"
         inputCountsChanged()
         lastInput = a + " via " + source
         if (touch() && screen === "library" && overlay === "") return
@@ -949,7 +950,7 @@ Window {
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
         if (search.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return search.handle(a) }
-        if (downloadsPanel.visible) return downloadsPanel.handle(a)
+        if (downloadsPanel.visible) return a === "r3" ? (downloadsPanel.visible = false) : downloadsPanel.handle(a)
         if (overlay === "diag") return diag.handle(a)
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
         if (overlay === "settings") { if (a !== "a" && a !== "b") sfx.play("move"); return settingsPage.handle(a) }
@@ -966,6 +967,7 @@ Window {
         else if (a === "b") { /* root: nothing to close */ }
         else if (a === "lb") setSystem(-1)
         else if (a === "rb") setSystem(1)
+        else if (a === "r3") openDownloads()
         else if (a === "lt") jumpLetter(-1)
         else if (a === "rt") jumpLetter(1)
         else move(a)
@@ -1189,6 +1191,7 @@ Window {
         anchors.fill: parent
         focus: true
         Keys.onPressed: (e) => {
+            graphite.input = "keyboard"   // hints now show keyboard keys
             // Text entry: the physical keyboard types directly.
             if (win.textEntry && !menu.visible) {
                 const target = nameEntry.visible ? nameEntry : setup
@@ -1231,7 +1234,7 @@ Window {
             map[Qt.Key_Escape] = "b"; map[Qt.Key_Backspace] = "b"
             map[Qt.Key_X] = "x"; map[Qt.Key_T] = "y"; map[Qt.Key_Y] = "y"; map[Qt.Key_F1] = "start"; map[Qt.Key_M] = "start"; map[Qt.Key_F2] = "select"
             map[Qt.Key_PageUp] = "lb"; map[Qt.Key_Q] = "lb"; map[Qt.Key_PageDown] = "rb"; map[Qt.Key_E] = "rb"
-            map[Qt.Key_R] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
+            map[Qt.Key_R] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Tab] = "r3"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
             const a = map[e.key]
             if (a) { e.accepted = true; dispatch(a, "keyboard") }
         }
@@ -1332,17 +1335,18 @@ Window {
             }
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: dlRow.implicitWidth + 36; height: 48; radius: 24
+                width: dlRow.implicitWidth + 20; height: 48; radius: 24
                 color: theme.glass
                 Ink { z: -1; theme: win.theme; radius: 24; opacity: 0.5 }
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Downloads")
+                // Its own button: R3 (right stick click), Tab on the keyboard.
                 Row {
                     id: dlRow
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 2
                     Icon { anchors.verticalCenter: parent.verticalCenter; name: "download"; size: 18; stroke: 2.2; color: theme.fg }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: qsTr("Downloads"); color: theme.fg; font { family: theme.fontFamily; pixelSize: 16 } }
+                    HintBar { anchors.verticalCenter: parent.verticalCenter; theme: win.theme; hints: [["R3", qsTr("Downloads"), "r3"]] }
                 }
             }
             Text {
@@ -1514,7 +1518,7 @@ Window {
             }
             HintBar {
                 theme: win.theme
-                hints: [["A", qsTr("Key"), "a"], ["B", qsTr("Erase"), "b"], ["Start", qsTr("Confirm"), "start"], ["Select", qsTr("Cancel"), "select"]]
+                hints: [["A", qsTr("Key"), "a", ""], ["B", qsTr("Erase"), "b", "⌫"], ["Start", qsTr("Confirm"), "start", qsTr("Enter")], ["Select", qsTr("Cancel"), "select", qsTr("Esc")]]
             }
         }
     }

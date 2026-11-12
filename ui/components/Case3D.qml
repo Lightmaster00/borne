@@ -6,6 +6,7 @@
 // a second one (gloss.frag) adds a crisp highlight and a rim of the console's colour on the edges.
 // Coordinates: x right, y up, z toward you.
 import QtQuick
+import QtQuick.Effects
 import QtQuick3D
 import QtQuick3D.Helpers
 import "Cases.js" as Cases
@@ -56,6 +57,7 @@ Node {
         }
     }
     readonly property color consoleTint: Cases.tint(game ? game.platform_slug : "")
+    readonly property real printSaturation: -0.3
     // A flat print: no lighting of its own, the shading skin does it.
     component Flat: PrincipledMaterial {
         lighting: PrincipledMaterial.NoLighting
@@ -82,6 +84,9 @@ Node {
             sourceSize: Qt.size(parent.width, parent.height)
             fillMode: Image.Stretch
             asynchronous: true
+            // Printed flat and unlit, scans look harsh: their colours toned down like ink on card.
+            layer.enabled: true
+            layer.effect: MultiEffect { saturation: box.printSaturation }
         }
     }
     // The spine: its scan, else a band in the console's colour with the title.
@@ -94,6 +99,8 @@ Node {
             asynchronous: true
             fillMode: Image.Stretch
             sourceSize: Qt.size(Math.max(32, parent.width), parent.height)
+            layer.enabled: true
+            layer.effect: MultiEffect { saturation: box.printSaturation }
         }
         // No spine scan: the game's logo turned along the spine (ScreenScraper's wheel), on a band
         // in the console's colour; else its title.
@@ -219,8 +226,8 @@ Node {
                 destinationBlend: CustomMaterial.Zero
                 property TextureInput grainTex: TextureInput { texture: grainTexture }
                 // Dark side: the console's colour, deep; half tone: a lighter, warmer step.
-                property color shadeTint: Qt.rgba(box.consoleTint.r * 0.30 + 0.10, box.consoleTint.g * 0.30 + 0.10, box.consoleTint.b * 0.30 + 0.16, 1)
-                property color midTint: Qt.rgba(0.62, 0.60, 0.66, 1)
+                property color shadeTint: Qt.rgba(box.consoleTint.r * 0.16 + 0.22, box.consoleTint.g * 0.16 + 0.22, box.consoleTint.b * 0.16 + 0.25, 1)
+                property color midTint: Qt.rgba(0.70, 0.70, 0.72, 1)
                 property real grainAmount: box.card ? 0.10 : 0.06
                 property real grainScale: Math.max(2, box.bh / 30)
             }
