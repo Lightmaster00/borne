@@ -27,7 +27,8 @@ Specification: [`docs/SPEC.md`](docs/SPEC.md).
 - **Keyboard-free pairing**: Borne shows a code and a QR code; you approve it from your phone in RomM,
   which creates a "Borne device". The token is stored outside the database (`secrets/`, 0600).
 - **Catalog** synced (platforms, games, metadata, cached covers), browsable **offline**. Favourites
-  and Recent tabs per profile; sort by name, recently played, recently added or most played, and
+  and Recent tabs per profile; sort by name (the first three letters of the title, then the release
+  date, so a series stands in the order it came out), recently played, recently added or most played, and
   filter by genre (Select → Sort and filter); the search also matches other regions' titles.
 - **Downloads**: persistent queue, **resume after interruption** (Range requests), **SHA-1** verification
   (including archive contents), safe zip extraction, atomic install, live progress on the poster,
@@ -173,10 +174,13 @@ Data: `~/.local/share/borne/` (`state.db`, `library/`, `media/covers/`, `secrets
 | R3 (right stick click) | Tab | Downloads |
 | Start | M or F1 | Settings |
 | Select | F2 | Menu (sync, downloads, profile, server, diagnostics) |
+| Select then Start | the emulator's own key (usually Esc) | Quit the game being played |
 
-The button hints on screen follow the device in use: gamepad buttons, or the keyboard's keys as soon
-as a key is pressed. In text fields, type directly on the keyboard; Enter confirms. Borne is played with a gamepad or a
-keyboard only: the mouse pointer is hidden and mouse input is ignored.
+The button hints on screen, and the texts that name a button, follow the device in use: gamepad
+buttons, or the keyboard's keys as soon as a key is pressed (back to the gamepad on its next button).
+In text fields, type directly on the keyboard: Enter confirms, Esc cancels, Backspace erases.
+Borne is played with a gamepad or a keyboard only: the mouse pointer is hidden and mouse input is
+ignored.
 
 ## Language
 

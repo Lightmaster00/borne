@@ -884,17 +884,6 @@
     </message>
 </context>
 <context>
-    <name>HintBar</name>
-    <message>
-        <source>Enter</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Esc</source>
-        <translation type="unfinished" />
-    </message>
-</context>
-<context>
     <name>LibraryView</name>
     <message>
         <source>No games here.</source>
@@ -1893,15 +1882,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No favourites yet. On a game, choose “Add to favourites” (Select menu or game page).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No game played yet on this profile.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No “%1” game here. Change the genre in Select → Sort and filter.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1948,6 +1929,22 @@
         <source>Esc</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>No favourites yet. On a game, choose “Add to favourites” (%1 menu or game page).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No “%1” game here. Change the genre in %2 → Sort and filter.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit the game from the emulator (usually Esc, or its menu)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game mode (test) — Esc to go back</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1972,18 +1969,6 @@
     <name>PairingScreen</name>
     <message>
         <source>Connecting to RomM…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Pairing refused in RomM. A to start again.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The code expired. A to get a new one.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Error: %1. A to retry.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2032,6 +2017,18 @@
     </message>
     <message>
         <source>No place to enter the code in RomM? Pairing by code needs a recent RomM: update the server, then try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pairing refused in RomM. %1 to start again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The code expired. %1 to get a new one.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Error: %1. %2 to retry.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2852,6 +2849,17 @@
     </message>
     <message>
         <source> is not writable</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>Theme</name>
+    <message>
+        <source>Enter</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Esc</source>
         <translation type="unfinished" />
     </message>
 </context>

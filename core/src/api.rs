@@ -691,19 +691,14 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 .unwrap_or_default();
             crate::screenscraper::set_ui_lang(app, &lang);
             let mut list = library::groups(rows, &prefs, &lang);
-            // Titles in the interface language (ScreenScraper), the list sorted on them.
-            let mut renamed = false;
+            // Titles in the interface language (ScreenScraper), the list ordered on them: by their
+            // first three letters, then by release date (library::shelf_order).
             for v in list.iter_mut() {
                 if let Some(t) = v["group_key"].as_str().and_then(|k| crate::screenscraper::title(app, k, &lang)) {
-                    if v["name"].as_str() != Some(t.as_str()) {
-                        v["name"] = json!(t);
-                        renamed = true;
-                    }
+                    v["name"] = json!(t);
                 }
             }
-            if renamed {
-                list.sort_by_cached_key(|v| library::title_sort_key(v["name"].as_str().unwrap_or("")));
-            }
+            library::shelf_order(&mut list);
             // The profile's record: favourites, recently played; then the tab, filter and order asked.
             let stats = app.active_profile().map(|p| app.db.play_stats(&p.id)).unwrap_or_default();
             for v in list.iter_mut() {

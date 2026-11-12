@@ -20,13 +20,14 @@ const CASES = {
     genesis:   { mat: "clam",  color: "#121214", w: 135, h: 184, d: 23 },
     sms:       { mat: "clam",  color: "#121214", w: 135, h: 184, d: 23 },
     gamegear:  { mat: "clam",  color: "#121214", w: 112, h: 160, d: 20 },
-    // PlayStation: only the square cover insert is shown (scans that include the case's hinge on
+    // CD consoles: only the square cover insert is shown (scans that include the case's hinge on
     // the left are cut to it, see frontRatio), so the case is drawn square.
     psx:       { mat: "jewel", color: "#0b0b0d", w: 125, h: 125, d: 10, insert: 1.0 },
     ps:        { mat: "jewel", color: "#0b0b0d", w: 125, h: 125, d: 10, insert: 1.0 },
-    saturn:    { mat: "jewel", color: "#0b0b0d", w: 142, h: 125, d: 10 },
-    segacd:    { mat: "jewel", color: "#0b0b0d", w: 142, h: 125, d: 10 },
-    dc:        { mat: "jewel", color: "#0b0b0d", w: 142, h: 125, d: 10 },
+    // Saturn, Mega-CD and Dreamcast jewel cases hold the same square insert.
+    saturn:    { mat: "jewel", color: "#0b0b0d", w: 125, h: 125, d: 10, insert: 1.0 },
+    segacd:    { mat: "jewel", color: "#0b0b0d", w: 125, h: 125, d: 10, insert: 1.0 },
+    dc:        { mat: "jewel", color: "#0b0b0d", w: 125, h: 125, d: 10, insert: 1.0 },
     ngc:       { mat: "keep",  color: "#151517", w: 136, h: 191, d: 14 },
     ps2:       { mat: "keep",  color: "#141416", w: 135, h: 190, d: 14 },
     xbox:      { mat: "keep",  color: "#141416", w: 135, h: 190, d: 14 },

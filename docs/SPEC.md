@@ -280,7 +280,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   (Automatic follows the UI language), summary. Choices are stored per profile.
 - Everything works with the gamepad or the keyboard (focus rings, row/column navigation). The mouse is
   not used: the launcher hides the pointer and drops mouse, wheel and touch events.
-- Button hints follow the device in use (`theme.input`): the gamepad's buttons, or the keyboard's
+- Button hints, and texts that name a button (`theme.key(action)`), follow the device in use (`theme.input`): the gamepad's buttons, or the keyboard's
   keys from the first key press (Enter, Esc, T, M, F2, Q E, R C, Tab), back to the gamepad on its
   next button. The downloads panel has its own button, shown on its pill in the top bar: R3 (right
   stick click), Tab on the keyboard.
@@ -777,10 +777,14 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   is), but none is drawn with its longest side under 88 % of the tallest case (Cases.scale), and no
   spine thinner than 9.5 % of the case's height (Cases.MIN_SPINE), so small cases and their spines
   stay readable. A spine scan is never stretched (centred on the case's plastic) and one lying on its
-  side is stood up. PlayStation covers are the square insert: a scan wider than that (the case's
+  side is stood up (in 3D and in the 2D fallback). PlayStation, Saturn, Mega-CD and Dreamcast covers
+  are the square insert: a scan wider than that (the case's
   hinge on its left) has its left part cut (Cases.frontRatio). Top and bottom take the console's
   signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture, their
   two folds found by edge detection around the place the front's proportions give.
+- Order "by name" (library::shelf_order): the first three letters of the title in the interface
+  language (articles and accents set aside), then the release date (games without one last), then
+  the whole title; "Final Fantasy VII" stands before "Final Fantasy IX".
 - Versions RomM matched differently (one by IGDB, another by ScreenScraper, another not at all),
   the discs of one game, and versions ScreenScraper knows as one game are joined after each sync
   and each ScreenScraper run (library::merge_groups): one entry per game. Logos and printed art

@@ -27,6 +27,15 @@ QtObject {
     property color accent: "#8CCBFF"
     // The input in use ("pad" or "keyboard"): button hints show that device's keys.
     property string input: "pad"
+    // The key or button doing an action ("a", "select"…) on the device in use, for texts.
+    function key(action) {
+        const pad = { a: "A", b: "B", x: "X", y: "Y", start: "Start", select: "Select", lb: "LB", rb: "RB",
+                      lt: "LT", rt: "RT", r3: "R3", up: "▲", down: "▼", left: "◀", right: "▶" }
+        if (input !== "keyboard") return pad[action] || action
+        const kb = { a: qsTr("Enter"), b: qsTr("Esc"), x: "X", y: "T", start: "M", select: "F2",
+                     lb: "Q", rb: "E", lt: "R", rt: "C", r3: "Tab", up: "↑", down: "↓", left: "←", right: "→" }
+        return kb[action] || action
+    }
     // Text on the accent: white on the consoles' strong colours, dark on light ones.
     readonly property color accentFg: accent.hslLightness > 0.62 ? bg : "#FFFFFF"
     readonly property color halo: Qt.rgba(accent.r, accent.g, accent.b, 0.45)

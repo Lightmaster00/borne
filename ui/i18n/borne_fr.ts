@@ -884,17 +884,6 @@
     </message>
 </context>
 <context>
-    <name>HintBar</name>
-    <message>
-        <source>Enter</source>
-        <translation>Entrée</translation>
-    </message>
-    <message>
-        <source>Esc</source>
-        <translation>Échap</translation>
-    </message>
-</context>
-<context>
     <name>LibraryView</name>
     <message>
         <source>No games here.</source>
@@ -1893,16 +1882,8 @@
         <translation>RomM : %1</translation>
     </message>
     <message>
-        <source>No favourites yet. On a game, choose “Add to favourites” (Select menu or game page).</source>
-        <translation>Pas encore de favoris. Sur un jeu, choisissez « Ajouter aux favoris » (menu Select ou page du jeu).</translation>
-    </message>
-    <message>
         <source>No game played yet on this profile.</source>
         <translation>Aucun jeu joué pour l’instant avec ce profil.</translation>
-    </message>
-    <message>
-        <source>No “%1” game here. Change the genre in Select → Sort and filter.</source>
-        <translation>Aucun jeu « %1 » ici. Changez le genre dans Select → Trier et filtrer.</translation>
     </message>
     <message>
         <source>Add a .pnach file…</source>
@@ -1948,6 +1929,22 @@
         <source>Esc</source>
         <translation>Échap</translation>
     </message>
+    <message>
+        <source>No favourites yet. On a game, choose “Add to favourites” (%1 menu or game page).</source>
+        <translation>Pas encore de favoris. Sur un jeu, choisissez « Ajouter aux favoris » (menu %1 ou page du jeu).</translation>
+    </message>
+    <message>
+        <source>No “%1” game here. Change the genre in %2 → Sort and filter.</source>
+        <translation>Aucun jeu « %1 » ici. Changez le genre dans %2 → Trier et filtrer.</translation>
+    </message>
+    <message>
+        <source>Quit the game from the emulator (usually Esc, or its menu)</source>
+        <translation>Quittez le jeu depuis l'émulateur (souvent Échap, ou son menu)</translation>
+    </message>
+    <message>
+        <source>Game mode (test) — Esc to go back</source>
+        <translation>Mode jeu (test) — Échap pour revenir</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -1973,18 +1970,6 @@
     <message>
         <source>Connecting to RomM…</source>
         <translation>Connexion à RomM…</translation>
-    </message>
-    <message>
-        <source>Pairing refused in RomM. A to start again.</source>
-        <translation>Appairage refusé dans RomM. A pour recommencer.</translation>
-    </message>
-    <message>
-        <source>The code expired. A to get a new one.</source>
-        <translation>Le code a expiré. A pour en obtenir un nouveau.</translation>
-    </message>
-    <message>
-        <source>Error: %1. A to retry.</source>
-        <translation>Erreur : %1. A pour réessayer.</translation>
     </message>
     <message>
         <source>unknown</source>
@@ -2033,6 +2018,18 @@
     <message>
         <source>No place to enter the code in RomM? Pairing by code needs a recent RomM: update the server, then try again.</source>
         <translation>Pas d'endroit où saisir le code dans RomM ? L'appairage par code demande un RomM récent : mettez le serveur à jour, puis réessayez.</translation>
+    </message>
+    <message>
+        <source>Pairing refused in RomM. %1 to start again.</source>
+        <translation>Appairage refusé dans RomM. %1 pour recommencer.</translation>
+    </message>
+    <message>
+        <source>The code expired. %1 to get a new one.</source>
+        <translation>Le code a expiré. %1 pour en obtenir un nouveau.</translation>
+    </message>
+    <message>
+        <source>Error: %1. %2 to retry.</source>
+        <translation>Erreur : %1. %2 pour réessayer.</translation>
     </message>
 </context>
 <context>
@@ -2853,6 +2850,17 @@
     <message>
         <source> is not writable</source>
         <translation> n’est pas modifiable</translation>
+    </message>
+</context>
+<context>
+    <name>Theme</name>
+    <message>
+        <source>Enter</source>
+        <translation>Entrée</translation>
+    </message>
+    <message>
+        <source>Esc</source>
+        <translation>Échap</translation>
     </message>
 </context>
 </TS>

@@ -13,10 +13,9 @@ Row {
     function keyOf(h) {
         if (!keyboard) return h[0]
         if (h.length > 3) return h[3]
-        const keys = { a: qsTr("Enter"), b: qsTr("Esc"), x: "X", y: "T", start: "M", select: "F2",
-                       lb: "Q · E", rb: "Q · E", lt: "R · C", rt: "R · C", up: "↑ ↓", down: "↑ ↓",
-                       left: "← →", right: "← →", r3: "Tab" }
-        return keys[h[2]] || h[0]
+        // Pairs (tabs, letters, rows, values) show both keys.
+        const pairs = { lb: "Q · E", rb: "Q · E", lt: "R · C", rt: "R · C", up: "↑ ↓", down: "↑ ↓", left: "← →", right: "← →" }
+        return pairs[h[2]] || theme.key(h[2])
     }
 
     Repeater {

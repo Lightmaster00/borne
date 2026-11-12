@@ -270,6 +270,17 @@ pub fn groups(
 
 /// Sort key for a title: case and accents ignored, a leading article set aside
 /// ("The Legend of Zelda" sorts under L, "La Légende de Zelda" too).
+/// The shelf's order "by name": by the first three letters of the title (articles set aside), then
+/// by release date, so a series stands in the order it came out ("Final Fantasy VII" before
+/// "Final Fantasy IX"), then by the whole title. Games without a date come last in their run.
+pub fn shelf_order(list: &mut [Value]) {
+    list.sort_by_cached_key(|v| {
+        let title = title_sort_key(v["name"].as_str().unwrap_or(""));
+        let head: String = title.chars().filter(|c| c.is_alphanumeric()).take(3).collect();
+        (head, v["year"].as_i64().unwrap_or(i64::MAX), title)
+    });
+}
+
 pub fn title_sort_key(name: &str) -> String {
     let lower: String = name
         .to_lowercase()
@@ -361,6 +372,20 @@ pub fn game_languages(versions: &[GameRow]) -> Vec<Value> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn shelf_order_follows_three_letters_then_date() {
+        let mut l = vec![
+            serde_json::json!({"name": "Final Fantasy IX", "year": 2000}),
+            serde_json::json!({"name": "The Legend of Zelda", "year": 1986}),
+            serde_json::json!({"name": "Final Fantasy VII", "year": 1997}),
+            serde_json::json!({"name": "Fighting Force", "year": 1997}),
+            serde_json::json!({"name": "Final Fantasy Tactics"}),
+        ];
+        super::shelf_order(&mut l);
+        let names: Vec<&str> = l.iter().map(|v| v["name"].as_str().unwrap()).collect();
+        assert_eq!(names, ["Fighting Force", "Final Fantasy VII", "Final Fantasy IX", "Final Fantasy Tactics", "The Legend of Zelda"]);
+    }
+
     #[test]
     fn versions_left_apart_are_joined() {
         let r = |id: i64, key: &str, file: &str, ss: Option<&str>| (id, "psx".to_string(), key.to_string(), file.to_string(), ss.map(String::from));

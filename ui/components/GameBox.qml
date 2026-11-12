@@ -32,7 +32,7 @@ Item {
     // case's hinge is cut to the cover insert (Cases.frontRatio).
     readonly property var front: Cases.frontRatio(game ? game.platform_slug : "", game && frontScan && game.front_ar > 0 ? game.front_ar : (game && game.cover_ar > 0 ? game.cover_ar : 0))
     readonly property real frontAR: front ? front.ar : 0
-    readonly property real sideAR: has("side") && game.side_ar > 0 ? game.side_ar : 0
+    readonly property real sideAR: has("side") && game.side_ar > 0 ? (game.side_ar > 1 ? 1 / game.side_ar : game.side_ar) : 0
     readonly property real bh: (turned ? kind.w : kind.h) * mm
     readonly property real bw: frontAR > 0 ? Math.max(0.5, Math.min(1.6, frontAR)) * (bh - 2 * rim) + rim + (hinge ? bh * 0.075 : rim)
                                            : (turned ? kind.h : kind.w) * mm
@@ -132,11 +132,16 @@ Item {
         // The spine scan (stored upright and trimmed by the core).
         Image {
             id: scan
-            anchors.fill: parent
+            // Never stretched (centred on the plastic); a spine lying on its side is stood up.
+            readonly property bool lying: !!box.game && box.game.side_ar > 1
+            anchors.centerIn: parent
+            width: lying ? parent.height : parent.width
+            height: lying ? parent.width : parent.height
+            rotation: lying ? 90 : 0
             visible: sd.spine
             source: sd.spine && box.has("side") ? box.game.art + "side" : ""
             asynchronous: true
-            fillMode: Image.Stretch
+            fillMode: Image.PreserveAspectFit
         }
         Text {
             // The title only when there is no scan (not while it loads: no flash of text).

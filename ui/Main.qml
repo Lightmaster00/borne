@@ -136,10 +136,13 @@ Window {
     readonly property bool framed: !gameMode
     readonly property real frameMargin: framed ? Math.round(Math.min(width, height) * 0.036) : 0
     property int artRev: 0
+    property int platformsSeq: 0
     function loadPlatforms() {
+        // Only the latest request's answer is used (a profile switch can cross an older one).
+        const seq = ++platformsSeq
         api("GET", "/api/v1/library/tabs", null, function (tabs) {
           api("GET", "/api/v1/platforms", null, function (list) {
-            if (!list) return
+            if (!list || seq !== platformsSeq) return
             const current = systems[systemIndex] ? systems[systemIndex].id : ""
             // The player's own tabs, only when they hold something; then one tab per console.
             const sys = []
@@ -986,9 +989,9 @@ Window {
         if (st && st.running) return qsTr("Syncing the library…")
         if (st && st.error && libModel.count === 0) return qsTr("The library could not be synced: %1").arg(CoreText.tr(st.error))
         const tabId = win.systems[win.systemIndex] ? win.systems[win.systemIndex].id : ""
-        if (tabId === "fav") return qsTr("No favourites yet. On a game, choose “Add to favourites” (Select menu or game page).")
+        if (tabId === "fav") return qsTr("No favourites yet. On a game, choose “Add to favourites” (%1 menu or game page).").arg(graphite.key("select"))
         if (tabId === "recent") return qsTr("No game played yet on this profile.")
-        if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre in Select → Sort and filter.").arg(prefs.libraryGenre)
+        if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre in %2 → Sort and filter.").arg(prefs.libraryGenre).arg(graphite.key("select"))
         if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
             return qsTr("No game installed yet. Open a game in its console’s tab to download it or play it from the network.")
         return qsTr("No games here.")
@@ -1573,8 +1576,8 @@ Window {
             anchors.centerIn: parent
             horizontalAlignment: Text.AlignHCenter
             text: win.session && win.session.running
-                  ? qsTr("%1 is running in %2").arg(win.session.name).arg(win.session.emulator) + "\n" + qsTr("Select then Start: quit the game")
-                  : qsTr("Game mode (test) — B to go back")
+                  ? qsTr("%1 is running in %2").arg(win.session.name).arg(win.session.emulator) + "\n" + (graphite.input === "keyboard" ? qsTr("Quit the game from the emulator (usually Esc, or its menu)") : qsTr("Select then Start: quit the game"))
+                  : (graphite.input === "keyboard" ? qsTr("Game mode (test) — Esc to go back") : qsTr("Game mode (test) — B to go back"))
             color: "#8b97ab"; lineHeight: 1.4
             font { family: theme.fontFamily; pixelSize: 16 }
         }

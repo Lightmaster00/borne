@@ -110,9 +110,9 @@ Item {
                             case "starting": return qsTr("Connecting to RomM…")
                             case "waiting": return qsTr("Waiting for approval · the code renews in %1:%2").arg(Math.floor(screen.remaining / 60)).arg(String(screen.remaining % 60).padStart(2, "0"))
                             case "approved": return qsTr("Profile paired")
-                            case "denied": return qsTr("Pairing refused in RomM. A to start again.")
-                            case "expired": return qsTr("The code expired. A to get a new one.")
-                            default: return qsTr("Error: %1. A to retry.").arg(screen.pairing && screen.pairing.error ? screen.pairing.error : qsTr("unknown"))
+                            case "denied": return qsTr("Pairing refused in RomM. %1 to start again.").arg(screen.theme.key("a"))
+                            case "expired": return qsTr("The code expired. %1 to get a new one.").arg(screen.theme.key("a"))
+                            default: return qsTr("Error: %1. %2 to retry.").arg(screen.pairing && screen.pairing.error ? screen.pairing.error : qsTr("unknown")).arg(screen.theme.key("a"))
                             }
                         }
                         color: screen.failed ? theme.bad : theme.fgMuted
