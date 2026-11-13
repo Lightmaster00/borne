@@ -2,9 +2,19 @@
 // The case is seen through clear plastic, like glass: it reflects a photo studio (a large softbox
 // above on the left, tall windows on the sides, a thin strip on the right, a faint sheen across), weak when seen face-on and
 // strong at grazing angles (Fresnel), so the print stays clean and the reflections slide over it
-// as the case turns. (No rim on the edges: seen side-on, it drew a light line along the spines.)
+// as the case turns. Only the flat faces reflect: on the rounded edges the normal sweeps every
+// direction, so some part of each edge always caught a window and drew a light line along it.
 //
 // Uniform (CustomMaterial property): glint (reflection strength).
+
+// 1 on the case's flat faces, 0 on its rounded edges and corners (the normal in the case's own
+// axes is then no longer along one of them).
+float flatFace(vec3 worldNormal)
+{
+    vec3 o = normalize(transpose(mat3(MODEL_MATRIX)) * worldNormal);
+    float m = max(abs(o.x), max(abs(o.y), abs(o.z)));
+    return smoothstep(0.985, 0.999, m);
+}
 
 // A soft-edged band: 1 between a and b, fading over f outside.
 float band(float x, float a, float b, float f)
@@ -35,7 +45,7 @@ void MAIN()
     float ceiling = smoothstep(0.1, 0.9, lat) * 0.12;
     float studio = softbox + strip + windows + sheen + ceiling;
     float fresnel = 0.04 + 0.96 * pow(1.0 - facing, 5.0);
-    vec3 reflection = vec3(0.92, 0.95, 1.0) * studio * glint * mix(0.3, 1.0, fresnel);
+    vec3 reflection = vec3(0.92, 0.95, 1.0) * studio * glint * mix(0.3, 1.0, fresnel) * flatFace(n);
     EMISSIVE_COLOR = reflection;
 }
 
@@ -51,7 +61,7 @@ void SPECULAR_LIGHT()
 {
     // The key light's own glint: broad and soft, never a hard white spot.
     vec3 h = normalize(VIEW_VECTOR + TO_LIGHT_DIR);
-    float s = pow(max(0.0, dot(h, normalize(NORMAL))), 24.0);
+    float s = pow(max(0.0, dot(h, normalize(NORMAL))), 24.0) * flatFace(normalize(NORMAL));
     SPECULAR += LIGHT_COLOR * glint * 0.18 * s * SHADOW_CONTRIB;
 }
 

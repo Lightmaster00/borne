@@ -250,8 +250,9 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   plastic grain (`grain.png`), and a second skin (`gloss.frag`, added) the clear plastic seen as glass:
   it reflects a procedural photo studio (a softbox above on the left, tall windows on the sides, a thin
   strip, a faint diagonal sheen), weak face-on and strong at grazing angles (Fresnel), so the
-  reflections slide over the print as the case turns; a broad soft glint and a thin rim of the console's
-  colour; cardboard reflects barely; all inside a bold ink outline (the same ink as the hard shadow under
+  reflections slide over the print as the case turns, on the flat faces only (on the rounded edges
+  the normal sweeps every direction and always caught a window: a light line along each edge); a
+  broad soft glint; cardboard reflects barely; all inside a bold ink outline (the same ink as the hard shadow under
   buttons, chips, cards and panels: `Ink.qml`). A key light casts soft shadows on a floor that fades
   out (the floor alone reflects the studio light probe `studio.hdr`; both assets come from
   `scripts/gen-case-assets.py`). A slot keeps its case while the case stays in view, so moving
