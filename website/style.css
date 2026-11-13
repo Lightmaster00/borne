@@ -27,22 +27,39 @@
   --radius: 14px;
   --ink-shadow: 4px 4px 0 rgba(5, 6, 10, .8);
   --wrap: 1200px;
+  --tint: #E60012;                /* the frame's colour, as the app's console frame (ConsoleFrame.qml) */
+  --frame: clamp(10px, 2.6vw, 40px);
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--bg); }
+html { scroll-behavior: smooth; background: #3B0004; }
 body {
   margin: 0; color: var(--fg); background: var(--bg);
   font: 400 1.0625rem/1.6 "Manrope", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+/* The page is Borne's screen: the console frame round it (ConsoleFrame.qml: a gradient of the
+   console's colour, two soft discs, diagonal stripes), the screen inside with an ink edge. */
+body {
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 42px, rgba(255, 255, 255, .05) 42px 60px),
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--tint) 45%, #fff 0%) 0, transparent 34vmax),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--tint) 55%, transparent) 0, transparent 40vmax),
+    linear-gradient(90deg, color-mix(in srgb, var(--tint) 26%, #000), color-mix(in srgb, var(--tint) 62%, #000));
+  background-attachment: fixed;
+  padding: var(--frame);
+}
+.app {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: var(--bg); border-radius: 40px;
+  box-shadow: 0 0 0 5px var(--ink), 10px 12px 0 5px rgba(5, 6, 10, .5);
+}
 /* The halo: the app's living background, here in the brand's red, fading into the dark. */
-body::before {
+.app::before {
   content: ""; position: absolute; inset: 0 0 auto 0; height: 1100px; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(60% 55% at 78% 30%, rgba(230, 0, 18, .30), transparent 70%),
-    radial-gradient(45% 40% at 10% 0%, rgba(230, 0, 18, .16), transparent 70%),
-    linear-gradient(transparent 60%, var(--bg));
+    radial-gradient(60% 55% at 78% 30%, rgba(230, 0, 18, .26), transparent 70%),
+    radial-gradient(45% 40% at 10% 0%, rgba(230, 0, 18, .14), transparent 70%);
 }
 h1, h2, h3 { font-family: "Borne Blocks", "Fredoka", sans-serif; font-weight: 400; line-height: 1.15; margin: 0; }
 h1 { font-size: clamp(2.4rem, 4.6vw, 4rem); line-height: 1.2; }
@@ -106,10 +123,11 @@ code, pre, kbd { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospac
 
 /* The app's screen, as its window: dark, rounded, outlined in ink */
 .showcase { margin: 0; }
-.pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.pills button { padding: 8px 14px; font-size: .9rem; }
 .screen {
-  border-radius: 22px; overflow: hidden; background: var(--bg); aspect-ratio: 1224 / 664;
-  border: 4px solid var(--ink); box-shadow: 8px 8px 0 rgba(5, 6, 10, .8), 0 40px 90px -30px rgba(230, 0, 18, .45);
+  border-radius: 3% / 5.5%; overflow: hidden; background: var(--bg); aspect-ratio: 1222 / 661;
+  box-shadow: 0 0 0 4px var(--ink), 8px 8px 0 4px rgba(5, 6, 10, .8), 0 40px 90px -30px rgba(230, 0, 18, .45);
 }
 .screen img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .showcase figcaption { margin-top: 14px; font-size: .85rem; color: var(--fg-muted); }
@@ -170,7 +188,7 @@ kbd { display: inline-block; min-width: 1.9em; text-align: center; padding: 3px 
 .legal { max-width: var(--wrap); margin: 0 auto; padding: 0 52px 48px; font-size: .85rem; color: var(--fg-muted); }
 
 /* A second, dimmer halo behind the middle of the page, as the background follows the selection. */
-#features { position: relative; }
+#features { position: relative; z-index: 0; }
 #features::before {
   content: ""; position: absolute; inset: -160px -10% -120px; z-index: -1; pointer-events: none;
   background: radial-gradient(50% 45% at 15% 50%, rgba(230, 0, 18, .12), transparent 70%);
@@ -189,7 +207,7 @@ kbd { display: inline-block; min-width: 1.9em; text-align: center; padding: 3px 
   .steps { grid-template-columns: 1fr; }
   .panel { padding: 22px; }
   .section { padding-bottom: 76px; }
-  .screen { border-radius: 14px; border-width: 3px; }
+  .app { border-radius: 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
