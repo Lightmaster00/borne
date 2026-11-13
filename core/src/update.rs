@@ -152,6 +152,10 @@ pub struct UpdateState {
     pub available: Option<Manifest>,
     pub received: u64,
     pub total: u64,
+    /// What the available build costs to download here: the parts that differ from the installed
+    /// ones (`parts`), or the whole archive when they cannot be used (`parts` empty).
+    pub size: u64,
+    pub parts: Vec<String>,
     pub error: Option<String>,
     pub checked_at: Option<i64>,
 }
@@ -299,8 +303,11 @@ pub fn check(app: &Shared, force: bool) {
             s.checked_at = Some(crate::db::now());
             match result {
                 Ok(m) if (force || m.build > build()) && m.assets.contains_key(&platform()) => {
+                    let (size, parts) = download_size(&m.assets[&platform()]);
                     s.state = "available".into();
                     s.available = Some(m);
+                    s.size = size;
+                    s.parts = parts;
                 }
                 Ok(_) => {
                     s.state = "uptodate".into();
@@ -314,6 +321,21 @@ pub fn check(app: &Shared, force: bool) {
         });
         BUSY.store(false, Ordering::SeqCst);
     });
+}
+
+/// The bytes an update will download: the parts whose hash differs from the installed package's,
+/// else the whole archive (no parts published, or the installed package cannot be read).
+fn download_size(asset: &Asset) -> (u64, Vec<String>) {
+    if asset.parts.is_empty() {
+        return (asset.size, vec![]);
+    }
+    match package_dir().map(|p| tree_hashes(&p)) {
+        Some(Ok(local)) => {
+            let changed: Vec<(&String, &Part)> = asset.parts.iter().filter(|(name, p)| local.get(*name) != Some(&p.tree)).collect();
+            (changed.iter().map(|(_, p)| p.size).sum(), changed.iter().map(|(n, _)| n.to_string()).collect())
+        }
+        _ => (asset.size, vec![]),
+    }
 }
 
 fn staging_dir(pkg: &Path, build: u64) -> PathBuf {

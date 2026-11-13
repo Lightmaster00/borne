@@ -107,6 +107,9 @@ json.dump({"version": "0.1.2", "build": 102, "channel": "dev", "commit": "test",
 PY
 CORE_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["core"]["size"])' "$WORK/parts.json")
 curl -sf -X POST "$API/api/v1/update/check" >/dev/null; wait_state available || fail "build 102 not found ($(state))"
+ANNOUNCED=$(curl -sf "$API/api/v1/update" | python3 -c 'import json,sys; u=json.load(sys.stdin)["update"]; print(u["size"], ",".join(u["parts"]))')
+[ "$ANNOUNCED" = "$CORE_SIZE core" ] || fail "announced download: $ANNOUNCED, expected $CORE_SIZE core"
+ok "announced before downloading: only the core part"
 curl -sf -X POST "$API/api/v1/update/download" >/dev/null
 wait_state ready || fail "download by parts ($(state))"
 TOTAL=$(curl -sf "$API/api/v1/update" | python3 -c 'import json,sys; print(json.load(sys.stdin)["update"]["total"])')

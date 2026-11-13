@@ -126,9 +126,9 @@ Each release holds:
 | File | Use |
 |---|---|
 | `Borne-linux-x86_64.tar.gz`, `Borne-macos-arm64.zip` | first install (`./Borne/install.sh` on Linux) |
-| `Borne-<platform>-core.tar.gz` | the programs and the package's root files |
-| `Borne-<platform>-ui.tar.gz` | views, fonts, sounds, translations, icon |
-| `Borne-<platform>-runtime.tar.gz` | Qt libraries, plugins and QML modules |
+| `Borne-<platform>-<build>-core.tar.gz` | the programs and the package's root files |
+| `Borne-<platform>-<build>-ui.tar.gz` | views, fonts, sounds, translations, icon |
+| `Borne-<platform>-<build>-runtime.tar.gz` | Qt libraries, plugins and QML modules |
 | `latest.json` | read by the updater: version, build, notes, and per platform the full archive and each part (URL, size, SHA-256, `tree`) |
 | `SHA256SUMS` | every file |
 
@@ -138,6 +138,12 @@ downloads only the parts whose hash differs, lays them over a copy of the instal
 requires every part to match before swapping; anything unexpected falls back to the full archive.
 `scripts/release/parts.py` computes the same hashes (CI checks both agree; `borne --part-hashes
 <package>` prints the core's). Change the part rules in both places together.
+
+Part files carry the build number and the dev release is published new files first, then
+`latest.json`, then the stale files removed: a client reading the previous manifest during the upload
+still finds its files. CI checks that a fresh install from the full archive has exactly the published
+parts (so its first update is by parts), and the release notes state what updating from the
+previous published build downloads. Before downloading, Settings → Updates shows that size.
 
 ScreenScraper developer credentials come from the repository secrets `SCREENSCRAPER_DEV_ID` and
 `SCREENSCRAPER_DEV_PASSWORD`, compiled masked into official builds (`core/build.rs`); they never

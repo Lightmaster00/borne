@@ -11,7 +11,8 @@
     SHA256SUMS    every published file
 and `notes.md` in the current folder: the release notes.
 
-Environment: BORNE_VERSION, BORNE_BUILD, BORNE_COMMIT, GITHUB_REPOSITORY, PREVIOUS_TAG (stable).
+Environment: BORNE_VERSION, BORNE_BUILD, BORNE_COMMIT, GITHUB_REPOSITORY, PREVIOUS_TAG (stable),
+PREVIOUS_MANIFEST (optional: the latest.json clients have now, to state what updating from it costs).
 """
 import datetime
 import hashlib
@@ -96,6 +97,22 @@ def main():
         if a:
             p = a["parts"]
             lines.append(f"| {label} | {mb(a['size'])} | {mb(p['core']['size'])} | {mb(p['ui']['size'])} | {mb(p['runtime']['size'])} |")
+    prev_path = os.environ.get("PREVIOUS_MANIFEST", "")
+    if prev_path and os.path.exists(prev_path):
+        prev = json.load(open(prev_path))
+        lines += ["", f"From build {prev.get('build')} ({prev.get('version')}), the update downloads:", ""]
+        for key, (_, _, label) in PLATFORMS.items():
+            a, b = assets.get(key), prev.get("assets", {}).get(key, {})
+            if not a:
+                continue
+            old = b.get("parts", {})
+            if not old:
+                lines.append(f"- {label}: the whole version, {mb(a['size'])} (that build has no parts)")
+                continue
+            changed = [n for n, p in a["parts"].items() if old.get(n, {}).get("tree") != p["tree"]]
+            size = sum(a["parts"][n]["size"] for n in changed)
+            what = ", ".join({"core": "programs", "ui": "interface", "runtime": "Qt runtime"}[n] for n in changed) or "nothing"
+            lines.append(f"- {label}: {what}, {mb(size)} instead of {mb(a['size'])}")
     lines += ["", "The Qt runtime only changes when Qt does; a usual update is the programs and the interface.",
               "Every file is checked against its SHA-256 (`SHA256SUMS`)."]
     open("notes.md", "w").write("\n".join(lines) + "\n")

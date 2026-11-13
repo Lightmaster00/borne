@@ -2478,10 +2478,6 @@
         <translation>Dernière build de ce canal : %1 (celle qui est installée).</translation>
     </message>
     <message>
-        <source>Downloading the update… %1%</source>
-        <translation>Téléchargement de la mise à jour… %1 %</translation>
-    </message>
-    <message>
         <source>Downloaded and verified. Borne restarts to install it.</source>
         <translation>Téléchargée et vérifiée. Borne redémarre pour l'installer.</translation>
     </message>
@@ -3320,6 +3316,18 @@
     <message>
         <source>Version %1</source>
         <translation>Version %1</translation>
+    </message>
+    <message>
+        <source>Only what changed is downloaded: %1.</source>
+        <translation>Seul ce qui a changé est téléchargé : %1.</translation>
+    </message>
+    <message>
+        <source>Download: %1.</source>
+        <translation>Téléchargement : %1.</translation>
+    </message>
+    <message>
+        <source>Downloading the update… %1 of %2</source>
+        <translation>Téléchargement de la mise à jour… %1 sur %2</translation>
     </message>
 </context>
 <context>

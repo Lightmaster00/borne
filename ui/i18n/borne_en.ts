@@ -2478,10 +2478,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Downloading the update… %1%</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Downloaded and verified. Borne restarts to install it.</source>
         <translation type="unfinished" />
     </message>
@@ -3320,6 +3316,18 @@
     <message>
         <source>Version %1</source>
         <translation>Version %1</translation>
+    </message>
+    <message>
+        <source>Only what changed is downloaded: %1.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Download: %1.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloading the update… %1 of %2</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

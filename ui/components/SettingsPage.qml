@@ -95,9 +95,12 @@ Item {
         if (st === "available") {
             const v = updState.available
             const newer = v.build > upd.current.build
-            return (newer ? qsTr("Version %1 is available.").arg(v.version) : qsTr("Latest build of this channel: %1 (the one installed).").arg(v.version)) + (manual ? " " + manual : "")
+            const what = !updState.size ? "" : updState.parts && updState.parts.length
+                ? " " + qsTr("Only what changed is downloaded: %1.").arg(page.fmtSize(updState.size))
+                : " " + qsTr("Download: %1.").arg(page.fmtSize(updState.size))
+            return (newer ? qsTr("Version %1 is available.").arg(v.version) : qsTr("Latest build of this channel: %1 (the one installed).").arg(v.version)) + what + (manual ? " " + manual : "")
         }
-        if (st === "downloading") return qsTr("Downloading the update… %1%").arg(updState.total > 0 ? Math.round(100 * updState.received / updState.total) : 0)
+        if (st === "downloading") return qsTr("Downloading the update… %1 of %2").arg(page.fmtSize(updState.received)).arg(page.fmtSize(updState.total))
         if (st === "ready") return qsTr("Downloaded and verified. Borne restarts to install it.")
         if (st === "checking") return qsTr("Checking…")
         if (st === "uptodate") return qsTr("Borne is up to date.")

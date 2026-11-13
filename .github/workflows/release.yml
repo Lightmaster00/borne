@@ -59,13 +59,20 @@ jobs:
         run: |
           mkdir -p dist
           tar czf dist/Borne-linux-x86_64.tar.gz -C out Borne
-          scripts/release/parts.py out/Borne linux dist Borne-linux-x86_64 > dist/parts-linux-x86_64.json
+          # Part files carry the build number: a client reading the previous manifest during the upload
+          # still finds that manifest's parts.
+          scripts/release/parts.py out/Borne linux dist "Borne-linux-x86_64-$BORNE_BUILD" > dist/parts-linux-x86_64.json
           # The core computes the same part hashes as the script.
           python3 - <<'PY'
           import json, subprocess
           ours = {k: v["tree"] for k, v in json.load(open("dist/parts-linux-x86_64.json")).items()}
           core = json.loads(subprocess.run(["out/Borne/bin/borne", "--part-hashes", "out/Borne"], capture_output=True, text=True, check=True).stdout)
           assert ours == core, (ours, core)
+          # A fresh install from the full archive has exactly these parts: its first update is by parts.
+          import tarfile, tempfile
+          d = tempfile.mkdtemp(); tarfile.open("dist/Borne-linux-x86_64.tar.gz").extractall(d)
+          fresh = json.loads(subprocess.run(["out/Borne/bin/borne", "--part-hashes", d + "/Borne"], capture_output=True, text=True, check=True).stdout)
+          assert ours == fresh, ("full archive differs from the parts", ours, fresh)
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -99,12 +106,17 @@ jobs:
         run: |
           mkdir -p dist
           mv out-macos/Borne-macos-*.zip dist/Borne-macos-arm64.zip
-          scripts/release/parts.py out-macos/Borne.app macos dist Borne-macos-arm64 > dist/parts-macos-arm64.json
+          scripts/release/parts.py out-macos/Borne.app macos dist "Borne-macos-arm64-$BORNE_BUILD" > dist/parts-macos-arm64.json
           python3 - <<'PY'
           import json, subprocess
           ours = {k: v["tree"] for k, v in json.load(open("dist/parts-macos-arm64.json")).items()}
           core = json.loads(subprocess.run(["out-macos/Borne.app/Contents/MacOS/borne", "--part-hashes", "out-macos/Borne.app"], capture_output=True, text=True, check=True).stdout)
           assert ours == core, (ours, core)
+          # A fresh install from the zip (as Finder unpacks it) has exactly these parts.
+          import tempfile
+          d = tempfile.mkdtemp(); subprocess.run(["ditto", "-x", "-k", "dist/Borne-macos-arm64.zip", d], check=True)
+          fresh = json.loads(subprocess.run(["out-macos/Borne.app/Contents/MacOS/borne", "--part-hashes", d + "/Borne.app"], capture_output=True, text=True, check=True).stdout)
+          assert ours == fresh, ("zip differs from the parts", ours, fresh)
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -136,6 +148,11 @@ jobs:
             TAG=dev; CHANNEL=dev
           fi
           echo "TAG=$TAG" >> "$GITHUB_ENV"; echo "CHANNEL=$CHANNEL" >> "$GITHUB_ENV"
+          # The manifest clients have now: the notes say what updating from it downloads.
+          PREV_TAG=$([ "$CHANNEL" = dev ] && echo dev || echo "${PREVIOUS_TAG:-}")
+          if [ -n "$PREV_TAG" ] && curl -sfL -o previous.json "https://github.com/$GITHUB_REPOSITORY/releases/download/$PREV_TAG/latest.json"; then
+            export PREVIOUS_MANIFEST=previous.json
+          fi
           scripts/release/manifest.py dist "$TAG" "$CHANNEL"
           rm dist/parts-*.json
           cat notes.md >> "$GITHUB_STEP_SUMMARY"
@@ -148,10 +165,13 @@ jobs:
               --title "Borne (development build)" --notes "Rebuilt on every change of main."
             # The dev tag follows main; the files are replaced, stale ones removed.
             gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/dev" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+            # New files first, the manifest last, stale files after: a client never reads a manifest
+            # whose files are missing or not yet replaced.
+            gh release upload dev $(ls dist/* | grep -v -e '/latest.json$' -e '/SHA256SUMS$') --clobber
+            gh release upload dev dist/latest.json dist/SHA256SUMS --clobber
             for old in $(gh release view dev --json assets -q '.assets[].name'); do
               [ -e "dist/$old" ] || gh release delete-asset dev "$old" -y
             done
-            gh release upload dev dist/* --clobber
             gh release edit dev --title "Borne $BORNE_VERSION (development build)" --notes-file notes.md
           else
             gh release create "$TAG" --title "Borne $BORNE_VERSION" --notes-file notes.md --verify-tag dist/*
