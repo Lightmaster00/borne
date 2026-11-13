@@ -1,7 +1,7 @@
 // One game case as a 3D object (Qt Quick 3D): a box to the case's real proportions with slightly
 // rounded corners and edges, cel shaded inside a bold ink outline. The front is the cover scan, the
-// same spine on the left and the right, the back scan behind, and the spine's dominant colour (else
-// the console's signature colour) on the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
+// same spine on the left and the right, and the spine's dominant colour (else the console's
+// signature colour) on the back, the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
 // them by flat light bands whose dark side takes the console's colour, with a paper or plastic grain;
 // a second one (gloss.frag) adds glass-like studio reflections.
 // Coordinates: x right, y up, z toward you.
@@ -46,7 +46,6 @@ Node {
     readonly property color ink: theme && theme.ink ? theme.ink : "#06070a"
     readonly property string frontUrl: frontScan ? game.art + "front" : (game && game.cover ? game.cover : "")
     readonly property string sideUrl: has("side") ? game.art + "side" : ""
-    readonly property string backUrl: has("back") ? game.art + "back" : ""
 
     // Bottom on the floor (y = 0 at the shelf's middle line, cases standing on boxH / 2 below).
     position: Qt.vector3d(place.x, -(place.y || 0) - boxH / 2 + bh / 2, place.z)
@@ -200,21 +199,12 @@ Node {
                 }
             }
         }
-        // Back: the back scan, else the console's plastic.
+        // Back: never seen whole (the case turns 60° at most), only the curve of its edges beside
+        // the spines: plain, in the spines' colour, like the top and bottom. The back scan's own
+        // edges (often white) drew a light line along the spines.
         Face {
             side: "back"
-            materials: Flat {
-                baseColor: box.backUrl !== "" ? "white" : box.plastic
-                baseColorMap: box.backUrl !== "" ? backTex : null
-            }
-            Texture {
-                id: backTex
-                generateMipmaps: true
-                mipFilter: Texture.Linear
-                tilingModeHorizontal: Texture.ClampToEdge
-                tilingModeVertical: Texture.ClampToEdge
-                sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.backUrl; titled: false }
-            }
+            materials: Flat { baseColor: box.capColor }
         }
         // Top and bottom: the spine's dominant colour (see capColor).
         Repeater3D {

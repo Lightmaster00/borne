@@ -778,11 +778,12 @@ fn refetch_fronts(app: &Shared, c: &Credentials) {
     }
 }
 
-/// Spines stored before their pale side margins were cut (media::trim_spine_sides): cut once now,
+/// Spines stored before their edges were cut (media::trim_spine_sides: pale margins, then 5 % a
+/// side): cut once now,
 /// at startup.
 pub fn trim_stored_spines(app: &Shared) {
     for key in app.db.group_keys() {
-        if app.db.setting(&format!("spine_trim1.{key}")).is_some() {
+        if app.db.setting(&format!("spine_trim2.{key}")).is_some() {
             continue;
         }
         if let Some(m) = app.db.media(&key, "side") {
@@ -795,7 +796,7 @@ pub fn trim_stored_spines(app: &Shared) {
                 }
             }
         }
-        app.db.set_setting(&format!("spine_trim1.{key}"), "1");
+        app.db.set_setting(&format!("spine_trim2.{key}"), "1");
     }
 }
 
@@ -803,12 +804,15 @@ pub fn trim_stored_spines(app: &Shared) {
 /// media::cut_hinge), at startup, with or without a ScreenScraper account.
 pub fn cut_stored_hinges(app: &Shared) {
     for key in app.db.group_keys() {
-        // hinge_cut3: the hinge found by the band's black (media::cut_hinge), every stored front.
-        if !crate::media::cd_case(&key) || app.db.setting(&format!("hinge_cut3.{key}")).is_some() {
+        // hinge_cut3: the hinge found by the band's black (media::cut_hinge), every stored front;
+        // hinge_more1: those cut by it before its margin grew (2.5 % → 4.5 %) lose 2 % more.
+        let cut = app.db.setting(&format!("hinge_cut3.{key}")).is_some();
+        if !crate::media::cd_case(&key) || (cut && app.db.setting(&format!("hinge_more1.{key}")).is_some()) {
             continue;
         }
         if let Some(m) = app.db.media(&key, "front") {
-            if let Ok(bytes) = std::fs::read(&m.path) {
+            let bytes = std::fs::read(&m.path).ok().and_then(|b| if cut { crate::media::crop_left(&b, 0.02) } else { Some(b) });
+            if let Some(bytes) = bytes {
                 if let Ok((path, w, h)) = crate::media::store(app, &key, "front", &bytes) {
                     app.db.set_media(&key, "front", &path.to_string_lossy(), w, h, &m.stamp);
                     app.emit(json!({ "type": "media", "group_key": key }));
@@ -816,6 +820,7 @@ pub fn cut_stored_hinges(app: &Shared) {
             }
         }
         app.db.set_setting(&format!("hinge_cut3.{key}"), "1");
+        app.db.set_setting(&format!("hinge_more1.{key}"), "1");
     }
 }
 

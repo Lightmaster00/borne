@@ -821,16 +821,20 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   thicker. The core cuts a jewel case's hinge out of PlayStation front scans
   (media::cut_hinge: the insert is square, so a scan more than 4 % wider than tall holds a hinge
   about as wide as the excess; the hinge's grey ridges are lighter than the insert's flat black
-  "PlayStation" band, so the cut goes where the columns have come down to that black, plus 2.5 %
-  so no ridge is left, at most 20 %; without such a band, the excess), once at startup for fronts
-  already stored (`hinge_cut3`). Spine scans lose their pale side margins (media::trim_spine_sides:
-  columns of one pale colour from end to end, at most 8 % a side, once for stored ones,
-  `spine_trim1`), so the print reaches the spine's edges;   stored; Saturn, Mega-CD and Dreamcast covers are kept whole (their own band on the left), and
+  "PlayStation" band, so the cut goes where the columns have come down to that black, then 4.5 %
+  further so no ridge is left, stopping 1.5 % before the band's logo, at most 20 %; without such a
+  band, the excess), once at startup for fronts already stored (`hinge_cut3`; fronts cut with the
+  earlier 2.5 % lose 2 % more, `hinge_more1`). Spine scans lose their edges on the long sides
+  (media::trim_spine_sides: pale margins, columns of one pale colour from end to end, at most 8 % a
+  side, then 5 % a side where a sliver of the front or back panel is often caught; once for stored
+  ones, `spine_trim2`), so the print reaches the spine's edges with nothing beside it;   stored; Saturn, Mega-CD and Dreamcast covers are kept whole (their own band on the left), and
   those an earlier version cut are fetched again. Corners and edges are rounded (5.5 mm on plastic,
   3.5 on card, at most a third of the spine). A white margin is trimmed from a scan only when it runs all
   round it: a white case's own band on top (Wii, 3DS) stays; fronts of those consoles stored before
   are fetched again once. Top and bottom take the console's signature colour. The gloss has no
-  rim on the edges (seen side-on, it drew a light line along the spines). Spines missing from ScreenScraper are cut from its unfolded case texture (not for CD jewel cases, whose back insert folds into a spine on each side: their spine shows the title), their
+  rim on the edges (seen side-on, it drew a light line along the spines). The back is plain, in the
+  spine's colour like the top and bottom: the case never turns far enough to show it, and the back
+  scan's own edges, seen on the curve beside the spines, drew a light line there. Spines missing from ScreenScraper are cut from its unfolded case texture (not for CD jewel cases, whose back insert folds into a spine on each side: their spine shows the title), their
   two folds found by edge detection around the place the front's proportions give.
 - Select opens Sort and filter (order, genre) directly; everything else lives in Settings. Settings
   stand on a plain background (no game art); the open section is marked by a fill and a bar in the

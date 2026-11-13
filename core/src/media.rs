@@ -120,10 +120,11 @@ pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<
     finish(app, group_key, kind, img)
 }
 
-/// A spine scan's light margins on its long sides (paper or the scanner's white beside the
-/// spine, a few columns of one pale colour from top to bottom) cut, so the print reaches the
-/// spine's edges on the case. At most 8 % of the short side from each, never a coloured band
-/// (a black or coloured edge is the spine's own design). A spine lying down is read across.
+/// A spine scan's edges on its long sides cut, so the print reaches the spine's edges on the case
+/// with nothing of what lay beside the spine when it was scanned: first its pale margins (paper or
+/// the scanner's white, a few columns of one pale colour from end to end, at most 8 % a side),
+/// then 5 % from each side, where a sliver of the front or back panel is often caught (cardboard
+/// boxes above all). A spine lying down is read across.
 pub fn trim_spine_sides(img: &DynamicImage) -> DynamicImage {
     let lying = img.width() > img.height();
     let g = img.to_luma8();
@@ -147,7 +148,13 @@ pub fn trim_spine_sides(img: &DynamicImage) -> DynamicImage {
     while last < max && pale(across - 1 - last) {
         last += 1;
     }
-    if first + last == 0 || first + last >= across / 2 {
+    if first + last >= across / 2 {
+        return img.clone();
+    }
+    // The slivers of the neighbouring panels.
+    let inset = if across - first - last >= 20 { (across - first - last) * 5 / 100 } else { 0 };
+    let (first, last) = (first + inset, last + inset);
+    if first + last == 0 {
         return img.clone();
     }
     if lying {
@@ -167,8 +174,8 @@ pub fn cd_case(group_key: &str) -> bool {
 /// insert kept whole with its black "PlayStation" band. The insert is square (12 × 12 cm), so a
 /// scan wider than tall by more than 4 % holds a hinge about as wide as the excess. The hinge's
 /// moulded plastic (grey ridges) is lighter than the band's flat black: the cut goes where the
-/// columns, from the left, have come down to the band's black, plus a little margin so no ridge
-/// is left (the band is wide, its logo far from its edge). Without such a dark band, the cut is
+/// columns, from the left, have come down to the band's black, then 4.5 % further so no ridge is
+/// left, stopping 1.5 % before the band's logo. Without such a dark band, the cut is
 /// the excess. Never more than 20 % of the width.
 pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
     let g = img.to_luma8();
@@ -199,7 +206,10 @@ pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
         if hinge - darkest >= 3.0 {
             let threshold = darkest + 0.15 * (hinge - darkest);
             let x = (from..=to).find(|&x| smooth(x) <= threshold).unwrap_or(excess);
-            x + w * 25 / 1000
+            // As far into the band as 4.5 %, but stopping 1.5 % before its logo (where the band
+            // brightens again).
+            let logo = (x..mean.len()).find(|&k| smooth(k) > darkest + 0.5 * (hinge - darkest).max(20.0)).unwrap_or(mean.len());
+            (x + w * 45 / 1000).min(logo.saturating_sub(w * 15 / 1000)).max(x)
         } else {
             excess
         }
@@ -208,6 +218,15 @@ pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
     };
     let cut = cut.min(limit) as u32;
     img.crop_imm(cut, 0, w as u32 - cut, h as u32)
+}
+
+/// An image with a share of its width cut from the left, as PNG bytes.
+pub fn crop_left(bytes: &[u8], share: f64) -> Option<Vec<u8>> {
+    let img = decode(bytes).ok()?;
+    let cut = (img.width() as f64 * share).round() as u32;
+    let mut out = std::io::Cursor::new(Vec::new());
+    img.crop_imm(cut, 0, img.width() - cut, img.height()).write_to(&mut out, image::ImageFormat::Png).ok()?;
+    Some(out.into_inner())
 }
 
 /// Decodes an image from the network, refusing absurd sizes before decoding (memory bombs).
@@ -449,10 +468,11 @@ mod tests {
             };
         }
         let out = trim_spine_sides(&DynamicImage::ImageRgb8(img.clone()));
-        assert_eq!((out.width(), out.height()), (55, 600));
+        // 5 pale columns, then 5 % (2 px) of the 55 left from each side.
+        assert_eq!((out.width(), out.height()), (51, 600));
         // Lying down, the same margins are read across.
         let lying = DynamicImage::ImageRgb8(img).rotate90();
-        assert_eq!(trim_spine_sides(&lying).height(), 55);
+        assert_eq!(trim_spine_sides(&lying).height(), 51);
         // A white spine with a logo on it is kept whole (its white is not one colour end to end).
         let mut white = image::RgbImage::from_pixel(60, 600, image::Rgb([250, 250, 250]));
         for x in 0..60 {
@@ -460,7 +480,7 @@ mod tests {
                 white.put_pixel(x, y, image::Rgb([200, 0, 0]));
             }
         }
-        assert_eq!(trim_spine_sides(&DynamicImage::ImageRgb8(white)).width(), 60);
+        assert_eq!(trim_spine_sides(&DynamicImage::ImageRgb8(white)).width(), 60 - 2 * 3);
     }
 
     #[test]
@@ -488,7 +508,7 @@ mod tests {
         }
         let out = cut_hinge(&DynamicImage::ImageRgb8(img.clone()));
         let cut = 712 - out.width();
-        assert!((70..=94).contains(&cut), "cut {cut}: the hinge gone, the band and its logo kept");
+        assert!((70..=95).contains(&cut), "cut {cut}: the hinge gone, the band and its logo kept");
         assert_eq!(out.height(), 612);
         // A square insert (no hinge) is left alone.
         let sq = DynamicImage::ImageRgb8(image::imageops::crop_imm(&img, 100, 0, 612, 612).to_image());
