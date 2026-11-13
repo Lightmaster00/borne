@@ -112,8 +112,8 @@ translated by `ui/components/CoreText.js`.
   publishes a **stable** release instead.
 - **Website** (`.github/workflows/pages.yml`): publishes `website/` to GitHub Pages
   (https://lightmaster00.github.io/borne/) when it changes on `main`. The screenshots in
-  `website/assets/shots` come from the development RomM's synthetic library, in English, never
-  from real box art. Regenerate the icon PNG with `rsvg-convert -w 1024 -h 1024 resources/borne.svg
+  `website/assets/shots` are captures of the app on macOS, in English, cut to the screen inside
+  the console frame. Regenerate the icon PNG with `rsvg-convert -w 1024 -h 1024 resources/borne.svg
   -o resources/borne.png`.
 
 To publish a stable version: set `version` in `core/Cargo.toml` (the tag must match), commit, then
