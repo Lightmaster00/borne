@@ -31,7 +31,7 @@ Version 1.8 — November 2026
 | 1.5 | Game page before any download; versions of a game grouped, with per-profile version and emulator language; "play from the network" through the Borne virtual mount (FUSE, only chosen games, read from RomM); mouse control; console-inspired themes (home row, tile dashboard, bright home, cabinet carousel) with UI sounds. |
 | 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
 | 1.7 | One built-in look, "Halo" (living background from the selected game's art, game boxes in space, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
-| 1.8 | Emulators managed by Borne, saves on RomM, cheats, system files, display settings; 3D cel-shaded cases from ScreenScraper scans; gamepad or keyboard only (no mouse); a game settings page with per-game emulator options; interface preferences; downloads that pause; updates by parts (only what changed is downloaded) and releases ready to install. |
+| 1.8 | Emulators managed by Borne, saves on RomM, cheats, system files, display settings; 3D cel-shaded cases from ScreenScraper scans; gamepad or keyboard only (no mouse); a game settings page with per-game emulator options; interface preferences; downloads that pause; updates by parts (only what changed is downloaded) and releases ready to install; the Borne logo and pictogram, and a website. |
 
 ## 1. Executive summary
 
@@ -223,6 +223,10 @@ application, client of the Rust core's local API. ES-DE is not used, neither as 
 Since v1.7 Borne has one look, "Halo", instead of interchangeable themes: several themes spread the
 effort thin, and a user QML theme is code that runs with the UI's rights.
 
+- Identity: the pictogram (a red tile with a pixel B lying down) and the BORNE lettering, in
+  `ui/brand` (picto.svg, logo.svg, wordmark.svg), each usable alone. The pictogram is the app icon
+  (on the app's dark) and marks the profile, pairing and server screens; the lettering signs the
+  Settings sidebar above the version. The red #E60012 belongs to the mark only.
 - Background: a video of the selected game being played. When the selection rests
   (0.9 s), `POST /api/v1/games/{id}/gameplay` returns a local file: ScreenScraper's gameplay capture
   (`video-normalized`, else `video`; its address is noted without credentials during the media fetch

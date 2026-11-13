@@ -26,7 +26,7 @@ cp -R "$HERE/build-macos/Borne.app" "$APP"
 
 UI="$APP/Contents/Resources/ui"
 mkdir -p "$UI/i18n" "$APP/Contents/Resources/resources"
-cp -R "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fonts" "$HERE/ui/sounds" "$UI/"
+cp -R "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fonts" "$HERE/ui/sounds" "$HERE/ui/brand" "$UI/"
 for ts in "$HERE"/ui/i18n/*.ts; do "$QT_PREFIX/bin/lrelease" -silent "$ts" -qm "$UI/i18n/$(basename "${ts%.ts}").qm"; done
 cp -R "$HERE/resources/." "$APP/Contents/Resources/resources/"
 

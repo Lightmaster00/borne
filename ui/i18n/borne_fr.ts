@@ -2786,10 +2786,6 @@
         <translation>Toutes les 6 heures, jamais pendant une partie</translation>
     </message>
     <message>
-        <source>Borne %1</source>
-        <translation>Borne %1</translation>
-    </message>
-    <message>
         <source>Interface sounds</source>
         <translation>Sons de l'interface</translation>
     </message>
@@ -3320,6 +3316,10 @@
     <message>
         <source>Options</source>
         <translation>Options</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Version %1</translation>
     </message>
 </context>
 <context>

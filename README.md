@@ -1,4 +1,9 @@
-# Borne
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+    <img src="docs/assets/logo-light.svg" alt="Borne" height="56">
+  </picture>
+</h1>
 
 A couch-friendly, controller-driven launcher for your [RomM](https://github.com/rommapp/romm) game
 library, on Linux (ChimeraOS, SteamOS or any desktop) and macOS. Pick a game with the gamepad, and
@@ -6,6 +11,7 @@ Borne downloads it (or plays it straight from the network), installs and configu
 emulator, keeps each player's saves on RomM, and gets out of the way.
 
 [![CI](https://github.com/Lightmaster00/borne/actions/workflows/ci.yml/badge.svg)](https://github.com/Lightmaster00/borne/actions/workflows/ci.yml)
+[![Website](https://img.shields.io/badge/website-lightmaster00.github.io%2Fborne-E60012)](https://lightmaster00.github.io/borne/)
 [![Release](https://github.com/Lightmaster00/borne/actions/workflows/release.yml/badge.svg)](https://github.com/Lightmaster00/borne/actions/workflows/release.yml)
 
 ## Install
@@ -110,5 +116,5 @@ Interface). Borne is played with a gamepad or a keyboard only: the mouse is igno
 
 ## License
 
-GPL-3.0-or-later. Qt is used under the LGPL (dynamic linking, replaceable libraries). Fonts:
+GPL-3.0-or-later. The Borne name, logo and pictogram (`ui/brand`) identify this project. Qt is used under the LGPL (dynamic linking, replaceable libraries). Fonts:
 Fredoka and Manrope (SIL Open Font License, `ui/fonts/licenses`).

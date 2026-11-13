@@ -16,8 +16,10 @@ ui/
   imports/Borne/Theme the look: colours, type, sizes, motion
   launcher/           minimal C++ launcher of the QML UI (borne-ui)
   i18n/               translations (.ts generated; edit en.json / fr.json)
+  brand/              the logo, the pictogram and the lettering (Logo.qml, Brand.qml draw them)
   fonts/ sounds/      bundled assets
-resources/            bundled with the package (app icon)
+resources/            bundled with the package (app icon: the pictogram on its dark, borne.svg → borne.png)
+website/              the project's site (GitHub Pages), static HTML and CSS
 scripts/
   package.sh          self-contained Linux package (core + UI + Qt)
   package-macos.sh    Borne.app
@@ -35,7 +37,7 @@ tests/
   ui_tour.sh          walks every screen of a running Borne, fails on any QML error
   update_test.sh      in-app updates: full archive, then by parts
   case_bench/         every kind of game case with synthetic scans, faced and turned (to check prints)
-docs/                 specification, this guide, roadmap
+docs/                 specification, this guide, roadmap; assets/ holds the README logos
 ```
 
 The UI never holds business logic: it talks to the core only through the local API, so a UI crash
@@ -107,6 +109,11 @@ translated by `ui/components/CoreText.js`.
   builds the Linux package and Borne.app, runs the startup tests (English, French) and the update
   test, splits each package into parts, and replaces the **`dev`** pre-release. A tag `vX.Y.Z`
   publishes a **stable** release instead.
+- **Website** (`.github/workflows/pages.yml`): publishes `website/` to GitHub Pages
+  (https://lightmaster00.github.io/borne/) when it changes on `main`. The screenshots in
+  `website/assets/shots` come from the development RomM's synthetic library, in English, never
+  from real box art. Regenerate the icon PNG with `rsvg-convert -w 1024 -h 1024 resources/borne.svg
+  -o resources/borne.png`.
 
 To publish a stable version: set `version` in `core/Cargo.toml` (the tag must match), commit, then
 

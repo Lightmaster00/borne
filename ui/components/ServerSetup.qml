@@ -16,6 +16,8 @@ Item {
     function backspace() { if (!busy) kb.backspace() }
 
     Rectangle { anchors.fill: parent; color: theme.bg }
+    // First start: Borne's logo above the server's address.
+    Brand { anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 72 } size: 48 }
     Column {
         anchors.centerIn: parent
         scale: 1.4

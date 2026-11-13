@@ -45,7 +45,7 @@ for f in /usr/lib/x86_64-linux-gnu/libxcb-cursor.so.0* /usr/lib/libxcb-cursor.so
 
 cp "$HERE/core/target/release/borne" "$HERE/build/borne-ui" "$OUT/bin/"
 printf '[Paths]\nPrefix=..\nLibraries=lib\nPlugins=plugins\nQmlImports=qml\n' > "$OUT/bin/qt.conf"
-mkdir -p "$OUT/ui/i18n" && cp -a "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fonts" "$HERE/ui/sounds" "$OUT/ui/"
+mkdir -p "$OUT/ui/i18n" && cp -a "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fonts" "$HERE/ui/sounds" "$HERE/ui/brand" "$OUT/ui/"
 for ts in "$HERE"/ui/i18n/*.ts; do "${LRELEASE:-lrelease}" -silent "$ts" -qm "$OUT/ui/i18n/$(basename "${ts%.ts}").qm"; done
 cp -a "$HERE/resources/." "$OUT/resources/"
 cp "$HERE/README.md" "$HERE/LICENSE" "$OUT/"

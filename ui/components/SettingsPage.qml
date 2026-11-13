@@ -409,7 +409,7 @@ Item {
                     required property int index
                     readonly property bool current: page.section === index
                     // Shorter on a short screen (a larger interface size): every section fits above the version.
-                    width: parent.width; height: Math.max(56, Math.min(72, (side.height - 160 - 120) / page.sections.length - 8))
+                    width: parent.width; height: Math.max(56, Math.min(72, (side.height - 160 - 160) / page.sections.length - 8))
                     radius: 14
                     // The open section: a soft fill and a bar in the accent colour; brighter while the
                     // focus is on the list (no ring: the bar says it).
@@ -433,10 +433,13 @@ Item {
                 }
             }
         }
+        // Borne's lettering, its version and the server, at the foot of the sections.
+        Brand { id: footBrand; x: 64; anchors { bottom: footText.top; bottomMargin: 12 } lettering: true; size: 22; opacity: 0.85 }
         Text {
+            id: footText
             x: 64; anchors { bottom: parent.bottom; bottomMargin: 32 }
             width: parent.width - 104
-            text: qsTr("Borne %1").arg(page.version) + (page.status && page.status.server_url ? "\n" + page.status.server_url : "")
+            text: qsTr("Version %1").arg(page.version) + (page.status && page.status.server_url ? "\n" + page.status.server_url : "")
             wrapMode: Text.WrapAnywhere
             lineHeight: 1.5
             color: theme.fgFaint

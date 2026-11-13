@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Borne — a controller-driven launcher for RomM</title>
+<meta name="description" content="Borne turns your RomM library into a couch console on Linux and macOS: pick a game with the gamepad, Borne gets it, sets up the emulator and keeps your saves on RomM.">
+<meta property="og:title" content="Borne">
+<meta property="og:description" content="A controller-driven launcher for your RomM library, on Linux and macOS.">
+<meta property="og:image" content="assets/shots/library.webp">
+<meta name="theme-color" content="#D9D6D0">
+<link rel="icon" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/Fredoka-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <a href="./" class="brand" aria-label="Borne home"><img src="assets/logo.svg" alt="Borne" width="131" height="33"></a>
+  <nav aria-label="Sections">
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/Lightmaster00/borne">GitHub</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="pitch">
+      <h1>Your RomM library, played from the couch.</h1>
+      <p class="lede">Borne is a launcher you drive with a gamepad. Pick a game: it downloads it, sets up the right emulator and keeps each player's saves on your RomM server. Then it gets out of the way.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/Lightmaster00/borne/releases/latest">Download for Linux</a>
+        <a class="btn" href="https://github.com/Lightmaster00/borne/releases/latest">Download for macOS</a>
+      </div>
+      <p class="fine">Free and open source. Linux x86_64 (ChimeraOS, SteamOS, any desktop) and macOS on Apple Silicon.</p>
+    </div>
+
+    <figure class="console" aria-label="Borne screens">
+      <div class="bezel">
+        <div class="screen">
+          <img id="screen-img" src="assets/shots/library.webp" alt="The library: games shown as 3D cases on a shelf, with tabs for each console" width="1224" height="664">
+        </div>
+        <div class="bezel-foot">
+          <img class="bezel-mark" src="assets/picto.svg" alt="" width="18" height="18">
+          <span class="led" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="channels" role="group" aria-label="Choose a screen">
+        <button type="button" aria-pressed="true" data-src="assets/shots/library.webp" data-alt="The library: games shown as 3D cases on a shelf, with tabs for each console">Library</button>
+        <button type="button" aria-pressed="false" data-src="assets/shots/game.webp" data-alt="A game page with Play, favourites, game settings and the languages the game exists in">Game</button>
+        <button type="button" aria-pressed="false" data-src="assets/shots/gamesettings.webp" data-alt="A game's own settings: emulator and its options for this game only">Game settings</button>
+        <button type="button" aria-pressed="false" data-src="assets/shots/profiles.webp" data-alt="Who's playing? The profile screen">Profiles</button>
+        <button type="button" aria-pressed="false" data-src="assets/shots/settings.webp" data-alt="Settings: installation and saves, explained in plain words">Settings</button>
+      </div>
+    </figure>
+  </section>
+
+  <section id="how" class="band">
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li><h3>Connect your server</h3><p>Type your RomM address with the on-screen keyboard. Borne talks only to it, to ScreenScraper for images and to GitHub for updates.</p></li>
+      <li><h3>Say who's playing</h3><p>Each profile is bound to a RomM account. Approve the pairing from your phone with a code or a QR code; no keyboard needed.</p></li>
+      <li><h3>Pick a game</h3><p>Browse by console, favourites or recently played, or start typing to search. Each game stands as a real case you can turn to read its spine.</p></li>
+      <li><h3>Play</h3><p>Borne downloads the game, or plays it straight from the network on Linux, then starts the right emulator, already configured. Your saves go back to RomM after.</p></li>
+    </ol>
+  </section>
+
+  <section id="features" class="split">
+    <h2>What Borne takes care of</h2>
+    <dl class="features">
+      <div><dt>Emulators</dt><dd>One per console, picked in Settings: RetroArch cores, Dolphin, PCSX2, DuckStation, melonDS, RPCS3, shadPS4 and more. Borne fetches each from its official source and keeps it up to date.</dd></div>
+      <div><dt>Saves</dt><dd>Kept on RomM per profile: fetched before a game when newer, sent after it, replaced copies archived. Profiles never share saves.</dd></div>
+      <div><dt>Per-game settings</dt><dd>Another emulator for one game, its options (rewind, widescreen, CPU speed), picture shape and filters, cheats, language, cover.</dd></div>
+      <div><dt>Downloads</dt><dd>Resume after an interruption, checked with SHA-1, with pause, cancel and a list you can clear.</dd></div>
+      <div><dt>Cases and videos</dt><dd>3D boxes in each console's shape, rebuilt from ScreenScraper's scans. Behind them, a video of the selected game.</dd></div>
+      <div><dt>System files</dt><dd>BIOS, keys and firmware taken from RomM or given by you, checked and placed for each emulator. Borne never downloads them itself.</dd></div>
+      <div><dt>Offline</dt><dd>Your library stays browsable without the server, and installed games play without it.</dd></div>
+      <div><dt>Plain settings</dt><dd>Every option says what it does. English and French, following your system.</dd></div>
+    </dl>
+  </section>
+
+  <section id="updates" class="band updates">
+    <div>
+      <h2>Updates that only fetch what changed</h2>
+      <p>Borne is built in three parts: its programs, its interface and the Qt runtime. An update downloads only the parts that changed, checks each against its SHA-256 and keeps the previous version beside the new one. It asks before installing and never interrupts a game.</p>
+    </div>
+    <div class="weights" role="img" aria-label="Full Linux package 68.6 megabytes; a usual update 4.6 megabytes">
+      <div class="bar full"><span>Full package</span><b>68.6 MB</b></div>
+      <div class="bar usual"><span>Usual update</span><b>4.6 MB</b></div>
+    </div>
+  </section>
+
+  <section id="install" class="split">
+    <h2>Install</h2>
+    <div class="install">
+      <div>
+        <h3>Linux</h3>
+        <pre><code>tar xzf Borne-linux-x86_64.tar.gz
+./Borne/install.sh</code></pre>
+        <p>Installs to <code>~/.local/opt/Borne</code> with a menu entry. On ChimeraOS or SteamOS, add Borne to Steam as a non-Steam game to start it from the gamepad interface.</p>
+      </div>
+      <div>
+        <h3>macOS</h3>
+        <p>Unzip <code>Borne-macos-arm64.zip</code> and move <code>Borne.app</code> to Applications. The app is not notarized: the first time, right-click it and choose Open.</p>
+        <p>You need a <a href="https://github.com/rommapp/romm">RomM</a> server on your network.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="controls" class="band">
+    <h2>Controls</h2>
+    <p class="note">A gamepad or a keyboard. The hints on screen show the buttons of the device in use.</p>
+    <table class="controls">
+      <thead><tr><th scope="col">Gamepad</th><th scope="col">Keyboard</th><th scope="col">Action</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>A</kbd></td><td><kbd>Enter</kbd></td><td>Open, choose</td></tr>
+        <tr><td><kbd>B</kbd></td><td><kbd>Esc</kbd></td><td>Back</td></tr>
+        <tr><td><kbd>X</kbd></td><td><kbd>X</kbd></td><td>Play</td></tr>
+        <tr><td><kbd>Y</kbd></td><td>Any letter</td><td>Search</td></tr>
+        <tr><td><kbd>LB</kbd> <kbd>RB</kbd></td><td><kbd>Q</kbd> <kbd>E</kbd></td><td>Previous or next tab</td></tr>
+        <tr><td>Right stick</td><td><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></td><td>Turn the case</td></tr>
+        <tr><td><kbd>Start</kbd></td><td><kbd>M</kbd></td><td>Settings</td></tr>
+        <tr><td><kbd>Select</kbd> then <kbd>Start</kbd></td><td>Emulator's key</td><td>Quit the game</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="foot">
+  <img src="assets/picto.svg" alt="" width="28" height="28">
+  <p>Borne is free software under the GPL-3.0-or-later. Not affiliated with RomM or any console maker.</p>
+  <nav aria-label="Links">
+    <a href="https://github.com/Lightmaster00/borne">Source code</a>
+    <a href="https://github.com/Lightmaster00/borne/releases">Releases</a>
+    <a href="https://github.com/rommapp/romm">RomM</a>
+  </nav>
+</footer>
+
+<script>
+  // The console's channel buttons: show the chosen screen.
+  const img = document.getElementById('screen-img');
+  const buttons = document.querySelectorAll('.channels button');
+  buttons.forEach(b => b.addEventListener('click', () => {
+    buttons.forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+    img.src = b.dataset.src; img.alt = b.dataset.alt;
+  }));
+  buttons.forEach(b => { const i = new Image(); i.src = b.dataset.src; });
+</script>
+</body>
+</html>

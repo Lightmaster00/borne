@@ -30,12 +30,7 @@ Item {
         y: 72
         spacing: 40
 
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 14
-            Logo { anchors.verticalCenter: parent.verticalCenter; theme: screen.theme; size: 32 }
-            Text { text: "Borne"; color: theme.fg; font { family: theme.displayFont; pixelSize: 32; weight: Font.ExtraBold } }
-        }
+        Brand { anchors.horizontalCenter: parent.horizontalCenter; size: 44 }
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 12

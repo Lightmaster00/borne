@@ -2786,10 +2786,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Borne %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Interface sounds</source>
         <translation type="unfinished" />
     </message>
@@ -3320,6 +3316,10 @@
     <message>
         <source>Options</source>
         <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Version %1</translation>
     </message>
 </context>
 <context>

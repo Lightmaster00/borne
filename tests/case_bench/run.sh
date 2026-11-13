@@ -14,7 +14,7 @@ python3 "$HERE/make_scans.py" "$WORK"
 mkdir -p "$WORK/pkg/ui"
 cp -a "$PKG/bin" "$WORK/pkg/"   # copied: the UI finds its views next to its own binary
 for d in lib plugins qml; do ln -s "$PKG/$d" "$WORK/pkg/$d"; done
-cp -a "$ROOT/ui/components" "$ROOT/ui/imports" "$ROOT/ui/fonts" "$WORK/pkg/ui/"
+cp -a "$ROOT/ui/components" "$ROOT/ui/imports" "$ROOT/ui/fonts" "$ROOT/ui/brand" "$WORK/pkg/ui/"
 sed -e "s|GAMES_B64|\"$(base64 -w0 "$WORK/games.json")\"|" -e "s|OUT_DIR|\"$OUT\"|" "$HERE/Bench.qml" > "$WORK/pkg/ui/Main.qml"
 timeout 300 "$WORK/pkg/bin/borne-ui"
 echo "$(ls "$OUT"/*.png | wc -l) views in $OUT"

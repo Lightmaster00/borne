@@ -27,6 +27,8 @@ Item {
         else if (a === "start") settings()
     }
 
+    // The logo on top of the screen Borne opens on.
+    Brand { anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 80 } size: 52 }
     Column {
         anchors.centerIn: parent
         spacing: 40
