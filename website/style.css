@@ -1,7 +1,9 @@
 /* Borne's site, in the app's look ("Halo", ui/imports/Borne/Theme): the app's dark, a halo of colour
    behind (the brand red standing for a game's accent), glass panels, pills, controller keycaps and
-   the ink shadow every element casts (ui/components/Ink.qml). Fonts are the app's own: Fredoka for
-   titles, Manrope for text (SIL OFL, see assets/fonts). */
+   the ink shadow every element casts (ui/components/Ink.qml). Titles in Borne Blocks, the logo's
+   lettering; text in Manrope and keycaps in Fredoka, the app's fonts (SIL OFL, see assets/fonts). */
+/* Borne Blocks: the logo's lettering as a typeface (scripts/brand/make-font.py), for titles. */
+@font-face { font-family: "Borne Blocks"; src: url("assets/fonts/BorneBlocks.woff2") format("woff2"); font-display: block; }
 @font-face { font-family: "Fredoka"; src: url("assets/fonts/Fredoka-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
 @font-face { font-family: "Fredoka"; src: url("assets/fonts/Fredoka-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 @font-face { font-family: "Manrope"; src: url("assets/fonts/Manrope-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
@@ -42,10 +44,10 @@ body::before {
     radial-gradient(45% 40% at 10% 0%, rgba(230, 0, 18, .16), transparent 70%),
     linear-gradient(transparent 60%, var(--bg));
 }
-h1, h2, h3 { font-family: "Fredoka", "Manrope", sans-serif; font-weight: 600; line-height: 1.1; margin: 0; }
-h1 { font-size: clamp(2.5rem, 5vw, 4.25rem); font-weight: 700; }
-h2 { font-size: clamp(1.8rem, 3vw, 2.5rem); }
-h3 { font-size: 1.25rem; }
+h1, h2, h3 { font-family: "Borne Blocks", "Fredoka", sans-serif; font-weight: 400; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.4rem, 4.6vw, 4rem); line-height: 1.2; }
+h2 { font-size: clamp(1.7rem, 2.8vw, 2.3rem); }
+h3 { font-size: 1.15rem; letter-spacing: .02em; }
 p { margin: 0; }
 a { color: inherit; text-underline-offset: 3px; }
 code, pre, kbd { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9em; }
@@ -72,7 +74,7 @@ code, pre, kbd { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospac
   max-width: var(--wrap); margin: 0 auto; padding: 48px 24px 110px;
   display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center;
 }
-.pitch h1 { max-width: 11ch; text-shadow: 3px 3px 0 rgba(5, 6, 10, .8); }
+.pitch h1 { max-width: 13ch; text-shadow: 3px 3px 0 rgba(5, 6, 10, .8); }
 .lede { margin-top: 24px; font-size: 1.18rem; color: var(--fg-soft); max-width: 44ch; }
 .cta { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 14px; }
 .fine { margin-top: 20px; font-size: .92rem; color: var(--fg-muted); max-width: 44ch; }
@@ -124,12 +126,12 @@ code, pre, kbd { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospac
 .steps li { background: var(--glass); border: 1px solid var(--glass-edge); border-radius: var(--radius); box-shadow: var(--ink-shadow); padding: 24px; }
 .step {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; margin-bottom: 18px;
-  font: 700 1.2rem/1 "Fredoka", sans-serif; background: var(--accent); color: #fff; box-shadow: 2px 2px 0 rgba(5, 6, 10, .8);
+  font: 1.1rem/1 "Borne Blocks", sans-serif; background: var(--accent); color: #fff; box-shadow: 2px 2px 0 rgba(5, 6, 10, .8);
 }
 .steps p { margin-top: 10px; color: var(--fg-soft); font-size: 1rem; }
 
 .features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 56px; margin: 0; }
-.features dt { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 1.15rem; }
+.features dt { font-family: "Borne Blocks", sans-serif; font-size: 1.05rem; letter-spacing: .02em; }
 .features dd { margin: 6px 0 0; color: var(--fg-soft); max-width: 54ch; }
 
 .updates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
@@ -137,7 +139,7 @@ code, pre, kbd { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospac
 .updates p { color: var(--fg-soft); max-width: 54ch; }
 .weights { display: grid; gap: 22px; }
 .weight { display: grid; grid-template-columns: 1fr auto; row-gap: 10px; font-weight: 600; }
-.weight b { font: 600 1.25rem "Fredoka", sans-serif; }
+.weight b { font: 1.15rem "Borne Blocks", sans-serif; }
 .weight i { grid-column: 1 / -1; height: 14px; border-radius: 7px; background: var(--glass); position: relative; overflow: hidden; }
 .weight i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: max(var(--w), 14px); border-radius: 7px; background: var(--glass-raised); }
 .weight.usual i::after { background: var(--accent); }

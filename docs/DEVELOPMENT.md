@@ -32,6 +32,7 @@ scripts/
   romm-dev/           a development RomM with a generated test library
   gen-case-assets.py  grain.png and studio.hdr of the 3D cases
   assets/             UI sounds generator
+  brand/make-font.py  Borne Blocks, the logo's lettering as a font (the website's titles)
 tests/
   integration_romm.py end-to-end against a real RomM (pairing, sync, downloads, mount, settings…)
   ui_tour.sh          walks every screen of a running Borne, fails on any QML error
