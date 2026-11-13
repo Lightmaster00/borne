@@ -34,6 +34,7 @@ tests/
   integration_romm.py end-to-end against a real RomM (pairing, sync, downloads, mount, settings…)
   ui_tour.sh          walks every screen of a running Borne, fails on any QML error
   update_test.sh      in-app updates: full archive, then by parts
+  case_bench/         every kind of game case with synthetic scans, faced and turned (to check prints)
 docs/                 specification, this guide, roadmap
 ```
 
@@ -80,6 +81,12 @@ End to end, against the development RomM ([`scripts/romm-dev/`](../scripts/romm-
 python3 tests/integration_romm.py core/target/release/borne http://127.0.0.1:8080 <admin> <password> <user> <password>
 tests/ui_tour.sh <log of a running Borne started with BORNE_DEBUG_INPUT=1>
 ```
+
+Game cases: `tests/case_bench/run.sh out/Borne /tmp/cases` renders every kind of case on the real
+3D shelf with synthetic scans (a coloured band on each edge, a circle and an arrow), faced and
+turned both ways: a cut print loses a band, a stretched one turns the circle into an ellipse, a
+bleeding one shows another edge's colour. Look at it after any change to `Case3D`, `CaseMesh` or
+`Cases`.
 
 Useful variables: `BORNE_DATA_DIR` (data folder), `BORNE_LANG` (UI language),
 `BORNE_DEBUG_INPUT=1` (`POST /api/v1/debug/pad?action=` and `/debug/stick?x=&y=` drive the UI),

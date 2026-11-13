@@ -228,7 +228,9 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   (`video-normalized`, else `video`; its address is noted without credentials during the media fetch
   and downloaded on first use, credentials added only for that request, ScreenScraper hosts only),
   else RomM's trailer. Stored in `media/videos` with the trailers (pruned beyond 2 GB). Played muted,
-  looping, cropped to fill; it fades in on its first frames and stays off with trailers off (and in
+  looping (GameVideo.qml): filling the screen when its proportions are within 18 % of the screen's,
+  else shown whole (a handheld's tall or square picture, a 4:3 capture) over a blurred, darker copy of
+  itself filling the rest, the same on the game page; it fades in on its first frames and stays off with trailers off (and in
   safe mode), on the game page and in menus. Until it plays, or when the game has no video: the game's
   blank Steam grid / marquee, else its cover blurred, enlarged and drifting slowly. One dark filter
   (about 60 %) and a deeper bottom keep the cases and the text readable. The background has no setting.
@@ -802,14 +804,17 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   is), and every case of a console has the same size: its shape is the one its front scans show
   (media::case_ratios, `case_ar` in `/platforms`: the median of the console's scans, or two shapes
   when it was sold in two kinds of case, a Japanese Saturn jewel case and an American long box, a
-  Super Nintendo box wide or upright; a game takes the closer one). A front scan still more than 3 %
-  off that shape (regional editions: N64, Super Nintendo) gives its case its own proportions, the
-  longest side kept, so the print is never stretched; a case's thickness follows its spine scan's
-  proportions when they are between 9 % and 40 % of its height (Cases.depth), else its kind's.
-  Otherwise the scans are fitted to the case (the front
-  fills its face: fitted whole when its proportions are within 22 % of the case's, so no title or
-  logo is cut at the edges, trimmed evenly beyond; CD cases trim from the right so
-  the console's band on the left of the insert stays whole; the spine scan covers the whole spine).
+  Super Nintendo box wide or upright; a game takes the closer one). A front picture (scan, or RomM's
+  cover when there is none) still more than 3 % off that shape (regional editions: N64, Super
+  Nintendo; a cover of another shape) gives its case its own proportions, the longest side kept, so
+  the print is never stretched nor cut; a picture of absurd proportions (under 0.45 or over 2.2) is
+  fitted whole in the console's shape, over the game's tone. A case's thickness follows its spine
+  scan's proportions (between 7.5 % and 50 % of its height: a thinner spine is widened a little to
+  stay readable), else its kind's, at least 9 % of its height (Cases.depth). Every print covers its
+  face edge to edge, up to the middle of the rounded edges (CaseMesh), with textures clamped to
+  their edges: no edge colour bleeds into the opposite edge, none is smeared over the curve. A
+  bench (synthetic scans with a coloured band on each edge, every console, faced and turned)
+  checked that no print is cut, stretched or smeared.
   None is drawn with its longest side under 94 % of the tallest case (Cases.scale), and no spine
   thinner than 9 % of the case's height (Cases.MIN_SPINE), so small cases and their spines stay
   readable. The ink outline is thin (1.5 to 3 units, 6 % of the spine) so it never makes a case look
@@ -818,8 +823,7 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   or ridged; the insert's flat black band is never cut; at most 18 %), once for scans already
   stored; Saturn, Mega-CD and Dreamcast covers are kept whole (their own band on the left), and
   those an earlier version cut are fetched again. Corners and edges are rounded (5.5 mm on plastic,
-  3.5 on card, at most a third of the spine); the front and back prints sit on the flat part, the
-  spine's spans the whole thickness. A white margin is trimmed from a scan only when it runs all
+  3.5 on card, at most a third of the spine). A white margin is trimmed from a scan only when it runs all
   round it: a white case's own band on top (Wii, 3DS) stays; fronts of those consoles stored before
   are fetched again once. Top and bottom take the console's signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture (not for CD jewel cases, whose back insert folds into a spine on each side: their spine shows the title), their
   two folds found by edge detection around the place the front's proportions give.

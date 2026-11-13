@@ -147,12 +147,12 @@ Item {
             id: gpPlayer
             loops: MediaPlayer.Infinite
             audioOutput: null
-            videoOutput: gpOut
+            videoOutput: gpOut.output
         }
-        VideoOutput {
+        // Whole when its proportions are far from the screen's (handhelds), never cut to nothing.
+        GameVideo {
             id: gpOut
             anchors.fill: parent
-            fillMode: VideoOutput.PreserveAspectCrop
         }
         Connections {
             target: gpOut.videoSink

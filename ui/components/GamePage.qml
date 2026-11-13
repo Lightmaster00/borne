@@ -197,7 +197,7 @@ Item {
     Timer { id: delay; interval: 400; onTriggered: { player.source = page.trailerUrl; player.play() } }
     MediaPlayer {
         id: player
-        videoOutput: video
+        videoOutput: video.output
         audioOutput: AudioOutput { muted: !page.sound; volume: 0.8 }
         loops: MediaPlayer.Infinite
         onErrorOccurred: (e, text) => page.videoError = text
@@ -254,10 +254,9 @@ Item {
                         NumberAnimation { from: 1.1; to: 1.03; duration: 26000; easing.type: Easing.InOutSine }
                     }
                 }
-                VideoOutput {
+                GameVideo {
                     id: video
                     anchors.fill: parent
-                    fillMode: VideoOutput.PreserveAspectCrop
                     opacity: page.videoShown ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
                 }

@@ -31,14 +31,14 @@ Node {
     // Every case of a console has the same size (Cases.shape: its scans' usual proportions, or the
     // game's own front scan's when an edition differs, so it is never stretched): the
     // other scans are fitted to it.
-    readonly property var shape: Cases.shape(game ? game.platform_slug : "", frontAR, frontScan)
+    readonly property var shape: Cases.shape(game ? game.platform_slug : "", frontAR)
     readonly property bool turned: shape.turned
     readonly property real bh: shape.h * mm
     readonly property real bw: shape.w * mm
     readonly property real bd: Cases.depth(kind, mm, bh, has("side") && game.side_ar > 0 ? game.side_ar : 0)
-    // Rounded corners and edges, a little more on plastic than on cardboard. The prints stay on
-    // the flat part (CaseMesh), so the curve never takes any of them; on a thin case the curve
-    // keeps a flat strip in the middle of the spine for its print.
+    // Rounded corners and edges, a little more on plastic than on cardboard; on a thin case the
+    // curve keeps a flat strip in the middle of the spine. The prints cover each face edge to edge
+    // (CaseMesh).
     readonly property real round: Math.min((card ? 3.5 : 5.5) * mm, bd * 0.32)
     readonly property color plastic: kind.color
     readonly property bool lightPlastic: plastic.hslLightness > 0.6
@@ -76,13 +76,11 @@ Node {
     component Print: Rectangle {
         property string src
         property bool titled: true
-        // The scan fills the face. Off the case's proportions by up to 22 % (a 3:4 RomM cover on a
-        // Switch case), it is fitted whole, so no title or logo is cut at the edges; further off,
-        // it is trimmed evenly (CD cases: from the right, so the console's band on the left of the
-        // insert stays whole).
-        property bool keepLeft: false
-        property real srcAR: 0   // the scan's width / height, when known
-        readonly property bool trimmed: srcAR > 0 && Math.abs(srcAR / (width / height) - 1) > 0.22
+        // The case takes the picture's proportions (Cases.shape), so it fills the face exactly;
+        // a picture of absurd proportions, or of unknown ones, is fitted whole over the game's
+        // tone: never cut.
+        property real srcAR: 0   // the picture's width / height, when known
+        readonly property bool fitted: !(srcAR > 0) || Math.abs(srcAR / (width / height) - 1) > 0.05
         gradient: Gradient {
             GradientStop { position: 0; color: Qt.lighter(box.tone, 1.25) }
             GradientStop { position: 1; color: Qt.darker(box.tone, 1.9) }
@@ -99,8 +97,7 @@ Node {
             anchors.fill: parent
             source: parent.src
             sourceSize: Qt.size(parent.width, parent.height)
-            fillMode: parent.trimmed ? Image.PreserveAspectCrop : Image.Stretch
-            horizontalAlignment: parent.keepLeft ? Image.AlignLeft : Image.AlignHCenter
+            fillMode: parent.fitted ? Image.PreserveAspectFit : Image.Stretch
             asynchronous: true
             // Printed flat and unlit, scans look harsh: their colours toned down like ink on card.
             layer.enabled: true
@@ -184,7 +181,11 @@ Node {
                 baseColorMap: Texture {
                     generateMipmaps: true
                     mipFilter: Texture.Linear
-                    sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl; keepLeft: box.kind.mat === "jewel"; srcAR: box.frontAR }
+                    // Clamped: with mipmaps, a repeating texture bleeds each edge's colour into the
+                    // opposite edge.
+                    tilingModeHorizontal: Texture.ClampToEdge
+                    tilingModeVertical: Texture.ClampToEdge
+                    sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.frontUrl; srcAR: box.frontAR }
                 }
             }
         }
@@ -195,7 +196,7 @@ Node {
                 required property string modelData
                 side: modelData
                 materials: Flat {
-                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; sourceItem: Spine { width: Math.max(24, Math.round(800 * box.bd / box.bh)); height: 800 } }
+                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; tilingModeHorizontal: Texture.ClampToEdge; tilingModeVertical: Texture.ClampToEdge; sourceItem: Spine { width: Math.max(24, Math.round(800 * box.bd / box.bh)); height: 800 } }
                 }
             }
         }
@@ -209,6 +210,9 @@ Node {
             Texture {
                 id: backTex
                 generateMipmaps: true
+                mipFilter: Texture.Linear
+                tilingModeHorizontal: Texture.ClampToEdge
+                tilingModeVertical: Texture.ClampToEdge
                 sourceItem: Print { width: 560; height: Math.round(560 * box.bh / box.bw); src: box.backUrl; titled: false }
             }
         }

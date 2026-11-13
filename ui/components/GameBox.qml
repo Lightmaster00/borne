@@ -22,7 +22,7 @@ Item {
     // (Super Nintendo: wide in America, upright in Europe) follow their cover.
     readonly property var kind: Cases.of(game ? game.platform_slug : "")
     readonly property real coverAspect: cover.status === Image.Ready && cover.implicitHeight > 0 ? cover.implicitWidth / cover.implicitHeight : 0
-    readonly property var shape: Cases.shape(game ? game.platform_slug : "", coverAspect, has("front"))
+    readonly property var shape: Cases.shape(game ? game.platform_slug : "", coverAspect)
     readonly property bool turned: shape.turned
     readonly property real mm: Cases.scale(kind, stage.boxH)
     // Every case of a console has the same size (its real case's proportions); the scans are
@@ -201,7 +201,7 @@ Item {
             anchors { fill: parent; margins: box.rim }
             source: box.has("back") && box.backFacing > 0.01 ? box.game.art + "back" : ""
             asynchronous: true
-            fillMode: Image.PreserveAspectCrop
+            fillMode: Image.Stretch
             sourceSize: Qt.size(500, 720)
         }
         Rectangle { anchors.fill: parent; radius: box.mat === "keep" ? 6 : 1; color: "transparent"; border { width: 1.5; color: Qt.rgba(1, 1, 1, box.plastic ? 0.2 : 0.1) } }
@@ -238,9 +238,9 @@ Item {
                 anchors.fill: parent
                 source: box.frontScan ? box.game.art + "front" : box.game && box.game.cover ? box.game.cover : ""
                 asynchronous: true
-                // Fitted whole when close to the case's proportions (no edge of the art cut).
-                fillMode: box.coverAspect > 0 && Math.abs(box.coverAspect / (width / Math.max(1, height)) - 1) > 0.22 ? Image.PreserveAspectCrop : Image.Stretch
-                horizontalAlignment: box.mat === "jewel" ? Image.AlignLeft : Image.AlignHCenter
+                // The case takes the picture's proportions (Cases.shape): it fills the face; a picture
+                // of absurd proportions is fitted whole, never cut.
+                fillMode: box.coverAspect > 0 && Math.abs(box.coverAspect / (width / Math.max(1, height)) - 1) > 0.05 ? Image.PreserveAspectFit : Image.Stretch
                 sourceSize: Qt.size(600, 900)
                 mipmap: true
             }

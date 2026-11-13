@@ -53,10 +53,13 @@ function setRatios(m) { ratios = m || {} }
 // the longest side of its real case, the proportions of its scans (else of its real case). Where
 // the console was sold in two kinds of case, a game takes the one closest to its scan; with one
 // known shape, a cover upright where the console's cases are usually wide turns the case.
-// A scan still more than 3 % off that shape (regional editions, N64 and Super Nintendo boxes)
-// gives the case its own proportions, the longest side kept: a print is never stretched (scan:
-// frontAR is a real front scan, not a RomM cover of any shape).
-function shape(slug, frontAR, scan) {
+// A front picture (scan or RomM cover) still more than 3 % off that shape (regional editions,
+// N64 and Super Nintendo boxes, a cover of another shape) gives the case its own proportions, the
+// longest side kept: a print is never stretched nor cut. Only absurd proportions (a banner, a
+// strip) are refused: the case keeps its shape and the picture is fitted whole in it.
+const FRONT_MIN = 0.45, FRONT_MAX = 2.2
+function frontFits(frontAR) { return frontAR >= FRONT_MIN && frontAR <= FRONT_MAX }
+function shape(slug, frontAR) {
     const k = of(slug)
     const known = ratios[slug] && ratios[slug].length ? ratios[slug] : [k.w / k.h]
     let ar = known[0]
@@ -64,7 +67,7 @@ function shape(slug, frontAR, scan) {
         ar = known.reduce((b, r) => Math.abs(Math.log(r / frontAR)) < Math.abs(Math.log(b / frontAR)) ? r : b, ar)
     const turned = known.length === 1 && !!k.turns && frontAR > 0 && (frontAR < 1) !== (ar < 1)
     let a = turned ? 1 / ar : ar
-    if (scan && frontAR > 0 && Math.abs(Math.log(frontAR / a)) > Math.log(1.03)) a = frontAR
+    if (frontFits(frontAR) && Math.abs(Math.log(frontAR / a)) > Math.log(1.03)) a = frontAR
     const longest = Math.max(k.w, k.h)
     return a <= 1 ? { w: longest * a, h: longest, turned: turned } : { w: longest, h: longest / a, turned: turned }
 }
@@ -79,17 +82,16 @@ function scale(k, boxH) {
     const longest = Math.max(k.w, k.h)
     return boxH / TALLEST * Math.max(1, TALLEST * MIN_SIDE / longest)
 }
-// A spine thinner than this share of the case's height is drawn this thick, so its print and
-// title stay readable (real spines of keep and jewel cases are about 6 to 8 %).
+// A case's thickness: its spine scan's own proportions when it has one, so the print is never
+// stretched (cardboard boxes of one console differ between regions, N64 and Super Nintendo above
+// all), within SCAN_SPINE (a thinner scan is widened a little to stay readable, a thicker one is a
+// wrong picture); else its kind's, never thinner than MIN_SPINE of its height so the title on it
+// stays readable. sideAR: the spine scan's width / height (lying or standing), 0 without a scan.
 const MIN_SPINE = 0.09
-const MAX_SPINE = 0.4
-// A case's thickness in scene units: its spine scan's own proportions when it has one (so the
-// print is never stretched: cardboard boxes of one console differ between regions, N64 and Super
-// Nintendo above all), else its kind's, never thinner than MIN_SPINE of its height.
-// sideAR: the spine scan's width / height (lying or standing), 0 without a scan.
+const SCAN_SPINE = [0.075, 0.5]
 function depth(k, mm, bh, sideAR) {
     const r = sideAR > 0 ? (sideAR > 1 ? 1 / sideAR : sideAR) : 0
-    if (r >= MIN_SPINE && r <= MAX_SPINE) return bh * r
+    if (r > 0) return bh * Math.max(SCAN_SPINE[0], Math.min(SCAN_SPINE[1], r))
     return Math.max(bh * MIN_SPINE, k.d * mm)
 }
 
