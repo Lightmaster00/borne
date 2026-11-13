@@ -18,7 +18,7 @@ ui/
   i18n/               translations (.ts generated; edit en.json / fr.json)
   brand/              the logo, the pictogram and the lettering (Logo.qml, Brand.qml draw them)
   fonts/ sounds/      bundled assets
-resources/            bundled with the package (app icon: the pictogram on its dark, borne.svg → borne.png)
+resources/            bundled with the package (app icon: the pictogram, cut-outs transparent, borne.svg → borne.png)
 website/              the project's site (GitHub Pages), static HTML and CSS
 scripts/
   package.sh          self-contained Linux package (core + UI + Qt)

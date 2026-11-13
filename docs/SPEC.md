@@ -225,7 +225,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
 
 - Identity: the pictogram (a red tile with a pixel B lying down) and the BORNE lettering, in
   `ui/brand` (picto.svg, logo.svg, wordmark.svg), each usable alone. The pictogram is the app icon
-  (on the app's dark) and marks the profile, pairing and server screens; the lettering signs the
+  (cut-outs transparent) and marks the profile, pairing and server screens; the lettering signs the
   Settings sidebar above the version. The red #E60012 belongs to the mark only.
 - Background: a video of the selected game being played. When the selection rests
   (0.9 s), `POST /api/v1/games/{id}/gameplay` returns a local file: ScreenScraper's gameplay capture
