@@ -3,7 +3,7 @@
 // same spine on the left and the right, the back scan behind, and the spine's dominant colour (else
 // the console's signature colour) on the top and the bottom, all printed flat (unlit). A skin just over the box (toon.frag) multiplies
 // them by flat light bands whose dark side takes the console's colour, with a paper or plastic grain;
-// a second one (gloss.frag) adds glass-like studio reflections and a thin rim of the console's colour.
+// a second one (gloss.frag) adds glass-like studio reflections.
 // Coordinates: x right, y up, z toward you.
 import QtQuick
 import QtQuick.Effects
@@ -259,7 +259,7 @@ Node {
                 property real grainScale: Math.max(2, box.bh / 30)
             }
         }
-        // The gloss skin: glass reflections and coloured rim, added over the shaded box.
+        // The gloss skin: glass reflections, added over the shaded box.
         Model {
             castsShadows: false
             receivesShadows: true
@@ -271,8 +271,6 @@ Node {
                 fragmentShader: "gloss.frag"
                 sourceBlend: CustomMaterial.One
                 destinationBlend: CustomMaterial.One
-                property color rimColor: Qt.lighter(box.consoleTint, 1.25)
-                property real rimStrength: 0.35
                 // Clear plastic reflects like glass; cardboard barely.
                 property real glint: box.card ? 0.12 : 0.55
             }

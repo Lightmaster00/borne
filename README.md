@@ -47,8 +47,8 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 
 - **Profiles** ("Who's playing?"), each bound to a RomM account; pairing without a keyboard (code or
   QR code approved from the phone). Tokens are kept outside the database, readable only by you.
-- **Your library, offline too**: consoles, favourites and recently played, sorted by name (then
-  release date, so a series stands in order) or by play time, filtered by genre, searched as you
+- **Your library, offline too**: consoles, favourites and recently played, sorted by name (the first four
+  letters, then the exact release date, so a series stands in order) or by play time, filtered by genre, searched as you
   type, in titles from every region.
 - **Games as real cases**: 3D boxes in the shape of each console's retail case, rebuilt from the
   front, spine and back scans of ScreenScraper, cel shaded under clear plastic that reflects like

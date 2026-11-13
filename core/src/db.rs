@@ -195,6 +195,8 @@ pub struct GameRow {
     pub multi_file: bool,
     pub summary: Option<String>,
     pub year: Option<i64>,
+    /// First release date (Unix seconds), from RomM's metadata.
+    pub released: Option<i64>,
     pub genres: Option<String>,
     pub regions: Option<String>,
     pub languages: Option<String>,
@@ -248,7 +250,8 @@ const GAME_SELECT: &str = "SELECT g.rom_id, g.platform_slug, g.platform_name, g.
     (SELECT received FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1),
     (SELECT total FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1),
     (SELECT error FROM downloads d WHERE d.rom_id = g.rom_id AND d.state NOT IN ('done','cancelled') ORDER BY d.id DESC LIMIT 1),
-    g.languages, g.revision, g.group_key, (SELECT 1 FROM linked_games k WHERE k.rom_id = g.rom_id)
+    g.languages, g.revision, g.group_key, (SELECT 1 FROM linked_games k WHERE k.rom_id = g.rom_id),
+    json_extract(g.extra, '$.release')
     FROM games g LEFT JOIN local_games l ON l.rom_id = g.rom_id";
 
 fn game_from_row(r: &rusqlite::Row) -> rusqlite::Result<GameRow> {
@@ -287,6 +290,8 @@ fn game_from_row(r: &rusqlite::Row) -> rusqlite::Result<GameRow> {
         revision: r.get(26)?,
         group_key: r.get(27)?,
         linked: r.get::<_, Option<i64>>(28)?.is_some(),
+        // RomM gives seconds or milliseconds.
+        released: r.get::<_, Option<i64>>(29)?.filter(|t| *t != 0).map(|t| if t.abs() > 100_000_000_000 { t / 1000 } else { t }),
     })
 }
 

@@ -819,13 +819,18 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   thinner than 9 % of the case's height (Cases.MIN_SPINE), so small cases and their spines stay
   readable. The ink outline is thin (1.5 to 3 units, 6 % of the spine) so it never makes a case look
   thicker. The core cuts a jewel case's hinge out of PlayStation front scans
-  (media::cut_hinge: the columns from the left that do not change from top to bottom and are light
-  or ridged; the insert's flat black band is never cut; at most 18 %), once for scans already
-  stored; Saturn, Mega-CD and Dreamcast covers are kept whole (their own band on the left), and
+  (media::cut_hinge: the insert is square, so a scan more than 4 % wider than tall holds a hinge
+  about as wide as the excess; the hinge's grey ridges are lighter than the insert's flat black
+  "PlayStation" band, so the cut goes where the columns have come down to that black, plus 2.5 %
+  so no ridge is left, at most 20 %; without such a band, the excess), once at startup for fronts
+  already stored (`hinge_cut3`). Spine scans lose their pale side margins (media::trim_spine_sides:
+  columns of one pale colour from end to end, at most 8 % a side, once for stored ones,
+  `spine_trim1`), so the print reaches the spine's edges;   stored; Saturn, Mega-CD and Dreamcast covers are kept whole (their own band on the left), and
   those an earlier version cut are fetched again. Corners and edges are rounded (5.5 mm on plastic,
   3.5 on card, at most a third of the spine). A white margin is trimmed from a scan only when it runs all
   round it: a white case's own band on top (Wii, 3DS) stays; fronts of those consoles stored before
-  are fetched again once. Top and bottom take the console's signature colour. Spines missing from ScreenScraper are cut from its unfolded case texture (not for CD jewel cases, whose back insert folds into a spine on each side: their spine shows the title), their
+  are fetched again once. Top and bottom take the console's signature colour. The gloss has no
+  rim on the edges (seen side-on, it drew a light line along the spines). Spines missing from ScreenScraper are cut from its unfolded case texture (not for CD jewel cases, whose back insert folds into a spine on each side: their spine shows the title), their
   two folds found by edge detection around the place the front's proportions give.
 - Select opens Sort and filter (order, genre) directly; everything else lives in Settings. Settings
   stand on a plain background (no game art); the open section is marked by a fill and a bar in the
@@ -870,9 +875,11 @@ About and screenshots side by side on the game page, credits on one line.
 - Case top and bottom: the spine scan's dominant colour (media::dominant_color: 16-level bins,
   the fullest averaged; `spine_color` in library entries), else the console's signature colour.
 - System files: a file in place and valid (a known dump where dumps are known) shows only Remove.
-- Order "by name" (library::shelf_order): the first three letters of the title in the interface
-  language (articles and accents set aside), then the release date (games without one last), then
-  the whole title; "Final Fantasy VII" stands before "Final Fantasy IX".
+- Order "by name" (library::shelf_order): the first four letters of the title in the interface
+  language (articles and accents set aside), then the exact release date (day, month, year: RomM's
+  first release date, the earliest of the game's versions; a game known only by its year stands on
+  1 January, games without a date last), then the whole title; "Final Fantasy VII" (31-01-1997)
+  stands before "Final Fantasy Tactics" (20-06-1997) and "Final Fantasy IX" (13-07-2000).
 - Versions RomM matched differently (one by IGDB, another by ScreenScraper, another not at all),
   the discs of one game, and versions ScreenScraper knows as one game are joined after each sync
   and each ScreenScraper run (library::merge_groups): one entry per game. Logos and printed art

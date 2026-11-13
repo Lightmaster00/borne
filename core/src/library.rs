@@ -281,15 +281,23 @@ pub fn groups(rows: Vec<GameRow>, prefs: &HashMap<String, (Option<i64>, Option<S
 
 /// Sort key for a title: case and accents ignored, a leading article set aside
 /// ("The Legend of Zelda" sorts under L, "La Légende de Zelda" too).
-/// The shelf's order "by name": by the first three letters of the title (articles set aside), then
-/// by release date, so a series stands in the order it came out ("Final Fantasy VII" before
-/// "Final Fantasy IX"), then by the whole title. Games without a date come last in their run.
+/// The shelf's order "by name": by the first four letters of the title (articles set aside), then
+/// by exact release date (day, month, year), so a series stands in the order it came out ("Final
+/// Fantasy VII" before "Final Fantasy IX"), then by the whole title. A game known only by its year
+/// stands at that year's first day; games without a date come last in their run.
 pub fn shelf_order(list: &mut [Value]) {
     list.sort_by_cached_key(|v| {
         let title = title_sort_key(v["name"].as_str().unwrap_or(""));
-        let head: String = title.chars().filter(|c| c.is_alphanumeric()).take(3).collect();
-        (head, v["year"].as_i64().unwrap_or(i64::MAX), title)
+        let head: String = title.chars().filter(|c| c.is_alphanumeric()).take(4).collect();
+        let date = v["released"].as_i64().or_else(|| v["year"].as_i64().map(year_start)).unwrap_or(i64::MAX);
+        (head, date, title)
     });
+}
+
+/// 1 January of a year, in Unix seconds.
+fn year_start(year: i64) -> i64 {
+    let y = year - 1;
+    (365 * (year - 1970) + (y - 1968) / 4 - (y - 1900) / 100 + (y - 1600) / 400) * 86_400
 }
 
 pub fn title_sort_key(name: &str) -> String {
@@ -319,6 +327,10 @@ pub fn title_sort_key(name: &str) -> String {
 /// The shown version, plus what the library needs to know about the others.
 pub fn entry(shown: &GameRow, versions: &[GameRow]) -> Value {
     let mut v = version_json(shown);
+    // The game's first release, whichever version came out first.
+    if let Some(first) = versions.iter().filter_map(|g| g.released).min() {
+        v["released"] = json!(first);
+    }
     v["version_count"] = json!(versions.len());
     fill_media(&mut v, versions);
     v["other_installed"] = json!(versions.iter().any(|g| g.rom_id != shown.rom_id && (g.local_state == "local" || g.linked)));
@@ -403,17 +415,33 @@ mod tests {
     }
 
     #[test]
-    fn shelf_order_follows_three_letters_then_date() {
+    fn shelf_order_follows_four_letters_then_exact_date() {
         let mut l = vec![
-            serde_json::json!({"name": "Final Fantasy IX", "year": 2000}),
+            serde_json::json!({"name": "Final Fantasy IX", "released": 963_446_400}), // 13-07-2000
             serde_json::json!({"name": "The Legend of Zelda", "year": 1986}),
-            serde_json::json!({"name": "Final Fantasy VII", "year": 1997}),
+            serde_json::json!({"name": "Final Fantasy VII", "released": 853_977_600}), // 31-01-1997
+            serde_json::json!({"name": "Final Fantasy Tactics", "released": 866_419_200}), // 20-06-1997
+            serde_json::json!({"name": "Finding Nemo", "released": 850_000_000}),
             serde_json::json!({"name": "Fighting Force", "year": 1997}),
-            serde_json::json!({"name": "Final Fantasy Tactics"}),
+            serde_json::json!({"name": "Final Doom"}),
         ];
         super::shelf_order(&mut l);
         let names: Vec<&str> = l.iter().map(|v| v["name"].as_str().unwrap()).collect();
-        assert_eq!(names, ["Fighting Force", "Final Fantasy VII", "Final Fantasy IX", "Final Fantasy Tactics", "The Legend of Zelda"]);
+        assert_eq!(
+            names,
+            [
+                "Fighting Force",
+                "Final Fantasy VII",
+                "Final Fantasy Tactics",
+                "Final Fantasy IX",
+                "Final Doom",
+                "Finding Nemo",
+                "The Legend of Zelda"
+            ]
+        );
+        assert_eq!(super::year_start(1970), 0);
+        assert_eq!(super::year_start(2000), 946_684_800);
+        assert_eq!(super::year_start(1997), 852_076_800);
     }
 
     #[test]

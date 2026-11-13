@@ -778,13 +778,36 @@ fn refetch_fronts(app: &Shared, c: &Credentials) {
     }
 }
 
-/// Fronts of CD cases stored before their hinge was cut: cut once now (see media::cut_hinge).
-fn cut_stored_hinges(app: &Shared) {
+/// Spines stored before their pale side margins were cut (media::trim_spine_sides): cut once now,
+/// at startup.
+pub fn trim_stored_spines(app: &Shared) {
     for key in app.db.group_keys() {
-        if !crate::media::cd_case(&key) || app.db.setting(&format!("hinge_cut2.{key}")).is_some() {
+        if app.db.setting(&format!("spine_trim1.{key}")).is_some() {
             continue;
         }
-        if let Some(m) = app.db.media(&key, "front").filter(|m| m.stamp.starts_with("ss|")) {
+        if let Some(m) = app.db.media(&key, "side") {
+            if let Ok(bytes) = std::fs::read(&m.path) {
+                if let Ok((path, w, h)) = crate::media::store(app, &key, "side", &bytes) {
+                    if (w, h) != (m.w, m.h) {
+                        app.db.set_media(&key, "side", &path.to_string_lossy(), w, h, &m.stamp);
+                        app.emit(json!({ "type": "media", "group_key": key }));
+                    }
+                }
+            }
+        }
+        app.db.set_setting(&format!("spine_trim1.{key}"), "1");
+    }
+}
+
+/// Fronts of CD cases stored before their hinge was cut this way: cut once now (see
+/// media::cut_hinge), at startup, with or without a ScreenScraper account.
+pub fn cut_stored_hinges(app: &Shared) {
+    for key in app.db.group_keys() {
+        // hinge_cut3: the hinge found by the band's black (media::cut_hinge), every stored front.
+        if !crate::media::cd_case(&key) || app.db.setting(&format!("hinge_cut3.{key}")).is_some() {
+            continue;
+        }
+        if let Some(m) = app.db.media(&key, "front") {
             if let Ok(bytes) = std::fs::read(&m.path) {
                 if let Ok((path, w, h)) = crate::media::store(app, &key, "front", &bytes) {
                     app.db.set_media(&key, "front", &path.to_string_lossy(), w, h, &m.stamp);
@@ -792,7 +815,7 @@ fn cut_stored_hinges(app: &Shared) {
                 }
             }
         }
-        app.db.set_setting(&format!("hinge_cut2.{key}"), "1");
+        app.db.set_setting(&format!("hinge_cut3.{key}"), "1");
     }
 }
 
@@ -848,7 +871,6 @@ pub fn start(app: &Shared, again: bool) {
             fetch_systems(&app, &c, again);
             drop_jewel_texture_spines(&app);
             recut_spines(&app, &c);
-            cut_stored_hinges(&app);
             refetch_fronts(&app, &c);
             STOP.store(false, Ordering::SeqCst);
             PAUSED.store(false, Ordering::SeqCst);

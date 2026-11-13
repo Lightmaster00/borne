@@ -2,9 +2,9 @@
 // The case is seen through clear plastic, like glass: it reflects a photo studio (a large softbox
 // above on the left, tall windows on the sides, a thin strip on the right, a faint sheen across), weak when seen face-on and
 // strong at grazing angles (Fresnel), so the print stays clean and the reflections slide over it
-// as the case turns. A thin rim of the console's colour lines the edges turning away.
+// as the case turns. (No rim on the edges: seen side-on, it drew a light line along the spines.)
 //
-// Uniforms (CustomMaterial properties): rimColor, rimStrength, glint (reflection strength).
+// Uniform (CustomMaterial property): glint (reflection strength).
 
 // A soft-edged band: 1 between a and b, fading over f outside.
 float band(float x, float a, float b, float f)
@@ -36,9 +36,7 @@ void MAIN()
     float studio = softbox + strip + windows + sheen + ceiling;
     float fresnel = 0.04 + 0.96 * pow(1.0 - facing, 5.0);
     vec3 reflection = vec3(0.92, 0.95, 1.0) * studio * glint * mix(0.3, 1.0, fresnel);
-    // The rim: thin, on the edges seen almost side-on.
-    vec3 rim = rimColor.rgb * rimStrength * (1.0 - smoothstep(0.12, 0.18, facing));
-    EMISSIVE_COLOR = reflection + rim;
+    EMISSIVE_COLOR = reflection;
 }
 
 void DIRECTIONAL_LIGHT()

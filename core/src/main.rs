@@ -138,6 +138,13 @@ fn main() {
     downloads::spawn_worker(app.clone());
     stream::start(&app);
     update::start(&app);
+    {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            screenscraper::cut_stored_hinges(&app);
+            screenscraper::trim_stored_spines(&app);
+        });
+    }
     emuinstall::start_updates(&app);
     if app.client().is_some() {
         catalog::start_sync(&app);
