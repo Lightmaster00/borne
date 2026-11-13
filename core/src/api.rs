@@ -417,7 +417,7 @@ fn prune_videos(dir: &std::path::Path, max: u64) {
 }
 
 fn new_profile_id() -> String {
-    use rand::Rng;
+    use rand::RngExt;
     let mut rng = rand::rng();
     (0..12).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect()
 }

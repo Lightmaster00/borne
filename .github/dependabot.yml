@@ -1,18 +1,18 @@
 # Keeps the workflow actions and the core's Rust dependencies up to date: one grouped pull
-# request per week and ecosystem, checked by CI before merging.
+# request per month and ecosystem, checked by CI before merging.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       actions:
         patterns: ["*"]
   - package-ecosystem: cargo
     directory: /core
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       crates:
         patterns: ["*"]

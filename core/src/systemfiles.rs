@@ -307,7 +307,7 @@ fn check_and_place(d: &Path, it: &Item, name: &str, tmp: &Path, size: u64) -> Re
             let mut n = 0;
             for i in 0..z.len() {
                 let mut e = z.by_index(i).map_err(|e| e.to_string())?;
-                let entry = e.name().to_string();
+                let entry = e.name().map_err(|e| e.to_string())?.into_owned();
                 let base = entry.rsplit('/').next().unwrap_or("").to_string();
                 if e.is_dir() || !base.to_lowercase().ends_with(".nca") {
                     continue;

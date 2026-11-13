@@ -252,7 +252,7 @@ pub fn ds_cheats(xml: &str, code: &str, crc: u32) -> Option<Vec<Cheat>> {
     loop {
         match r.read_event() {
             Ok(Event::Start(e)) => {
-                let n = String::from_utf8_lossy(e.name().as_ref()).to_lowercase();
+                let n = e.name().as_ref().to_lowercase();
                 if n == "game" {
                     game_id.clear();
                     out.clear();
@@ -265,8 +265,12 @@ pub fn ds_cheats(xml: &str, code: &str, crc: u32) -> Option<Vec<Cheat>> {
                 path.push(n);
                 text.clear();
             }
-            Ok(Event::Text(t)) => text.push_str(&t.unescape().unwrap_or_default()),
-            Ok(Event::CData(t)) => text.push_str(&String::from_utf8_lossy(&t)),
+            Ok(Event::Text(t)) => text.push_str(&t.xml10_content()),
+            Ok(Event::GeneralRef(r)) => match r.resolve_char_ref() {
+                Ok(Some(c)) => text.push(c),
+                _ => text.push_str(quick_xml::escape::resolve_predefined_entity(&r).unwrap_or("")),
+            },
+            Ok(Event::CData(t)) => text.push_str(&t),
             Ok(Event::End(_)) => {
                 let n = path.pop().unwrap_or_default();
                 let parent = path.last().cloned().unwrap_or_default();
@@ -584,8 +588,9 @@ fn switch_cheat_files(app: &Shared, tid: &str) -> Vec<(String, String)> {
     let want = format!("/{}/cheats/", tid.to_lowercase());
     let names: Vec<String> = z
         .file_names()
+        .filter_map(|n| n.ok())
         .filter(|n| format!("/{}", n.to_lowercase()).contains(&want) && n.to_lowercase().ends_with(".txt"))
-        .map(String::from)
+        .map(|n| n.into_owned())
         .collect();
     let mut out = vec![];
     for n in names {
@@ -767,6 +772,21 @@ mod tests {
         std::fs::write(&p, &iso).unwrap();
         assert_eq!(ps2_crc(&p), Some(0x77777777));
         let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn ds_cheats_from_the_xml_database() {
+        let xml = "<codelist><game><name>Test</name><gameid>ABCD 1234ABCD</gameid>\
+            <folder><name>Items &amp; money</name><cheat><name>Max caf&#233;</name><codes>02000000 0000FFFF</codes></cheat></folder>\
+            <cheat><name><![CDATA[Walk <through> walls]]></name><codes>12000000 00000001 22000000 00000002</codes></cheat>\
+            </game></codelist>";
+        let c = ds_cheats(xml, "ABCD", 0x1234ABCD).unwrap();
+        assert_eq!(c.len(), 2);
+        assert_eq!(c[0].name, "Items & money — Max café");
+        assert_eq!(c[0].code, "02000000 0000FFFF");
+        assert_eq!(c[1].name, "Walk <through> walls");
+        assert_eq!(c[1].code, "12000000 00000001+22000000 00000002");
+        assert!(ds_cheats(xml, "WXYZ", 1).is_none());
     }
 
     #[test]

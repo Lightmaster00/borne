@@ -117,7 +117,14 @@ pub fn tree_hashes(root: &Path) -> Result<std::collections::BTreeMap<String, Str
         } else {
             let mut f = std::fs::File::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
             let mut h = Sha256::new();
-            std::io::copy(&mut f, &mut h).map_err(|e| e.to_string())?;
+            let mut buf = vec![0u8; 1 << 16];
+            loop {
+                let n = std::io::Read::read(&mut f, &mut buf).map_err(|e| e.to_string())?;
+                if n == 0 {
+                    break;
+                }
+                h.update(&buf[..n]);
+            }
             let exec = if meta.permissions().mode() & 0o111 != 0 { "x" } else { "-" };
             format!("{rel}\0f\0{}{exec}\n", hex(&h.finalize()))
         };

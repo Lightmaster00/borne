@@ -427,7 +427,13 @@ pub fn sha256_bytes(b: &[u8]) -> String {
 pub fn sha256_file(p: &Path) -> String {
     let mut h = <sha2::Sha256 as sha2::Digest>::new();
     if let Ok(mut f) = std::fs::File::open(p) {
-        let _ = std::io::copy(&mut f, &mut h);
+        let mut buf = vec![0u8; 1 << 16];
+        while let Ok(n) = std::io::Read::read(&mut f, &mut buf) {
+            if n == 0 {
+                break;
+            }
+            sha2::Digest::update(&mut h, &buf[..n]);
+        }
     }
     sha2::Digest::finalize(h).iter().map(|b| format!("{b:02x}")).collect()
 }
@@ -479,7 +485,7 @@ fn unzip(zip_path: &Path, out: &Path) -> Result<(), String> {
         let rel = e
             .enclosed_name()
             .and_then(|p| crate::downloads::safe_relative(&p.to_string_lossy()))
-            .ok_or_else(|| format!("archive entry refused: {}", e.name()))?;
+            .ok_or_else(|| format!("archive entry refused: {}", e.name().unwrap_or_default()))?;
         let dest = out.join(rel);
         if e.is_dir() {
             std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
@@ -493,7 +499,7 @@ fn unzip(zip_path: &Path, out: &Path) -> Result<(), String> {
             let mut target = String::new();
             e.read_to_string(&mut target).map_err(|e| e.to_string())?;
             if target.starts_with('/') || target.split('/').any(|c| c == "..") {
-                return Err(format!("archive link refused: {}", e.name()));
+                return Err(format!("archive link refused: {}", e.name().unwrap_or_default()));
             }
             let _ = std::os::unix::fs::symlink(&target, &dest);
             continue;

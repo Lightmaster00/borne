@@ -67,7 +67,7 @@ fn layout() -> Layout {
 }
 
 fn random_token() -> String {
-    use rand::Rng;
+    use rand::RngExt;
     let mut rng = rand::rng();
     (0..32).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect()
 }

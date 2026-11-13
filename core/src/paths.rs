@@ -119,7 +119,7 @@ pub fn machine_id(paths: &Paths) -> String {
             return s.trim().to_string();
         }
     }
-    use rand::Rng;
+    use rand::RngExt;
     let mut rng = rand::rng();
     let id: String = (0..32).map(|_| format!("{:x}", rng.random_range(0..16u8))).collect();
     let _ = std::fs::write(&file, &id);

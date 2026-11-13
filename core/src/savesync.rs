@@ -745,7 +745,7 @@ mod tests {
         let it = Item { kind: "saves", local: dir.clone(), remote_name: "x.zip".into(), folder: true };
         assert!(hash(&it).is_some());
         let z = zip::ZipArchive::new(std::io::Cursor::new(zip_dir(&dir).unwrap())).unwrap();
-        assert_eq!(z.file_names().collect::<Vec<_>>(), vec!["save.bin"]);
+        assert_eq!(z.file_names().map(|n| n.unwrap().into_owned()).collect::<Vec<_>>(), vec!["save.bin"]);
         let _ = std::fs::remove_dir_all(d);
     }
 }

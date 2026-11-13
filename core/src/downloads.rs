@@ -398,7 +398,7 @@ pub fn extract_zip(zip_path: &Path, out_dir: &Path, flag: &AtomicBool) -> Result
         let rel = entry
             .enclosed_name()
             .and_then(|p| safe_relative(&p.to_string_lossy()))
-            .ok_or_else(|| format!("archive entry refused: {}", entry.name()))?;
+            .ok_or_else(|| format!("archive entry refused: {}", entry.name().unwrap_or_default()))?;
         let dest = out_dir.join(rel);
         if entry.is_dir() {
             std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
