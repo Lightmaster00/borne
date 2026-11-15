@@ -24,7 +24,14 @@
       "cores": {
         "linux": "https://buildbot.libretro.com/nightly/linux/x86_64/latest/{core}_libretro.so.zip",
         "macos": "https://buildbot.libretro.com/nightly/apple/osx/arm64/latest/{core}_libretro.dylib.zip"
-      }
+      },
+      "fails": [
+        "Failed to load content",
+        "Failed to open libretro core",
+        "Fatal error received",
+        "Could not read content file",
+        "Failed to load core"
+      ]
     },
     {
       "id": "dolphin",
@@ -49,7 +56,11 @@
           "link": "https://dl.dolphin-emu.org/releases/",
           "ends": "-universal.dmg"
         }
-      }
+      },
+      "fails": [
+        "Unable to load the game",
+        "is not a valid GameCube/Wii"
+      ]
     },
     {
       "id": "pcsx2",
@@ -80,7 +91,12 @@
           ],
           "ends": ".tar.xz"
         }
-      }
+      },
+      "fails": [
+        "Failed to open CDVD",
+        "Failed to load ISO",
+        "Error opening"
+      ]
     },
     {
       "id": "duckstation",
@@ -111,7 +127,12 @@
           "ends": ".zip",
           "prerelease": true
         }
-      }
+      },
+      "fails": [
+        "Failed to load CD image",
+        "Failed to boot system",
+        "Failed to open CD image"
+      ]
     },
     {
       "id": "melonds",
@@ -138,7 +159,11 @@
           ],
           "ends": ".zip"
         }
-      }
+      },
+      "fails": [
+        "Failed to load the ROM",
+        "failed to load ROM"
+      ]
     },
     {
       "id": "eden",
@@ -184,7 +209,12 @@
             ".zip"
           ]
         }
-      }
+      },
+      "fails": [
+        "Error while loading ROM",
+        "Failed to load ROM",
+        "Loader <Error>"
+      ]
     },
     {
       "id": "citron",
@@ -214,7 +244,12 @@
           ],
           "ends": ".dmg"
         }
-      }
+      },
+      "fails": [
+        "Error while loading ROM",
+        "Failed to load ROM",
+        "Loader <Error>"
+      ]
     },
     {
       "id": "ryubing",
@@ -259,7 +294,12 @@
             ".zip"
           ]
         }
-      }
+      },
+      "fails": [
+        "Application Load Error",
+        "doesn't contain a valid",
+        "Couldn't load"
+      ]
     },
     {
       "id": "xenia",
@@ -308,7 +348,11 @@
           ],
           "ends": ".7z"
         }
-      }
+      },
+      "fails": [
+        "Failed to boot",
+        "Boot failed"
+      ]
     },
     {
       "id": "shadps4",
@@ -336,6 +380,57 @@
             "macos"
           ],
           "ends": ".zip"
+        }
+      },
+      "fails": [
+        "Failed to load game",
+        "eboot.bin not found"
+      ]
+    },
+    {
+      "id": "azahar",
+      "name": "Azahar",
+      "args": [
+        "-f",
+        "{rom}"
+      ],
+      "binaries": [
+        "azahar"
+      ],
+      "mac_apps": [
+        "Azahar.app/Contents/MacOS/azahar"
+      ],
+      "rename_ext": {
+        "3ds": "cci"
+      },
+      "fails": [
+        "Failed to load ROM",
+        "Error while loading ROM",
+        "Loader <Error>"
+      ],
+      "install": {
+        "linux": {
+          "type": "github",
+          "repo": "azahar-emu/azahar",
+          "has": [
+            "azahar"
+          ],
+          "not": [
+            "wayland",
+            "room"
+          ],
+          "ends": ".appimage"
+        },
+        "macos": {
+          "type": "github",
+          "repo": "azahar-emu/azahar",
+          "has": [
+            "macos"
+          ],
+          "ends": [
+            ".zip",
+            ".dmg"
+          ]
         }
       }
     }
@@ -459,6 +554,12 @@
       [
         "desmume",
         "DeSmuME"
+      ]
+    ],
+    "3ds": [
+      [
+        "!azahar",
+        "Azahar"
       ]
     ],
     "genesis": [

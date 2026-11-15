@@ -552,6 +552,25 @@ blocks a launch just because a game was not tested or a community database rates
 - Per-game configuration valid and compatible with the emulator version.
 - Known minimum resources: CPU, GPU, VRAM, RAM, graphics API, drivers.
 - Newer remote save fetched or conflict handled (section 6.4).
+- A game played from the network: its first bytes read through the mount within 30 s, else a clear
+  error instead of an emulator opened on a missing file. The main file of a multi-file game is the
+  game itself before an update, a DLC or a patch (Switch title IDs, version tags, names).
+
+### 10.3.1 Passage to the game and back
+
+- A launch screen appears as soon as Play is pressed: the game's art blurred behind, its logo or
+  name, "Starting <emulator>…", and how to quit; under the emulator it stays, plain (no GPU effect);
+  after the game, "Back to Borne" and what happened to the save, then the library fades in.
+- Quitting: Select and Start together (within 0.7 s) on any pad, read by the core itself so it
+  works whatever the emulator and the interface do; RetroArch also quits on Start + Select and on
+  Esc.
+- The emulator's output is watched for 90 s for lines that mean the game did not start (per
+  program, `fails` in emulators.json): the emulator is then closed and the line shown, instead of
+  leaving the player on the emulator's own screen.
+- Per-game controls (RetroArch): player 1's controller, A/B and X/Y swapped, the left stick also as
+  the D-pad, and what each pad button presses, written as the game's remap file
+  (`profiles/<id>/remaps/<core library>/<game>.rmp`). Standalone emulators keep the controller set
+  up by Borne.
 
 ### 10.4 Special cases
 

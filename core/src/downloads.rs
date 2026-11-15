@@ -454,14 +454,37 @@ pub fn pick_main(dir: &Path) -> Option<PathBuf> {
 }
 
 /// Same choice from a list of (size, path), for files that are not on disk (virtual mount).
+/// The game's main file comes before an update, a DLC or a patch shipped next to it (a Switch base
+/// game before "Game Update [v131072].nsp" or a DLC title ID, which sort before it by name).
 pub fn pick_main_of(mut files: Vec<(u64, PathBuf)>) -> Option<PathBuf> {
-    files.sort_by(|a, b| a.1.cmp(&b.1));
+    files.sort_by(|a, b| (is_extra(&a.1), &a.1).cmp(&(is_extra(&b.1), &b.1)));
     for ext in MAIN_EXT {
         if let Some((_, p)) = files.iter().find(|(_, p)| p.extension().map(|e| e.eq_ignore_ascii_case(ext)).unwrap_or(false)) {
             return Some(p.clone());
         }
     }
     files.into_iter().max_by_key(|(size, _)| *size).map(|(_, p)| p)
+}
+
+/// An update, a DLC or a patch rather than the game itself, by its name: the words, a version tag
+/// other than v0, or a Switch title ID that is not a base game's (those end in 000).
+fn is_extra(p: &Path) -> bool {
+    let name = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if ["update", "dlc", "patch", "[upd]"].iter().any(|w| name.contains(w)) {
+        return true;
+    }
+    let bracketed = name.split('[').skip(1).filter_map(|s| s.split(']').next());
+    for tag in bracketed {
+        if let Some(v) = tag.strip_prefix('v') {
+            if v.chars().all(|c| c.is_ascii_digit()) && !v.trim_start_matches('0').is_empty() {
+                return true;
+            }
+        }
+        if tag.len() == 16 && tag.chars().all(|c| c.is_ascii_hexdigit()) && !tag.ends_with("000") {
+            return true;
+        }
+    }
+    false
 }
 
 /// Local deletion of a game (never touches the RomM server).
@@ -494,6 +517,22 @@ pub fn verify_local(app: &Shared) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn switch_base_game_before_update_and_dlc() {
+        let f = |n: &str| (1u64, PathBuf::from(n));
+        let picked = pick_main_of(vec![
+            f("Game/Game DLC Pack [0100ABCD00001001][v0].nsp"),
+            f("Game/Game Update [0100ABCD00000800][v131072].nsp"),
+            f("Game/Game [0100ABCD00000000][v0].nsp"),
+        ]);
+        assert_eq!(picked, Some(PathBuf::from("Game/Game [0100ABCD00000000][v0].nsp")));
+        let picked = pick_main_of(vec![f("g/base/Game.nsp"), f("g/update/Game [v65536].nsp")]);
+        assert_eq!(picked, Some(PathBuf::from("g/base/Game.nsp")));
+        // Discs stay in order.
+        let picked = pick_main_of(vec![f("Game (Disc 2).chd"), f("Game (Disc 1).chd")]);
+        assert_eq!(picked, Some(PathBuf::from("Game (Disc 1).chd")));
+    }
     use std::io::Write;
 
     #[test]

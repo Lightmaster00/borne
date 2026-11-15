@@ -477,6 +477,22 @@
         <source>save sent to RomM</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>%1 could not start the game: %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game's file on RomM is empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game's file cannot be read from RomM (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM does not answer: the game cannot be played from the network now</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -1312,6 +1328,117 @@
         <source>Back to the game</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Controls</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller, buttons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game's emulator uses the controller as Borne set it up; its buttons are changed in the emulator itself.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No emulator runs this game yet.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Player 1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The controller that plays</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Face buttons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A and B, X and Y, as on the controller or swapped</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As on the controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also moves as the D-pad, for games without analog control</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also the D-pad</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stick only</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Button %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>What it presses in the game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Itself</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game's controls</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the controller as it is</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LaunchScreen</name>
+    <message>
+        <source>Back to Borne</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Playing in %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Starting %1…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Starting the game…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit the game (in RetroArch; otherwise the emulator's own key or menu)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Together: quit the game</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -1880,14 +2007,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>%1 is running in %2</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Select then Start: quit the game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Installing %1… the game starts as soon as it is ready.</source>
         <translation type="unfinished" />
     </message>
@@ -2189,10 +2308,6 @@
     </message>
     <message>
         <source>Esc</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Quit the game from the emulator (usually Esc, or its menu)</source>
         <translation type="unfinished" />
     </message>
     <message>

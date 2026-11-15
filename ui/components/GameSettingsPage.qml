@@ -17,6 +17,7 @@ Item {
     property var display: null       // GET /games/<id>/display
     property var cheats: null        // GET /games/<id>/cheats
     property var images: null        // GET /games/<id>/screenscraper
+    property var controls: null      // GET /games/<id>/controls
     property var languages: []       // [{ code, version }] when the game exists in several
     property string currentLang: ""
     property var languageName: function (c) { return c }
@@ -43,6 +44,7 @@ Item {
         const s = [
             { id: "emulator", name: qsTr("Emulator"), hint: emulator && emulator.own ? qsTr("Its own") : qsTr("As for its console") },
             { id: "picture", name: qsTr("Picture"), hint: qsTr("Shape, sharpness, filters") },
+            { id: "controls", name: qsTr("Controls"), hint: qsTr("Controller, buttons") },
             { id: "cheats", name: qsTr("Cheats"), hint: cheats && cheats.cheats ? qsTr("%n on", "", cheats.cheats.filter(x => x.on).length) : "" }
         ]
         if (languages.length > 1) s.push({ id: "language", name: qsTr("Language"), hint: languageName(currentLang) })
@@ -82,6 +84,38 @@ Item {
                          desc: Display.desc(k) + (own === undefined ? " · " + qsTr("now: %1").arg(Display.label(k, display.effective[k])) : ""),
                          selected: own !== undefined ? own : "default", items: items }
             })
+            r.push(note("applied", qsTr("Applied the next time the game starts.")))
+            return r
+        }
+        if (id === "controls") {
+            if (!controls) return [note("loading", qsTr("Loading…"))]
+            if (!controls.applies) return [note("ctl-none", controls.program
+                ? qsTr("This game's emulator uses the controller as Borne set it up; its buttons are changed in the emulator itself.")
+                : qsTr("No emulator runs this game yet."))]
+            const opt = k => controls.options.find(o => o.key === k)
+            const names = { a: "A", b: "B", x: "X", y: "Y", l: "L", r: "R", l2: "L2", r2: "R2", start: "Start", select: "Select" }
+            const chips = function (k, title, desc, labels) {
+                const o = opt(k)
+                // Player 1: only the controllers connected now (and the one chosen before).
+                const vals = k !== "pad" ? o.values : o.values.filter(v => v === "auto" || v === o.value || Number(v) <= controls.pads.length)
+                return { id: "ctl:" + k, kind: "chips", title: title, desc: desc, selected: o.value,
+                         items: vals.map(v => ({ id: v, label: labels(v) })) }
+            }
+            const r = [
+                chips("pad", qsTr("Player 1"), qsTr("The controller that plays"), v => v === "auto" ? qsTr("Automatic")
+                      : (controls.pads[Number(v) - 1] || qsTr("Controller %1").arg(v))),
+                chips("face", qsTr("Face buttons"), qsTr("A and B, X and Y, as on the controller or swapped"),
+                      v => v === "swap" ? qsTr("Swapped") : qsTr("As on the controller")),
+                chips("stick", qsTr("Left stick"), qsTr("Also moves as the D-pad, for games without analog control"),
+                      v => v === "dpad" ? qsTr("Also the D-pad") : qsTr("Stick only")),
+                group(qsTr("Buttons"))
+            ]
+            for (const b of ["a", "b", "x", "y", "l", "r", "l2", "r2", "start", "select"])
+                r.push(chips("map." + b, qsTr("Button %1").arg(names[b]), qsTr("What it presses in the game"),
+                             v => v === "same" ? qsTr("Itself") : names[v]))
+            if (controls.options.some(o => o.own))
+                r.push({ id: "ctl-reset", kind: "buttons", title: qsTr("This game's controls"), desc: qsTr("Back to the controller as it is"),
+                         items: [{ id: "ctl-reset", label: qsTr("Reset") }] })
             r.push(note("applied", qsTr("Applied the next time the game starts.")))
             return r
         }
@@ -170,6 +204,7 @@ Item {
         if (r.id === "engine") page.action("engine", item.id)
         else if (r.id.startsWith("opt:")) page.action("opt", { key: r.id.substring(4), value: item.id })
         else if (r.id.startsWith("disp:")) page.action("display", { key: r.id.substring(5), value: item.id })
+        else if (r.id.startsWith("ctl:")) page.action("controls", { key: r.id.substring(4), value: item.id })
         else if (r.id.startsWith("cheat:")) page.action("cheat", { index: Number(r.id.substring(6)), on: item.id === "on" })
         else if (r.id === "lang") page.action("lang", languages.find(l => l.code === item.id))
         else if (r.id === "region") page.action("region", item.id)
@@ -197,7 +232,7 @@ Item {
         else if (a === "right") setCol(r.id, Math.min(n - 1, colOf(r.id) + 1))
         else if (a === "a") activate(r, colOf(r.id))
     }
-    function focused(id, i) { return inRows && rows[row] && rows[row].id === id && colOf(id) === i }
+    function focused(id, i) { return !!(inRows && rows[row] && rows[row].id === id && colOf(id) === i) }
 
     Rectangle { anchors.fill: parent; color: theme.bg }
 

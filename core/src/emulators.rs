@@ -40,6 +40,14 @@ pub struct Program {
     mac_apps: Vec<String>,
     #[serde(default)]
     pub user_provided: bool,
+    /// Lines in the emulator's output that mean the game did not start (case ignored): the
+    /// emulator is then closed instead of staying on its own screen with no game.
+    #[serde(default)]
+    fails: Vec<String>,
+    /// File extensions the program does not take, and the one to give it instead (Azahar reads
+    /// a .3ds image only as .cci): the game is handed over through a link with that name.
+    #[serde(default)]
+    rename_ext: BTreeMap<String, String>,
 }
 
 impl Program {
@@ -268,6 +276,13 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
             }
         }
         "xenia" => xdg_data.join("Xenia"),
+        "azahar" => {
+            if mac_os {
+                mac.join("Azahar")
+            } else {
+                xdg_data.join("azahar-emu")
+            }
+        }
         _ => base,
     }
 }
@@ -398,6 +413,8 @@ struct Session {
     started: Instant,
     child: Child,
     stopping: bool,
+    /// The line of the emulator's output that showed the game did not start, if any.
+    failure: Option<String>,
 }
 
 static SESSION: Mutex<Option<Session>> = Mutex::new(None);
@@ -427,9 +444,45 @@ fn game_file(app: &Shared, g: &GameRow) -> Result<PathBuf, String> {
         return Err("the downloaded copy is missing: download the game again".into());
     }
     if g.linked {
-        return crate::stream::link(app, g.rom_id);
+        let path = crate::stream::link(app, g.rom_id)?;
+        readable(&path)?;
+        return Ok(path);
     }
     Err("download the game or play it from the network first".into())
+}
+
+/// A link to `rom` with the extension the program takes, when it does not take the file's own
+/// (see `rename_ext`); None when the file can be given as it is.
+fn renamed_rom(app: &Shared, p: &Program, rom: &Path) -> Result<Option<PathBuf>, String> {
+    let ext = rom.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    let Some(to) = p.rename_ext.get(&ext) else { return Ok(None) };
+    let dir = app.paths.mount().with_file_name("links").join(&p.id);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let link = dir.join(rom.with_extension(to).file_name().unwrap_or_default());
+    let _ = std::fs::remove_file(&link);
+    std::os::unix::fs::symlink(rom, &link).map_err(|e| format!("could not prepare the game file: {e}"))?;
+    Ok(Some(link))
+}
+
+/// Checks that a game played from the network can be read before the emulator starts: its first
+/// bytes come through the mount from RomM, within a time limit.
+fn readable(path: &Path) -> Result<(), String> {
+    let p = path.to_path_buf();
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let r = (|| {
+            let mut f = std::fs::File::open(&p)?;
+            let mut buf = [0u8; 16];
+            std::io::Read::read(&mut f, &mut buf)
+        })();
+        let _ = tx.send(r);
+    });
+    match rx.recv_timeout(Duration::from_secs(30)) {
+        Ok(Ok(n)) if n > 0 => Ok(()),
+        Ok(Ok(_)) => Err("the game's file on RomM is empty".into()),
+        Ok(Err(e)) => Err(format!("the game's file cannot be read from RomM ({e})")),
+        Err(_) => Err("RomM does not answer: the game cannot be played from the network now".into()),
+    }
 }
 
 /// The command that starts `rom` with the chosen engine.
@@ -463,6 +516,8 @@ fn command(
         let crt = crate::emuinstall::crt_shader(app);
         cheats.extend(crate::gamesettings::retroarch(&display, crt.as_deref()));
         cheats.extend(crate::gamesettings::emu_retroarch(&options));
+        let remaps = app.paths.profiles().join(&profile).join("remaps");
+        cheats.extend(crate::controls::retroarch(app, &group, &remaps, e.core.as_deref().unwrap_or(""), &e.name, rom));
         Some(retroarch_config(app, &profile, system, cheats)?)
     } else {
         None
@@ -520,6 +575,8 @@ fn command(
     };
     crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, pad.as_deref(), guid.as_deref())?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
+    let renamed = renamed_rom(app, p, rom)?;
+    let rom = renamed.as_deref().unwrap_or(rom);
     let mut args: Vec<String> = vec![];
     for a in &p.args {
         let v = a
@@ -600,7 +657,8 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
         ("sort_savestates_enable".into(), "false".into()),
         ("config_save_on_exit".into(), "false".into()),
         ("pause_nonactive".into(), "false".into()),
-        // No RetroArch interface: no menu, no on-screen messages, no hotkeys.
+        // No RetroArch interface: no menu, no on-screen messages, no hotkeys but quitting:
+        // Select + Start on the pad (as Borne's own chord) and Escape on the keyboard.
         ("menu_enable_widgets".into(), "false".into()),
         ("video_font_enable".into(), "false".into()),
         ("notification_show_autoconfig".into(), "false".into()),
@@ -615,9 +673,9 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
         ("notification_show_screenshot".into(), "false".into()),
         ("menu_show_load_content_animation".into(), "false".into()),
         ("input_menu_toggle_gamepad_combo".into(), "0".into()),
-        ("input_quit_gamepad_combo".into(), "0".into()),
+        ("input_quit_gamepad_combo".into(), "4".into()),
         ("input_menu_toggle".into(), "nul".into()),
-        ("input_exit_emulator".into(), "nul".into()),
+        ("input_exit_emulator".into(), "escape".into()),
         ("input_enable_hotkey".into(), "nul".into()),
         ("input_hotkey_block_delay".into(), "0".into()),
         ("quit_press_twice".into(), "false".into()),
@@ -628,6 +686,10 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
         ("game_specific_options".into(), "false".into()),
         ("network_cmd_enable".into(), "false".into()),
         ("check_firmware_before_loading".into(), "true".into()),
+        // Errors in the output, so that a game that does not load closes RetroArch (fails).
+        ("log_verbosity".into(), "true".into()),
+        ("frontend_log_level".into(), "3".into()),
+        ("libretro_log_level".into(), "3".into()),
     ];
     // Per-console and per-game settings chosen in Borne come on top (see game_settings).
     for (k, v) in crate::emulators::extra_retroarch(app, system).into_iter().chain(cheats) {
@@ -717,31 +779,76 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
-    *SESSION.lock().unwrap() =
-        Some(Session { rom_id, name: g.name.clone(), emulator: e.name.clone(), started: Instant::now(), child, stopping: false, sync });
+    *SESSION.lock().unwrap() = Some(Session {
+        rom_id,
+        name: g.name.clone(),
+        emulator: e.name.clone(),
+        started: Instant::now(),
+        child,
+        stopping: false,
+        sync,
+        failure: None,
+    });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
     let app = app.clone();
-    std::thread::spawn(move || follow(app, log));
+    let fails: Vec<String> = p.fails.iter().map(|f| f.to_lowercase()).collect();
+    std::thread::spawn(move || follow(app, log, fails));
     Ok(s)
 }
 
-fn follow(app: Shared, log: PathBuf) {
+/// How long after the start the emulator's output is watched for a game that did not start.
+const WATCH_START: Duration = Duration::from_secs(90);
+
+/// The first line of `text` that contains one of `fails` (lowercase).
+fn failure_line(text: &str, fails: &[String]) -> Option<String> {
+    text.lines()
+        .find(|l| {
+            let l = l.to_lowercase();
+            fails.iter().any(|f| l.contains(f.as_str()))
+        })
+        .map(|l| l.trim().chars().take(200).collect())
+}
+
+fn follow(app: Shared, log: PathBuf, fails: Vec<String>) {
+    let mut read = 0usize;
     loop {
         std::thread::sleep(Duration::from_millis(300));
         let mut g = SESSION.lock().unwrap();
         let Some(s) = g.as_mut() else { return };
         match s.child.try_wait() {
-            Ok(None) => continue,
+            Ok(None) => {
+                // A game that did not start leaves the emulator on its own screen: closed.
+                if !fails.is_empty() && !s.stopping && s.failure.is_none() && s.started.elapsed() < WATCH_START {
+                    let bytes = std::fs::read(&log).unwrap_or_default();
+                    if bytes.len() > read {
+                        let start = read.saturating_sub(256);
+                        read = bytes.len();
+                        if let Some(line) = failure_line(&String::from_utf8_lossy(&bytes[start..]), &fails) {
+                            s.failure = Some(line);
+                            drop(g);
+                            stop();
+                        }
+                    }
+                }
+                continue;
+            }
             Ok(Some(status)) => {
                 let quick = s.started.elapsed() < Duration::from_secs(8) && !s.stopping;
-                let error = (!status.success() && quick).then(|| {
-                    let t = log_tail(&log);
-                    if t.is_empty() {
-                        format!("{} stopped at once ({status})", s.emulator)
-                    } else {
-                        format!("{} stopped at once: {t}", s.emulator)
-                    }
+                let failure = s.failure.take().or_else(|| {
+                    // A last look, for an emulator that wrote its error and quit at once.
+                    let text = std::fs::read_to_string(&log).unwrap_or_default();
+                    (!s.stopping && s.started.elapsed() < WATCH_START).then(|| failure_line(&text, &fails)).flatten()
+                });
+                let error = failure.map(|l| format!("{} could not start the game: {l}", s.emulator)).or_else(|| {
+                    (!status.success() && quick).then(|| {
+                        let t = log_tail(&log);
+                        if t.is_empty() {
+                            format!("{} stopped at once ({status})", s.emulator)
+                        } else {
+                            format!("{} stopped at once: {t}", s.emulator)
+                        }
+                    })
                 });
                 let played = s.started.elapsed().as_secs();
                 let (rom_id, name, sync) = (s.rom_id, s.name.clone(), s.sync.clone());

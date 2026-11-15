@@ -32,6 +32,8 @@ pub type SharedPadState = Arc<Mutex<PadState>>;
 const FIRST_REPEAT: Duration = Duration::from_millis(380);
 const NEXT_REPEAT: Duration = Duration::from_millis(85);
 const STICK_THRESHOLD: f32 = 0.6;
+/// Select and Start pressed together, or one within this time of the other, quit the game.
+const QUIT_CHORD: Duration = Duration::from_millis(700);
 
 fn map_button(b: Button) -> Option<&'static str> {
     Some(match b {
@@ -59,7 +61,9 @@ fn repeatable(action: &str) -> bool {
 }
 
 /// `emit` receives each event serialized as JSON (relayed to WebSocket clients).
-pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState) {
+/// Reads the gamepads. `on_quit` is called on the quit chord (Select and Start together), here in
+/// the core so it works whatever the emulator does with the pad and whether the UI is awake.
+pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState, on_quit: impl Fn() + Send + 'static) {
     std::thread::Builder::new()
         .name("borne-pad".into())
         .spawn(move || {
@@ -78,6 +82,8 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
             let mut stick: HashMap<&'static str, bool> = HashMap::new();
             // Right stick: turns the selected game box (continuous, not actions).
             let (mut rx, mut ry) = (0.0f32, 0.0f32);
+            // When Select and Start were last pressed, for the quit chord.
+            let (mut select_at, mut start_at): (Option<Instant>, Option<Instant>) = (None, None);
             let emit_stick = |x: f32, y: f32| {
                 emit_json(format!(r#"{{"type":"stick","x":{x:.2},"y":{y:.2}}}"#));
             };
@@ -98,6 +104,22 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState)
                     let pad = gilrs.gamepad(ev.id).name().to_string();
                     match ev.event {
                         EventType::ButtonPressed(b, _) => {
+                            let now = Instant::now();
+                            match b {
+                                Button::Select => select_at = Some(now),
+                                Button::Start => start_at = Some(now),
+                                _ => {}
+                            }
+                            if matches!(b, Button::Select | Button::Start) {
+                                if let (Some(a), Some(b)) = (select_at, start_at) {
+                                    let gap = if a > b { a - b } else { b - a };
+                                    if gap <= QUIT_CHORD {
+                                        select_at = None;
+                                        start_at = None;
+                                        on_quit();
+                                    }
+                                }
+                            }
                             if let Some(a) = map_button(b) {
                                 emit(a, &pad, false);
                                 if repeatable(a) {

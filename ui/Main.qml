@@ -377,52 +377,55 @@ Window {
             reloadGame(); libReload.restart()
         })
     }
-    // Playing: the core starts the emulator; Borne steps aside (game mode) until it quits.
+    // Playing: the core starts the emulator; Borne steps aside (game mode) until it quits. The
+    // launch screen covers the passage both ways (LaunchScreen.qml).
     property var session: null
+    property var launchGame: null
+    property string launchPhase: ""
+    property string launchNote: ""
     function play(g) {
         if (session && session.running) return
         sfx.play("accept")
+        launchGame = g; launchNote = ""; launchPhase = "starting"
         api("POST", "/api/v1/games/" + g.rom_id + "/play", {}, function (r, err) {
-            if (err) { toasts.show(err, "error"); return }
-            if (r && r.installing) { toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(r.installing), "info"); return }
+            if (err) { launchPhase = ""; toasts.show(err, "error"); return }
+            if (r && r.installing) {
+                launchPhase = ""
+                toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(r.installing), "info")
+                return
+            }
             onSession(r)
         })
     }
     function onSession(s) {
         session = s
-        if (s && s.running) { gameMode = true; quitChord.armed = false }
-        else {
+        if (s && s.running) {
+            if (!launchGame || launchGame.rom_id !== s.rom_id) launchGame = pageGame && pageGame.rom_id === s.rom_id ? pageGame : launchGame
+            gameMode = true
+            launchPhase = "starting"; launchStarted.restart()
+        } else {
             gameMode = false
-            if (s && s.error) toasts.show(CoreText.tr(s.error), "error")
-            else if (s && s.saves) toasts.show(s.saves === "save sent to RomM" ? qsTr("Save sent to RomM.") : qsTr("RomM unreachable: the save will be sent later."), "info")
+            if (s && s.error) { launchPhase = ""; toasts.show(CoreText.tr(s.error), "error") }
+            else {
+                launchNote = s && s.saves ? (s.saves === "save sent to RomM" ? qsTr("Save sent to RomM.") : qsTr("RomM unreachable: the save will be sent later.")) : ""
+                launchPhase = "ending"; launchEnded.restart()
+            }
             reloadGame(); libReload.restart()
         }
     }
-    // While a game runs, Select then Start (within half a second) quits it.
-    QtObject {
-        id: quitChord
-        property bool armed: false
-        property double at: 0
-        function feed(a) {
-            if (a === "select") { armed = true; at = Date.now(); return }
-            if (a === "start" && armed && Date.now() - at < 500) {
-                armed = false
-                api("POST", "/api/v1/session/stop", {}, function () {})
-                return
-            }
-            armed = false
-        }
-    }
+    // The emulator's window covers the screen within a few seconds; then "playing".
+    Timer { id: launchStarted; interval: 4000; onTriggered: if (win.launchPhase === "starting") win.launchPhase = "playing" }
+    Timer { id: launchEnded; interval: 1400; onTriggered: if (win.launchPhase === "ending") win.launchPhase = "" }
     // A game's own settings (GameSettingsPage): emulator and its options, picture, cheats,
     // language, cover, storage. Each part is fetched from the core and refreshed after a change.
     function gameSettings(g) {
         gameSettingsPage.emulator = null; gameSettingsPage.emuOptions = null; gameSettingsPage.display = null
-        gameSettingsPage.cheats = null; gameSettingsPage.images = null
+        gameSettingsPage.cheats = null; gameSettingsPage.images = null; gameSettingsPage.controls = null
         gameSettingsPage.open()
-        loadGameSettings(g, ["emulator", "emuoptions", "display", "cheats", "screenscraper"])
+        loadGameSettings(g, ["emulator", "emuoptions", "display", "controls", "cheats", "screenscraper"])
     }
     function loadGameSettings(g, parts) {
-        const target = { emulator: "emulator", emuoptions: "emuOptions", display: "display", cheats: "cheats", screenscraper: "images" }
+        const target = { emulator: "emulator", emuoptions: "emuOptions", display: "display", controls: "controls", cheats: "cheats", screenscraper: "images" }
         for (const p of parts) {
             if (p === "cheats" && !(g.local_state === "local" || g.linked)) continue
             api("GET", "/api/v1/games/" + g.rom_id + "/" + p, null, function (r, err) {
@@ -441,7 +444,7 @@ Window {
         const failed = function (err) { if (err) toasts.show(CoreText.tr(err), "error"); return !!err }
         if (id === "engine") api("POST", base + "emulator", { engine: payload === "" ? null : payload }, function (r, err) {
             if (!failed(err)) toasts.show(payload === "" ? qsTr("This game uses its console's emulator.") : qsTr("This game now uses %1.").arg(gameSettingsPage.emulator.choices.find(c => c.id === payload).name), "info")
-            loadGameSettings(g, ["emulator", "emuoptions"])
+            loadGameSettings(g, ["emulator", "emuoptions", "controls"])
         })
         else if (id === "opt") api("POST", base + "emuoptions", payload, function (r, err) { if (!failed(err)) gameSettingsPage.emuOptions = r })
         else if (id === "opt-reset") {
@@ -453,6 +456,15 @@ Window {
             })
         }
         else if (id === "display") api("POST", base + "display", payload, function (r, err) { if (!failed(err)) gameSettingsPage.display = r })
+        else if (id === "controls") api("POST", base + "controls", payload, function (r, err) { if (!failed(err)) gameSettingsPage.controls = r })
+        else if (id === "ctl-reset") {
+            const own = gameSettingsPage.controls.options.filter(o => o.own)
+            let left = own.length
+            for (const o of own) api("POST", base + "controls", { key: o.key, value: "default" }, function (r, err) {
+                failed(err)
+                if (--left === 0) loadGameSettings(g, ["controls"])
+            })
+        }
         else if (id === "cheat" || id === "cheats-off") {
             const list = gameSettingsPage.cheats.cheats
             const on = id === "cheats-off" ? [] : list.filter((x, i) => i === payload.index ? payload.on : x.on).map(x => x.name)
@@ -901,7 +913,8 @@ Window {
         inputCountsChanged()
         lastInput = a + " via " + source
         if (touch() && screen === "library" && overlay === "") return
-        if (session && session.running) { quitChord.feed(a); return }
+        // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs).
+        if (session && session.running) return
         if (bench.running && a !== "start") return
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
@@ -1523,19 +1536,26 @@ Window {
         }
     }
 
+    LaunchScreen {
+        anchors.fill: parent
+        z: 30
+        theme: win.theme
+        game: win.launchGame
+        phase: win.launchPhase
+        emulator: win.session && win.session.emulator ? win.session.emulator : ""
+        note: win.launchNote
+    }
+
     // Simulated game (game mode): used by the diagnostics VRAM test.
     Rectangle {
-        visible: win.overlay === "launch" || !!(win.session && win.session.running)
+        visible: win.overlay === "launch"
         anchors.fill: parent
         color: "black"
-        z: 30
+        z: 31
         Text {
             anchors.centerIn: parent
-            horizontalAlignment: Text.AlignHCenter
-            text: win.session && win.session.running
-                  ? qsTr("%1 is running in %2").arg(win.session.name).arg(win.session.emulator) + "\n" + (graphite.input === "keyboard" ? qsTr("Quit the game from the emulator (usually Esc, or its menu)") : qsTr("Select then Start: quit the game"))
-                  : (graphite.input === "keyboard" ? qsTr("Game mode (test) — Esc to go back") : qsTr("Game mode (test) — B to go back"))
-            color: "#8b97ab"; lineHeight: 1.4
+            text: graphite.input === "keyboard" ? qsTr("Game mode (test) — Esc to go back") : qsTr("Game mode (test) — B to go back")
+            color: "#8b97ab"
             font { family: theme.fontFamily; pixelSize: 16 }
         }
     }

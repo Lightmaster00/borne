@@ -39,6 +39,8 @@
 //!   POST   /api/v1/games/<rom_id>/link           exposes the game in the virtual mount (no download)
 //!   DELETE /api/v1/games/<rom_id>/link           removes it from the virtual mount
 //!   POST   /api/v1/games/<rom_id>/prefs  {version?, emu_language?}   active profile's choices
+//!   GET    /api/v1/games/<rom_id>/controls        the game's controls (controls.rs)
+//!   POST   /api/v1/games/<rom_id>/controls        {key, value|"default"} → the same
 //!   POST   /api/v1/games/<rom_id>/trailer         fetches the RomM trailer once (token, cache) → {path}
 //!   POST   /api/v1/games/<rom_id>/play            starts the game with its emulator → session
 //!   GET    /api/v1/games/<rom_id>/cheats          cheats of this exact version, and which are on
@@ -903,6 +905,24 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 }
                 None => ok(req, json!({ "program": "", "engine": "", "options": [] })),
             },
+            None => err(req, 404, "unknown game"),
+        },
+        (Method::Get, ["api", "v1", "games", id, "controls"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => {
+                let program = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key).map(|e| e.program).unwrap_or_default();
+                ok(req, crate::controls::view(app, &g.group_key, &program))
+            }
+            None => err(req, 404, "unknown game"),
+        },
+        (Method::Post, ["api", "v1", "games", id, "controls"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => {
+                let b = body_json(&mut req);
+                let program = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key).map(|e| e.program).unwrap_or_default();
+                match crate::controls::set(app, &g.group_key, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                    Ok(()) => ok(req, crate::controls::view(app, &g.group_key, &program)),
+                    Err(x) => err(req, 400, &x),
+                }
+            }
             None => err(req, 404, "unknown game"),
         },
         (Method::Post, ["api", "v1", "games", id, "emuoptions"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {

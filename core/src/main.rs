@@ -16,6 +16,7 @@
 mod api;
 mod catalog;
 mod cheats;
+mod controls;
 mod db;
 mod diag;
 mod downloads;
@@ -126,7 +127,16 @@ fn main() {
 
     {
         let hub = app.hub.clone();
-        pad::spawn(move |json| hub.send(json), app.pads.clone());
+        pad::spawn(
+            move |json| hub.send(json),
+            app.pads.clone(),
+            || {
+                if emulators::playing() {
+                    eprintln!("quit chord: stopping the game");
+                    emulators::stop();
+                }
+            },
+        );
     }
 
     // Pick up the state left by the previous session.

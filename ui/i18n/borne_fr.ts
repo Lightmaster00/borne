@@ -477,6 +477,22 @@
         <source>save sent to RomM</source>
         <translation>sauvegarde envoyée à RomM</translation>
     </message>
+    <message>
+        <source>%1 could not start the game: %2</source>
+        <translation>%1 n’a pas pu lancer le jeu : %2</translation>
+    </message>
+    <message>
+        <source>the game's file on RomM is empty</source>
+        <translation>le fichier du jeu sur RomM est vide</translation>
+    </message>
+    <message>
+        <source>the game's file cannot be read from RomM (%1)</source>
+        <translation>le fichier du jeu ne peut pas être lu depuis RomM (%1)</translation>
+    </message>
+    <message>
+        <source>RomM does not answer: the game cannot be played from the network now</source>
+        <translation>RomM ne répond pas : le jeu ne peut pas être lancé depuis le réseau pour l’instant</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -1312,6 +1328,117 @@
         <source>Back to the game</source>
         <translation>Retour au jeu</translation>
     </message>
+    <message>
+        <source>Controls</source>
+        <translation>Commandes</translation>
+    </message>
+    <message>
+        <source>Controller, buttons</source>
+        <translation>Manette, boutons</translation>
+    </message>
+    <message>
+        <source>This game's emulator uses the controller as Borne set it up; its buttons are changed in the emulator itself.</source>
+        <translation>L’émulateur de ce jeu utilise la manette telle que Borne l’a configurée ; ses boutons se changent dans l’émulateur lui-même.</translation>
+    </message>
+    <message>
+        <source>No emulator runs this game yet.</source>
+        <translation>Aucun émulateur ne lance encore ce jeu.</translation>
+    </message>
+    <message>
+        <source>Player 1</source>
+        <translation>Joueur 1</translation>
+    </message>
+    <message>
+        <source>The controller that plays</source>
+        <translation>La manette qui joue</translation>
+    </message>
+    <message>
+        <source>Controller %1</source>
+        <translation>Manette %1</translation>
+    </message>
+    <message>
+        <source>Face buttons</source>
+        <translation>Boutons de façade</translation>
+    </message>
+    <message>
+        <source>A and B, X and Y, as on the controller or swapped</source>
+        <translation>A et B, X et Y, comme sur la manette ou inversés</translation>
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation>Inversés</translation>
+    </message>
+    <message>
+        <source>As on the controller</source>
+        <translation>Comme sur la manette</translation>
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation>Stick gauche</translation>
+    </message>
+    <message>
+        <source>Also moves as the D-pad, for games without analog control</source>
+        <translation>Sert aussi de croix directionnelle, pour les jeux sans contrôle analogique</translation>
+    </message>
+    <message>
+        <source>Also the D-pad</source>
+        <translation>Aussi la croix</translation>
+    </message>
+    <message>
+        <source>Stick only</source>
+        <translation>Stick seulement</translation>
+    </message>
+    <message>
+        <source>Buttons</source>
+        <translation>Boutons</translation>
+    </message>
+    <message>
+        <source>Button %1</source>
+        <translation>Bouton %1</translation>
+    </message>
+    <message>
+        <source>What it presses in the game</source>
+        <translation>Ce qu’il appuie dans le jeu</translation>
+    </message>
+    <message>
+        <source>Itself</source>
+        <translation>Lui-même</translation>
+    </message>
+    <message>
+        <source>This game's controls</source>
+        <translation>Les commandes de ce jeu</translation>
+    </message>
+    <message>
+        <source>Back to the controller as it is</source>
+        <translation>Revenir à la manette telle quelle</translation>
+    </message>
+</context>
+<context>
+    <name>LaunchScreen</name>
+    <message>
+        <source>Back to Borne</source>
+        <translation>Retour à Borne</translation>
+    </message>
+    <message>
+        <source>Playing in %1</source>
+        <translation>En jeu dans %1</translation>
+    </message>
+    <message>
+        <source>Starting %1…</source>
+        <translation>Lancement de %1…</translation>
+    </message>
+    <message>
+        <source>Starting the game…</source>
+        <translation>Lancement du jeu…</translation>
+    </message>
+    <message>
+        <source>Quit the game (in RetroArch; otherwise the emulator's own key or menu)</source>
+        <translation>Quitter le jeu (dans RetroArch ; sinon la touche ou le menu de l’émulateur)</translation>
+    </message>
+    <message>
+        <source>Together: quit the game</source>
+        <translation>Ensemble : quitter le jeu</translation>
+    </message>
 </context>
 <context>
     <name>LibraryView</name>
@@ -1880,14 +2007,6 @@
         <translation>Chemin</translation>
     </message>
     <message>
-        <source>%1 is running in %2</source>
-        <translation>%1 tourne dans %2</translation>
-    </message>
-    <message>
-        <source>Select then Start: quit the game</source>
-        <translation>Select puis Start : quitter le jeu</translation>
-    </message>
-    <message>
         <source>Installing %1… the game starts as soon as it is ready.</source>
         <translation>Installation de %1… le jeu se lance dès que c'est prêt.</translation>
     </message>
@@ -2190,10 +2309,6 @@
     <message>
         <source>Esc</source>
         <translation>Échap</translation>
-    </message>
-    <message>
-        <source>Quit the game from the emulator (usually Esc, or its menu)</source>
-        <translation>Quittez le jeu depuis l'émulateur (souvent Échap, ou son menu)</translation>
     </message>
     <message>
         <source>Game mode (test) — Esc to go back</source>
