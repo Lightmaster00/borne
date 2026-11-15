@@ -562,15 +562,20 @@ blocks a launch just because a game was not tested or a community database rates
   name, "Starting <emulator>…", and how to quit; under the emulator it stays, plain (no GPU effect);
   after the game, "Back to Borne" and what happened to the save, then the library fades in.
 - Quitting: Select and Start together (within 0.7 s) on any pad, read by the core itself so it
-  works whatever the emulator and the interface do; RetroArch also quits on Start + Select and on
-  Esc.
+  works whatever the emulator and the interface do. The game pauses (its process group stopped)
+  and Borne comes to the front to ask: Keep playing (chosen first, also B) or Quit the game; the
+  chord again quits at once; with no answer in 30 s the game goes on. On macOS the emulator is
+  brought back to the front after. RetroArch quits on Esc pressed twice (keyboard).
 - The emulator's output is watched for 90 s for lines that mean the game did not start (per
   program, `fails` in emulators.json): the emulator is then closed and the line shown, instead of
   leaving the player on the emulator's own screen.
-- Per-game controls (RetroArch): player 1's controller, A/B and X/Y swapped, the left stick also as
-  the D-pad, and what each pad button presses, written as the game's remap file
-  (`profiles/<id>/remaps/<core library>/<game>.rmp`). Standalone emulators keep the controller set
-  up by Borne.
+- Per-game controls, for every emulator Borne sets up: player 1's controller, A/B and X/Y swapped,
+  what each pad button acts as, and (RetroArch) the left stick as the D-pad. RetroArch gets the
+  game's remap file (`profiles/<id>/remaps/<core library>/<game>.rmp`); Dolphin, PCSX2,
+  DuckStation, Eden, Citron, Ryujinx, RPCS3 and Azahar get their controller settings rewritten
+  before each game, by the pad buttons' positions (Nintendo consoles: their A on the right).
+  Xenia and shadPS4 read the pad by themselves. The standalone melonDS is no longer offered (it
+  needs a manual mapping); the melonDS DS core plays DS games.
 
 ### 10.4 Special cases
 

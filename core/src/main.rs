@@ -127,13 +127,14 @@ fn main() {
 
     {
         let hub = app.hub.clone();
+        let on_quit = app.clone();
         pad::spawn(
             move |json| hub.send(json),
             app.pads.clone(),
-            || {
+            move || {
                 if emulators::playing() {
-                    eprintln!("quit chord: stopping the game");
-                    emulators::stop();
+                    eprintln!("quit chord: asking whether to quit");
+                    emulators::ask_quit(&on_quit);
                 }
             },
         );

@@ -415,6 +415,10 @@ struct Session {
     stopping: bool,
     /// The line of the emulator's output that showed the game did not start, if any.
     failure: Option<String>,
+    /// Paused while the player is asked whether to quit (the process group stopped).
+    paused: bool,
+    /// The emulator's .app on macOS, brought back to the front after that question.
+    bundle: Option<PathBuf>,
 }
 
 static SESSION: Mutex<Option<Session>> = Mutex::new(None);
@@ -426,7 +430,7 @@ pub fn playing() -> bool {
 pub fn session() -> Value {
     match SESSION.lock().unwrap().as_ref() {
         Some(s) => {
-            json!({ "running": true, "rom_id": s.rom_id, "name": s.name, "emulator": s.emulator, "seconds": s.started.elapsed().as_secs() })
+            json!({ "running": true, "rom_id": s.rom_id, "name": s.name, "emulator": s.emulator, "seconds": s.started.elapsed().as_secs(), "paused": s.paused })
         }
         None => json!({ "running": false }),
     }
@@ -569,11 +573,14 @@ fn command(
             &[("MemoryCards", "Card1Type", "PerGameFileTitle")],
         )?;
     }
-    let (pad, guid) = {
+    let (index, pad, guid) = {
         let s = app.pads.lock().unwrap();
-        (s.pads.first().cloned(), s.guids.first().cloned())
+        let i = crate::controls::pad_index(app, &group, s.pads.len());
+        (i, s.pads.get(i).cloned(), s.guids.get(i).cloned())
     };
-    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, pad.as_deref(), guid.as_deref())?;
+    let sources = crate::controls::sources(app, &group);
+    let src = |logical: &str| sources.iter().find(|(l, _)| *l == logical).and_then(|(_, p)| *p);
+    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, index, pad.as_deref(), guid.as_deref(), &src)?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
     let renamed = renamed_rom(app, p, rom)?;
     let rom = renamed.as_deref().unwrap_or(rom);
@@ -657,8 +664,8 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
         ("sort_savestates_enable".into(), "false".into()),
         ("config_save_on_exit".into(), "false".into()),
         ("pause_nonactive".into(), "false".into()),
-        // No RetroArch interface: no menu, no on-screen messages, no hotkeys but quitting:
-        // Select + Start on the pad (as Borne's own chord) and Escape on the keyboard.
+        // No RetroArch interface: no menu, no on-screen messages, no hotkeys but Escape pressed
+        // twice on the keyboard; on the pad, Borne's own quit chord asks first (pad.rs).
         ("menu_enable_widgets".into(), "false".into()),
         ("video_font_enable".into(), "false".into()),
         ("notification_show_autoconfig".into(), "false".into()),
@@ -673,12 +680,12 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
         ("notification_show_screenshot".into(), "false".into()),
         ("menu_show_load_content_animation".into(), "false".into()),
         ("input_menu_toggle_gamepad_combo".into(), "0".into()),
-        ("input_quit_gamepad_combo".into(), "4".into()),
+        ("input_quit_gamepad_combo".into(), "0".into()),
         ("input_menu_toggle".into(), "nul".into()),
         ("input_exit_emulator".into(), "escape".into()),
         ("input_enable_hotkey".into(), "nul".into()),
         ("input_hotkey_block_delay".into(), "0".into()),
-        ("quit_press_twice".into(), "false".into()),
+        ("quit_press_twice".into(), "true".into()),
         ("confirm_quit".into(), "false".into()),
         ("input_autodetect_enable".into(), "true".into()),
         ("auto_overrides_enable".into(), "false".into()),
@@ -777,6 +784,8 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     // Its own process group, so that stopping the game also stops what the emulator started
     // (Flatpak's sandbox, helper processes).
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
+    let bundle =
+        Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)).map(Path::to_path_buf);
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
     *SESSION.lock().unwrap() = Some(Session {
@@ -788,6 +797,8 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         stopping: false,
         sync,
         failure: None,
+        paused: false,
+        bundle,
     });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
@@ -887,6 +898,60 @@ fn follow(app: Shared, log: PathBuf, fails: Vec<String>) {
 }
 
 /// Ends the running game (the emulator is asked to quit, then stopped).
+/// How long the quit question waits before the game goes on by itself (the question may be hidden
+/// behind the emulator on some desktops).
+const ASK_QUIT_FOR: Duration = Duration::from_secs(30);
+
+/// The quit chord during a game: the game pauses (its processes stopped) and Borne asks whether
+/// to quit; the chord again quits at once.
+pub fn ask_quit(app: &Shared) {
+    let mut g = SESSION.lock().unwrap();
+    let Some(s) = g.as_mut() else { return };
+    if s.stopping {
+        return;
+    }
+    if s.paused {
+        drop(g);
+        stop();
+        return;
+    }
+    let pid = s.child.id() as i32;
+    unsafe {
+        libc::kill(-pid, libc::SIGSTOP);
+    }
+    s.paused = true;
+    drop(g);
+    app.emit(json!({ "type": "session", "session": session() }));
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(ASK_QUIT_FOR);
+        let still = SESSION.lock().unwrap().as_ref().map(|s| s.paused && s.child.id() as i32 == pid).unwrap_or(false);
+        if still {
+            resume(&app);
+        }
+    });
+}
+
+/// The game goes on after the quit question: its processes run again, and on macOS the emulator
+/// comes back to the front.
+pub fn resume(app: &Shared) {
+    let mut g = SESSION.lock().unwrap();
+    let Some(s) = g.as_mut() else { return };
+    if !s.paused {
+        return;
+    }
+    unsafe {
+        libc::kill(-(s.child.id() as i32), libc::SIGCONT);
+    }
+    s.paused = false;
+    let bundle = s.bundle.clone();
+    drop(g);
+    if let Some(b) = bundle {
+        let _ = Command::new("open").arg("-a").arg(b).status();
+    }
+    app.emit(json!({ "type": "session", "session": session() }));
+}
+
 pub fn stop() -> bool {
     let mut g = SESSION.lock().unwrap();
     let Some(s) = g.as_mut() else { return false };
@@ -894,6 +959,10 @@ pub fn stop() -> bool {
     let pid = s.child.id() as i32;
     unsafe {
         libc::kill(-pid, libc::SIGTERM);
+        // A game paused by the quit question runs again to receive it.
+        if s.paused {
+            libc::kill(-pid, libc::SIGCONT);
+        }
     }
     drop(g);
     std::thread::spawn(move || {

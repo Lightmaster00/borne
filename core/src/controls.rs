@@ -1,7 +1,8 @@
 //! A game's controls, chosen in its settings: which controller is player 1, the face buttons as
-//! they are or swapped (A↔B, X↔Y), the left stick also as the D-pad, and which console button
-//! each pad button presses. Applied to RetroArch (a remap file for the game, read through
-//! `auto_remaps_enable`); the standalone emulators keep the controller set up by Borne.
+//! they are or swapped (A↔B, X↔Y), the left stick also as the D-pad (RetroArch), and which
+//! button each pad button acts as. Applied to every emulator Borne sets up: RetroArch through a
+//! remap file for the game, the standalone ones through their controller settings, written before
+//! each game (gamesettings::controllers).
 
 use crate::state::Shared;
 use serde_json::{json, Value};
@@ -12,6 +13,21 @@ pub const BUTTONS: [(&str, u8); 10] =
     [("a", 8), ("b", 0), ("x", 9), ("y", 1), ("l", 10), ("r", 11), ("l2", 12), ("r2", 13), ("start", 3), ("select", 2)];
 /// The other RetroPad buttons, kept as they are in the remap file.
 const OTHERS: [(&str, u8); 6] = [("up", 4), ("down", 5), ("left", 6), ("right", 7), ("l3", 14), ("r3", 15)];
+
+/// The programs whose controller Borne writes (the others read the pad as they find it).
+const APPLIES: [&str; 9] = ["retroarch", "dolphin", "pcsx2", "duckstation", "eden", "citron", "ryubing", "rpcs3", "azahar"];
+
+/// For each pad-space button (a, b, x, y, l, r, l2, r2, start, select), the pad button that gives
+/// it in this game, or None when the game's controls leave it on no button.
+pub fn sources(app: &Shared, group: &str) -> Vec<(&'static str, Option<&'static str>)> {
+    let m = mapping(app, group);
+    BUTTONS.iter().map(|(logical, id)| (*logical, m.iter().find(|(_, target)| target == id).map(|(pad, _)| *pad))).collect()
+}
+
+/// Player 1's controller for this game: its index among the connected pads (0 when automatic).
+pub fn pad_index(app: &Shared, group: &str, count: usize) -> usize {
+    get(app, group, "pad").0.parse::<usize>().ok().map(|n| n - 1).filter(|i| *i < count).unwrap_or(0)
+}
 
 /// RetroArch's names of a core's library: its remaps live in a folder of that name. The display
 /// name is tried too, for a core missing here.
@@ -71,7 +87,7 @@ pub fn view(app: &Shared, group: &str, program: &str) -> Value {
             json!({ "key": k, "value": value, "own": own, "values": values(k) })
         })
         .collect();
-    json!({ "applies": program == "retroarch", "program": program, "pads": pads, "options": options })
+    json!({ "applies": APPLIES.contains(&program), "stick": program == "retroarch", "program": program, "pads": pads, "options": options })
 }
 
 pub fn set(app: &Shared, group: &str, k: &str, value: &str) -> Result<(), String> {

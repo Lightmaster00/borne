@@ -1337,10 +1337,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>This game's emulator uses the controller as Borne set it up; its buttons are changed in the emulator itself.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No emulator runs this game yet.</source>
         <translation type="unfinished" />
     </message>
@@ -1412,6 +1408,10 @@
         <source>Back to the controller as it is</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>LaunchScreen</name>
@@ -1436,7 +1436,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Together: quit the game</source>
+        <source>Together: pause and quit the game</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2461,6 +2461,29 @@
     </message>
     <message>
         <source>Settings</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>QuitConfirm</name>
+    <message>
+        <source>Quit %1?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The game is paused. What was not saved in the game is lost when you quit.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Keep playing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit the game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Select + Start again: quit at once</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -65,16 +65,17 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network** (Linux): only the games you pick are mounted, read from RomM on demand.
 - **Emulators managed for you**: one per console, chosen in Settings → Emulators — RetroArch cores
-  (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation…), Dolphin, PCSX2, DuckStation, melonDS,
+  (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation…), Dolphin, PCSX2, DuckStation,
   Azahar (3DS), Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary
   (Xbox 360, Linux).
   Borne downloads each from its official source, configures it and keeps it up to date; you never
-  open it. A launch screen covers the passage to the emulator and back; Select + Start together
-  quits a game, and an emulator that cannot start the game is closed with the reason.
+  open it, and Borne sets each one's controller. A launch screen covers the passage to the
+  emulator and back; Select + Start together pauses the game and asks whether to quit, and an
+  emulator that cannot start the game is closed with the reason.
 - **Per-game settings**: another emulator for one game, its options (rewind, run-ahead, widescreen
   hacks, CPU overclock, Switch docked or handheld…), picture (shape, resolution, sharp, smooth or CRT
-  pixels), controls (which controller plays, A/B and X/Y swapped, the stick as the D-pad, what each
-  button presses — RetroArch), cheats, language, cover.
+  pixels), controls for every emulator (which controller plays, A/B and X/Y swapped, what each
+  button does), cheats, language, cover.
 - **Saves on RomM**, per profile: fetched before a game when newer, sent after it, replaced copies
   archived — for RetroArch, memory cards per game (Dolphin, PCSX2, DuckStation), Switch, PS3, PS4,
   Xbox 360 save folders. Profiles never share saves.
@@ -106,7 +107,7 @@ and the emulators' releases).
 | R3 | Tab | Downloads |
 | Start | M or F1 | Settings |
 | Select | F2 | Sort and filter |
-| Select + Start, together | Esc (RetroArch; otherwise the emulator's own key) | Quit the game |
+| Select + Start, together | Esc twice (RetroArch) | Pause and ask whether to quit |
 
 The hints on screen show the buttons of the device in use (or the one chosen in Settings →
 Interface). Borne is played with a gamepad or a keyboard only: the mouse is ignored.

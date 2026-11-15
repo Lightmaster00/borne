@@ -471,176 +471,279 @@ pub fn emu_apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Val
     }
 }
 
-/// First start of an emulator: its controller set to the gamepad Borne sees (SDL), so it plays at
-/// once. A mapping already there (changed by the user) is kept.
-pub fn controllers(program: &str, data: &Path, userdir: &Path, pad: Option<&str>, guid: Option<&str>) -> Result<(), String> {
-    let has_section =
-        |p: &Path, sec: &str| std::fs::read_to_string(p).map(|t| t.lines().any(|l| l.trim() == format!("[{sec}]"))).unwrap_or(false);
+/// The controller of a standalone emulator, written before each game so that every emulator plays
+/// on the gamepad without being set up: player 1 on the chosen pad (`index`, `pad`, `guid` as SDL
+/// sees it), each console button on the pad button of the same place, as the game's controls say
+/// (`src`: which pad button gives each pad-space button, None when none does; see controls.rs).
+pub fn controllers(
+    program: &str,
+    data: &Path,
+    userdir: &Path,
+    index: usize,
+    pad: Option<&str>,
+    guid: Option<&str>,
+    src: &dyn Fn(&str) -> Option<&'static str>,
+) -> Result<(), String> {
     let ini = crate::emulators::ini_set;
+    // A console button bound to the pad button that gives `logical`, in the emulator's own names
+    // (`names`: pad-space name → its word); "" when no pad button does.
+    let bind = |logical: &str, names: &dyn Fn(&str) -> String| src(logical).map(names).unwrap_or_default();
     match program {
         "dolphin" => {
-            let path = userdir.join("Config/GCPadNew.ini");
             let Some(pad) = pad else { return Ok(()) };
-            if has_section(&path, "GCPad1") {
-                return Ok(());
-            }
-            let device = format!("SDL/0/{pad}");
-            let b = |x: &str| format!("`{x}`");
+            let path = userdir.join("Config/GCPadNew.ini");
+            let n = |b: &str| {
+                format!(
+                    "`{}`",
+                    match b {
+                        "a" => "Button S",
+                        "b" => "Button E",
+                        "x" => "Button W",
+                        "y" => "Button N",
+                        "l" => "Shoulder L",
+                        "r" => "Shoulder R",
+                        "l2" => "Trigger L",
+                        "r2" => "Trigger R",
+                        "start" => "Start",
+                        _ => "Back",
+                    }
+                )
+            };
+            let q = |x: &str| format!("`{x}`");
             let pairs: Vec<(String, String)> = vec![
-                ("Device".into(), device),
-                ("Buttons/A".into(), b("Button S")),
-                ("Buttons/B".into(), b("Button W")),
-                ("Buttons/X".into(), b("Button E")),
-                ("Buttons/Y".into(), b("Button N")),
-                ("Buttons/Z".into(), b("Shoulder R")),
-                ("Buttons/Start".into(), "Start".into()),
-                ("Main Stick/Up".into(), b("Left Y+")),
-                ("Main Stick/Down".into(), b("Left Y-")),
-                ("Main Stick/Left".into(), b("Left X-")),
-                ("Main Stick/Right".into(), b("Left X+")),
-                ("C-Stick/Up".into(), b("Right Y+")),
-                ("C-Stick/Down".into(), b("Right Y-")),
-                ("C-Stick/Left".into(), b("Right X-")),
-                ("C-Stick/Right".into(), b("Right X+")),
-                ("Triggers/L".into(), b("Trigger L")),
-                ("Triggers/R".into(), b("Trigger R")),
-                ("Triggers/L-Analog".into(), b("Trigger L")),
-                ("Triggers/R-Analog".into(), b("Trigger R")),
-                ("D-Pad/Up".into(), b("Pad N")),
-                ("D-Pad/Down".into(), b("Pad S")),
-                ("D-Pad/Left".into(), b("Pad W")),
-                ("D-Pad/Right".into(), b("Pad E")),
+                ("Device".into(), format!("SDL/{index}/{pad}")),
+                ("Buttons/A".into(), bind("a", &n)),
+                ("Buttons/B".into(), bind("x", &n)),
+                ("Buttons/X".into(), bind("b", &n)),
+                ("Buttons/Y".into(), bind("y", &n)),
+                ("Buttons/Z".into(), bind("r", &n)),
+                ("Buttons/Start".into(), bind("start", &n)),
+                ("Main Stick/Up".into(), q("Left Y+")),
+                ("Main Stick/Down".into(), q("Left Y-")),
+                ("Main Stick/Left".into(), q("Left X-")),
+                ("Main Stick/Right".into(), q("Left X+")),
+                ("C-Stick/Up".into(), q("Right Y+")),
+                ("C-Stick/Down".into(), q("Right Y-")),
+                ("C-Stick/Left".into(), q("Right X-")),
+                ("C-Stick/Right".into(), q("Right X+")),
+                ("Triggers/L".into(), bind("l2", &n)),
+                ("Triggers/R".into(), bind("r2", &n)),
+                ("Triggers/L-Analog".into(), bind("l2", &n)),
+                ("Triggers/R-Analog".into(), bind("r2", &n)),
+                ("D-Pad/Up".into(), q("Pad N")),
+                ("D-Pad/Down".into(), q("Pad S")),
+                ("D-Pad/Left".into(), q("Pad W")),
+                ("D-Pad/Right".into(), q("Pad E")),
             ];
             let v: Vec<(&str, &str, &str)> = pairs.iter().map(|(k, x)| ("GCPad1", k.as_str(), x.as_str())).collect();
             ini(&path, &v)
         }
         "pcsx2" | "duckstation" => {
             let path = if program == "pcsx2" { data.join("PCSX2/inis/PCSX2.ini") } else { data.join("data/duckstation/settings.ini") };
-            if has_section(&path, "Pad1") {
-                return Ok(());
-            }
+            let dev = format!("SDL-{index}");
+            let n = |b: &str| {
+                let w = match b {
+                    "a" => "FaceSouth",
+                    "b" => "FaceEast",
+                    "x" => "FaceWest",
+                    "y" => "FaceNorth",
+                    "l" => "LeftShoulder",
+                    "r" => "RightShoulder",
+                    "l2" => "+LeftTrigger",
+                    "r2" => "+RightTrigger",
+                    "start" => "Start",
+                    _ => "Back",
+                };
+                format!("{dev}/{w}")
+            };
+            let fixed = |w: &str| format!("{dev}/{w}");
             let kind = if program == "pcsx2" { "DualShock2" } else { "AnalogController" };
-            let map: [(&str, &str); 27] = [
-                ("Type", kind),
-                ("Up", "SDL-0/DPadUp"),
-                ("Right", "SDL-0/DPadRight"),
-                ("Down", "SDL-0/DPadDown"),
-                ("Left", "SDL-0/DPadLeft"),
-                ("Triangle", "SDL-0/FaceNorth"),
-                ("Circle", "SDL-0/FaceEast"),
-                ("Cross", "SDL-0/FaceSouth"),
-                ("Square", "SDL-0/FaceWest"),
-                ("Select", "SDL-0/Back"),
-                ("Start", "SDL-0/Start"),
-                ("L1", "SDL-0/LeftShoulder"),
-                ("L2", "SDL-0/+LeftTrigger"),
-                ("R1", "SDL-0/RightShoulder"),
-                ("R2", "SDL-0/+RightTrigger"),
-                ("L3", "SDL-0/LeftStick"),
-                ("R3", "SDL-0/RightStick"),
-                ("LUp", "SDL-0/-LeftY"),
-                ("LRight", "SDL-0/+LeftX"),
-                ("LDown", "SDL-0/+LeftY"),
-                ("LLeft", "SDL-0/-LeftX"),
-                ("RUp", "SDL-0/-RightY"),
-                ("RRight", "SDL-0/+RightX"),
-                ("RDown", "SDL-0/+RightY"),
-                ("RLeft", "SDL-0/-RightX"),
-                ("SmallMotor", "SDL-0/SmallMotor"),
-                ("LargeMotor", "SDL-0/LargeMotor"),
+            let map: Vec<(&str, String)> = vec![
+                ("Type", kind.into()),
+                ("Up", fixed("DPadUp")),
+                ("Right", fixed("DPadRight")),
+                ("Down", fixed("DPadDown")),
+                ("Left", fixed("DPadLeft")),
+                ("Triangle", bind("y", &n)),
+                ("Circle", bind("b", &n)),
+                ("Cross", bind("a", &n)),
+                ("Square", bind("x", &n)),
+                ("Select", bind("select", &n)),
+                ("Start", bind("start", &n)),
+                ("L1", bind("l", &n)),
+                ("L2", bind("l2", &n)),
+                ("R1", bind("r", &n)),
+                ("R2", bind("r2", &n)),
+                ("L3", fixed("LeftStick")),
+                ("R3", fixed("RightStick")),
+                ("LUp", fixed("-LeftY")),
+                ("LRight", fixed("+LeftX")),
+                ("LDown", fixed("+LeftY")),
+                ("LLeft", fixed("-LeftX")),
+                ("RUp", fixed("-RightY")),
+                ("RRight", fixed("+RightX")),
+                ("RDown", fixed("+RightY")),
+                ("RLeft", fixed("-RightX")),
+                ("SmallMotor", fixed("SmallMotor")),
+                ("LargeMotor", fixed("LargeMotor")),
             ];
-            let mut v: Vec<(&str, &str, &str)> = map.iter().map(|(k, x)| ("Pad1", *k, *x)).collect();
+            let mut v: Vec<(&str, &str, &str)> = map.iter().map(|(k, x)| ("Pad1", *k, x.as_str())).collect();
             v.push(("InputSources", "SDL", "true"));
             ini(&path, &v)
         }
-        // Eden / Citron: player 1 as a Pro Controller on the SDL gamepad (by its GUID), buttons by
-        // position like the Switch (its A on the right).
-        "eden" | "citron" => {
+        // Eden / Citron (and Azahar, the same input code): player 1 on the SDL gamepad by its
+        // GUID, buttons by position like Nintendo's (their A on the right).
+        "eden" | "citron" | "azahar" => {
             let (Some(_), Some(guid)) = (pad, guid) else { return Ok(()) };
-            let path = if cfg!(target_os = "macos") {
-                data.join("config/qt-config.ini")
-            } else {
-                userdir.join("config").join(program).join("qt-config.ini")
+            let (path, prefix) = match program {
+                "azahar" => (
+                    if cfg!(target_os = "macos") {
+                        data.join("config/qt-config.ini")
+                    } else {
+                        userdir.join("config/azahar-emu/qt-config.ini")
+                    },
+                    "profiles\\1\\",
+                ),
+                _ if cfg!(target_os = "macos") => (data.join("config/qt-config.ini"), "player_0_"),
+                _ => (userdir.join("config").join(program).join("qt-config.ini"), "player_0_"),
             };
-            let text = std::fs::read_to_string(&path).unwrap_or_default();
-            // Already on a gamepad (ours, or the user's own mapping): kept.
-            if text
-                .lines()
-                .any(|l| l.split('=').next().map(|k| k.trim() == "player_0_button_a").unwrap_or(false) && l.contains("engine:sdl"))
-            {
-                return Ok(());
-            }
-            let p = |extra: &str| format!("\"{extra},guid:{guid},port:0,engine:sdl\"");
-            let buttons: [(&str, &str); 16] = [
-                ("a", "button:1"),
-                ("b", "button:0"),
-                ("x", "button:3"),
-                ("y", "button:2"),
-                ("lstick", "button:7"),
-                ("rstick", "button:8"),
-                ("l", "button:9"),
-                ("r", "button:10"),
-                ("zl", "axis:4,threshold:0.500000,invert:+"),
-                ("zr", "axis:5,threshold:0.500000,invert:+"),
-                ("plus", "button:6"),
-                ("minus", "button:4"),
-                ("dleft", "button:13"),
-                ("dup", "button:11"),
-                ("dright", "button:14"),
-                ("ddown", "button:12"),
+            let p = |extra: &str| format!("\"{extra},guid:{guid},port:{index},engine:sdl\"");
+            let n = |b: &str| {
+                p(match b {
+                    "a" => "button:0",
+                    "b" => "button:1",
+                    "x" => "button:2",
+                    "y" => "button:3",
+                    "l" => "button:9",
+                    "r" => "button:10",
+                    "l2" => "axis:4,threshold:0.500000,invert:+",
+                    "r2" => "axis:5,threshold:0.500000,invert:+",
+                    "start" => "button:6",
+                    _ => "button:4",
+                })
+            };
+            let none = "\"[empty]\"".to_string();
+            let b = |logical: &str| src(logical).map(n).unwrap_or_else(|| none.clone());
+            let (start, select) = if program == "azahar" { ("start", "select") } else { ("plus", "minus") };
+            let mut pairs: Vec<(String, String)> = vec![
+                ("button_a".into(), b("b")),
+                ("button_b".into(), b("a")),
+                ("button_x".into(), b("y")),
+                ("button_y".into(), b("x")),
+                ("button_l".into(), b("l")),
+                ("button_r".into(), b("r")),
+                ("button_zl".into(), b("l2")),
+                ("button_zr".into(), b("r2")),
+                (format!("button_{start}"), b("start")),
+                (format!("button_{select}"), b("select")),
+                ("button_dleft".into(), p("button:13")),
+                ("button_dup".into(), p("button:11")),
+                ("button_dright".into(), p("button:14")),
+                ("button_ddown".into(), p("button:12")),
             ];
-            let mut pairs: Vec<(String, String)> = buttons.iter().map(|(k, v)| (format!("player_0_button_{k}"), p(v))).collect();
-            pairs.push(("player_0_lstick".into(), p("axis_x:0,axis_y:1,deadzone:0.150000,range:1.000000")));
-            pairs.push(("player_0_rstick".into(), p("axis_x:2,axis_y:3,deadzone:0.150000,range:1.000000")));
-            pairs.push(("player_0_type".into(), "0".into()));
-            pairs.push(("player_0_connected".into(), "true".into()));
+            if program == "azahar" {
+                for (k, _) in pairs.iter_mut() {
+                    *k = k
+                        .replace("button_dleft", "button_left")
+                        .replace("button_dup", "button_up")
+                        .replace("button_dright", "button_right")
+                        .replace("button_ddown", "button_down");
+                }
+                pairs.push(("circle_pad".into(), p("axis_x:0,axis_y:1,deadzone:0.150000")));
+                pairs.push(("c_stick".into(), p("axis_x:2,axis_y:3,deadzone:0.150000")));
+            } else {
+                pairs.push(("button_lstick".into(), p("button:7")));
+                pairs.push(("button_rstick".into(), p("button:8")));
+                pairs.push(("lstick".into(), p("axis_x:0,axis_y:1,deadzone:0.150000,range:1.000000")));
+                pairs.push(("rstick".into(), p("axis_x:2,axis_y:3,deadzone:0.150000,range:1.000000")));
+                pairs.push(("type".into(), "0".into()));
+                pairs.push(("connected".into(), "true".into()));
+            }
             let mut v: Vec<(String, String)> = vec![];
             for (k, x) in pairs {
-                v.push((format!("{k}\\default"), "false".into()));
-                v.push((k, x));
+                v.push((format!("{prefix}{k}\\default"), "false".into()));
+                v.push((format!("{prefix}{k}"), x));
             }
             let refs: Vec<(&str, &str, &str)> = v.iter().map(|(k, x)| ("Controls", k.as_str(), x.as_str())).collect();
             ini(&path, &refs)
         }
         // Ryujinx: player 1 as a Pro Controller on the SDL pad, in the Config.json Ryujinx made on
-        // its first start (kept if the user already set a gamepad).
+        // its first start.
         "ryubing" => {
             let (Some(_), Some(guid)) = (pad, guid) else { return Ok(()) };
             let path = data.join("Config.json");
             let Ok(text) = std::fs::read_to_string(&path) else { return Ok(()) };
             let Ok(mut cfg) = serde_json::from_str::<serde_json::Value>(&text) else { return Ok(()) };
             let list = cfg["input_config"].as_array().cloned().unwrap_or_default();
-            if list.iter().any(|c| c["backend"].as_str() == Some("GamepadSDL2")) {
-                return Ok(());
-            }
             let Some(id) = dotnet_guid(guid) else { return Ok(()) };
+            let n = |b: &str| {
+                match b {
+                    "a" => "A",
+                    "b" => "B",
+                    "x" => "X",
+                    "y" => "Y",
+                    "l" => "LeftShoulder",
+                    "r" => "RightShoulder",
+                    "l2" => "LeftTrigger",
+                    "r2" => "RightTrigger",
+                    "start" => "Start",
+                    _ => "Back",
+                }
+                .to_string()
+            };
+            let b = |logical: &str| src(logical).map(n).unwrap_or_else(|| "Unbound".into());
             let pad_cfg = serde_json::json!({
                 "left_joycon_stick": { "joystick": "Left", "invert_stick_x": false, "invert_stick_y": false, "rotate90_cw": false, "stick_button": "LeftStick" },
                 "right_joycon_stick": { "joystick": "Right", "invert_stick_x": false, "invert_stick_y": false, "rotate90_cw": false, "stick_button": "RightStick" },
                 "deadzone_left": 0.1, "deadzone_right": 0.1, "range_left": 1.0, "range_right": 1.0, "trigger_threshold": 0.5,
                 "motion": { "motion_backend": "GamepadDriver", "sensitivity": 100, "gyro_deadzone": 1, "enable_motion": true },
                 "rumble": { "strong_rumble": 1.0, "weak_rumble": 1.0, "enable_rumble": false },
-                "left_joycon": { "button_minus": "Back", "button_l": "LeftShoulder", "button_zl": "LeftTrigger", "button_sl": "Unbound", "button_sr": "Unbound",
+                "left_joycon": { "button_minus": b("select"), "button_l": b("l"), "button_zl": b("l2"), "button_sl": "Unbound", "button_sr": "Unbound",
                                  "dpad_up": "DpadUp", "dpad_down": "DpadDown", "dpad_left": "DpadLeft", "dpad_right": "DpadRight" },
-                "right_joycon": { "button_plus": "Start", "button_r": "RightShoulder", "button_zr": "RightTrigger", "button_sl": "Unbound", "button_sr": "Unbound",
-                                  "button_x": "Y", "button_b": "A", "button_y": "X", "button_a": "B" },
-                "version": 1, "backend": "GamepadSDL2", "id": format!("0-{id}"), "controller_type": "ProController", "player_index": "Player1"
+                "right_joycon": { "button_plus": b("start"), "button_r": b("r"), "button_zr": b("r2"), "button_sl": "Unbound", "button_sr": "Unbound",
+                                  "button_x": b("y"), "button_b": b("a"), "button_y": b("x"), "button_a": b("b") },
+                "version": 1, "backend": "GamepadSDL2", "id": format!("{index}-{id}"), "controller_type": "ProController", "player_index": "Player1"
             });
             let mut rest: Vec<serde_json::Value> = list.into_iter().filter(|c| c["player_index"].as_str() != Some("Player1")).collect();
             rest.insert(0, pad_cfg);
             cfg["input_config"] = serde_json::Value::Array(rest);
             std::fs::write(&path, serde_json::to_string_pretty(&cfg).unwrap_or_default()).map_err(|e| e.to_string())
         }
-        // RPCS3: player 1 on the SDL handler, its default mapping for that pad.
+        // RPCS3: player 1 on the SDL handler, buttons by the game's controls.
         "rpcs3" => {
             let Some(pad) = pad else { return Ok(()) };
             let path = data.join("input_configs/global/Default.yml");
-            if path.exists() {
-                return Ok(());
-            }
             let _ = std::fs::create_dir_all(path.parent().unwrap());
-            let yml =
-                format!("Player 1 Input:\n  Handler: SDL\n  Device: {pad} 1\n  Profile: Default\n  Config: {{}}\n  Buddy Device: \"\"\n");
+            let n = |b: &str| {
+                match b {
+                    "a" => "A",
+                    "b" => "B",
+                    "x" => "X",
+                    "y" => "Y",
+                    "l" => "LB",
+                    "r" => "RB",
+                    "l2" => "LT",
+                    "r2" => "RT",
+                    "start" => "Start",
+                    _ => "Back",
+                }
+                .to_string()
+            };
+            let b = |logical: &str| format!("\"{}\"", src(logical).map(n).unwrap_or_default());
+            let yml = format!(
+                "Player 1 Input:\n  Handler: SDL\n  Device: {pad} {}\n  Profile: Default\n  Config:\n    Cross: {}\n    Circle: {}\n    Square: {}\n    Triangle: {}\n    L1: {}\n    R1: {}\n    L2: {}\n    R2: {}\n    Start: {}\n    Select: {}\n  Buddy Device: \"\"\n",
+                index + 1,
+                b("a"),
+                b("b"),
+                b("x"),
+                b("y"),
+                b("l"),
+                b("r"),
+                b("l2"),
+                b("r2"),
+                b("start"),
+                b("select")
+            );
             std::fs::write(&path, yml).map_err(|e| e.to_string())
         }
         _ => Ok(()),
@@ -724,7 +827,7 @@ mod tests {
             r#"{"version": 50, "input_config": [{"backend": "WindowKeyboard", "player_index": "Player1"}]}"#,
         )
         .unwrap();
-        controllers("ryubing", &d, &d, Some("Pad"), Some("030000005e0400008e02000014010000")).unwrap();
+        controllers("ryubing", &d, &d, 0, Some("Pad"), Some("030000005e0400008e02000014010000"), &same).unwrap();
         let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(d.join("Config.json")).unwrap()).unwrap();
         assert_eq!(v["input_config"][0]["id"], "0-00000003-045e-0000-8e02-000014010000");
         assert_eq!(v["input_config"].as_array().unwrap().len(), 1);
@@ -736,25 +839,39 @@ mod tests {
     fn switch_and_ps3_pads() {
         let d = std::env::temp_dir().join(format!("borne-pads-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
-        controllers("eden", &d, &d, Some("Pad"), Some("030000005e0400008e02000014010000")).unwrap();
+        controllers("eden", &d, &d, 0, Some("Pad"), Some("030000005e0400008e02000014010000"), &same).unwrap();
         let ini = if cfg!(target_os = "macos") { d.join("config/qt-config.ini") } else { d.join("config/eden/qt-config.ini") };
         let t = std::fs::read_to_string(&ini).unwrap();
         assert!(t.contains("player_0_button_a = \"button:1,guid:030000005e0400008e02000014010000,port:0,engine:sdl\""));
         assert!(t.contains("player_0_button_a\\default = false"));
-        controllers("rpcs3", &d, &d, Some("Pad"), None).unwrap();
+        controllers("rpcs3", &d, &d, 0, Some("Pad"), None, &same).unwrap();
         assert!(std::fs::read_to_string(d.join("input_configs/global/Default.yml")).unwrap().contains("Handler: SDL"));
         let _ = std::fs::remove_dir_all(&d);
     }
 
+    /// The game's controls as they come: each button gives itself.
+    fn same(b: &str) -> Option<&'static str> {
+        crate::controls::BUTTONS.iter().find(|x| x.0 == b).map(|x| x.0)
+    }
+
     #[test]
-    fn controllers_written_once() {
+    fn controllers_follow_the_games_controls() {
         let d = std::env::temp_dir().join(format!("borne-pad-{}", std::process::id()));
-        controllers("dolphin", &d, &d, Some("Xbox Series X Controller"), None).unwrap();
+        controllers("dolphin", &d, &d, 0, Some("Xbox Series X Controller"), None, &same).unwrap();
         let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
         assert!(t.contains("Device = SDL/0/Xbox Series X Controller") && t.contains("Buttons/A = `Button S`"));
-        std::fs::write(d.join("Config/GCPadNew.ini"), "[GCPad1]\nDevice = mine\n").unwrap();
-        controllers("dolphin", &d, &d, Some("Other"), None).unwrap();
-        assert!(std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap().contains("Device = mine"));
+        // A and B swapped for a game; the second pad chosen.
+        let swapped = |b: &str| match b {
+            "a" => Some("b"),
+            "b" => Some("a"),
+            other => same(other),
+        };
+        controllers("dolphin", &d, &d, 1, Some("Other"), None, &swapped).unwrap();
+        let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
+        assert!(t.contains("Device = SDL/1/Other") && t.contains("Buttons/A = `Button E`"));
+        controllers("pcsx2", &d, &d, 0, Some("Pad"), None, &swapped).unwrap();
+        let t = std::fs::read_to_string(d.join("PCSX2/inis/PCSX2.ini")).unwrap();
+        assert!(t.contains("Cross = SDL-0/FaceEast") && t.contains("Circle = SDL-0/FaceSouth"));
         let _ = std::fs::remove_dir_all(d);
     }
 

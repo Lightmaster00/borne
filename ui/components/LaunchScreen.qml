@@ -129,7 +129,7 @@ Item {
         anchors { left: block.left; bottom: parent.bottom; bottomMargin: parent.height * 0.08 }
         spacing: 12
         Repeater {
-            model: screen.keyboard ? ["Esc"] : ["Select", "Start"]
+            model: screen.keyboard ? ["Esc", "Esc"] : ["Select", "Start"]
             Rectangle {
                 required property string modelData
                 anchors.verticalCenter: parent.verticalCenter
@@ -148,7 +148,7 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: screen.keyboard ? qsTr("Quit the game (in RetroArch; otherwise the emulator's own key or menu)")
-                                  : qsTr("Together: quit the game")
+                                  : qsTr("Together: pause and quit the game")
             color: theme ? theme.fgSoft : "#ccc"
             font { family: theme ? theme.fontFamily : "Manrope"; pixelSize: 16 }
         }

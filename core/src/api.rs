@@ -54,6 +54,8 @@
 //!   GET    /api/v1/games/<rom_id>/display  POST {key, value | "default"}   this game's own
 //!   GET    /api/v1/systems/<slug>/art/<kind>      a console's logo, logo-mono, photo or frame (ScreenScraper)
 //!   GET    /api/v1/session                        the running game, if any
+//!   POST   /api/v1/session/ask                   pauses the game and asks whether to quit (as the chord)
+//!   POST   /api/v1/session/resume                the game goes on after the quit question
 //!   POST   /api/v1/session/stop                   ends the running game
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
 //!   POST   /api/v1/emulators/<id>/path {path}     the user's own program for an emulator ("" to forget)
@@ -950,6 +952,14 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         },
         (Method::Get, ["api", "v1", "session"]) => ok(req, crate::emulators::session()),
         (Method::Post, ["api", "v1", "session", "stop"]) => ok(req, json!({ "stopped": crate::emulators::stop() })),
+        (Method::Post, ["api", "v1", "session", "ask"]) => {
+            crate::emulators::ask_quit(app);
+            ok(req, crate::emulators::session())
+        }
+        (Method::Post, ["api", "v1", "session", "resume"]) => {
+            crate::emulators::resume(app);
+            ok(req, crate::emulators::session())
+        }
         (Method::Get, ["api", "v1", "emulators"]) => ok(req, crate::emulators::list(app)),
         (Method::Post, ["api", "v1", "emulators", id, "path"]) => {
             let b = body_json(&mut req);

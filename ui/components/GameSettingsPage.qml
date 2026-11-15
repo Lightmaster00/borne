@@ -90,7 +90,7 @@ Item {
         if (id === "controls") {
             if (!controls) return [note("loading", qsTr("Loading…"))]
             if (!controls.applies) return [note("ctl-none", controls.program
-                ? qsTr("This game's emulator uses the controller as Borne set it up; its buttons are changed in the emulator itself.")
+                ? qsTr("This game's emulator reads the controller by itself, buttons where the console has them.")
                 : qsTr("No emulator runs this game yet."))]
             const opt = k => controls.options.find(o => o.key === k)
             const names = { a: "A", b: "B", x: "X", y: "Y", l: "L", r: "R", l2: "L2", r2: "R2", start: "Start", select: "Select" }
@@ -106,10 +106,11 @@ Item {
                       : (controls.pads[Number(v) - 1] || qsTr("Controller %1").arg(v))),
                 chips("face", qsTr("Face buttons"), qsTr("A and B, X and Y, as on the controller or swapped"),
                       v => v === "swap" ? qsTr("Swapped") : qsTr("As on the controller")),
-                chips("stick", qsTr("Left stick"), qsTr("Also moves as the D-pad, for games without analog control"),
-                      v => v === "dpad" ? qsTr("Also the D-pad") : qsTr("Stick only")),
                 group(qsTr("Buttons"))
             ]
+            if (controls.stick)
+                r.splice(2, 0, chips("stick", qsTr("Left stick"), qsTr("Also moves as the D-pad, for games without analog control"),
+                                     v => v === "dpad" ? qsTr("Also the D-pad") : qsTr("Stick only")))
             for (const b of ["a", "b", "x", "y", "l", "r", "l2", "r2", "start", "select"])
                 r.push(chips("map." + b, qsTr("Button %1").arg(names[b]), qsTr("What it presses in the game"),
                              v => v === "same" ? qsTr("Itself") : names[v]))

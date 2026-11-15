@@ -1337,10 +1337,6 @@
         <translation>Manette, boutons</translation>
     </message>
     <message>
-        <source>This game's emulator uses the controller as Borne set it up; its buttons are changed in the emulator itself.</source>
-        <translation>L’émulateur de ce jeu utilise la manette telle que Borne l’a configurée ; ses boutons se changent dans l’émulateur lui-même.</translation>
-    </message>
-    <message>
         <source>No emulator runs this game yet.</source>
         <translation>Aucun émulateur ne lance encore ce jeu.</translation>
     </message>
@@ -1412,6 +1408,10 @@
         <source>Back to the controller as it is</source>
         <translation>Revenir à la manette telle quelle</translation>
     </message>
+    <message>
+        <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
+        <translation>L’émulateur de ce jeu lit la manette tout seul, les boutons à la place de ceux de la console.</translation>
+    </message>
 </context>
 <context>
     <name>LaunchScreen</name>
@@ -1436,8 +1436,8 @@
         <translation>Quitter le jeu (dans RetroArch ; sinon la touche ou le menu de l’émulateur)</translation>
     </message>
     <message>
-        <source>Together: quit the game</source>
-        <translation>Ensemble : quitter le jeu</translation>
+        <source>Together: pause and quit the game</source>
+        <translation>Ensemble : mettre en pause et quitter le jeu</translation>
     </message>
 </context>
 <context>
@@ -2462,6 +2462,29 @@
     <message>
         <source>Settings</source>
         <translation>Paramètres</translation>
+    </message>
+</context>
+<context>
+    <name>QuitConfirm</name>
+    <message>
+        <source>Quit %1?</source>
+        <translation>Quitter %1 ?</translation>
+    </message>
+    <message>
+        <source>The game is paused. What was not saved in the game is lost when you quit.</source>
+        <translation>Le jeu est en pause. Ce qui n’a pas été sauvegardé dans le jeu est perdu si tu quittes.</translation>
+    </message>
+    <message>
+        <source>Keep playing</source>
+        <translation>Continuer à jouer</translation>
+    </message>
+    <message>
+        <source>Quit the game</source>
+        <translation>Quitter le jeu</translation>
+    </message>
+    <message>
+        <source>Select + Start again: quit at once</source>
+        <translation>Select + Start à nouveau : quitter tout de suite</translation>
     </message>
 </context>
 <context>

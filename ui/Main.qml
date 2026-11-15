@@ -913,8 +913,9 @@ Window {
         inputCountsChanged()
         lastInput = a + " via " + source
         if (touch() && screen === "library" && overlay === "") return
-        // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs).
-        if (session && session.running) return
+        // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs);
+        // the question it raises is answered here.
+        if (session && session.running) return session.paused ? quitAsk.handle(a) : undefined
         if (bench.running && a !== "start") return
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
@@ -1544,6 +1545,25 @@ Window {
         phase: win.launchPhase
         emulator: win.session && win.session.emulator ? win.session.emulator : ""
         note: win.launchNote
+    }
+
+    // Quitting a game: asked when the core paused it on the quit chord.
+    QuitConfirm {
+        id: quitAsk
+        anchors.fill: parent
+        z: 32
+        theme: win.theme
+        game: win.session && win.session.name ? win.session.name : ""
+        shown: !!(win.session && win.session.running && win.session.paused)
+        onShownChanged: if (shown) { win.raise(); win.requestActivate() }
+        onAnswered: function (quit) {
+            sfx.play(quit ? "accept" : "back")
+            if (quit) win.api("POST", "/api/v1/session/stop", {}, function () {})
+            else win.api("POST", "/api/v1/session/resume", {}, function () {
+                // Back to the emulator: Borne steps behind it (macOS: the core brings it forward).
+                if (Qt.platform.os !== "osx") win.lower()
+            })
+        }
     }
 
     // Simulated game (game mode): used by the diagnostics VRAM test.
