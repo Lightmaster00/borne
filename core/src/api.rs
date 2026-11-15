@@ -1127,6 +1127,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     choose_version(app, rom_id);
                     ok(req, json!({ "linked": rom_id, "path": path }))
                 }
+                // Compressed on RomM: downloaded (and extracted) instead of linked.
+                Err(e) if e == stream::COMPRESSED => match downloads::enqueue(app, rom_id) {
+                    Ok(id) => ok(req, json!({ "downloading": id })),
+                    Err(e) => err(req, 409, &e),
+                },
                 Err(e) => err(req, 409, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),

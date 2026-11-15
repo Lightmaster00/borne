@@ -38,6 +38,7 @@ fn library_names(core: &str, display: &str) -> Vec<String> {
         "mednafen_ngp" => "Beetle NeoPop",
         "stella" => "Stella",
         "fbneo" => "FinalBurn Neo",
+        "vecx" => "VecX",
         _ => display,
     };
     let mut v = vec![known.to_string()];

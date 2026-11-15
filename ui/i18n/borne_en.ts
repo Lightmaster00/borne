@@ -497,6 +497,14 @@
         <source>RomM cannot find %1 on its disk: scan the library in RomM</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>no stable version published yet: choose the dev channel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game is compressed on RomM: it is downloaded to be played</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2366,6 +2374,14 @@
         <source>Change the server</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>%1 is compressed on RomM: it is downloaded first and starts as soon as it is ready.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is compressed on RomM: it is downloaded instead.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3493,6 +3509,10 @@
     </message>
     <message>
         <source>Downloading the update… %1 of %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Switch to the dev channel</source>
         <translation type="unfinished" />
     </message>
 </context>

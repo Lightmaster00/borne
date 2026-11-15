@@ -46,6 +46,9 @@ pub fn cache_limit_mb(app: &Shared) -> u64 {
 }
 
 /// Exposes a game in the virtual mount. Returns the path of the file to launch.
+/// The answer of `link` for a game stored compressed on RomM.
+pub const COMPRESSED: &str = "the game is compressed on RomM: it is downloaded to be played";
+
 pub fn link(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
     if !STATE.lock().unwrap_or_else(|e| e.into_inner()).mounted {
         return Err(STATE.lock().unwrap_or_else(|e| e.into_inner()).error.clone().unwrap_or_else(|| "virtual mount unavailable".into()));
@@ -63,6 +66,11 @@ pub fn link(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
     }
     let main =
         pick_main_of(files.iter().map(|(_, rel, _, size)| (*size as u64, PathBuf::from(rel))).collect()).ok_or("no game file found")?;
+    // A compressed game cannot be handed to the emulator from the network: it is downloaded
+    // (and extracted) instead, see emulators::play.
+    if crate::downloads::extractable(&main) && !crate::downloads::keeps_archive(&game.platform_slug) {
+        return Err(COMPRESSED.into());
+    }
     // RomM must be able to serve the game's file: asked directly, so that its own answer (a file
     // missing from its disk) is shown rather than an emulator failing on an unreadable file.
     if let Some((id, _, name, _)) = files.iter().find(|(_, rel, _, _)| Path::new(rel) == main) {

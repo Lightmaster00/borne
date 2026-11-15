@@ -211,9 +211,11 @@
         }
       },
       "fails": [
-        "Error while loading ROM",
         "Failed to load ROM",
-        "Loader <Error>"
+        "Failed to obtain loader"
+      ],
+      "logs": [
+        "log/eden_log.txt"
       ]
     },
     {
@@ -246,9 +248,11 @@
         }
       },
       "fails": [
-        "Error while loading ROM",
         "Failed to load ROM",
-        "Loader <Error>"
+        "Failed to obtain loader"
+      ],
+      "logs": [
+        "log/citron_log.txt"
       ]
     },
     {
@@ -299,6 +303,9 @@
         "Application Load Error",
         "doesn't contain a valid",
         "Couldn't load"
+      ],
+      "logs": [
+        "Logs"
       ]
     },
     {
@@ -400,13 +407,13 @@
       "mac_apps": [
         "Azahar.app/Contents/MacOS/azahar"
       ],
-      "rename_ext": {
-        "3ds": "cci"
-      },
       "fails": [
         "Failed to load ROM",
-        "Error while loading ROM",
-        "Loader <Error>"
+        "Failed to obtain loader",
+        "Failed to determine system mode"
+      ],
+      "logs": [
+        "log/azahar_log.txt"
       ],
       "install": {
         "linux": {
@@ -744,6 +751,66 @@
         "shadPS4"
       ]
     ],
-    "xboxone": []
+    "xboxone": [],
+    "dc": [
+      [
+        "flycast",
+        "Flycast"
+      ]
+    ],
+    "psp": [
+      [
+        "ppsspp",
+        "PPSSPP"
+      ]
+    ],
+    "atari7800": [
+      [
+        "prosystem",
+        "ProSystem"
+      ]
+    ],
+    "jaguar": [
+      [
+        "virtualjaguar",
+        "Virtual Jaguar"
+      ]
+    ],
+    "3do": [
+      [
+        "opera",
+        "Opera"
+      ]
+    ],
+    "colecovision": [
+      [
+        "gearcoleco",
+        "Gearcoleco"
+      ]
+    ],
+    "msx": [
+      [
+        "bluemsx",
+        "blueMSX"
+      ]
+    ],
+    "msx2": [
+      [
+        "bluemsx",
+        "blueMSX"
+      ]
+    ],
+    "vectrex": [
+      [
+        "vecx",
+        "vecx"
+      ]
+    ],
+    "pokemon-mini": [
+      [
+        "pokemini",
+        "PokeMini"
+      ]
+    ]
   }
 }

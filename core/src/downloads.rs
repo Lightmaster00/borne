@@ -11,18 +11,33 @@ use crate::state::Shared;
 use std::io::{BufWriter, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 /// "Main" file extensions in order of preference, to choose what to launch.
 const MAIN_EXT: &[&str] = &[
     "m3u", "cue", "gdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md", "gen", "smd", "bin", "sfc", "smc",
     "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce", "ws", "wsc", "ngp", "ngc", "a26",
-    "lnx", "vb",
+    "lnx", "vb", "cdi", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min",
 ];
-/// Platforms whose .zip archives are extracted (RetroArch can read zips, but
-/// extracting avoids special cases and allows the files to be verified).
-const EXTRACT_ZIP: &[&str] = &["nes", "genesis", "gb", "gbc", "gba", "snes", "n64", "ngc", "wii", "ps2", "dc", "psx"];
+/// Consoles whose games are archives by nature (arcade sets read zipped by MAME and FinalBurn):
+/// kept as they are. Every other console's zip or 7z is extracted, as the standalone emulators
+/// (Azahar, Eden, Dolphin…) do not read archives.
+pub fn keeps_archive(platform: &str) -> bool {
+    matches!(platform, "arcade" | "neogeo" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave")
+}
+
+/// An archive Borne extracts (zip, 7z).
+pub fn extractable(path: &Path) -> bool {
+    path.extension().map(|e| e.eq_ignore_ascii_case("zip") || e.eq_ignore_ascii_case("7z")).unwrap_or(false)
+}
+
+/// Games to start once their download ends (a compressed game asked to play from the network).
+static PLAY_AFTER: Mutex<Vec<i64>> = Mutex::new(Vec::new());
+
+pub fn play_after(rom_id: i64) {
+    PLAY_AFTER.lock().unwrap_or_else(|e| e.into_inner()).push(rom_id);
+}
 
 enum Outcome {
     Done,
@@ -129,6 +144,17 @@ fn run(app: &Shared, id: i64, rom_id: i64) {
     match result {
         Ok(Outcome::Done) => {
             let _ = std::fs::remove_dir_all(&staging);
+            let wanted = {
+                let mut l = PLAY_AFTER.lock().unwrap_or_else(|e| e.into_inner());
+                let w = l.contains(&rom_id);
+                l.retain(|r| *r != rom_id);
+                w
+            };
+            if wanted {
+                if let Err(e) = crate::emulators::play(app, rom_id) {
+                    app.emit(serde_json::json!({ "type": "session", "session": { "running": false, "error": e } }));
+                }
+            }
         }
         Ok(Outcome::Cancelled) if app.dl_pause.lock().unwrap_or_else(|e| e.into_inner()).remove(&id) => {
             // Paused: the partial files stay for resuming.
@@ -343,14 +369,19 @@ fn download(app: &Shared, id: i64, rom_id: i64, flag: &AtomicBool) -> Result<Out
 
     // Extract archives for the systems that need it.
     let mut install_root = staging.clone();
-    if files.len() == 1 && EXTRACT_ZIP.contains(&game.platform_slug.as_str()) {
+    if files.len() == 1 && !keeps_archive(&game.platform_slug) {
         let only = staging.join(relative_path(&detail, &files[0]).unwrap());
-        if only.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false) {
+        if extractable(&only) {
             app.db.update_download(id, "extracting", total, total, None);
             emit(app, id, rom_id, "extracting", total, total, None, 0.0);
             let out_dir = staging.join(".extracted");
             let _ = std::fs::remove_dir_all(&out_dir);
-            extract_zip(&only, &out_dir, flag)?;
+            if only.extension().map(|e| e.eq_ignore_ascii_case("7z")).unwrap_or(false) {
+                // The 7z reader refuses entries leading outside the folder (see systemfiles).
+                sevenz_rust2::decompress_file(&only, &out_dir).map_err(|e| format!("the archive could not be extracted: {e}"))?;
+            } else {
+                extract_zip(&only, &out_dir, flag)?;
+            }
             if flag.load(Ordering::SeqCst) {
                 return Ok(Outcome::Cancelled);
             }

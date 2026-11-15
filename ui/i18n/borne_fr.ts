@@ -497,6 +497,14 @@
         <source>RomM cannot find %1 on its disk: scan the library in RomM</source>
         <translation>RomM ne trouve pas %1 sur son disque : un scan de la bibliothèque dans RomM le retrouvera</translation>
     </message>
+    <message>
+        <source>no stable version published yet: choose the dev channel</source>
+        <translation>aucune version stable publiée pour l’instant : choisissez le canal dev</translation>
+    </message>
+    <message>
+        <source>the game is compressed on RomM: it is downloaded to be played</source>
+        <translation>le jeu est compressé sur RomM : il est téléchargé pour être joué</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2366,6 +2374,14 @@
         <source>Change the server</source>
         <translation>Changer de serveur</translation>
     </message>
+    <message>
+        <source>%1 is compressed on RomM: it is downloaded first and starts as soon as it is ready.</source>
+        <translation>%1 est compressé sur RomM : il est d’abord téléchargé et démarre dès qu’il est prêt.</translation>
+    </message>
+    <message>
+        <source>%1 is compressed on RomM: it is downloaded instead.</source>
+        <translation>%1 est compressé sur RomM : il est téléchargé à la place.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3494,6 +3510,10 @@
     <message>
         <source>Downloading the update… %1 of %2</source>
         <translation>Téléchargement de la mise à jour… %1 sur %2</translation>
+    </message>
+    <message>
+        <source>Switch to the dev channel</source>
+        <translation>Passer au canal dev</translation>
     </message>
 </context>
 <context>

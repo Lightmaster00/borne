@@ -566,9 +566,13 @@ blocks a launch just because a game was not tested or a community database rates
   and Borne comes to the front to ask: Keep playing (chosen first, also B) or Quit the game; the
   chord again quits at once; with no answer in 30 s the game goes on. On macOS the emulator is
   brought back to the front after. RetroArch quits on Esc pressed twice (keyboard).
-- The emulator's output is watched for 90 s for lines that mean the game did not start (per
-  program, `fails` in emulators.json): the emulator is then closed and the line shown, instead of
-  leaving the player on the emulator's own screen.
+- The emulator's output, and its own log files (`logs` in emulators.json, inside its data folder;
+  a folder stands for its newest file), are watched every 250 ms for 90 s for lines that mean the
+  game did not start (`fails`): the emulator is then closed and the line shown, instead of leaving
+  the player on an error window that needs a mouse.
+- A game stored as a zip or 7z on RomM is extracted on download (arcade sets excepted, read zipped
+  by their emulators). It cannot be played from the network: linking it, or playing it, downloads
+  it instead, and Play starts it once it is ready.
 - Per-game controls, for every emulator Borne sets up: player 1's controller, A/B and X/Y swapped,
   what each pad button acts as, and (RetroArch) the left stick as the D-pad. RetroArch gets the
   game's remap file (`profiles/<id>/remaps/<core library>/<game>.rmp`); Dolphin, PCSX2,

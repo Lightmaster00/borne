@@ -184,6 +184,9 @@ Item {
             if (upd.unsupported) return [{ id: "update-github", label: qsTr("Download from GitHub"), primary: true }]
             return [{ id: "update-download", label: qsTr("Install · %1").arg(fmtSize(a ? a.size : 0)), primary: true }, github]
         }
+        // No stable release yet: the way out is one press away.
+        if (st === "error" && upd.channel === "stable" && /no stable version/.test(updState.error || ""))
+            return [{ id: "update-to-dev", label: qsTr("Switch to the dev channel"), primary: true }, github]
         return [{ id: "update-check", label: qsTr("Check now"), primary: true },
                 { id: "update-force", label: qsTr("Reinstall the latest build") }, github]
     }

@@ -19,7 +19,7 @@ use crate::db::GameRow;
 use crate::state::Shared;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -48,6 +48,10 @@ pub struct Program {
     /// a .3ds image only as .cci): the game is handed over through a link with that name.
     #[serde(default)]
     rename_ext: BTreeMap<String, String>,
+    /// The emulator's own log files, inside its data folder (a folder: its newest file). Many
+    /// write their errors there rather than to their output; watched like the output.
+    #[serde(default)]
+    logs: Vec<String>,
 }
 
 impl Program {
@@ -760,6 +764,24 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     })?;
     let p = program(&e.program).ok_or("unknown emulator")?;
     crate::systemfiles::check(app, &system)?;
+    // The game's file first. A game being downloaded, or compressed on RomM (downloaded and
+    // extracted first), starts by itself once it is ready.
+    let downloading = || {
+        app.db
+            .downloads()
+            .iter()
+            .any(|d| d.rom_id == rom_id && ["queued", "downloading", "verifying", "extracting"].contains(&d.state.as_str()))
+    };
+    let rom = match game_file(app, &g) {
+        Err(e) if e == crate::stream::COMPRESSED || (g.local_state != "local" && downloading()) => {
+            crate::downloads::play_after(rom_id);
+            if !downloading() {
+                crate::downloads::enqueue(app, rom_id)?;
+            }
+            return Ok(json!({ "running": false, "downloading": g.name }));
+        }
+        r => r,
+    };
     let found = find(app, &p.id);
     let core_missing = e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false);
     if found.is_none() || core_missing {
@@ -767,7 +789,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
             return Err(format!("{} is not available for this computer: choose its program in Settings → Emulators", p.name));
         }
         // Installed first; the game starts by itself once it is ready.
-        game_file(app, &g)?;
+        rom?;
         crate::emuinstall::play_after(rom_id);
         if !crate::emuinstall::busy() {
             crate::emuinstall::start(app, &p.id, e.core.clone().into_iter().collect())?;
@@ -775,7 +797,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         return Ok(json!({ "running": false, "installing": p.name }));
     }
     let found = found.unwrap();
-    let rom = game_file(app, &g)?;
+    let rom = rom?;
     let lang = app
         .active_profile()
         .and_then(|p| app.db.game_prefs(&p.id).get(&g.group_key).and_then(|(_, l)| l.clone()))
@@ -821,9 +843,11 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
-    let app = app.clone();
     let fails: Vec<String> = p.fails.iter().map(|f| f.to_lowercase()).collect();
-    std::thread::spawn(move || follow(app, log, fails));
+    let data = data_dir(app, &profile, &p.id);
+    let own: Vec<PathBuf> = p.logs.iter().map(|l| data.join(l)).collect();
+    let app = app.clone();
+    std::thread::spawn(move || follow(app, log, own, fails));
     Ok(s)
 }
 
@@ -840,25 +864,50 @@ fn failure_line(text: &str, fails: &[String]) -> Option<String> {
         .map(|l| l.trim().chars().take(200).collect())
 }
 
-fn follow(app: Shared, log: PathBuf, fails: Vec<String>) {
-    let mut read = 0usize;
+/// A log file as it is now; a folder stands for its newest file. Only what was written since
+/// `since` counts (the emulator's log from an earlier game is not this game's).
+fn current_log(path: &Path, since: std::time::SystemTime) -> Option<PathBuf> {
+    let modified = |p: &Path| std::fs::metadata(p).and_then(|m| m.modified()).ok();
+    let file = if path.is_dir() {
+        std::fs::read_dir(path).ok()?.flatten().map(|e| e.path()).filter(|p| p.is_file()).max_by_key(|p| modified(p))?
+    } else {
+        path.to_path_buf()
+    };
+    (modified(&file)? >= since).then_some(file)
+}
+
+fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
+    let since = std::time::SystemTime::now() - Duration::from_secs(2);
+    // Bytes already read, per file: the emulator's output, then its own logs.
+    let mut read: HashMap<PathBuf, usize> = HashMap::new();
     loop {
-        std::thread::sleep(Duration::from_millis(300));
+        std::thread::sleep(Duration::from_millis(250));
         let mut g = SESSION.lock().unwrap_or_else(|e| e.into_inner());
         let Some(s) = g.as_mut() else { return };
         match s.child.try_wait() {
             Ok(None) => {
-                // A game that did not start leaves the emulator on its own screen: closed.
+                // A game that did not start leaves the emulator on its own screen (an error
+                // window waiting for a mouse): closed at once, the error shown by Borne.
                 if !fails.is_empty() && !s.stopping && s.failure.is_none() && s.started.elapsed() < WATCH_START {
-                    let bytes = std::fs::read(&log).unwrap_or_default();
-                    if bytes.len() > read {
-                        let start = read.saturating_sub(256);
-                        read = bytes.len();
-                        if let Some(line) = failure_line(&String::from_utf8_lossy(&bytes[start..]), &fails) {
-                            s.failure = Some(line);
-                            drop(g);
-                            stop();
+                    let files = std::iter::once(Some(log.clone())).chain(own.iter().map(|p| current_log(p, since))).flatten();
+                    for file in files {
+                        let bytes = std::fs::read(&file).unwrap_or_default();
+                        let done = read.entry(file).or_insert(0);
+                        if bytes.len() < *done {
+                            *done = 0; // started again by the emulator
                         }
+                        if bytes.len() > *done {
+                            let start = done.saturating_sub(256);
+                            *done = bytes.len();
+                            if let Some(line) = failure_line(&String::from_utf8_lossy(&bytes[start..]), &fails) {
+                                s.failure = Some(line);
+                                break;
+                            }
+                        }
+                    }
+                    if s.failure.is_some() {
+                        drop(g);
+                        stop();
                     }
                 }
                 continue;

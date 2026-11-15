@@ -186,7 +186,9 @@ fn set_state(app: &Shared, f: impl FnOnce(&mut UpdateState)) {
 }
 
 pub fn channel(app: &Shared) -> String {
-    app.db.setting("update_channel").unwrap_or_else(|| "stable".into())
+    // Until chosen, a build follows the channel it came from: a dev build updates from dev
+    // (stable may not even have a release yet).
+    app.db.setting("update_channel").unwrap_or_else(|| if VERSION.contains("-dev") { "dev".into() } else { "stable".into() })
 }
 pub fn auto_check(app: &Shared) -> bool {
     app.db.setting("update_auto").as_deref() != Some("0")
@@ -274,7 +276,11 @@ fn fetch_manifest(channel: &str) -> Result<Manifest, String> {
         if channel == "dev" { format!("{}/download/dev/latest.json", base()) } else { format!("{}/latest/download/latest.json", base()) };
     let mut resp = agent().get(&url).call().map_err(|e| format!("update server unreachable ({e})"))?;
     if resp.status().as_u16() == 404 {
-        return Err("no version published on this channel yet".into());
+        return Err(if channel == "dev" {
+            "no version published on this channel yet".into()
+        } else {
+            "no stable version published yet: choose the dev channel".into()
+        });
     }
     if !resp.status().is_success() {
         return Err(format!("update server answered {}", resp.status().as_u16()));

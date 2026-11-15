@@ -367,6 +367,7 @@ Window {
     function link(g) {
         api("POST", "/api/v1/games/" + g.rom_id + "/link", {}, function (r, err) {
             if (err) toasts.show(err, "error")
+            else if (r && r.downloading) toasts.show(qsTr("%1 is compressed on RomM: it is downloaded instead.").arg(g.name), "info")
             else toasts.show(qsTr("%1 is ready to play from the network.").arg(g.name), "ok")
             reloadGame(); libReload.restart()
         })
@@ -389,6 +390,11 @@ Window {
         launchGame = g; launchNote = ""; launchPhase = "starting"
         api("POST", "/api/v1/games/" + g.rom_id + "/play", {}, function (r, err) {
             if (err) { launchPhase = ""; toasts.show(err, "error"); return }
+            if (r && r.downloading) {
+                launchPhase = ""
+                toasts.show(qsTr("%1 is compressed on RomM: it is downloaded first and starts as soon as it is ready.").arg(r.downloading), "info")
+                return
+            }
             if (r && r.installing) {
                 launchPhase = ""
                 toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(r.installing), "info")
@@ -649,6 +655,10 @@ Window {
             })
         }
         else if (id === "update-check") api("POST", "/api/v1/update/check", {}, function () { loadSettings() })
+        else if (id === "update-to-dev") api("POST", "/api/v1/settings", { update_channel: "dev" }, function (r, err) {
+            if (err) { toasts.show(err, "error"); return }
+            api("POST", "/api/v1/update/check", {}, function () { loadSettings() })
+        })
         else if (id === "update-force") api("POST", "/api/v1/update/check", { force: true }, function () { loadSettings() })
         else if (id === "update-github") {
             const u = settingsPage.upd

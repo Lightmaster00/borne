@@ -9,6 +9,7 @@ function entries() {
     return [
         // Games and playing
         ["a game is already running", qsTr("a game is already running")],
+        ["the game is compressed on RomM: it is downloaded to be played", qsTr("the game is compressed on RomM: it is downloaded to be played")],
         ["a game is running: quit it first", qsTr("a game is running: quit it first")],
         ["the downloaded copy is missing: download the game again", qsTr("the downloaded copy is missing: download the game again")],
         ["download the game or play it from the network first", qsTr("download the game or play it from the network first")],
@@ -126,6 +127,7 @@ function entries() {
         ["no update available", qsTr("no update available")],
         ["no update ready to install", qsTr("no update ready to install")],
         ["no version published on this channel yet", qsTr("no version published on this channel yet")],
+        ["no stable version published yet: choose the dev channel", qsTr("no stable version published yet: choose the dev channel")],
         ["update server unreachable ({})", qsTr("update server unreachable (%1)")],
         ["the downloaded file is damaged (SHA-256 mismatch)", qsTr("the downloaded file is damaged (SHA-256 mismatch)")],
         ["this copy was built locally; updates come with the builds published on GitHub", qsTr("this copy was built locally; updates come with the builds published on GitHub")],

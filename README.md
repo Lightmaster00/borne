@@ -64,14 +64,17 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   chooses the version), Play, favourite, and the game's own settings.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network** (Linux): only the games you pick are mounted, read from RomM on demand.
+  Games stored as zip or 7z on RomM are extracted (arcade sets stay zipped), and downloaded rather
+  than played from the network.
 - **Emulators managed for you**: one per console, chosen in Settings → Emulators — RetroArch cores
-  (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation…), Dolphin, PCSX2, DuckStation,
+  (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation, Flycast, PPSSPP…), Dolphin, PCSX2, DuckStation,
   Azahar (3DS), Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary
   (Xbox 360, Linux).
   Borne downloads each from its official source, configures it and keeps it up to date; you never
   open it, and Borne sets each one's controller. A launch screen covers the passage to the
   emulator and back; Select + Start together pauses the game and asks whether to quit, and an
-  emulator that cannot start the game is closed with the reason.
+  emulator that cannot start the game is closed within a second, with the reason (read from its
+  output and its own log).
 - **Per-game settings**: another emulator for one game, its options (rewind, run-ahead, widescreen
   hacks, CPU overclock, Switch docked or handheld…), picture (shape, resolution, sharp, smooth or CRT
   pixels), controls for every emulator (which controller plays, A/B and X/Y swapped, what each
