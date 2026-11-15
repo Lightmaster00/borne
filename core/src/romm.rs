@@ -34,6 +34,8 @@ pub enum RommError {
     Http(u16, String),
     /// Unreadable response.
     Parse(String),
+    /// A game file RomM lists but cannot read from its disk (moved or deleted since its scan).
+    Missing(String),
 }
 
 impl std::fmt::Display for RommError {
@@ -43,6 +45,7 @@ impl std::fmt::Display for RommError {
             RommError::Unauthorized => write!(f, "access denied by RomM: pair again"),
             RommError::Http(c, d) => write!(f, "RomM answered {c}: {d}"),
             RommError::Parse(e) => write!(f, "unreadable RomM response ({e})"),
+            RommError::Missing(name) => write!(f, "RomM cannot find {name} on its disk: scan the library in RomM"),
         }
     }
 }
@@ -436,14 +439,18 @@ impl Client {
         if from > 0 {
             req = req.header("Range", format!("bytes={from}-"));
         }
-        let resp = req.call().map_err(map_transport)?;
+        let mut resp = req.call().map_err(map_transport)?;
         let code = resp.status().as_u16();
         if code == 416 {
             // File already complete locally.
             return Ok((Box::new(std::io::empty()), from, true));
         }
         if !(200..300).contains(&code) {
-            return Err(status_error(code, ""));
+            let body = resp.body_mut().with_config().limit(4096).read_to_string().unwrap_or_default();
+            if code == 404 {
+                return Err(RommError::Missing(file.file_name.clone()));
+            }
+            return Err(status_error(code, &body));
         }
         let resumed = code == 206;
         let total = if resumed {

@@ -493,6 +493,10 @@
         <source>RomM does not answer: the game cannot be played from the network now</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>RomM cannot find %1 on its disk: scan the library in RomM</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>

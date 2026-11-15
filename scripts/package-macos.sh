@@ -65,6 +65,9 @@ if [ -n "${BORNE_VERSION:-}" ]; then
 fi
 /usr/libexec/PlistBuddy -c "Add :LSApplicationCategoryType string public.app-category.games" "$APP/Contents/Info.plist" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Add :NSHighResolutionCapable bool true" "$APP/Contents/Info.plist" 2>/dev/null || true
+# No App Nap: behind the emulator Borne still reads the pad (quit chord), follows the game and
+# downloads at full speed.
+/usr/libexec/PlistBuddy -c "Add :NSAppSleepDisabled bool true" "$APP/Contents/Info.plist" 2>/dev/null || true
 
 # Ad hoc signature (required on Apple Silicon after the binaries were modified).
 codesign --force --deep --sign - "$APP"

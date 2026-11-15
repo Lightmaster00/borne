@@ -493,6 +493,10 @@
         <source>RomM does not answer: the game cannot be played from the network now</source>
         <translation>RomM ne répond pas : le jeu ne peut pas être lancé depuis le réseau pour l’instant</translation>
     </message>
+    <message>
+        <source>RomM cannot find %1 on its disk: scan the library in RomM</source>
+        <translation>RomM ne trouve pas %1 sur son disque : un scan de la bibliothèque dans RomM le retrouvera</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2472,7 +2476,7 @@
     </message>
     <message>
         <source>The game is paused. What was not saved in the game is lost when you quit.</source>
-        <translation>Le jeu est en pause. Ce qui n’a pas été sauvegardé dans le jeu est perdu si tu quittes.</translation>
+        <translation>Le jeu est en pause. Ce qui n’a pas été sauvegardé dans le jeu est perdu en quittant.</translation>
     </message>
     <message>
         <source>Keep playing</source>

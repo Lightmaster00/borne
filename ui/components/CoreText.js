@@ -16,6 +16,7 @@ function entries() {
         ["Borne cannot run {} games yet", qsTr("Borne cannot run %1 games yet")],
         ["no emulator can run {} games yet", qsTr("no emulator can run %1 games yet")],
         ["{} could not start the game: {}", qsTr("%1 could not start the game: %2")],
+        ["RomM cannot find {} on its disk: scan the library in RomM", qsTr("RomM cannot find %1 on its disk: scan the library in RomM")],
         ["the game's file on RomM is empty", qsTr("the game's file on RomM is empty")],
         ["the game's file cannot be read from RomM ({})", qsTr("the game's file cannot be read from RomM (%1)")],
         ["RomM does not answer: the game cannot be played from the network now", qsTr("RomM does not answer: the game cannot be played from the network now")],

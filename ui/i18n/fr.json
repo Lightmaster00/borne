@@ -461,6 +461,7 @@
  "RomM": "RomM",
  "RomM account: %1": "Compte RomM : %1",
  "RomM answered %1: %2": "RomM a répondu %1 : %2",
+ "RomM cannot find %1 on its disk: scan the library in RomM": "RomM ne trouve pas %1 sur son disque : un scan de la bibliothèque dans RomM le retrouvera",
  "RomM did not give the token in time": "RomM n’a pas donné le jeton à temps",
  "RomM does not answer: the game cannot be played from the network now": "RomM ne répond pas : le jeu ne peut pas être lancé depuis le réseau pour l’instant",
  "RomM has no file that fits for this console: add it to RomM's BIOS for the platform, or give it here.": "RomM n'a aucun fichier qui convient pour cette console : ajoute-le aux BIOS de la plateforme dans RomM, ou donne-le ici.",

@@ -1410,7 +1410,7 @@ Window {
     ServerSetup {
         id: setup
         anchors.fill: parent
-        visible: win.screen === "server"
+        visible: win.screen === "server" && win.overlay !== "settings"
         theme: win.theme
         onSubmit: (url) => {
             busy = true
@@ -1426,7 +1426,7 @@ Window {
     ProfilePicker {
         id: picker
         anchors.fill: parent
-        visible: win.screen === "profiles"
+        visible: win.screen === "profiles" && win.overlay !== "settings"
         theme: win.theme
         serverUrl: win.status && win.status.server_url ? win.status.server_url : ""
         online: win.status ? win.status.online : false
@@ -1438,7 +1438,7 @@ Window {
     PairingScreen {
         id: pairingScreen
         anchors.fill: parent
-        visible: win.screen === "pairing"
+        visible: win.screen === "pairing" && win.overlay !== "settings"
         theme: win.theme
         serverUrl: win.status && win.status.server_url ? win.status.server_url : ""
         pairing: win.pairing
