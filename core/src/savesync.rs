@@ -52,13 +52,12 @@ pub fn title_id(rom: &Path) -> Option<String> {
 /// The PS3 serial in a file or folder name ("Demon's Souls [BLES00932]").
 pub fn ps3_serial(rom: &Path) -> Option<String> {
     let n = rom.to_string_lossy().to_uppercase();
-    let b = n.as_bytes();
-    (0..b.len().saturating_sub(8)).find_map(|i| {
-        let w = &n[i..i + 9];
-        let ok = w[..4].chars().all(|c| c.is_ascii_uppercase())
-            && w[4..].chars().all(|c| c.is_ascii_digit())
-            && matches!(&w[..2], "BL" | "BC" | "NP");
-        ok.then(|| w.to_string())
+    // Byte windows: a name with accents ("Pokémon") must not be cut inside a character.
+    n.as_bytes().windows(9).find_map(|w| {
+        let ok = w[..4].iter().all(|c| c.is_ascii_uppercase())
+            && w[4..].iter().all(|c| c.is_ascii_digit())
+            && matches!(&w[..2], b"BL" | b"BC" | b"NP");
+        ok.then(|| String::from_utf8_lossy(w).into_owned())
     })
 }
 
@@ -385,7 +384,7 @@ fn walk(dir: &Path) -> Vec<PathBuf> {
     while let Some(d) = stack.pop() {
         for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
             let p = e.path();
-            if p.is_dir() {
+            if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 stack.push(p);
             } else {
                 out.push(p);
@@ -729,6 +728,7 @@ mod tests {
     fn ps3_serials() {
         assert_eq!(ps3_serial(Path::new("/g/Demon's Souls [BLES00932]/PS3_GAME")).as_deref(), Some("BLES00932"));
         assert_eq!(ps3_serial(Path::new("/g/Game.iso")), None);
+        assert_eq!(ps3_serial(Path::new("/g/Pokémon Ü [BCES01234].iso")).as_deref(), Some("BCES01234"));
     }
 
     #[test]

@@ -453,6 +453,21 @@ fn fetch_and_extract(app: &Shared, m: &Manifest, asset: &Asset, pkg: &Path) -> R
     let dir = app.paths.root.join("updates");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let staging = staging_dir(pkg, m.build);
+    let mine = format!("borne-{}", m.build);
+    for e in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+        let n = e.file_name().to_string_lossy().into_owned();
+        if !(n.starts_with(&format!("{mine}-")) || n.starts_with(&format!("{mine}."))) {
+            let _ = std::fs::remove_file(e.path());
+        }
+    }
+    // Builds downloaded earlier and never installed: only the newest is kept.
+    if let Some(parent) = pkg.parent() {
+        for e in std::fs::read_dir(parent).into_iter().flatten().flatten() {
+            if e.file_name().to_string_lossy().starts_with(".borne-update-") && e.path() != staging {
+                let _ = std::fs::remove_dir_all(e.path());
+            }
+        }
+    }
     if !asset.parts.is_empty() {
         match fetch_parts(app, m, asset, pkg, &dir, &staging) {
             Ok(()) => return Ok(()),
@@ -596,6 +611,7 @@ pub fn apply(app: &Shared) -> Result<(), String> {
         return Err(format!("cannot install the update ({e})"));
     }
     let _ = std::fs::remove_dir_all(&staging);
+    *INSTALLED_AT.lock().unwrap_or_else(|e| e.into_inner()) = Some(pkg.clone());
     app.db.log("update", &format!("updated to build {} ({}); restarting", m.build, m.version));
     RESTART.store(true, Ordering::SeqCst);
     Ok(())
@@ -607,7 +623,14 @@ pub fn restart_exe() -> Option<PathBuf> {
     Some(if cfg!(target_os = "macos") { pkg.join("Contents/MacOS/borne") } else { pkg.join("bin/borne") })
 }
 
+/// The installed package's path, remembered when an update is applied (it may have been renamed,
+/// "Borne 2.app": the running core now lives in .borne-previous and cannot tell).
+static INSTALLED_AT: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::new(None);
+
 fn package_dir_after_swap() -> Option<PathBuf> {
+    if let Some(p) = INSTALLED_AT.lock().unwrap_or_else(|e| e.into_inner()).clone() {
+        return Some(p);
+    }
     // current_exe() may now point into .borne-previous: rebuild the original path.
     let exe = std::env::current_exe().ok()?;
     let exe = exe.canonicalize().unwrap_or(exe);

@@ -209,9 +209,15 @@ fn finish(app: &Shared, console: &str, item: &str, r: Result<(), String>) {
     set_task(app, json!({ "console": console, "item": item, "running": false, "error": r.err() }));
 }
 
+/// Same scheme, host and port: the RomM token only goes back to the server itself, never in
+/// clear over http when the server is https, and never to a look-alike host.
 fn same_host(a: &str, b: &str) -> bool {
-    let host = |u: &str| u.split("://").nth(1).and_then(|r| r.split('/').next()).map(|h| h.to_lowercase());
-    host(a).is_some() && host(a) == host(b)
+    let origin = |u: &str| {
+        let (scheme, rest) = u.split_once("://")?;
+        let authority = rest.split(['/', '?', '#']).next()?;
+        (!authority.is_empty() && !authority.contains('@')).then(|| format!("{}://{}", scheme.to_lowercase(), authority.to_lowercase()))
+    };
+    origin(a).is_some() && origin(a) == origin(b)
 }
 
 fn fetch(app: &Shared, url: &str) -> Result<(String, Box<dyn Read + Send>), String> {
@@ -256,7 +262,8 @@ fn percent_decode(s: &str) -> String {
     let mut i = 0;
     while i < b.len() {
         if b[i] == b'%' && i + 2 < b.len() {
-            if let Ok(v) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
+            // Bytes, not a str slice: "%é" would cut a character in two and panic.
+            if let Some(v) = std::str::from_utf8(&b[i + 1..i + 3]).ok().and_then(|h| u8::from_str_radix(h, 16).ok()) {
                 out.push(v);
                 i += 3;
                 continue;
@@ -635,6 +642,15 @@ pub fn prepare(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn links_and_the_token() {
+        assert!(same_host("http://romm.lan:8080/api/x", "http://ROMM.lan:8080"));
+        assert!(!same_host("http://romm.lan/x", "https://romm.lan"));
+        assert!(!same_host("http://romm.lan:8080.evil.com/x", "http://romm.lan:8080"));
+        assert!(!same_host("http://romm.lan@evil.com/x", "http://romm.lan"));
+        assert_eq!(percent_decode("a%20b%é%4"), "a b%é%4");
+    }
 
     fn item(kind: &str, names: &[&str], size: Option<u64>, multi: bool) -> Item {
         Item {

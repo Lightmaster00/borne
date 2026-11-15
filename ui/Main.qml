@@ -598,7 +598,10 @@ Window {
         }
         else if (id.startsWith("sf-remove:")) {
             const k = id.substring(10).split("/")
-            api("DELETE", "/api/v1/system-files/" + k[0] + "/" + k[1], null, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+            menu.open(qsTr("Remove this file?"), qsTr("The games that need it will not start until it is added again."),
+                      [{ id: "yes", label: qsTr("Remove") }, { id: "no", label: qsTr("Cancel") }], function (c) {
+                if (c === "yes") api("DELETE", "/api/v1/system-files/" + k[0] + "/" + k[1], null, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+            })
         }
         else if (id === "display") api("POST", "/api/v1/display", payload, function (r, err) {
             if (err) toasts.show(err, "error")
@@ -650,7 +653,9 @@ Window {
         else if (id === "update-github") {
             const u = settingsPage.upd
             const a = u && settingsPage.updState && settingsPage.updState.available ? settingsPage.updState.available.assets[u.current.platform] : null
-            Qt.openUrlExternally(a && a.url ? a.url : (u ? u.release_page : "https://github.com/Lightmaster00/borne/releases"))
+            const link = a && a.url ? a.url : (u ? u.release_page : "")
+            // Only a web page is ever opened (never a file or another program's scheme).
+            Qt.openUrlExternally(/^https:\/\//.test(link) ? link : "https://github.com/Lightmaster00/borne/releases")
         }
         else if (id === "update-download") api("POST", "/api/v1/update/download", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id === "update-apply") {
@@ -1412,7 +1417,7 @@ Window {
         anchors.fill: parent
         visible: win.screen === "server" && win.overlay !== "settings"
         theme: win.theme
-        onSubmit: (url) => {
+        function connect(url) {
             busy = true
             win.api("POST", "/api/v1/server", { url: url }, function (r, err) {
                 setup.busy = false
@@ -1420,6 +1425,16 @@ Window {
                 toasts.show(qsTr("Connected to RomM (%1).").arg(r.url), "ok")
                 win.showProfiles()
             })
+        }
+        onSubmit: (url) => {
+            const current = win.status && win.status.server_url ? win.status.server_url : ""
+            const paired = win.status && win.status.profiles ? win.status.profiles.some(p => p.paired) : false
+            // Another server: every profile has to be paired again. Asked first.
+            if (current && paired && url.replace(/\/+$/, "").toLowerCase() !== current.toLowerCase())
+                menu.open(qsTr("Change the RomM server?"), qsTr("Every profile will have to be paired again with the new server."),
+                          [{ id: "yes", label: qsTr("Change the server") }, { id: "no", label: qsTr("Cancel") }],
+                          function (c) { if (c === "yes") setup.connect(url) })
+            else connect(url)
         }
         onCancelled: if (win.status && win.status.server_url) win.showProfiles()
     }

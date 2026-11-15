@@ -164,6 +164,9 @@ pub fn safe_relative(rel: &str) -> Option<PathBuf> {
     let mut out = PathBuf::new();
     for c in p.components() {
         match c {
+            // Control characters (a newline) would break the playlists and configuration files
+            // the path is written into.
+            Component::Normal(s) if s.to_string_lossy().chars().any(char::is_control) => return None,
             Component::Normal(s) => out.push(s),
             Component::CurDir => {}
             _ => return None,
@@ -421,7 +424,7 @@ fn walk_size(dir: &Path) -> u64 {
     if let Ok(rd) = std::fs::read_dir(dir) {
         for e in rd.flatten() {
             let p = e.path();
-            if p.is_dir() {
+            if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 total += walk_size(&p);
             } else if let Ok(m) = e.metadata() {
                 total += m.len();
@@ -439,7 +442,7 @@ fn collect_files(dir: &Path, out: &mut Vec<PathBuf>) {
             if name.to_string_lossy().starts_with('.') {
                 continue;
             }
-            if p.is_dir() {
+            if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 collect_files(&p, out);
             } else {
                 out.push(p);
@@ -492,6 +495,9 @@ fn is_extra(p: &Path) -> bool {
 
 /// Local deletion of a game (never touches the RomM server).
 pub fn delete_local(app: &Shared, rom_id: i64) -> Result<(), String> {
+    if crate::emulators::playing_rom() == Some(rom_id) {
+        return Err("a game is running: quit it first".into());
+    }
     let dir = app.db.remove_local(rom_id).ok_or("game not installed")?;
     let dir = PathBuf::from(dir);
     let lib = app.paths.library().canonicalize().map_err(|e| e.to_string())?;
@@ -543,6 +549,7 @@ mod tests {
         assert!(safe_relative("../etc/passwd").is_none());
         assert!(safe_relative("/etc/passwd").is_none());
         assert!(safe_relative("a/../../b").is_none());
+        assert!(safe_relative("Game\nkey = value.iso").is_none());
         assert_eq!(safe_relative("./Game/disc1.iso").unwrap(), PathBuf::from("Game/disc1.iso"));
     }
 

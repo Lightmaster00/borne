@@ -462,7 +462,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                             app.db.set_unpaired(&p.id);
                         }
                         app.db.set_setting("romm_url", &url);
-                        app.db.log("server", &format!("RomM server set: {url} (version {version})"));
+                        app.db.log("server", &format!("RomM server set: {} (version {version})", diag::redact_url(&url)));
                     }
                     app.set_online(true);
                     ok(req, json!({ "url": url, "version": version }))
@@ -1132,6 +1132,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Delete, ["api", "v1", "games", id, "link"]) => match id.parse::<i64>() {
+            Ok(rom_id) if crate::emulators::playing_rom() == Some(rom_id) => err(req, 409, "a game is running: quit it first"),
             Ok(rom_id) => match stream::unlink(app, rom_id) {
                 Ok(()) => ok(req, json!({ "unlinked": rom_id })),
                 Err(e) => err(req, 409, &e),

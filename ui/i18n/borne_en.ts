@@ -2342,6 +2342,30 @@
         <source>Sort</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Remove this file?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The games that need it will not start until it is added again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change the RomM server?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Every profile will have to be paired again with the new server.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Change the server</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>

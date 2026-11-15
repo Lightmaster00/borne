@@ -326,6 +326,7 @@ pub struct GameUpsert {
 impl Db {
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
         let conn = Connection::open(path)?;
+        conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.execute_batch(SCHEMA)?;
@@ -335,6 +336,8 @@ impl Db {
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             params![SCHEMA_VERSION.to_string()],
         )?;
+        // The operations log only serves recent history: it must not grow forever.
+        let _ = conn.execute("DELETE FROM oplog WHERE rowid <= (SELECT MAX(rowid) FROM oplog) - 5000", []);
         Ok(Self(Arc::new(Mutex::new(conn))))
     }
 

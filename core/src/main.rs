@@ -112,8 +112,19 @@ fn main() {
         "start",
         &format!("Borne {} (build {}) on {} {}", update::VERSION, update::build(), std::env::consts::OS, std::env::consts::ARCH),
     );
-    let db = db::Db::open(&paths.db()).unwrap_or_else(|e| {
-        crate::logfile::write("main", &format!("unreadable local database: {e}"));
+    // A damaged database must not keep Borne from starting: it is set aside (kept for a bug
+    // report) and a new one is made; the catalog comes back with the next sync.
+    let db = db::Db::open(&paths.db()).or_else(|e| {
+        crate::logfile::write("main", &format!("unreadable local database: {e}; starting a new one"));
+        let aside = paths.db().with_extension(format!("broken-{}", db::now()));
+        std::fs::rename(paths.db(), &aside)?;
+        for ext in ["db-wal", "db-shm"] {
+            let _ = std::fs::remove_file(paths.db().with_extension(ext));
+        }
+        db::Db::open(&paths.db()).map_err(|e| std::io::Error::other(e.to_string()))
+    });
+    let db = db.unwrap_or_else(|e| {
+        crate::logfile::write("main", &format!("no local database: {e}"));
         std::process::exit(1);
     });
 

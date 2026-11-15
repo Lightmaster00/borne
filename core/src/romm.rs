@@ -211,6 +211,22 @@ impl Client {
         Self { base: base.trim_end_matches('/').to_string(), token, api, list, dl }
     }
 
+    /// A path from the server (a cover, a screenshot) as a full address, and whether it is on
+    /// this server: the token is only ever sent there, never to a picture host (IGDB, …).
+    fn resolve(&self, path: &str) -> Result<(String, bool)> {
+        if path.starts_with("http://") || path.starts_with("https://") {
+            let own = path.strip_prefix(self.base.as_str()).map(|r| r.is_empty() || r.starts_with('/')).unwrap_or(false);
+            return Ok((path.to_string(), own));
+        }
+        // A relative path joined to the base must stay on the same host: "@evil/x" or
+        // "//evil/x" glued to it would name another one.
+        if path.starts_with("//") || path.contains("://") {
+            return Err(RommError::Http(0, format!("refused address: {path}")));
+        }
+        let sep = if path.starts_with('/') { "" } else { "/" };
+        Ok((format!("{}{sep}{}", self.base, path), true))
+    }
+
     fn auth(&self) -> Option<String> {
         self.token.as_ref().map(|t| format!("Bearer {t}"))
     }
@@ -398,9 +414,9 @@ impl Client {
 
     /// Downloads a server-relative resource (cover…).
     pub fn fetch_bytes(&self, path: &str, limit: u64) -> Result<Vec<u8>> {
-        let url = if path.starts_with("http") { path.to_string() } else { format!("{}{}", self.base, path) };
+        let (url, own) = self.resolve(path)?;
         let mut req = self.api.get(encode_url(&url));
-        if let Some(a) = self.auth() {
+        if let Some(a) = self.auth().filter(|_| own) {
             req = req.header("Authorization", a);
         }
         let mut resp = req.call().map_err(map_transport)?;
@@ -413,9 +429,9 @@ impl Client {
 
     /// Downloads a server asset (a trailer…) to `dest`, at most `limit` bytes.
     pub fn fetch_to_file(&self, path: &str, dest: &std::path::Path, limit: u64) -> Result<u64> {
-        let url = if path.starts_with("http") { path.to_string() } else { format!("{}{}", self.base, path) };
+        let (url, own) = self.resolve(path)?;
         let mut req = self.dl.get(encode_url(&url));
-        if let Some(a) = self.auth() {
+        if let Some(a) = self.auth().filter(|_| own) {
             req = req.header("Authorization", a);
         }
         let mut resp = req.call().map_err(map_transport)?;
@@ -570,6 +586,18 @@ mod tests {
         let (items, total) = parse_roms_page(serde_json::json!([{"id": 1}, {"id": 2}]), 0, 100).unwrap();
         assert_eq!((items.len(), total), (2, 2));
         assert!(parse_roms_page(serde_json::json!({"detail": "x"}), 0, 100).is_err());
+    }
+
+    #[test]
+    fn the_token_stays_on_the_server() {
+        let c = Client::new("http://romm.lan:8080", Some("t".into()));
+        assert_eq!(c.resolve("/assets/a.png").unwrap(), ("http://romm.lan:8080/assets/a.png".into(), true));
+        assert_eq!(c.resolve("assets/a.png").unwrap(), ("http://romm.lan:8080/assets/a.png".into(), true));
+        assert_eq!(c.resolve("http://romm.lan:8080/x").unwrap().1, true);
+        assert_eq!(c.resolve("http://romm.lan:8080.evil.com/x").unwrap().1, false);
+        assert_eq!(c.resolve("https://images.igdb.com/x.jpg").unwrap().1, false);
+        assert!(c.resolve("//evil.com/x").is_err());
+        assert_eq!(c.resolve("@evil.com/x").unwrap().0, "http://romm.lan:8080/@evil.com/x");
     }
 
     #[test]

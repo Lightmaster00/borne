@@ -427,6 +427,11 @@ pub fn playing() -> bool {
     SESSION.lock().unwrap_or_else(|e| e.into_inner()).is_some()
 }
 
+/// The game being played, if any.
+pub fn playing_rom() -> Option<i64> {
+    SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|s| s.rom_id)
+}
+
 pub fn session() -> Value {
     match SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
         Some(s) => {
@@ -726,10 +731,24 @@ fn log_tail(p: &Path) -> String {
 
 /// Starts the game. Returns when the emulator is running; the session is then followed in the
 /// background and its end announced with a "session" event.
+/// A game is being started (saves pulled, emulator spawned): a second A press must not start
+/// another one before the session exists.
+static STARTING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     if SESSION.lock().unwrap_or_else(|e| e.into_inner()).is_some() {
         return Err("a game is already running".into());
     }
+    if STARTING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return Err("a game is already running".into());
+    }
+    struct Started;
+    impl Drop for Started {
+        fn drop(&mut self) {
+            STARTING.store(false, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    let _started = Started;
     let g = app.db.game(rom_id).ok_or("unknown game")?;
     let system = g.platform_slug.clone();
     let e = chosen_for_game(app, &system, &g.group_key).ok_or_else(|| {

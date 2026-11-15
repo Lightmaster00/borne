@@ -261,6 +261,10 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
     if p.install_spec().is_none() && cores.is_empty() {
         return Err(format!("{} cannot be installed by Borne: choose its program", p.name));
     }
+    // Its files are replaced: never under a running game.
+    if crate::emulators::playing() {
+        return Err("a game is running: quit it first".into());
+    }
     {
         let mut t = TASK.lock().unwrap_or_else(|e| e.into_inner());
         if t.as_ref().map(|t| t["running"] == true).unwrap_or(false) {

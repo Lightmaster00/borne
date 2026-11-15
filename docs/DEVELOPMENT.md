@@ -36,6 +36,7 @@ scripts/
 tests/
   integration_romm.py end-to-end against a real RomM (pairing, sync, downloads, mount, settings…)
   ui_tour.sh          walks every screen of a running Borne, fails on any QML error
+  api_fuzz.py         every API route with odd ids and bodies: no crash, no 5xx, no panic
   update_test.sh      in-app updates: full archive, then by parts
   case_bench/         every kind of game case with synthetic scans, faced and turned (to check prints)
 docs/                 specification, this guide, roadmap; assets/ holds the README logos
@@ -83,6 +84,7 @@ End to end, against the development RomM ([`scripts/romm-dev/`](../scripts/romm-
 ```bash
 python3 tests/integration_romm.py core/target/release/borne http://127.0.0.1:8080 <admin> <password> <user> <password>
 tests/ui_tour.sh <log of a running Borne started with BORNE_DEBUG_INPUT=1>
+python3 tests/api_fuzz.py core/target/release/borne http://127.0.0.1:8080 <user> <password>
 ```
 
 Game cases: `tests/case_bench/run.sh out/Borne /tmp/cases` renders every kind of case on the real

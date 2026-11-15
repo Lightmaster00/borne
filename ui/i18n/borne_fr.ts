@@ -2342,6 +2342,30 @@
         <source>Sort</source>
         <translation>Trier</translation>
     </message>
+    <message>
+        <source>Remove this file?</source>
+        <translation>Retirer ce fichier ?</translation>
+    </message>
+    <message>
+        <source>The games that need it will not start until it is added again.</source>
+        <translation>Les jeux qui en ont besoin ne démarreront plus tant qu’il n’aura pas été ajouté de nouveau.</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Retirer</translation>
+    </message>
+    <message>
+        <source>Change the RomM server?</source>
+        <translation>Changer de serveur RomM ?</translation>
+    </message>
+    <message>
+        <source>Every profile will have to be paired again with the new server.</source>
+        <translation>Chaque profil devra être associé de nouveau au nouveau serveur.</translation>
+    </message>
+    <message>
+        <source>Change the server</source>
+        <translation>Changer de serveur</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
