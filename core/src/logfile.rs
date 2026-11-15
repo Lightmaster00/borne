@@ -14,17 +14,17 @@ static LOG: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 pub fn init(dir: PathBuf) {
     let _ = std::fs::create_dir_all(&dir);
-    *LOG.lock().unwrap() = Some(dir.join("borne.log"));
+    *LOG.lock().unwrap_or_else(|e| e.into_inner()) = Some(dir.join("borne.log"));
 }
 
 pub fn path() -> Option<PathBuf> {
-    LOG.lock().unwrap().clone()
+    LOG.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
 
 /// Writes one line to stderr and to the log file.
 pub fn write(kind: &str, message: &str) {
     eprintln!("[borne] {kind}: {message}");
-    let guard = LOG.lock().unwrap();
+    let guard = LOG.lock().unwrap_or_else(|e| e.into_inner());
     let Some(path) = guard.as_ref() else { return };
     if std::fs::metadata(path).map(|m| m.len() > MAX_BYTES).unwrap_or(false) {
         let _ = std::fs::rename(path, path.with_extension("log.1"));

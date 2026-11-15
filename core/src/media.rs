@@ -310,27 +310,27 @@ pub fn prefetch(app: &Shared, client: &crate::romm::Client) {
         return;
     }
     let total = jobs.len();
-    app.sync.lock().unwrap().media_pending = total;
-    app.emit(json!({ "type": "sync", "sync": app.sync.lock().unwrap().clone() }));
+    app.sync.lock().unwrap_or_else(|e| e.into_inner()).media_pending = total;
+    app.emit(json!({ "type": "sync", "sync": app.sync.lock().unwrap_or_else(|e| e.into_inner()).clone() }));
     let queue = Arc::new(Mutex::new(jobs));
     let failed = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let mut handles = vec![];
     for _ in 0..4 {
         let (queue, app, client, failed) = (queue.clone(), app.clone(), client.clone(), failed.clone());
         handles.push(std::thread::spawn(move || loop {
-            let Some((key, kind, src)) = queue.lock().unwrap().pop() else { break };
+            let Some((key, kind, src)) = queue.lock().unwrap_or_else(|e| e.into_inner()).pop() else { break };
             if let Err(e) = ensure(&app, &client, &key, kind, &src) {
                 failed.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 app.db.log("media", &format!("{kind} of {key}: {e}"));
             }
             let left = {
-                let mut s = app.sync.lock().unwrap();
+                let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
                 s.media_pending = s.media_pending.saturating_sub(1);
                 s.media_pending
             };
             if left % 25 == 0 {
                 app.emit(json!({ "type": "library" }));
-                app.emit(json!({ "type": "sync", "sync": app.sync.lock().unwrap().clone() }));
+                app.emit(json!({ "type": "sync", "sync": app.sync.lock().unwrap_or_else(|e| e.into_inner()).clone() }));
             }
         }));
     }

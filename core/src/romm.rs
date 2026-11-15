@@ -432,7 +432,11 @@ impl Client {
     /// Returns (reader, total file size, resume accepted by the server).
     pub fn open_file(&self, file: &RomFile, from: u64) -> Result<(Box<dyn Read + Send>, u64, bool)> {
         let url = format!("{}/api/roms/{}/files/content/{}", self.base, file.id, percent_encode(&file.file_name));
-        let mut req = self.dl.get(url);
+        // A transfer that stalls ends with an error (then resumes on retry) instead of hanging:
+        // the whole body is allowed what 64 KB/s would take, ten minutes at least.
+        let left = (file.file_size_bytes.max(0) as u64).saturating_sub(from);
+        let body_limit = Duration::from_secs((left / (64 * 1024)).max(600));
+        let mut req = self.dl.get(url).config().timeout_recv_body(Some(body_limit)).build();
         if let Some(a) = self.auth() {
             req = req.header("Authorization", a);
         }
@@ -476,7 +480,14 @@ impl Client {
     /// Reads bytes `start..start + len` of a game file (virtual mount). Shorter at the end of the file.
     pub fn fetch_range(&self, file_id: i64, file_name: &str, start: u64, len: u64) -> Result<Vec<u8>> {
         let url = format!("{}/api/roms/{}/files/content/{}", self.base, file_id, percent_encode(file_name));
-        let mut req = self.dl.get(url).header("Range", format!("bytes={}-{}", start, start + len.max(1) - 1));
+        // A range is small: a stalled one fails within two minutes and is asked again.
+        let mut req = self
+            .dl
+            .get(url)
+            .config()
+            .timeout_recv_body(Some(Duration::from_secs(120)))
+            .build()
+            .header("Range", format!("bytes={}-{}", start, start + len.max(1) - 1));
         if let Some(a) = self.auth() {
             req = req.header("Authorization", a);
         }
@@ -484,6 +495,9 @@ impl Client {
         let code = resp.status().as_u16();
         if code == 416 {
             return Ok(vec![]);
+        }
+        if code == 404 {
+            return Err(RommError::Missing(file_name.to_string()));
         }
         if !(200..300).contains(&code) {
             return Err(status_error(code, ""));

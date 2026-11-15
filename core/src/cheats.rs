@@ -65,7 +65,7 @@ fn root(app: &Shared) -> PathBuf {
 static STATE: Mutex<Option<Value>> = Mutex::new(None);
 
 fn state() -> Value {
-    STATE.lock().unwrap().clone().unwrap_or(Value::Null)
+    STATE.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or(Value::Null)
 }
 
 fn fresh(p: &Path) -> bool {
@@ -75,7 +75,7 @@ fn fresh(p: &Path) -> bool {
 /// Downloads (or refreshes) the databases in the background.
 fn refresh(app: &Shared) {
     {
-        let mut s = STATE.lock().unwrap();
+        let mut s = STATE.lock().unwrap_or_else(|e| e.into_inner());
         if s.as_ref().map(|v| v["running"] == true).unwrap_or(false) {
             return;
         }
@@ -150,7 +150,7 @@ fn refresh(app: &Shared) {
         for e in &errors {
             app.db.log("cheats", e);
         }
-        *STATE.lock().unwrap() =
+        *STATE.lock().unwrap_or_else(|e| e.into_inner()) =
             Some(json!({ "running": false, "error": if errors.is_empty() { Value::Null } else { json!(errors.join("; ")) } }));
         app.emit(json!({ "type": "cheats" }));
     });

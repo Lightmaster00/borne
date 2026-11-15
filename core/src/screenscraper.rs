@@ -94,11 +94,11 @@ pub fn stop(app: &Shared) {
 static STATUS: Mutex<Option<Status>> = Mutex::new(None);
 
 fn status_get() -> Status {
-    STATUS.lock().unwrap().clone().unwrap_or_default()
+    STATUS.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or_default()
 }
 fn status_set(app: &Shared, f: impl FnOnce(&mut Status)) {
     let s = {
-        let mut g = STATUS.lock().unwrap();
+        let mut g = STATUS.lock().unwrap_or_else(|e| e.into_inner());
         let s = g.get_or_insert_with(Status::default);
         f(s);
         s.clone()
@@ -894,7 +894,7 @@ pub fn start(app: &Shared, again: bool) {
                         if STOP.load(Ordering::SeqCst) {
                             return;
                         }
-                        let Some(key) = queue.lock().unwrap().pop_front() else { return };
+                        let Some(key) = queue.lock().unwrap_or_else(|e| e.into_inner()).pop_front() else { return };
                         let versions = app.db.group(&key);
                         match lookup(app, c, &versions) {
                             Ok(Some(rec)) => {

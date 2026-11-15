@@ -26,7 +26,7 @@ pub fn start(app: &Shared, profile_id: &str) -> Result<PairingState, String> {
         expires_at: db::now() + init.expires_in as i64,
         error: None,
     };
-    *app.pairing.lock().unwrap() = Some(state.clone());
+    *app.pairing.lock().unwrap_or_else(|e| e.into_inner()) = Some(state.clone());
     let generation = app.pairing_gen.fetch_add(1, Ordering::SeqCst) + 1;
     app.emit(serde_json::json!({ "type": "pairing", "pairing": state }));
     app.db.log("pairing", &format!("code shown for profile \"{}\"", profile.name));
@@ -41,7 +41,7 @@ pub fn start(app: &Shared, profile_id: &str) -> Result<PairingState, String> {
 
 pub fn cancel(app: &Shared) {
     app.pairing_gen.fetch_add(1, Ordering::SeqCst);
-    *app.pairing.lock().unwrap() = None;
+    *app.pairing.lock().unwrap_or_else(|e| e.into_inner()) = None;
     app.emit(serde_json::json!({ "type": "pairing", "pairing": null }));
 }
 
@@ -49,7 +49,7 @@ fn finish(app: &Shared, generation: u64, state: &str, error: Option<String>) {
     if app.pairing_gen.load(Ordering::SeqCst) != generation {
         return;
     }
-    let mut guard = app.pairing.lock().unwrap();
+    let mut guard = app.pairing.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(p) = guard.as_mut() {
         p.state = state.into();
         p.error = error;
@@ -64,7 +64,7 @@ fn poll(app: Shared, client: crate::romm::Client, device_code: String, interval:
         if app.pairing_gen.load(Ordering::SeqCst) != generation {
             return; // cancelled or replaced
         }
-        let profile_id = match app.pairing.lock().unwrap().as_ref() {
+        let profile_id = match app.pairing.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
             Some(p) => p.profile_id.clone(),
             None => return,
         };
@@ -85,7 +85,7 @@ fn poll(app: Shared, client: crate::romm::Client, device_code: String, interval:
             }
             Err(e) => return finish(&app, generation, "error", Some(e.to_string())),
         }
-        let expired = app.pairing.lock().unwrap().as_ref().map(|p| db::now() > p.expires_at).unwrap_or(true);
+        let expired = app.pairing.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|p| db::now() > p.expires_at).unwrap_or(true);
         if expired {
             return finish(&app, generation, "expired", None);
         }

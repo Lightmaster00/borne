@@ -79,7 +79,7 @@ fn get(app: &Shared, group: &str, k: &str) -> (String, bool) {
 /// The game's controls: each setting with its values and whether the game has its own, the
 /// connected controllers, and whether the game's emulator takes them (RetroArch).
 pub fn view(app: &Shared, group: &str, program: &str) -> Value {
-    let pads = app.pads.lock().unwrap().pads.clone();
+    let pads = app.pads.lock().unwrap_or_else(|e| e.into_inner()).pads.clone();
     let options: Vec<Value> = keys()
         .iter()
         .map(|k| {

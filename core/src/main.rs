@@ -100,6 +100,14 @@ fn main() {
         std::process::exit(1);
     }
     logfile::init(paths.root.join("logs"));
+    // A panic anywhere (an API request, a background task) goes to the log file too, so that a
+    // diagnostic report says what failed instead of only "core unreachable".
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let thread = std::thread::current().name().unwrap_or("unnamed").to_string();
+        logfile::write("panic", &format!("thread {thread}: {info}"));
+        default_hook(info);
+    }));
     logfile::write(
         "start",
         &format!("Borne {} (build {}) on {} {}", update::VERSION, update::build(), std::env::consts::OS, std::env::consts::ARCH),
@@ -133,7 +141,7 @@ fn main() {
             app.pads.clone(),
             move || {
                 if emulators::playing() {
-                    eprintln!("quit chord: asking whether to quit");
+                    logfile::write("play", "quit chord: asking whether to quit");
                     emulators::ask_quit(&on_quit);
                 }
             },

@@ -173,11 +173,11 @@ static BUSY: AtomicBool = AtomicBool::new(false);
 pub static RESTART: AtomicBool = AtomicBool::new(false);
 
 fn get_state() -> UpdateState {
-    STATE.lock().unwrap().clone().unwrap_or_else(|| UpdateState { state: "idle".into(), ..Default::default() })
+    STATE.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or_else(|| UpdateState { state: "idle".into(), ..Default::default() })
 }
 
 fn set_state(app: &Shared, f: impl FnOnce(&mut UpdateState)) {
-    let mut guard = STATE.lock().unwrap();
+    let mut guard = STATE.lock().unwrap_or_else(|e| e.into_inner());
     let mut s = guard.clone().unwrap_or_else(|| UpdateState { state: "idle".into(), ..Default::default() });
     f(&mut s);
     *guard = Some(s.clone());

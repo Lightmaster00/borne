@@ -18,7 +18,7 @@ pub struct Broadcaster {
 
 impl Broadcaster {
     pub fn send(&self, msg: String) {
-        let mut clients = self.clients.lock().unwrap();
+        let mut clients = self.clients.lock().unwrap_or_else(|e| e.into_inner());
         clients.retain(|c| c.send(msg.clone()).is_ok());
     }
 }
@@ -50,7 +50,7 @@ pub fn start(token: String, hub: Broadcaster) -> std::io::Result<u16> {
                 };
                 let _ = ws.get_ref().set_read_timeout(None);
                 let (tx, rx) = channel::<String>();
-                hub.clients.lock().unwrap().push(tx);
+                hub.clients.lock().unwrap_or_else(|e| e.into_inner()).push(tx);
                 let _ = ws.send(Message::text(r#"{"type":"hello","api":1}"#));
                 // Send only: the client has nothing to tell the core on this channel.
                 for msg in rx {

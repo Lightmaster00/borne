@@ -70,12 +70,12 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
             let mut gilrs = match Gilrs::new() {
                 Ok(g) => g,
                 Err(e) => {
-                    let mut s = state.lock().unwrap();
+                    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                     s.error = Some(e.to_string());
                     return;
                 }
             };
-            state.lock().unwrap().available = true;
+            state.lock().unwrap_or_else(|e| e.into_inner()).available = true;
 
             // held action -> (time of the next repeat, gamepad name)
             let mut held: HashMap<&'static str, (Instant, String)> = HashMap::new();
@@ -96,7 +96,7 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
 
             loop {
                 {
-                    let mut s = state.lock().unwrap();
+                    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                     s.pads = gilrs.gamepads().map(|(_, g)| g.name().to_string()).collect();
                     s.guids = gilrs.gamepads().map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect()).collect();
                 }

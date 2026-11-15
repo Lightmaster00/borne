@@ -72,7 +72,7 @@ fn files(app: &Shared, console: &str, item: &str) -> Vec<PathBuf> {
 static TASK: Mutex<Option<Value>> = Mutex::new(None);
 
 fn set_task(app: &Shared, v: Value) {
-    *TASK.lock().unwrap() = Some(v);
+    *TASK.lock().unwrap_or_else(|e| e.into_inner()) = Some(v);
     app.emit(json!({ "type": "systemfiles" }));
 }
 
@@ -109,7 +109,7 @@ pub fn status(app: &Shared) -> Value {
             json!({ "slug": slug, "name": name, "items": list })
         })
         .collect();
-    json!({ "consoles": consoles, "task": TASK.lock().unwrap().clone().unwrap_or(Value::Null) })
+    json!({ "consoles": consoles, "task": TASK.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or(Value::Null) })
 }
 
 /// MD5 of a file, remembered while its size and date stay the same.
@@ -119,7 +119,7 @@ fn md5_of(p: &Path) -> Option<String> {
     let meta = std::fs::metadata(p).ok()?;
     let mtime = meta.modified().ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs() as i64).unwrap_or(0);
     let key = (p.to_path_buf(), meta.len(), mtime);
-    if let Some(m) = CACHE.lock().unwrap().get(&key) {
+    if let Some(m) = CACHE.lock().unwrap_or_else(|e| e.into_inner()).get(&key) {
         return Some(m.clone());
     }
     let mut h = md5::Md5::new();
@@ -133,7 +133,7 @@ fn md5_of(p: &Path) -> Option<String> {
         h.update(&buf[..n]);
     }
     let m: String = h.finalize().iter().map(|b| format!("{b:02x}")).collect();
-    CACHE.lock().unwrap().insert(key, m.clone());
+    CACHE.lock().unwrap_or_else(|e| e.into_inner()).insert(key, m.clone());
     Some(m)
 }
 
@@ -190,7 +190,7 @@ pub fn add_url(app: &Shared, console: &str, item: &str, url: &str) -> Result<(),
 }
 
 fn begin(app: &Shared, console: &str, item: &str) -> Result<(), String> {
-    let mut t = TASK.lock().unwrap();
+    let mut t = TASK.lock().unwrap_or_else(|e| e.into_inner());
     if t.as_ref().map(|v| v["running"] == true).unwrap_or(false) {
         return Err("a file is already being added".into());
     }

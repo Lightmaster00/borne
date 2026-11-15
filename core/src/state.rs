@@ -81,7 +81,7 @@ impl App {
 
     pub fn wake_downloads(&self) {
         let (lock, cv) = &self.dl_wake;
-        *lock.lock().unwrap() = true;
+        *lock.lock().unwrap_or_else(|e| e.into_inner()) = true;
         cv.notify_all();
     }
 
@@ -97,8 +97,8 @@ impl App {
             "online": self.online.load(Ordering::SeqCst),
             "active_profile": self.active_profile(),
             "profiles": self.db.profiles(),
-            "pairing": *self.pairing.lock().unwrap(),
-            "sync": *self.sync.lock().unwrap(),
+            "pairing": *self.pairing.lock().unwrap_or_else(|e| e.into_inner()),
+            "sync": *self.sync.lock().unwrap_or_else(|e| e.into_inner()),
             "free_space": crate::paths::free_space(&self.paths.root),
             "data_dir": self.paths.root,
         })

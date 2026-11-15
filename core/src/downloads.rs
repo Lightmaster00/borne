@@ -17,7 +17,8 @@ use std::time::{Duration, Instant};
 /// "Main" file extensions in order of preference, to choose what to launch.
 const MAIN_EXT: &[&str] = &[
     "m3u", "cue", "gdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md", "gen", "smd", "bin", "sfc", "smc",
-    "gb", "gbc", "gba", "n64", "z64", "v64",
+    "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce", "ws", "wsc", "ngp", "ngc", "a26",
+    "lnx", "vb",
 ];
 /// Platforms whose .zip archives are extracted (RetroArch can read zips, but
 /// extracting avoids special cases and allows the files to be verified).
@@ -36,7 +37,7 @@ pub fn spawn_worker(app: Shared) {
                 Some((id, rom_id)) => run(&app, id, rom_id),
                 None => {
                     let (lock, cv) = &app.dl_wake;
-                    let mut woken = lock.lock().unwrap();
+                    let mut woken = lock.lock().unwrap_or_else(|e| e.into_inner());
                     while !*woken {
                         woken = cv.wait_timeout(woken, Duration::from_secs(30)).unwrap().0;
                         if app.db.next_queued_download().is_some() {
@@ -62,8 +63,8 @@ pub fn enqueue(app: &Shared, rom_id: i64) -> Result<i64, String> {
 }
 
 pub fn cancel(app: &Shared, id: i64) -> bool {
-    app.dl_pause.lock().unwrap().remove(&id);
-    if let Some(flag) = app.dl_cancel.lock().unwrap().get(&id) {
+    app.dl_pause.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
+    if let Some(flag) = app.dl_cancel.lock().unwrap_or_else(|e| e.into_inner()).get(&id) {
         flag.store(true, Ordering::SeqCst);
         return true;
     }
@@ -83,8 +84,8 @@ pub fn cancel(app: &Shared, id: i64) -> bool {
 
 /// Pauses a download: a running one stops and keeps its partial files, a queued one waits.
 pub fn pause(app: &Shared, id: i64) -> bool {
-    if let Some(flag) = app.dl_cancel.lock().unwrap().get(&id) {
-        app.dl_pause.lock().unwrap().insert(id);
+    if let Some(flag) = app.dl_cancel.lock().unwrap_or_else(|e| e.into_inner()).get(&id) {
+        app.dl_pause.lock().unwrap_or_else(|e| e.into_inner()).insert(id);
         flag.store(true, Ordering::SeqCst);
         return true;
     }
@@ -121,15 +122,15 @@ fn emit(app: &Shared, id: i64, rom_id: i64, state: &str, received: i64, total: i
 
 fn run(app: &Shared, id: i64, rom_id: i64) {
     let flag = Arc::new(AtomicBool::new(false));
-    app.dl_cancel.lock().unwrap().insert(id, flag.clone());
+    app.dl_cancel.lock().unwrap_or_else(|e| e.into_inner()).insert(id, flag.clone());
     let result = download(app, id, rom_id, &flag);
-    app.dl_cancel.lock().unwrap().remove(&id);
+    app.dl_cancel.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
     let staging = app.paths.library().join(".staging").join(rom_id.to_string());
     match result {
         Ok(Outcome::Done) => {
             let _ = std::fs::remove_dir_all(&staging);
         }
-        Ok(Outcome::Cancelled) if app.dl_pause.lock().unwrap().remove(&id) => {
+        Ok(Outcome::Cancelled) if app.dl_pause.lock().unwrap_or_else(|e| e.into_inner()).remove(&id) => {
             // Paused: the partial files stay for resuming.
             let (received, total) = app.db.download_progress(id);
             app.db.update_download(id, "paused", received, total, None);
@@ -147,8 +148,10 @@ fn run(app: &Shared, id: i64, rom_id: i64) {
             if e.starts_with("RomM server unreachable") {
                 app.set_online(false);
             }
-            app.db.update_download(id, "failed", 0, 0, Some(&e));
-            emit(app, id, rom_id, "failed", 0, 0, Some(&e), 0.0);
+            // The progress stays: a retry resumes from the partial files.
+            let (received, total) = app.db.download_progress(id);
+            app.db.update_download(id, "failed", received, total, Some(&e));
+            emit(app, id, rom_id, "failed", received, total, Some(&e), 0.0);
             app.db.log("download", &format!("game {rom_id}: {e}"));
         }
     }
@@ -463,7 +466,7 @@ pub fn pick_main_of(mut files: Vec<(u64, PathBuf)>) -> Option<PathBuf> {
             return Some(p.clone());
         }
     }
-    files.into_iter().max_by_key(|(size, _)| *size).map(|(_, p)| p)
+    files.into_iter().max_by_key(|(size, p)| (!is_extra(p), *size)).map(|(_, p)| p)
 }
 
 /// An update, a DLC or a patch rather than the game itself, by its name: the words, a version tag

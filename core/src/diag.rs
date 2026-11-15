@@ -213,7 +213,7 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
         let _ = writeln!(r, "setting {key}: {}", app.db.setting(key).unwrap_or_else(|| "default".into()));
     }
     let _ = writeln!(r, "mount: {}", crate::stream::status(app));
-    let _ = writeln!(r, "sync: {}", serde_json::to_string(&*app.sync.lock().unwrap()).unwrap_or_default());
+    let _ = writeln!(r, "sync: {}", serde_json::to_string(&*app.sync.lock().unwrap_or_else(|e| e.into_inner())).unwrap_or_default());
     let _ = writeln!(r, "free space: {:?} bytes", crate::paths::free_space(&app.paths.root));
     let _ = writeln!(r, "\n--- recent downloads ---");
     for d in app.db.downloads() {

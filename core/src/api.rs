@@ -257,7 +257,7 @@ fn screenshot(app: &Shared, rom_id: i64, n: usize) -> Result<PathBuf, String> {
 fn cover_ratio(path: &str) -> Option<f64> {
     static CACHE: std::sync::Mutex<Option<std::collections::HashMap<String, (std::time::SystemTime, f64)>>> = std::sync::Mutex::new(None);
     let mtime = std::fs::metadata(path).and_then(|m| m.modified()).ok()?;
-    let mut g = CACHE.lock().unwrap();
+    let mut g = CACHE.lock().unwrap_or_else(|e| e.into_inner());
     let map = g.get_or_insert_with(std::collections::HashMap::new);
     if let Some((t, r)) = map.get(path) {
         if *t == mtime {
@@ -444,7 +444,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Get, ["api", "v1", "status"]) => ok(req, app.status()),
         (Method::Get, ["api", "v1", "diagnostics"]) => ok(req, json!(diag::diagnostics())),
         (Method::Get, ["api", "v1", "pads"]) => {
-            let s = app.pads.lock().unwrap().clone();
+            let s = app.pads.lock().unwrap_or_else(|e| e.into_inner()).clone();
             ok(req, json!(s))
         }
         (Method::Post, ["api", "v1", "server"]) => {
@@ -568,13 +568,13 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Ok(state) => ok(req, json!(state)),
             Err(e) => err(req, 502, &e),
         },
-        (Method::Get, ["api", "v1", "pairing"]) => ok(req, json!(*app.pairing.lock().unwrap())),
+        (Method::Get, ["api", "v1", "pairing"]) => ok(req, json!(*app.pairing.lock().unwrap_or_else(|e| e.into_inner()))),
         (Method::Delete, ["api", "v1", "pairing"]) => {
             pairing::cancel(app);
             ok(req, json!({ "cancelled": true }))
         }
         (Method::Get, ["api", "v1", "pairing", "qr.svg"]) => {
-            let url = app.pairing.lock().unwrap().as_ref().map(|p| p.verification_url.clone());
+            let url = app.pairing.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|p| p.verification_url.clone());
             match url.and_then(|u| pairing::qr_svg(&u)) {
                 Some(svg) => {
                     let r = Response::from_string(svg)
@@ -594,7 +594,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             if !too_soon("sync", 3) {
                 catalog::start_sync(app);
             }
-            ok(req, json!(*app.sync.lock().unwrap()))
+            ok(req, json!(*app.sync.lock().unwrap_or_else(|e| e.into_inner())))
         }
         (Method::Get, ["api", "v1", "platforms"]) => {
             // With the console images ScreenScraper gave (logo, monochrome logo, photo, frame).
@@ -1305,7 +1305,7 @@ fn too_soon(what: &'static str, seconds: u64) -> bool {
     use std::collections::HashMap;
     use std::time::{Duration, Instant};
     static LAST: std::sync::Mutex<Option<HashMap<&'static str, Instant>>> = std::sync::Mutex::new(None);
-    let mut g = LAST.lock().unwrap();
+    let mut g = LAST.lock().unwrap_or_else(|e| e.into_inner());
     let map = g.get_or_insert_with(HashMap::new);
     let now = Instant::now();
     if map.get(what).map(|t| now.duration_since(*t) < Duration::from_secs(seconds)).unwrap_or(false) {

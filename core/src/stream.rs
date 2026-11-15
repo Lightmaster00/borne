@@ -10,7 +10,7 @@
 use crate::downloads::{pick_main_of, relative_path};
 use crate::state::Shared;
 use serde_json::{json, Value};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 /// Mount state, shown in the status and on the game page.
@@ -23,7 +23,7 @@ struct MountState {
 }
 
 pub fn status(app: &Shared) -> Value {
-    let s = STATE.lock().unwrap().clone();
+    let s = STATE.lock().unwrap_or_else(|e| e.into_inner()).clone();
     json!({
         "available": s.mounted,
         "path": app.paths.mount(),
@@ -38,7 +38,7 @@ pub fn available() -> bool {
 }
 
 fn set_state(mounted: bool, error: Option<String>) {
-    *STATE.lock().unwrap() = MountState { mounted, error };
+    *STATE.lock().unwrap_or_else(|e| e.into_inner()) = MountState { mounted, error };
 }
 
 pub fn cache_limit_mb(app: &Shared) -> u64 {
@@ -47,8 +47,8 @@ pub fn cache_limit_mb(app: &Shared) -> u64 {
 
 /// Exposes a game in the virtual mount. Returns the path of the file to launch.
 pub fn link(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
-    if !STATE.lock().unwrap().mounted {
-        return Err(STATE.lock().unwrap().error.clone().unwrap_or_else(|| "virtual mount unavailable".into()));
+    if !STATE.lock().unwrap_or_else(|e| e.into_inner()).mounted {
+        return Err(STATE.lock().unwrap_or_else(|e| e.into_inner()).error.clone().unwrap_or_else(|| "virtual mount unavailable".into()));
     }
     let game = app.db.game(rom_id).ok_or("unknown game")?;
     let client = app.client().ok_or("no paired profile or server offline")?;
@@ -63,6 +63,11 @@ pub fn link(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
     }
     let main =
         pick_main_of(files.iter().map(|(_, rel, _, size)| (*size as u64, PathBuf::from(rel))).collect()).ok_or("no game file found")?;
+    // RomM must be able to serve the game's file: asked directly, so that its own answer (a file
+    // missing from its disk) is shown rather than an emulator failing on an unreadable file.
+    if let Some((id, _, name, _)) = files.iter().find(|(_, rel, _, _)| Path::new(rel) == main) {
+        client.fetch_range(*id, name, 0, 16).map_err(|e| e.to_string())?;
+    }
     app.db.link_game(rom_id, &main.to_string_lossy(), &files);
     imp::refresh(app);
     app.db.log("stream", &format!("{} linked ({} file(s))", game.name, files.len()));
@@ -156,8 +161,11 @@ mod imp {
     struct Fs {
         app: Shared,
         tree: Arc<RwLock<Tree>>,
-        locks: Mutex<HashMap<(i64, u64), FileLock>>,
-        written: AtomicU64,
+        locks: Arc<Mutex<HashMap<(i64, u64), FileLock>>>,
+        written: Arc<AtomicU64>,
+        /// The RomM client, kept between reads (one connection reused rather than a new one per
+        /// block), renewed when the server or the profile changes.
+        client: Arc<Mutex<Option<(String, crate::romm::Client)>>>,
         uid: u32,
         gid: u32,
     }
@@ -202,12 +210,12 @@ mod imp {
 
     pub fn refresh(app: &Shared) {
         if let Some(t) = TREE.get() {
-            rebuild(app, &mut t.write().unwrap());
+            rebuild(app, &mut t.write().unwrap_or_else(|e| e.into_inner()));
         }
     }
 
     pub fn stop() {
-        if let Some(session) = SESSION.lock().unwrap().take() {
+        if let Some(session) = SESSION.lock().unwrap_or_else(|e| e.into_inner()).take() {
             drop(session);
         }
     }
@@ -240,16 +248,24 @@ mod imp {
             return;
         }
         let tree = TREE.get_or_init(|| Arc::new(RwLock::new(Tree::default()))).clone();
-        rebuild(app, &mut tree.write().unwrap());
+        rebuild(app, &mut tree.write().unwrap_or_else(|e| e.into_inner()));
         // SAFETY: getuid/getgid have no preconditions.
         let (uid, gid) = unsafe { (libc::getuid(), libc::getgid()) };
-        let fs = Fs { app: app.clone(), tree, locks: Mutex::new(HashMap::new()), written: AtomicU64::new(0), uid, gid };
+        let fs = Fs {
+            app: app.clone(),
+            tree,
+            locks: Arc::new(Mutex::new(HashMap::new())),
+            written: Arc::new(AtomicU64::new(0)),
+            client: Arc::new(Mutex::new(None)),
+            uid,
+            gid,
+        };
         let mut cfg = fuser::Config::default();
         cfg.mount_options = vec![MountOption::RO, MountOption::FSName("borne".into()), MountOption::NoExec];
         cfg.n_threads = Some(4);
         match fuser::spawn_mount(fs, &mount, &cfg) {
             Ok(session) => {
-                *SESSION.lock().unwrap() = Some(session);
+                *SESSION.lock().unwrap_or_else(|e| e.into_inner()) = Some(session);
                 super::set_state(true, None);
                 crate::logfile::write("stream", &format!("virtual mount ready: {}", mount.display()));
             }
@@ -293,18 +309,44 @@ mod imp {
             self.app.paths.stream_cache().join(rom_id.to_string()).join(file_id.to_string()).join(format!("{block}.blk"))
         }
 
-        /// One block of a file, from the cache or from RomM.
-        fn block(&self, f: &FileNode, block: u64) -> Result<Vec<u8>, String> {
-            let path = self.block_path(f.rom_id, f.file_id, block);
-            let lock = self.locks.lock().unwrap().entry((f.file_id, block)).or_default().clone();
-            let _guard = lock.lock().unwrap();
-            if let Ok(data) = std::fs::read(&path) {
-                return Ok(data);
+        /// The RomM client of the active profile, reused while it stays the same.
+        fn client(&self) -> Result<crate::romm::Client, String> {
+            let key = format!("{:?}|{:?}", self.app.server_url(), self.app.active_profile().map(|p| p.id));
+            let mut c = self.client.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some((k, client)) = c.as_ref() {
+                if *k == key {
+                    return Ok(client.clone());
+                }
             }
             let client = self.app.client().ok_or("no paired profile")?;
+            *c = Some((key, client.clone()));
+            Ok(client)
+        }
+
+        /// Bytes `s..e` of one block of a file: from the cache (only what is asked is read), else
+        /// the whole block from RomM, kept in the cache.
+        fn block(&self, f: &FileNode, block: u64, s: usize, e: usize) -> Result<Vec<u8>, String> {
+            let path = self.block_path(f.rom_id, f.file_id, block);
+            let lock = self.locks.lock().unwrap_or_else(|e| e.into_inner()).entry((f.file_id, block)).or_default().clone();
+            let _guard = lock.lock().unwrap_or_else(|e| e.into_inner());
+            if let Ok(mut file) = std::fs::File::open(&path) {
+                use std::io::{Read, Seek, SeekFrom};
+                let len = file.metadata().map(|m| m.len() as usize).unwrap_or(0);
+                let (s, e) = (s.min(len), e.min(len));
+                let mut out = vec![0u8; e - s];
+                if file.seek(SeekFrom::Start(s as u64)).is_ok() && file.read_exact(&mut out).is_ok() {
+                    return Ok(out);
+                }
+            }
+            let data = self.fetch(f, block, &path)?;
+            Ok(data[s.min(data.len())..e.min(data.len())].to_vec())
+        }
+
+        /// One whole block from RomM, written to the cache.
+        fn fetch(&self, f: &FileNode, block: u64, path: &Path) -> Result<Vec<u8>, String> {
             let start = block * BLOCK;
             let len = BLOCK.min(f.size.saturating_sub(start));
-            let data = client.fetch_range(f.file_id, &f.name, start, len).map_err(|e| e.to_string())?;
+            let data = self.client()?.fetch_range(f.file_id, &f.name, start, len).map_err(|e| e.to_string())?;
             if data.len() as u64 != len {
                 return Err(format!("short read from RomM ({} of {len} bytes)", data.len()));
             }
@@ -312,7 +354,7 @@ mod imp {
                 let _ = std::fs::create_dir_all(dir);
                 let tmp = path.with_extension("part");
                 if std::fs::write(&tmp, &data).is_ok() {
-                    let _ = std::fs::rename(&tmp, &path);
+                    let _ = std::fs::rename(&tmp, path);
                 }
             }
             if self.written.fetch_add(len, Ordering::Relaxed) + len > 256 * 1024 * 1024 {
@@ -321,6 +363,33 @@ mod imp {
                 std::thread::spawn(move || evict(&app));
             }
             Ok(data)
+        }
+
+        /// Reading on: the next block is fetched in the background while the emulator uses this
+        /// one, so a game read in order rarely waits for RomM.
+        fn prefetch(&self, f: &FileNode, block: u64) {
+            if block * BLOCK >= f.size || self.block_path(f.rom_id, f.file_id, block).exists() {
+                return;
+            }
+            let lock = self.locks.lock().unwrap_or_else(|e| e.into_inner()).entry((f.file_id, block)).or_default().clone();
+            let me = Fs {
+                app: self.app.clone(),
+                tree: self.tree.clone(),
+                locks: self.locks.clone(),
+                written: self.written.clone(),
+                client: self.client.clone(),
+                uid: self.uid,
+                gid: self.gid,
+            };
+            let node = FileNode { file_id: f.file_id, rom_id: f.rom_id, name: f.name.clone(), size: f.size };
+            std::thread::spawn(move || {
+                // Already being fetched (by a read or another prefetch): nothing to do.
+                let Ok(_guard) = lock.try_lock() else { return };
+                let path = me.block_path(node.rom_id, node.file_id, block);
+                if !path.exists() {
+                    let _ = me.fetch(&node, block, &path);
+                }
+            });
         }
     }
 
@@ -353,7 +422,7 @@ mod imp {
 
     impl Filesystem for Fs {
         fn lookup(&self, _req: &Request, parent: INodeNo, name: &OsStr, reply: ReplyEntry) {
-            let tree = self.tree.read().unwrap();
+            let tree = self.tree.read().unwrap_or_else(|e| e.into_inner());
             let child = tree.dirs.get(&parent.0).and_then(|d| d.get(name.to_string_lossy().as_ref())).copied();
             match child.and_then(|c| self.attr(c, &tree)) {
                 Some(a) => reply.entry(&TTL, &a, fuser::Generation(0)),
@@ -362,7 +431,7 @@ mod imp {
         }
 
         fn getattr(&self, _req: &Request, ino: INodeNo, _fh: Option<FileHandle>, reply: ReplyAttr) {
-            let tree = self.tree.read().unwrap();
+            let tree = self.tree.read().unwrap_or_else(|e| e.into_inner());
             match self.attr(ino.0, &tree) {
                 Some(a) => reply.attr(&TTL, &a),
                 None => reply.error(Errno::ENOENT),
@@ -370,7 +439,7 @@ mod imp {
         }
 
         fn readdir(&self, _req: &Request, ino: INodeNo, _fh: FileHandle, offset: u64, mut reply: ReplyDirectory) {
-            let tree = self.tree.read().unwrap();
+            let tree = self.tree.read().unwrap_or_else(|e| e.into_inner());
             let Some(children) = tree.dirs.get(&ino.0) else {
                 return reply.error(Errno::ENOENT);
             };
@@ -401,7 +470,7 @@ mod imp {
             reply: ReplyData,
         ) {
             let node = {
-                let tree = self.tree.read().unwrap();
+                let tree = self.tree.read().unwrap_or_else(|e| e.into_inner());
                 match tree.files.get(&ino.0) {
                     Some(f) => FileNode { file_id: f.file_id, rom_id: f.rom_id, name: f.name.clone(), size: f.size },
                     None => return reply.error(Errno::ENOENT),
@@ -415,15 +484,20 @@ mod imp {
             let mut pos = offset;
             while pos < end {
                 let b = pos / BLOCK;
-                match self.block(&node, b) {
+                let s = (pos - b * BLOCK) as usize;
+                let e = ((end - b * BLOCK) as usize).min(BLOCK as usize);
+                match self.block(&node, b, s, e) {
                     Ok(data) => {
-                        let s = (pos - b * BLOCK) as usize;
-                        let e = ((end - b * BLOCK) as usize).min(data.len());
-                        if s >= e {
+                        if data.is_empty() {
                             break;
                         }
-                        out.extend_from_slice(&data[s..e]);
-                        pos = b * BLOCK + e as u64;
+                        pos += data.len() as u64;
+                        out.extend_from_slice(&data);
+                        // Once, as the reads cross the middle of the block.
+                        let half = (BLOCK / 2) as usize;
+                        if s < half && e >= half {
+                            self.prefetch(&node, b + 1);
+                        }
                     }
                     Err(e) => {
                         crate::logfile::write("stream", &format!("virtual mount: {e}"));

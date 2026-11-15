@@ -424,11 +424,11 @@ struct Session {
 static SESSION: Mutex<Option<Session>> = Mutex::new(None);
 
 pub fn playing() -> bool {
-    SESSION.lock().unwrap().is_some()
+    SESSION.lock().unwrap_or_else(|e| e.into_inner()).is_some()
 }
 
 pub fn session() -> Value {
-    match SESSION.lock().unwrap().as_ref() {
+    match SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
         Some(s) => {
             json!({ "running": true, "rom_id": s.rom_id, "name": s.name, "emulator": s.emulator, "seconds": s.started.elapsed().as_secs(), "paused": s.paused })
         }
@@ -574,7 +574,7 @@ fn command(
         )?;
     }
     let (index, pad, guid) = {
-        let s = app.pads.lock().unwrap();
+        let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
         let i = crate::controls::pad_index(app, &group, s.pads.len());
         (i, s.pads.get(i).cloned(), s.guids.get(i).cloned())
     };
@@ -727,7 +727,7 @@ fn log_tail(p: &Path) -> String {
 /// Starts the game. Returns when the emulator is running; the session is then followed in the
 /// background and its end announced with a "session" event.
 pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
-    if SESSION.lock().unwrap().is_some() {
+    if SESSION.lock().unwrap_or_else(|e| e.into_inner()).is_some() {
         return Err("a game is already running".into());
     }
     let g = app.db.game(rom_id).ok_or("unknown game")?;
@@ -788,7 +788,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)).map(Path::to_path_buf);
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
-    *SESSION.lock().unwrap() = Some(Session {
+    *SESSION.lock().unwrap_or_else(|e| e.into_inner()) = Some(Session {
         rom_id,
         name: g.name.clone(),
         emulator: e.name.clone(),
@@ -825,7 +825,7 @@ fn follow(app: Shared, log: PathBuf, fails: Vec<String>) {
     let mut read = 0usize;
     loop {
         std::thread::sleep(Duration::from_millis(300));
-        let mut g = SESSION.lock().unwrap();
+        let mut g = SESSION.lock().unwrap_or_else(|e| e.into_inner());
         let Some(s) = g.as_mut() else { return };
         match s.child.try_wait() {
             Ok(None) => {
@@ -897,7 +897,6 @@ fn follow(app: Shared, log: PathBuf, fails: Vec<String>) {
     }
 }
 
-/// Ends the running game (the emulator is asked to quit, then stopped).
 /// How long the quit question waits before the game goes on by itself (the question may be hidden
 /// behind the emulator on some desktops).
 const ASK_QUIT_FOR: Duration = Duration::from_secs(30);
@@ -905,7 +904,7 @@ const ASK_QUIT_FOR: Duration = Duration::from_secs(30);
 /// The quit chord during a game: the game pauses (its processes stopped) and Borne asks whether
 /// to quit; the chord again quits at once.
 pub fn ask_quit(app: &Shared) {
-    let mut g = SESSION.lock().unwrap();
+    let mut g = SESSION.lock().unwrap_or_else(|e| e.into_inner());
     let Some(s) = g.as_mut() else { return };
     if s.stopping {
         return;
@@ -925,7 +924,8 @@ pub fn ask_quit(app: &Shared) {
     let app = app.clone();
     std::thread::spawn(move || {
         std::thread::sleep(ASK_QUIT_FOR);
-        let still = SESSION.lock().unwrap().as_ref().map(|s| s.paused && s.child.id() as i32 == pid).unwrap_or(false);
+        let still =
+            SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|s| s.paused && s.child.id() as i32 == pid).unwrap_or(false);
         if still {
             resume(&app);
         }
@@ -935,7 +935,7 @@ pub fn ask_quit(app: &Shared) {
 /// The game goes on after the quit question: its processes run again, and on macOS the emulator
 /// comes back to the front.
 pub fn resume(app: &Shared) {
-    let mut g = SESSION.lock().unwrap();
+    let mut g = SESSION.lock().unwrap_or_else(|e| e.into_inner());
     let Some(s) = g.as_mut() else { return };
     if !s.paused {
         return;
@@ -952,8 +952,9 @@ pub fn resume(app: &Shared) {
     app.emit(json!({ "type": "session", "session": session() }));
 }
 
+/// Ends the running game (the emulator is asked to quit, then stopped).
 pub fn stop() -> bool {
-    let mut g = SESSION.lock().unwrap();
+    let mut g = SESSION.lock().unwrap_or_else(|e| e.into_inner());
     let Some(s) = g.as_mut() else { return false };
     s.stopping = true;
     let pid = s.child.id() as i32;
@@ -967,7 +968,7 @@ pub fn stop() -> bool {
     drop(g);
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_secs(5));
-        if let Some(s) = SESSION.lock().unwrap().as_mut() {
+        if let Some(s) = SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_mut() {
             if s.child.id() as i32 == pid {
                 unsafe {
                     libc::kill(-pid, libc::SIGKILL);

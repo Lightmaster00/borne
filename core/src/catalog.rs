@@ -150,7 +150,7 @@ pub fn start_sync(app: &Shared) {
     // LaunchBox's index from an earlier version (that source was removed).
     let _ = std::fs::remove_file(app.paths.art().join("launchbox-metadata.zip"));
     {
-        let mut s = app.sync.lock().unwrap();
+        let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
         if s.running {
             return;
         }
@@ -164,7 +164,7 @@ pub fn start_sync(app: &Shared) {
         .name("borne-sync".into())
         .spawn(move || {
             let result = sync(&app);
-            let mut s = app.sync.lock().unwrap();
+            let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
             s.running = false;
             match result {
                 Ok(()) => s.last_sync = Some(crate::db::now()),
@@ -188,7 +188,7 @@ pub fn start_sync(app: &Shared) {
 }
 
 fn emit_progress(app: &Shared) {
-    let s = app.sync.lock().unwrap().clone();
+    let s = app.sync.lock().unwrap_or_else(|e| e.into_inner()).clone();
     app.emit(serde_json::json!({ "type": "sync", "sync": s }));
 }
 
@@ -236,7 +236,7 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         covers.extend(app.db.upsert_games(&games, sync_id));
         offset += items.len();
         {
-            let mut s = app.sync.lock().unwrap();
+            let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
             s.done = offset.min(total);
             s.total = total;
         }
@@ -283,7 +283,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
     if covers.is_empty() {
         return;
     }
-    app.sync.lock().unwrap().covers_pending = covers.len();
+    app.sync.lock().unwrap_or_else(|e| e.into_inner()).covers_pending = covers.len();
     emit_progress(app);
     let queue = Arc::new(Mutex::new(covers));
     let failed = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -292,7 +292,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
     for _ in 0..4 {
         let (queue, app, client, dir, failed) = (queue.clone(), app.clone(), client.clone(), dir.clone(), failed.clone());
         handles.push(std::thread::spawn(move || loop {
-            let Some((rom_id, remote, stamp)) = queue.lock().unwrap().pop() else {
+            let Some((rom_id, remote, stamp)) = queue.lock().unwrap_or_else(|e| e.into_inner()).pop() else {
                 break;
             };
             let ext = remote
@@ -307,7 +307,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
                 // RomM may answer an HTML page (proxy login, error page) with 200: keep images only.
                 if !looks_like_image(&bytes) {
                     failed.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    let mut s = app.sync.lock().unwrap();
+                    let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
                     s.covers_pending = s.covers_pending.saturating_sub(1);
                     continue;
                 }
@@ -317,7 +317,7 @@ fn fetch_covers(app: &Shared, client: &crate::romm::Client, covers: Vec<(i64, St
                 }
             }
             let left = {
-                let mut s = app.sync.lock().unwrap();
+                let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
                 s.covers_pending = s.covers_pending.saturating_sub(1);
                 s.covers_pending
             };
