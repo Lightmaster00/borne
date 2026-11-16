@@ -555,8 +555,14 @@ Window {
     function settingsMenu() {
         loadSettings()
         refreshStatus()
+        api("GET", "/api/v1/controls", null, function (r) { if (r) settingsPage.controlsAll = r })
         settingsPage.reset()
         overlay = "settings"
+    }
+    function loadEmuOptions(program) {
+        settingsPage.consoleOpts = null
+        if (!program) return
+        api("GET", "/api/v1/emulators/" + program + "/options", null, function (r) { if (r) settingsPage.consoleOpts = r })
     }
     function settingsAction(id, payload) {
         const post = function (body) {
@@ -620,21 +626,38 @@ Window {
             })
         }
         else if (id === "display") api("POST", "/api/v1/display", payload, function (r, err) {
-            if (err) toasts.show(err, "error")
-            if (payload.console) settingsPage.displayView = r; else loadSettings()
+            if (err) toasts.show(CoreText.tr(err), "error")
+            if (payload.console) { if (r && settingsPage.consoleSlug === payload.console) settingsPage.consoleDisplay = r }
+            else loadSettings()
         })
-        else if (id === "display-scope-menu") {
-            const consoles = settings && settings.emulators ? settings.emulators.consoles : []
-            const items = [{ id: "", label: qsTr("All games") }].concat(consoles.map(c => ({ id: c.slug, label: c.name })))
-            menu.open(qsTr("Display settings for"), "", items, function (slug) { settingsAction("display-scope", slug) },
-                      Math.max(0, items.findIndex(i => i.id === settingsPage.displayScope)))
+        // A console's page: its picture, and its emulator's options for all games.
+        else if (id === "console-open") {
+            api("GET", "/api/v1/display?console=" + encodeURIComponent(payload.slug), null, function (r) { if (r && settingsPage.consoleSlug === payload.slug) settingsPage.consoleDisplay = r })
+            loadEmuOptions(payload.program)
         }
-        else if (id === "display-scope") {
-            settingsPage.displayScope = payload
-            settingsPage.displayView = null
-            if (payload) api("GET", "/api/v1/display?console=" + encodeURIComponent(payload), null, function (r) { if (settingsPage.displayScope === payload) settingsPage.displayView = r })
+        else if (id === "emu-option") api("POST", "/api/v1/emulators/" + payload.program + "/options", { key: payload.key, value: payload.value }, function (r, err) {
+            if (err) toasts.show(CoreText.tr(err), "error"); else settingsPage.consoleOpts = r
+        })
+        else if (id === "emu-options-reset") {
+            const own = settingsPage.consoleOpts ? settingsPage.consoleOpts.options.filter(o => o.own) : []
+            for (const o of own) api("POST", "/api/v1/emulators/" + payload.program + "/options", { key: o.key, value: "default" }, function (r) { if (r) settingsPage.consoleOpts = r })
         }
-        else if (id === "console-emu") api("POST", "/api/v1/consoles/" + payload.slug + "/emulator", { engine: payload.engine }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        else if (id === "controls-all") api("POST", "/api/v1/controls", payload, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); else settingsPage.controlsAll = r })
+        else if (id === "controls-all-reset") {
+            const own = settingsPage.controlsAll ? settingsPage.controlsAll.options.filter(o => o.own) : []
+            for (const o of own) api("POST", "/api/v1/controls", { key: o.key, value: "default" }, function (r) { if (r) settingsPage.controlsAll = r })
+        }
+        else if (id === "console-emu") api("POST", "/api/v1/consoles/" + payload.slug + "/emulator", { engine: payload.engine }, function (r, err) {
+            if (err) toasts.show(CoreText.tr(err), "error")
+            api("GET", "/api/v1/settings", null, function (r2) {
+                if (!r2) return
+                settings = r2
+                // The console's page shows the options of the emulator now chosen.
+                const c = (r2.emulators.consoles || []).find(x => x.slug === payload.slug)
+                const ch = c ? c.choices.find(x => x.id === c.chosen) : null
+                if (settingsPage.consoleSlug === payload.slug) loadEmuOptions(ch ? ch.program : "")
+            })
+        })
         else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-forget:")) api("POST", "/api/v1/emulators/" + id.substring(11) + "/path", { path: "" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })

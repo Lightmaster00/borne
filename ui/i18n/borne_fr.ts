@@ -1313,16 +1313,8 @@
         <translation>Cet émulateur n’a pas d’option propre ici : les réglages d’image s’appliquent.</translation>
     </message>
     <message>
-        <source>default</source>
-        <translation>par défaut</translation>
-    </message>
-    <message>
         <source>This game's options</source>
         <translation>Les options de ce jeu</translation>
-    </message>
-    <message>
-        <source>Back to the emulator's defaults</source>
-        <translation>Revenir aux valeurs par défaut de l’émulateur</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -1577,12 +1569,20 @@
         <translation>Les commandes de ce jeu</translation>
     </message>
     <message>
-        <source>Back to the controller as it is</source>
-        <translation>Revenir à la manette telle quelle</translation>
-    </message>
-    <message>
         <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
         <translation>L’émulateur de ce jeu lit la manette tout seul, les boutons à la place de ceux de la console.</translation>
+    </message>
+    <message>
+        <source>as for all its games</source>
+        <translation>comme pour tous ses jeux</translation>
+    </message>
+    <message>
+        <source>Back to the emulator's options for all its games (Settings → Consoles)</source>
+        <translation>Revenir aux options de l'émulateur pour tous ses jeux (Paramètres → Consoles)</translation>
+    </message>
+    <message>
+        <source>Back to the controls for every game (Settings → Controllers)</source>
+        <translation>Revenir aux commandes de tous les jeux (Paramètres → Manettes)</translation>
     </message>
 </context>
 <context>
@@ -1677,10 +1677,6 @@
 </context>
 <context>
     <name>Main</name>
-    <message>
-        <source>All games</source>
-        <translation>Tous les jeux</translation>
-    </message>
     <message>
         <source>core unreachable</source>
         <translation>cœur injoignable</translation>
@@ -2213,10 +2209,6 @@
     <message>
         <source>Files RomM keeps for this console</source>
         <translation>Fichiers que RomM a pour cette console</translation>
-    </message>
-    <message>
-        <source>Display settings for</source>
-        <translation>Réglages d'affichage pour</translation>
     </message>
     <message>
         <source>Save sent to RomM.</source>
@@ -2912,14 +2904,6 @@
         <translation>Pas encore pris en charge par Borne</translation>
     </message>
     <message>
-        <source>No build of this emulator for this computer</source>
-        <translation>Cet émulateur n'existe pas pour cet ordinateur</translation>
-    </message>
-    <message>
-        <source>Emulator used for this console</source>
-        <translation>Émulateur utilisé pour cette console</translation>
-    </message>
-    <message>
         <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
         <translation>Cette version de Borne n’a pas d’accès développeur ScreenScraper : les versions officielles l’incluent. Les images viennent toujours de RomM.</translation>
     </message>
@@ -3024,34 +3008,6 @@
         <translation>Retirer</translation>
     </message>
     <message>
-        <source>Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask.</source>
-        <translation>Borne récupère les fichiers manquants dans les BIOS et firmwares de RomM pour chaque console, après chaque synchronisation et à la demande.</translation>
-    </message>
-    <message>
-        <source>Take them now</source>
-        <translation>Récupérer maintenant</translation>
-    </message>
-    <message>
-        <source>Nothing needed</source>
-        <translation>Rien à fournir</translation>
-    </message>
-    <message>
-        <source>No console of the library needs a BIOS, keys or firmware.</source>
-        <translation>Aucune console de la bibliothèque n'a besoin de BIOS, de clés ou de firmware.</translation>
-    </message>
-    <message>
-        <source>This console's own values; the others follow all games</source>
-        <translation>Les réglages propres à cette console ; les autres suivent tous les jeux</translation>
-    </message>
-    <message>
-        <source>Every game, unless its console or the game has its own</source>
-        <translation>Tous les jeux, sauf si leur console ou le jeu a ses propres réglages</translation>
-    </message>
-    <message>
-        <source>All games</source>
-        <translation>Tous les jeux</translation>
-    </message>
-    <message>
         <source>As for all games</source>
         <translation>Comme pour tous les jeux</translation>
     </message>
@@ -3080,24 +3036,12 @@
         <translation>Émulateurs</translation>
     </message>
     <message>
-        <source>One per console</source>
-        <translation>Un par console</translation>
-    </message>
-    <message>
         <source>System files</source>
         <translation>Fichiers système</translation>
     </message>
     <message>
-        <source>BIOS, keys, firmware</source>
-        <translation>BIOS, clés, firmware</translation>
-    </message>
-    <message>
         <source>Game images</source>
         <translation>Images des jeux</translation>
-    </message>
-    <message>
-        <source>ScreenScraper</source>
-        <translation>ScreenScraper</translation>
     </message>
     <message>
         <source>Help</source>
@@ -3304,10 +3248,6 @@
         <translation>Changer la valeur</translation>
     </message>
     <message>
-        <source>Change console</source>
-        <translation>Changer de console</translation>
-    </message>
-    <message>
         <source>Saves on RomM</source>
         <translation>Sauvegardes sur RomM</translation>
     </message>
@@ -3398,10 +3338,6 @@
     <message>
         <source> is not writable</source>
         <translation> n’est pas modifiable</translation>
-    </message>
-    <message>
-        <source>Installation, saves</source>
-        <translation>Installation, sauvegardes</translation>
     </message>
     <message>
         <source>Diagnostics, quit</source>
@@ -3580,16 +3516,8 @@
         <translation>Clavier</translation>
     </message>
     <message>
-        <source>Applies to</source>
-        <translation>S’applique à</translation>
-    </message>
-    <message>
         <source>Picture</source>
         <translation>Image</translation>
-    </message>
-    <message>
-        <source>How games come to this device, and where their saves go. You can switch at any time: games already here stay.</source>
-        <translation>Comment les jeux arrivent sur cet appareil, et où vont leurs sauvegardes. Vous pouvez changer à tout moment : les jeux déjà là restent.</translation>
     </message>
     <message>
         <source>Videos, look, sounds</source>
@@ -3600,40 +3528,8 @@
         <translation>Borne elle-même : ses vidéos, sa taille, ses animations, ses sons et les boutons qu’elle affiche.</translation>
     </message>
     <message>
-        <source>Picture in games</source>
-        <translation>Image en jeu</translation>
-    </message>
-    <message>
-        <source>Shape, sharpness, filters</source>
-        <translation>Format, netteté, filtres</translation>
-    </message>
-    <message>
-        <source>How games look while playing, for every game or one console. A game can also have its own, from its page.</source>
-        <translation>L’aspect des jeux pendant la partie, pour tous les jeux ou une console. Un jeu peut aussi avoir les siens, depuis sa page.</translation>
-    </message>
-    <message>
-        <source>The program that plays each console's games. A game can use another one, from its page.</source>
-        <translation>Le programme qui fait tourner les jeux de chaque console. Un jeu peut en utiliser un autre, depuis sa page.</translation>
-    </message>
-    <message>
-        <source>Some consoles need files from the console itself to start their games.</source>
-        <translation>Certaines consoles ont besoin de fichiers de la console elle-même pour lancer leurs jeux.</translation>
-    </message>
-    <message>
-        <source>Case scans, spines, cartridges and console logos, from ScreenScraper.</source>
-        <translation>Scans des boîtes, tranches, cartouches et logos des consoles, depuis ScreenScraper.</translation>
-    </message>
-    <message>
         <source>RomM</source>
         <translation>RomM</translation>
-    </message>
-    <message>
-        <source>Server, sync, profile</source>
-        <translation>Serveur, synchro, profil</translation>
-    </message>
-    <message>
-        <source>The server your games come from, and who is playing.</source>
-        <translation>Le serveur d’où viennent vos jeux, et qui joue.</translation>
     </message>
     <message>
         <source>New versions of Borne. They never install during a game.</source>
@@ -3676,10 +3572,6 @@
         <translation>Passer au canal dev</translation>
     </message>
     <message>
-        <source>Emulators by themselves</source>
-        <translation>Émulateurs automatiques</translation>
-    </message>
-    <message>
         <source>Borne installs the emulators your consoles need and their new versions, never during a game</source>
         <translation>Borne installe les émulateurs dont vos consoles ont besoin et leurs nouvelles versions, jamais pendant une partie</translation>
     </message>
@@ -3698,6 +3590,342 @@
     <message>
         <source>The first start waits for the download</source>
         <translation>Le premier lancement attend le téléchargement</translation>
+    </message>
+    <message>
+        <source>No build of its emulator for this computer</source>
+        <translation>Pas de version de son émulateur pour cet ordinateur</translation>
+    </message>
+    <message>
+        <source>%1 is installed by Borne at the first game</source>
+        <translation>%1 sera installé par Borne au premier jeu</translation>
+    </message>
+    <message>
+        <source>%1 is not installed</source>
+        <translation>%1 n'est pas installé</translation>
+    </message>
+    <message>
+        <source>%1 not found: choose its program</source>
+        <translation>%1 introuvable : choisis son programme</translation>
+    </message>
+    <message>
+        <source>Missing: %1</source>
+        <translation>Manquant : %1</translation>
+    </message>
+    <message>
+        <source>system files ready</source>
+        <translation>fichiers système prêts</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n system file(s) missing</source>
+        <translation><numerusform>%n fichier système manquant</numerusform><numerusform>%n fichiers système manquants</numerusform></translation>
+    </message>
+    <message>
+        <source>To fix</source>
+        <translation>À régler</translation>
+    </message>
+    <message>
+        <source>Emulator installation</source>
+        <translation>Installation d'un émulateur</translation>
+    </message>
+    <message>
+        <source>Failed</source>
+        <translation>Échec</translation>
+    </message>
+    <message>
+        <source>The server cannot be reached: games already here still play</source>
+        <translation>Le serveur est injoignable : les jeux déjà présents restent jouables</translation>
+    </message>
+    <message>
+        <source>Offline</source>
+        <translation>Hors ligne</translation>
+    </message>
+    <message>
+        <source>Borne %1</source>
+        <translation>Borne %1</translation>
+    </message>
+    <message>
+        <source>Downloaded: restart to install it</source>
+        <translation>Téléchargée : redémarre pour l'installer</translation>
+    </message>
+    <message>
+        <source>A new version is available</source>
+        <translation>Une nouvelle version est disponible</translation>
+    </message>
+    <message>
+        <source>New</source>
+        <translation>Nouveau</translation>
+    </message>
+    <message>
+        <source>Connect a ScreenScraper account for case scans, cartridges and logos</source>
+        <translation>Connecte un compte ScreenScraper pour les jaquettes, cartouches et logos</translation>
+    </message>
+    <message>
+        <source>Suggested</source>
+        <translation>Conseillé</translation>
+    </message>
+    <message>
+        <source>Needs your attention</source>
+        <translation>À régler</translation>
+    </message>
+    <message>
+        <source>Suggestions</source>
+        <translation>Suggestions</translation>
+    </message>
+    <message>
+        <source>Everything is ready: every console of the library has its emulator and the files it needs.</source>
+        <translation>Tout est prêt : chaque console de la bibliothèque a son émulateur et les fichiers dont elle a besoin.</translation>
+    </message>
+    <message>
+        <source>At a glance</source>
+        <translation>En un coup d'œil</translation>
+    </message>
+    <message>
+        <source>Consoles</source>
+        <translation>Consoles</translation>
+    </message>
+    <message>
+        <source>%1 of %2 ready to play</source>
+        <translation>%1 sur %2 prêtes à jouer</translation>
+    </message>
+    <message>
+        <source>None yet: sync the library</source>
+        <translation>Aucune pour l'instant : synchronise la bibliothèque</translation>
+    </message>
+    <message>
+        <source>Played from the network</source>
+        <translation>Joués depuis le réseau</translation>
+    </message>
+    <message>
+        <source>Downloaded before playing</source>
+        <translation>Téléchargés avant de jouer</translation>
+    </message>
+    <message>
+        <source>saves stay on this device</source>
+        <translation>sauvegardes sur cet appareil</translation>
+    </message>
+    <message>
+        <source>saves on RomM</source>
+        <translation>sauvegardes sur RomM</translation>
+    </message>
+    <message>
+        <source>The consoles of your library appear here after a sync.</source>
+        <translation>Les consoles de ta bibliothèque apparaissent ici après une synchronisation.</translation>
+    </message>
+    <message>
+        <source>In your library</source>
+        <translation>Dans ta bibliothèque</translation>
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation>Prête</translation>
+    </message>
+    <message>
+        <source>This console is no longer in the library.</source>
+        <translation>Cette console n'est plus dans la bibliothèque.</translation>
+    </message>
+    <message>
+        <source>Emulator</source>
+        <translation>Émulateur</translation>
+    </message>
+    <message>
+        <source>Plays these games</source>
+        <translation>Fait tourner ces jeux</translation>
+    </message>
+    <message>
+        <source>A game can use another one, from its page</source>
+        <translation>Un jeu peut en utiliser un autre, depuis sa page</translation>
+    </message>
+    <message>
+        <source>%1 plays these games</source>
+        <translation>%1 fait tourner ces jeux</translation>
+    </message>
+    <message>
+        <source>%1 options</source>
+        <translation>Options de %1</translation>
+    </message>
+    <message>
+        <source>Also used for: %1. A game can have its own, from its page.</source>
+        <translation>Utilisé aussi pour : %1. Un jeu peut avoir les siennes, depuis sa page.</translation>
+    </message>
+    <message>
+        <source>Borne's choice</source>
+        <translation>choix de Borne</translation>
+    </message>
+    <message>
+        <source>Back to Borne's choices</source>
+        <translation>Revenir aux choix de Borne</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation>Réinitialiser</translation>
+    </message>
+    <message>
+        <source>Install and update by themselves</source>
+        <translation>Installation et mises à jour automatiques</translation>
+    </message>
+    <message>
+        <source>Used by your consoles</source>
+        <translation>Utilisés par tes consoles</translation>
+    </message>
+    <message>
+        <source>For: %1</source>
+        <translation>Pour : %1</translation>
+    </message>
+    <message>
+        <source>Also on this computer</source>
+        <translation>Aussi sur cet ordinateur</translation>
+    </message>
+    <message>
+        <source>Loading…</source>
+        <translation>Chargement…</translation>
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation>Connectées</translation>
+    </message>
+    <message>
+        <source>Player %1: %2</source>
+        <translation>Joueur %1 : %2</translation>
+    </message>
+    <message>
+        <source>No controller connected: the keyboard plays.</source>
+        <translation>Aucune manette connectée : le clavier joue.</translation>
+    </message>
+    <message>
+        <source>For every game</source>
+        <translation>Pour tous les jeux</translation>
+    </message>
+    <message>
+        <source>Face buttons</source>
+        <translation>Boutons de façade</translation>
+    </message>
+    <message>
+        <source>A and B, X and Y, as on the controller or swapped (Nintendo layout)</source>
+        <translation>A et B, X et Y, comme sur la manette ou inversés (disposition Nintendo)</translation>
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation>Inversés</translation>
+    </message>
+    <message>
+        <source>As on the controller</source>
+        <translation>Comme sur la manette</translation>
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation>Stick gauche</translation>
+    </message>
+    <message>
+        <source>Also moves as the D-pad, for games without analog control (RetroArch)</source>
+        <translation>Agit aussi comme la croix, pour les jeux sans contrôle analogique (RetroArch)</translation>
+    </message>
+    <message>
+        <source>Also the D-pad</source>
+        <translation>Aussi la croix</translation>
+    </message>
+    <message>
+        <source>Stick only</source>
+        <translation>Stick seulement</translation>
+    </message>
+    <message>
+        <source>Buttons</source>
+        <translation>Boutons</translation>
+    </message>
+    <message>
+        <source>Button %1</source>
+        <translation>Bouton %1</translation>
+    </message>
+    <message>
+        <source>What it presses in the game</source>
+        <translation>Ce qu’il appuie dans le jeu</translation>
+    </message>
+    <message>
+        <source>Itself</source>
+        <translation>Lui-même</translation>
+    </message>
+    <message>
+        <source>Back to the controller as it is</source>
+        <translation>Revenir à la manette telle quelle</translation>
+    </message>
+    <message>
+        <source>Applied the next time a game starts, by the emulators Borne sets up. A game can have its own, from its page.</source>
+        <translation>Appliqué au prochain lancement d'un jeu, par les émulateurs que Borne configure. Un jeu peut avoir les siens, depuis sa page.</translation>
+    </message>
+    <message>
+        <source>Overview</source>
+        <translation>Aperçu</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n to fix</source>
+        <translation><numerusform>%n point à régler</numerusform><numerusform>%n points à régler</numerusform></translation>
+    </message>
+    <message>
+        <source>Everything is ready</source>
+        <translation>Tout est prêt</translation>
+    </message>
+    <message>
+        <source>What needs your attention, and the main choices at a glance. Press A on a line to go there.</source>
+        <translation>Ce qui demande ton attention, et les choix principaux en un coup d'œil. Appuie sur A sur une ligne pour y aller.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n console(s)</source>
+        <translation><numerusform>%n console</numerusform><numerusform>%n consoles</numerusform></translation>
+    </message>
+    <message>
+        <source>Emulator, picture, BIOS</source>
+        <translation>Émulateur, image, BIOS</translation>
+    </message>
+    <message>
+        <source>Everything about each console of your library: the emulator that plays it, that emulator's options, the picture and the system files. A game can still have its own settings, from its page.</source>
+        <translation>Tout sur chaque console de ta bibliothèque : l'émulateur qui la fait tourner, ses options, l'image et les fichiers système. Un jeu peut toujours avoir ses propres réglages, depuis sa page.</translation>
+    </message>
+    <message>
+        <source>Install, update</source>
+        <translation>Installer, mettre à jour</translation>
+    </message>
+    <message>
+        <source>The emulator programs on this computer. Borne installs and updates them; you can also give your own.</source>
+        <translation>Les programmes d'émulation sur cet ordinateur. Borne les installe et les met à jour ; tu peux aussi donner les tiens.</translation>
+    </message>
+    <message>
+        <source>Installation, saves, picture</source>
+        <translation>Installation, sauvegardes, image</translation>
+    </message>
+    <message>
+        <source>How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.</source>
+        <translation>Comment les jeux arrivent sur cet appareil, où vont leurs sauvegardes, et l'image de tous les jeux, sauf si leur console ou le jeu a la sienne.</translation>
+    </message>
+    <message>
+        <source>Controllers</source>
+        <translation>Manettes</translation>
+    </message>
+    <message>
+        <source>Buttons for every game</source>
+        <translation>Boutons pour tous les jeux</translation>
+    </message>
+    <message>
+        <source>The controllers connected, and how their buttons play in every game.</source>
+        <translation>Les manettes connectées, et le rôle de leurs boutons dans tous les jeux.</translation>
+    </message>
+    <message>
+        <source>RomM &amp; images</source>
+        <translation>RomM et images</translation>
+    </message>
+    <message>
+        <source>Server, profile, ScreenScraper</source>
+        <translation>Serveur, profil, ScreenScraper</translation>
+    </message>
+    <message>
+        <source>The server your games come from, who is playing, and where the case scans come from.</source>
+        <translation>Le serveur d'où viennent tes jeux, qui joue, et d'où viennent les jaquettes.</translation>
+    </message>
+    <message>
+        <source>Picture in every game</source>
+        <translation>Image dans tous les jeux</translation>
+    </message>
+    <message>
+        <source>These settings apply to every game of this console; a game can have its own, from its page.</source>
+        <translation>Ces réglages s'appliquent à tous les jeux de cette console ; un jeu peut avoir les siens, depuis sa page.</translation>
     </message>
 </context>
 <context>

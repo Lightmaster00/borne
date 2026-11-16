@@ -434,7 +434,7 @@ The RomM account provides identity and remote scope; the local profile provides 
 > one, Dolphin's macOS image from its download page, Flathub on Linux where that is the only
 > source), unpacks .zip/.7z/.tar.xz/.dmg, extracts AppImages once (no FUSE), replaces the old
 > version only when the new one is complete, and checks for updates every 6 hours (installed when
-> no game runs; Settings → Emulators → Emulator updates). *Play* installs what is missing then
+> no game runs; Settings → Emulators → Install and update by themselves). *Play* installs what is missing then
 > starts the game. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
 > messages, no hotkeys, profile saves and states, Borne's cores and BIOS folders); Dolphin with
 > its own user folder per profile (`-u`). Sessions: one at a time, own process group, output in
@@ -907,8 +907,27 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Select opens Sort and filter (order, genre) directly; everything else lives in Settings. Settings
   stand on a plain background (no game art); the open section is marked by a fill and a bar in the
   accent colour. Sections, each with a sentence under its title and its rows under group titles
-  (skipped by the focus): Games (installation, saves), Interface, Picture in games (for all games or one
-  console), Emulators, System files, Game images, RomM (server, sync, profile), Updates, Help.
+  and notes (skipped by the focus):
+  - Overview: what needs attention, worked out by the interface from the settings it already has
+    (a console without a usable emulator or missing a required system file, a failed emulator
+    installation, RomM offline or a failed sync, a Borne update; a ScreenScraper account as a
+    suggestion), then the main choices at a glance. Each line opens its section (A); the section
+    list shows the count in red.
+  - Consoles: the library's consoles, each with its emulator, version and whether its system
+    files are there ("Ready" or "To fix"). A opens the console's own page, B comes back to the
+    list: its emulator (a choice only when there are several) and that program's state; the
+    emulator's options for every game it runs (`GET`/`POST /api/v1/emulators/<program>/options`,
+    stored as `emuopt.@all.<program>.<key>`; the other consoles using it are named); the console's
+    picture over the one for all games; its system files.
+  - Emulators: install and update by themselves, the programs used by the consoles (and for
+    which), then the others on this computer.
+  - Games: installation, network cache, saves, and the picture for every game.
+  - Controllers: those connected, and for every game the face buttons, the left stick and each
+    button (`GET`/`POST /api/v1/controls`, stored as `controls.game.@all.<key>`; the pad stays a
+    per-game choice).
+  - Interface, RomM & images (server, sync, profile, ScreenScraper), Updates, Help.
+  A game's own values (its page → Game settings) come first, then the console's (picture) or the
+  emulator's and the controllers' for every game, then Borne's defaults.
 - Settings → Interface (Qt preferences, `prefs` in Main.qml): Videos — video behind the library on/off
   (`bgVideo`), video in full screen after 5 s / 15 s / 30 s / 1 min / never (`attractDelay`), its length
   1 / 3 / 10 min or no limit (`attractRest`), videos on the game page (`pageVideo`); Look — interface

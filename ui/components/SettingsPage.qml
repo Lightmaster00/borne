@@ -1,9 +1,13 @@
 // Settings: sections on the left, their rows on the right, gathered under group titles.
+// Overview first (what needs attention, each a step away), then one page per console with
+// everything about it (emulator, its options for all its games, picture, system files), then the
+// rest by topic. A game can still have its own settings, from its page.
 // Gamepad: up/down moves in the focused column (group titles are skipped), right enters a section,
-// left goes back to the sections, left/right inside a row of choices, A to choose, B to go back.
+// left goes back to the sections, left/right inside a row of choices, A to choose or open, B back.
 import QtQuick
 import "CoreText.js" as CoreText
 import "Display.js" as Display
+import "EmuOptions.js" as EmuOptions
 
 Item {
     id: page
@@ -20,6 +24,13 @@ Item {
     property bool inRows: false
     property int row: 0
     property var cols: ({})
+
+    // A console's own page (Consoles section): its slug, and what is fetched for it.
+    property string consoleSlug: ""
+    property var consoleDisplay: null    // GET /api/v1/display?console=…
+    property var consoleOpts: null       // GET /api/v1/emulators/<program>/options
+    property var controlsAll: null       // GET /api/v1/controls
+    property int consoleRow: 0           // the list's row to come back to
 
     readonly property var upd: settings && settings.update ? settings.update : null
     readonly property var updState: upd && upd.update ? upd.update : null
@@ -136,19 +147,164 @@ Item {
         if (p.user_path) b.push({ id: "emu-forget:" + p.id, label: qsTr("Forget this program") })
         return b
     }
-    function emulatorRows() {
+    // ---------- consoles ----------
+    readonly property var consoles: emus ? emus.consoles : []
+    function consoleOf(slug) { return consoles.find(c => c.slug === slug) || null }
+    function chosenOf(c) { return c ? (c.choices.find(x => x.id === c.chosen) || null) : null }
+    function programOf(id) { return emus ? (emus.programs.find(p => p.id === id) || null) : null }
+    function sysOf(slug) { return sysFiles ? (sysFiles.consoles.find(c => c.slug === slug) || null) : null }
+    // What a console still needs: [{text, tone}] ("bad": its games cannot start; "info": done by itself).
+    function consoleIssues(c) {
+        const out = []
+        if (!c.choices.length) { out.push({ text: c.known ? qsTr("No emulator can run these games yet") : qsTr("Not supported by Borne yet"), tone: "info" }); return out }
+        if (!c.available) out.push({ text: qsTr("No build of its emulator for this computer"), tone: "bad" })
+        const ch = chosenOf(c), p = ch ? programOf(ch.program) : null
+        if (ch && !ch.ready && p) {
+            if (p.installable && emus.auto_update) out.push({ text: qsTr("%1 is installed by Borne at the first game").arg(p.name), tone: "info" })
+            else if (p.installable) out.push({ text: qsTr("%1 is not installed").arg(p.name), tone: "bad" })
+            else out.push({ text: qsTr("%1 not found: choose its program").arg(p.name), tone: "bad" })
+        }
+        const sf = sysOf(c.slug)
+        if (sf) sf.items.filter(i => i.required && !i.valid).forEach(i => out.push({ text: qsTr("Missing: %1").arg(fileName(i.name)), tone: "bad" }))
+        return out
+    }
+    function consoleLine(c) {
+        const ch = chosenOf(c), p = ch ? programOf(ch.program) : null
+        const parts = []
+        if (ch) parts.push(ch.name + (p && p.managed && p.version && p.version !== "flatpak" ? " " + p.version : ""))
+        const sf = sysOf(c.slug)
+        if (sf && sf.items.length) {
+            const req = sf.items.filter(i => i.required)
+            parts.push(req.every(i => i.valid) ? qsTr("system files ready") : qsTr("%n system file(s) missing", "", req.filter(i => !i.valid).length))
+        }
+        return parts.join(" · ")
+    }
+    readonly property var attention: {
+        const out = []
+        consoles.forEach(c => consoleIssues(c).filter(i => i.tone === "bad").forEach(i =>
+            out.push({ id: "go:console:" + c.slug, title: c.name, desc: i.text, badge: qsTr("To fix"), tone: "bad" })))
+        const t = emus ? emus.task : null
+        if (t && !t.running && t.error) out.push({ id: "go:programs", title: qsTr("Emulator installation"), desc: CoreText.tr(t.error), badge: qsTr("Failed"), tone: "bad" })
+        if (status && status.server_url && !status.online) out.push({ id: "go:library", title: qsTr("RomM"), desc: qsTr("The server cannot be reached: games already here still play"), badge: qsTr("Offline"), tone: "bad" })
+        if (status && status.sync && status.sync.error) out.push({ id: "go:library", title: qsTr("Library"), desc: qsTr("Last sync failed: %1").arg(CoreText.tr(status.sync.error)), badge: qsTr("To fix"), tone: "bad" })
+        if (updState && (updState.state === "available" || updState.state === "ready") && updState.available && upd && updState.available.build > upd.current.build)
+            out.push({ id: "go:updates", title: qsTr("Borne %1").arg(updState.available.version), desc: updState.state === "ready" ? qsTr("Downloaded: restart to install it") : qsTr("A new version is available"), badge: qsTr("New"), tone: "ok" })
+        if (ss && ss.developer_access && !ss.configured) out.push({ id: "go:library", title: qsTr("Game images"), desc: qsTr("Connect a ScreenScraper account for case scans, cartridges and logos"), badge: qsTr("Suggested"), tone: "info" })
+        return out
+    }
+    readonly property int problems: attention.filter(a => a.tone === "bad").length
+    function link(id, title, desc, badge, tone) { return { id: id, kind: "link", title: title, desc: desc, badge: badge || "", tone: tone || "", items: [{ id: id }] } }
+    function note(id, text) { return { id: id, kind: "note", title: "", desc: text, items: [] } }
+
+    function overviewRows() {
+        const rows = []
+        if (attention.length) {
+            rows.push(group(problems ? qsTr("Needs your attention") : qsTr("Suggestions")))
+            attention.forEach(a => rows.push(link(a.id, a.title, a.desc, a.badge, a.tone)))
+        } else rows.push(note("all-good", qsTr("Everything is ready: every console of the library has its emulator and the files it needs.")))
+        rows.push(group(qsTr("At a glance")))
+        const ready = consoles.filter(c => c.choices.length && !consoleIssues(c).some(i => i.tone === "bad")).length
+        rows.push(link("go:consoles", qsTr("Consoles"), consoles.length ? qsTr("%1 of %2 ready to play").arg(ready).arg(consoles.length) : qsTr("None yet: sync the library")))
+        rows.push(link("go:games", qsTr("Games"), (installMode === "stream" ? qsTr("Played from the network") : qsTr("Downloaded before playing"))
+                       + " · " + (settings && settings.save_sync === false ? qsTr("saves stay on this device") : qsTr("saves on RomM"))))
+        rows.push(link("go:library", qsTr("RomM"), status && status.server_url ? status.server_url + (status.active_profile ? " · " + status.active_profile.name : "") : qsTr("not configured")))
+        rows.push(link("go:updates", qsTr("Updates"), qsTr("Version %1").arg(page.version) + " · " + (upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable"))))
+        return rows
+    }
+    function consolesRows() {
+        if (!consoles.length) return [note("no-consoles", qsTr("The consoles of your library appear here after a sync."))]
+        const rows = [group(qsTr("In your library"))]
+        consoles.forEach(c => {
+            const issues = consoleIssues(c)
+            const bad = issues.find(i => i.tone === "bad")
+            rows.push(link("console:" + c.slug, c.name, bad ? bad.text : (consoleLine(c) || (issues[0] ? issues[0].text : "")),
+                           bad ? qsTr("To fix") : c.choices.length ? qsTr("Ready") : "", bad ? "bad" : c.choices.length ? "ok" : ""))
+        })
+        return rows
+    }
+    // One console: its emulator, that emulator's options for all its games, its picture, its files.
+    function consoleRows(slug) {
+        const c = consoleOf(slug)
+        if (!c) return [note("gone", qsTr("This console is no longer in the library."))]
+        const rows = []
+        consoleIssues(c).forEach((i, n) => rows.push(note("issue:" + n, (i.tone === "bad" ? "⚠ " : "") + i.text)))
+        rows.push(group(qsTr("Emulator")))
+        // A choice only when there is one to make.
+        if (c.choices.length > 1)
+            rows.push({ id: "emu-choice:" + c.slug, kind: "chips", title: qsTr("Plays these games"), desc: qsTr("A game can use another one, from its page"),
+                        selected: c.chosen, items: c.choices.map(x => ({ id: x.id, label: x.name })) })
+        const ch = chosenOf(c), p = ch ? programOf(ch.program) : null
+        if (p) rows.push({ id: "prog:" + p.id, kind: "buttons", title: c.choices.length > 1 ? p.name : qsTr("%1 plays these games").arg(ch.name),
+                           desc: programText(p), items: programButtons(p) })
+        // The emulator's own options: for every game it runs (other consoles included).
+        const opts = consoleOpts && p && consoleOpts.program === p.id ? consoleOpts.options : []
+        if (opts.length) {
+            const shared = consoles.filter(x => x.slug !== c.slug && chosenOf(x) && chosenOf(x).program === p.id).map(x => x.name)
+            rows.push(group(qsTr("%1 options").arg(p.name)))
+            if (shared.length) rows.push(note("opts-shared", qsTr("Also used for: %1. A game can have its own, from its page.").arg(shared.join(", "))))
+            opts.forEach(o => rows.push({ id: "opt:" + p.id + ":" + o.key, kind: "chips", title: EmuOptions.title(o.key),
+                desc: EmuOptions.desc(o.key) + (o.own ? "" : " · " + qsTr("Borne's choice")), selected: o.value,
+                items: o.values.map(v => ({ id: v, label: EmuOptions.label(o.key, v) })) }))
+            if (opts.some(o => o.own)) rows.push({ id: "opt-reset:" + p.id, kind: "buttons", title: qsTr("Back to Borne's choices"), desc: "",
+                                                   items: [{ id: "opt-reset:" + p.id, label: qsTr("Reset") }] })
+        }
+        // Picture: this console's own values over those for all games.
+        if (consoleDisplay) {
+            rows.push(group(qsTr("Picture")))
+            Display.KEYS.forEach(k => {
+                const own = consoleDisplay.own ? consoleDisplay.own[k] : undefined
+                const all = consoleDisplay.global ? consoleDisplay.global[k] : undefined
+                const items = Display.values(k).map(v => ({ id: v, label: Display.label(k, v) }))
+                items.unshift({ id: "default", label: qsTr("As for all games") + (all !== undefined ? " (" + Display.label(k, all) + ")" : "") })
+                rows.push({ id: "cdisp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k), selected: own !== undefined ? own : "default", items: items })
+            })
+        }
+        const sf = sysOf(c.slug)
+        if (sf && sf.items.length) {
+            rows.push(group(qsTr("System files")))
+            sysFileRowsOf(sf).forEach(r => rows.push(r))
+        }
+        return rows
+    }
+    function programsRows() {
         if (!emus) return []
-        const rows = emus.consoles.map(c => ({ id: "console:" + c.slug, kind: "chips", title: c.name,
-            desc: c.choices.length === 0 ? (c.known ? qsTr("No emulator can run these games yet") : qsTr("Not supported by Borne yet"))
-                  : !c.available ? qsTr("No build of this emulator for this computer") : qsTr("Emulator used for this console"),
-            selected: c.chosen,
-            items: c.choices.map(x => ({ id: x.id, label: x.name })) }))
-        rows.push({ id: "emu-auto", kind: "chips", title: qsTr("Emulators by themselves"), desc: qsTr("Borne installs the emulators your consoles need and their new versions, never during a game"),
-                    selected: emus.auto_update ? "on" : "off", items: onOff() })
+        const rows = [{ id: "emu-auto", kind: "chips", title: qsTr("Install and update by themselves"),
+                        desc: qsTr("Borne installs the emulators your consoles need and their new versions, never during a game"),
+                        selected: emus.auto_update ? "on" : "off", items: onOff() }]
         const used = {}
-        emus.consoles.forEach(c => c.choices.forEach(x => { if (x.id === c.chosen) used[x.program] = true }))
-        emus.programs.filter(p => used[p.id] || p.managed || p.user_path).forEach(p =>
-            rows.push({ id: "prog:" + p.id, kind: "buttons", title: p.name, desc: programText(p), items: programButtons(p) }))
+        consoles.forEach(c => { const ch = chosenOf(c); if (ch) used[ch.program] = (used[ch.program] || []).concat([c.name]) })
+        const inUse = emus.programs.filter(p => used[p.id])
+        const others = emus.programs.filter(p => !used[p.id] && (p.managed || p.user_path || p.found))
+        if (inUse.length) rows.push(group(qsTr("Used by your consoles")))
+        inUse.forEach(p => rows.push({ id: "prog:" + p.id, kind: "buttons", title: p.name,
+            desc: programText(p) + "\n" + qsTr("For: %1").arg(used[p.id].join(", ")), items: programButtons(p) }))
+        if (others.length) rows.push(group(qsTr("Also on this computer")))
+        others.forEach(p => rows.push({ id: "prog:" + p.id, kind: "buttons", title: p.name, desc: programText(p), items: programButtons(p) }))
+        return rows
+    }
+    function controlsRows() {
+        if (!controlsAll) return [note("loading", qsTr("Loading…"))]
+        const opt = k => controlsAll.options.find(o => o.key === k)
+        const names = { a: "A", b: "B", x: "X", y: "Y", l: "L", r: "R", l2: "L2", r2: "R2", start: "Start", select: "Select" }
+        const chips = function (k, title, desc, labels) {
+            const o = opt(k)
+            return { id: "ctl:" + k, kind: "chips", title: title, desc: desc, selected: o.value, items: o.values.map(v => ({ id: v, label: labels(v) })) }
+        }
+        const pads = controlsAll.pads || []
+        const rows = [group(qsTr("Connected")),
+                      note("pads", pads.length ? pads.map((n, i) => qsTr("Player %1: %2").arg(i + 1).arg(n)).join("\n")
+                                               : qsTr("No controller connected: the keyboard plays."))]
+        rows.push(group(qsTr("For every game")))
+        rows.push(chips("face", qsTr("Face buttons"), qsTr("A and B, X and Y, as on the controller or swapped (Nintendo layout)"),
+                        v => v === "swap" ? qsTr("Swapped") : qsTr("As on the controller")))
+        rows.push(chips("stick", qsTr("Left stick"), qsTr("Also moves as the D-pad, for games without analog control (RetroArch)"),
+                        v => v === "dpad" ? qsTr("Also the D-pad") : qsTr("Stick only")))
+        rows.push(group(qsTr("Buttons")))
+        for (const b of ["a", "b", "x", "y", "l", "r", "l2", "r2", "start", "select"])
+            rows.push(chips("map." + b, qsTr("Button %1").arg(names[b]), qsTr("What it presses in the game"), v => v === "same" ? qsTr("Itself") : names[v]))
+        if (controlsAll.options.some(o => o.own))
+            rows.push({ id: "ctl-reset", kind: "buttons", title: qsTr("Back to the controller as it is"), desc: "", items: [{ id: "ctl-reset", label: qsTr("Reset") }] })
+        rows.push(note("ctl-note", qsTr("Applied the next time a game starts, by the emulators Borne sets up. A game can have its own, from its page.")))
         return rows
     }
 
@@ -192,11 +348,9 @@ Item {
     }
 
     readonly property var sysFiles: settings && settings.system_files ? settings.system_files : null
-    function sysFileRows() {
-        if (!sysFiles) return []
-        const rows = []
+    function sysFileRowsOf(c) {
         const t = sysFiles.task
-        sysFiles.consoles.forEach(c => c.items.forEach(i => {
+        return c.items.map(i => {
             const busy = t && t.running && t.console === c.slug && t.item === i.id
             const failed = t && !t.running && t.error && t.console === c.slug && t.item === i.id
             let desc = busy ? qsTr("Adding…")
@@ -210,58 +364,46 @@ Item {
                        { id: "sf-pick:" + key, label: qsTr("Choose a file"), disabled: !!(t && t.running) },
                        { id: "sf-url:" + key, label: qsTr("From a link"), disabled: !!(t && t.running) }]
             if (i.files.length) b.push({ id: "sf-remove:" + key, label: qsTr("Remove") })
-            rows.push({ id: "sf:" + key, kind: "buttons", title: c.name + " · " + fileName(i.name), desc: desc, items: b })
-        }))
-        if (rows.length) rows.unshift({ id: "sf-all", kind: "buttons", title: qsTr("From RomM"),
-            desc: qsTr("Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask."),
-            items: [{ id: "sf-all", label: qsTr("Take them now"), primary: true, disabled: !!(t && t.running) }] })
-        if (!rows.length) rows.push({ id: "sf-none", kind: "buttons", title: qsTr("Nothing needed"), desc: qsTr("No console of the library needs a BIOS, keys or firmware."), items: [] })
-        return rows
+            return { id: "sf:" + key, kind: "buttons", title: fileName(i.name), desc: desc, items: b }
+        })
     }
-    // Display: for all games, or for one console (its own values over those for all games).
-    property string displayScope: ""
-    property var displayView: null       // GET /api/v1/display?console=… for the console shown
-    readonly property var displayData: displayScope !== "" && displayView ? displayView : (settings && settings.display ? settings.display : null)
+    // Picture for all games (a console's own values are on its page).
+    readonly property var displayData: settings && settings.display ? settings.display : null
     function displayRows() {
         if (!displayData) return []
-        const consoles = settings && settings.emulators ? settings.emulators.consoles : []
-        const cur = consoles.find(c => c.slug === displayScope)
-        const rows = [group(qsTr("Applies to")), { id: "disp-scope", kind: "buttons", title: cur ? cur.name : qsTr("All games"),
-            desc: displayScope ? qsTr("This console's own values; the others follow all games") : qsTr("Every game, unless its console or the game has its own"),
-            items: [{ id: "display-scope-menu", label: qsTr("Change console"), primary: false }] }]
-        rows.push(group(qsTr("Picture")))
-        return rows.concat(Display.KEYS.map(k => {
-            const items = Display.values(k).map(v => ({ id: v, label: Display.label(k, v) }))
-            if (displayScope) items.unshift({ id: "default", label: qsTr("As for all games") })
-            const own = displayData.own ? displayData.own[k] : undefined
-            return { id: "disp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k),
-                     selected: displayScope ? (own !== undefined ? own : "default") : displayData.effective[k], items: items }
-        }))
+        return Display.KEYS.map(k => ({ id: "disp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k),
+                                        selected: displayData.effective[k], items: Display.values(k).map(v => ({ id: v, label: Display.label(k, v) })) }))
     }
-    // Each section: its name, a hint under it in the list, and a sentence under its title.
+    // Each section: its name, a hint under it in the list (warn: something to fix), and a sentence under its title.
     readonly property var sections: [
-        { id: "games", name: qsTr("Games"), hint: qsTr("Installation, saves"),
-          intro: qsTr("How games come to this device, and where their saves go. You can switch at any time: games already here stay.") },
+        { id: "overview", name: qsTr("Overview"), hint: problems ? qsTr("%n to fix", "", problems) : qsTr("Everything is ready"), warn: problems > 0,
+          intro: qsTr("What needs your attention, and the main choices at a glance. Press A on a line to go there.") },
+        { id: "consoles", name: qsTr("Consoles"), warn: consoles.some(c => consoleIssues(c).some(i => i.tone === "bad")),
+          hint: consoles.length ? qsTr("%n console(s)", "", consoles.length) : qsTr("Emulator, picture, BIOS"),
+          intro: qsTr("Everything about each console of your library: the emulator that plays it, that emulator's options, the picture and the system files. A game can still have its own settings, from its page.") },
+        { id: "programs", name: qsTr("Emulators"), hint: qsTr("Install, update"),
+          intro: qsTr("The emulator programs on this computer. Borne installs and updates them; you can also give your own.") },
+        { id: "games", name: qsTr("Games"), hint: qsTr("Installation, saves, picture"),
+          intro: qsTr("How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.") },
+        { id: "controls", name: qsTr("Controllers"), hint: qsTr("Buttons for every game"),
+          intro: qsTr("The controllers connected, and how their buttons play in every game.") },
         { id: "interface", name: qsTr("Interface"), hint: qsTr("Videos, look, sounds"),
           intro: qsTr("Borne itself: its videos, size, animations, sounds and the buttons it shows.") },
-        { id: "display", name: qsTr("Picture in games"), hint: qsTr("Shape, sharpness, filters"),
-          intro: qsTr("How games look while playing, for every game or one console. A game can also have its own, from its page.") },
-        { id: "emulators", name: qsTr("Emulators"), hint: qsTr("One per console"),
-          intro: qsTr("The program that plays each console's games. A game can use another one, from its page.") },
-        { id: "systemfiles", name: qsTr("System files"), hint: qsTr("BIOS, keys, firmware"),
-          intro: qsTr("Some consoles need files from the console itself to start their games.") },
-        { id: "screenscraper", name: qsTr("Game images"), hint: qsTr("ScreenScraper"),
-          intro: qsTr("Case scans, spines, cartridges and console logos, from ScreenScraper.") },
-        { id: "server", name: qsTr("RomM"), hint: qsTr("Server, sync, profile"),
-          intro: qsTr("The server your games come from, and who is playing.") },
+        { id: "library", name: qsTr("RomM & images"), hint: qsTr("Server, profile, ScreenScraper"), warn: !!(status && status.server_url && !status.online),
+          intro: qsTr("The server your games come from, who is playing, and where the case scans come from.") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable"),
           intro: qsTr("New versions of Borne. They never install during a game.") },
         { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostics, quit"),
           intro: qsTr("When something goes wrong: a report to share and measurements of this device.") }
     ]
     readonly property var cacheSizes: [5, 10, 20, 50, 100]
+    readonly property string sectionId: sections[section].id
     readonly property var rows: {
-        const id = sections[section].id
+        const id = sectionId
+        if (id === "overview") return overviewRows()
+        if (id === "consoles") return consoleSlug ? consoleRows(consoleSlug) : consolesRows()
+        if (id === "programs") return programsRows()
+        if (id === "controls") return controlsRows()
         if (id === "games") return [
             group(qsTr("Installation")),
             { id: "install", kind: "cards", selected: installMode },
@@ -270,8 +412,9 @@ Item {
               items: cacheSizes.map(g => ({ id: String(g), label: qsTr("%1 GB").arg(g) })) },
             group(qsTr("Saves")),
             { id: "savesync", kind: "chips", title: qsTr("Saves on RomM"), desc: qsTr("Each profile's saves follow it: taken from RomM before a game when newer, sent after it. Replaced saves are archived."),
-              selected: settings && settings.save_sync === false ? "off" : "on", items: onOff() }
-        ].filter(r => r.id !== "cache" || installMode === "stream")   // network play only
+              selected: settings && settings.save_sync === false ? "off" : "on", items: onOff() },
+            group(qsTr("Picture in every game"))
+        ].filter(r => r.id !== "cache" || installMode === "stream").concat(displayRows())
         if (id === "updates") return [
             { id: "update", kind: "buttons", title: qsTr("Installed version: %1").arg(page.version), desc: updateText, items: updateButtons },
             group(qsTr("Options")),
@@ -281,10 +424,14 @@ Item {
               selected: upd && upd.auto_check ? "on" : "off", items: onOff() }
         ]
         if (id === "interface") return interfaceRows()
-        if (id === "display") return displayRows()
-        if (id === "emulators") return emulatorRows()
-        if (id === "systemfiles") return sysFileRows()
-        if (id === "screenscraper") return [
+        if (id === "library") return [
+            group(qsTr("RomM")),
+            { id: "server", kind: "buttons", title: qsTr("RomM server"), desc: status && status.server_url ? status.server_url + (status.online ? "" : " · " + qsTr("offline")) : qsTr("not configured"),
+              items: [{ id: "server", label: qsTr("Change server") }] },
+            { id: "sync", kind: "buttons", title: qsTr("Library"), desc: syncText(), items: [{ id: "sync", label: qsTr("Sync now"), disabled: !!(status && status.sync && status.sync.running) }] },
+            { id: "profile", kind: "buttons", title: qsTr("Profile"), desc: status && status.active_profile ? status.active_profile.name : "",
+              items: [{ id: "profile", label: qsTr("Switch profile") }] },
+            group(qsTr("Game images")),
             { id: "ss-account", kind: "buttons", title: qsTr("ScreenScraper account"), desc: ssAccountText(),
               items: !(ss && ss.developer_access) ? []
                      : ss.configured ? [{ id: "ss-signin", label: qsTr("Change") }, { id: "ss-signout", label: qsTr("Sign out") }]
@@ -297,13 +444,6 @@ Item {
                         { id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) }] },
             { id: "ss-report", kind: "buttons", title: qsTr("Games found, per console"), desc: qsTr("Which games ScreenScraper recognised, and those it did not: open one to correct its match"),
               items: [{ id: "ss-report", label: qsTr("See the report"), disabled: !(ss && ss.configured) }] }
-        ]
-        if (id === "server") return [
-            { id: "server", kind: "buttons", title: qsTr("RomM server"), desc: status && status.server_url ? status.server_url + (status.online ? "" : " · " + qsTr("offline")) : qsTr("not configured"),
-              items: [{ id: "server", label: qsTr("Change server") }] },
-            { id: "sync", kind: "buttons", title: qsTr("Library"), desc: syncText(), items: [{ id: "sync", label: qsTr("Sync now"), disabled: !!(status && status.sync && status.sync.running) }] },
-            { id: "profile", kind: "buttons", title: qsTr("Profile"), desc: status && status.active_profile ? status.active_profile.name : "",
-              items: [{ id: "profile", label: qsTr("Switch profile") }] }
         ]
         return [
             { id: "report", kind: "buttons", title: qsTr("Diagnostic report"),
@@ -329,14 +469,14 @@ Item {
     function setCol(id, c) { const n = Object.assign({}, cols); n[id] = c; cols = n }
     // The next row that can be focused from i in direction d (group titles are skipped).
     function step(i, d) {
-        for (let j = i + d; j >= 0 && j < rows.length; j += d) if (rows[j].kind !== "header") return j
+        for (let j = i + d; j >= 0 && j < rows.length; j += d) if (rows[j].kind !== "header" && rows[j].kind !== "note") return j
         return i
     }
     function firstRow() { return step(-1, 1) }
     // Rows come and go (a choice can show or hide others): keep the focus on a real row, and give
     // new rows their current choice.
     onRowsChanged: {
-        if (row >= rows.length || (rows[row] && rows[row].kind === "header"))
+        if (row >= rows.length || (rows[row] && (rows[row].kind === "header" || rows[row].kind === "note")))
             row = row >= rows.length ? step(rows.length, -1) : step(row, 1) !== row ? step(row, 1) : step(row, -1)
         const c = Object.assign({}, cols)
         let changed = false
@@ -350,7 +490,34 @@ Item {
         for (const r of rows) c[r.id] = Math.max(0, itemsOf(r).findIndex(x => x.id === r.selected))
         cols = c
     }
-    function reset() { displayScope = ""; displayView = null; inRows = false; selectSection(0) }
+    function reset() { closeConsole(); inRows = false; selectSection(0) }
+    // Opens a section from the overview (or a console's page), the focus on its rows.
+    function go(target) {
+        const parts = target.split(":")
+        const i = sections.findIndex(x => x.id === parts[0])
+        if (i < 0) return
+        closeConsole()
+        selectSection(i)
+        if (parts[0] === "consoles" && parts[1]) openConsole(parts[1])
+        inRows = true
+        if (row < 0 || rows[row] === undefined || rows[row].kind === "header" || rows[row].kind === "note") row = firstRow()
+    }
+    function openConsole(slug) {
+        consoleRow = row
+        consoleDisplay = null; consoleOpts = null
+        consoleSlug = slug
+        const ch = chosenOf(consoleOf(slug))
+        page.action("console-open", { slug: slug, program: ch ? ch.program : "" })
+        row = firstRow()
+        rowsView.contentY = 0
+    }
+    function closeConsole() {
+        if (!consoleSlug) return
+        const slug = consoleSlug
+        consoleSlug = ""; consoleDisplay = null; consoleOpts = null
+        const i = rows.findIndex(r => r.id === "console:" + slug)
+        row = i >= 0 ? i : firstRow()
+    }
     function activate(r, i) {
         const item = itemsOf(r)[i]
         if (!item || item.disabled || item.id === "none") return
@@ -360,21 +527,29 @@ Item {
         else if (r.id === "auto") page.action("auto", item.id === "on")
         else if (r.id === "savesync") page.action("savesync", item.id === "on")
         else if (r.id.startsWith("pref:")) page.action("pref", { key: r.id.substring(5), value: item.value })
-        else if (r.id.startsWith("disp:")) page.action("display", { console: page.displayScope, key: r.id.substring(5), value: item.id })
-        else if (r.id.startsWith("console:")) page.action("console-emu", { slug: r.id.substring(8), engine: item.id })
+        else if (r.id.startsWith("disp:")) page.action("display", { console: "", key: r.id.substring(5), value: item.id })
+        else if (r.id.startsWith("cdisp:")) page.action("display", { console: page.consoleSlug, key: r.id.substring(6), value: item.id })
+        else if (r.id.startsWith("console:")) openConsole(r.id.substring(8))
+        else if (r.id.startsWith("go:")) go(r.id.substring(3))
+        else if (r.id.startsWith("emu-choice:")) page.action("console-emu", { slug: r.id.substring(11), engine: item.id })
+        else if (r.id.startsWith("opt:")) { const k = r.id.split(":"); page.action("emu-option", { program: k[1], key: k[2], value: item.id }) }
+        else if (r.id.startsWith("opt-reset:")) page.action("emu-options-reset", { program: r.id.substring(10) })
+        else if (r.id.startsWith("ctl:")) page.action("controls-all", { key: r.id.substring(4), value: item.id })
+        else if (r.id === "ctl-reset") page.action("controls-all-reset", null)
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
         else page.action(item.id, null)
     }
     function handle(a) {
         if (a === "b" || a === "start") {
+            if (inRows && a === "b" && consoleSlug) { closeConsole(); return }
             if (inRows && a === "b") { inRows = false; return }
             page.action("back", null)
             return
         }
         if (!inRows) {
-            if (a === "up") selectSection(Math.max(0, section - 1))
-            else if (a === "down") selectSection(Math.min(sections.length - 1, section + 1))
+            if (a === "up") { closeConsole(); selectSection(Math.max(0, section - 1)) }
+            else if (a === "down") { closeConsole(); selectSection(Math.min(sections.length - 1, section + 1)) }
             else if (a === "right" || a === "a") { inRows = true; row = firstRow() }
             return
         }
@@ -382,7 +557,7 @@ Item {
         const n = itemsOf(r).length
         if (a === "up") row = step(row, -1)
         else if (a === "down") row = step(row, 1)
-        else if (a === "left") { if (colOf(r.id) === 0) inRows = false; else setCol(r.id, colOf(r.id) - 1) }
+        else if (a === "left") { if (colOf(r.id) > 0) setCol(r.id, colOf(r.id) - 1); else if (consoleSlug) closeConsole(); else inRows = false }
         else if (a === "right") setCol(r.id, Math.min(n - 1, colOf(r.id) + 1))
         else if (a === "a") activate(r, colOf(r.id))
     }
@@ -434,7 +609,7 @@ Item {
                         x: 20; anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text { text: sec.modelData.name; color: sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: Font.DemiBold } }
-                        Text { text: sec.modelData.hint; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium } }
+                        Text { text: sec.modelData.hint; color: sec.modelData.warn ? theme.bad : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium } }
                     }
                 }
             }
@@ -468,7 +643,7 @@ Item {
             if (top - 24 < contentY) contentY = Math.max(0, top - 24)
             else if (bottom + 24 > contentY + height) contentY = Math.min(contentHeight - height, bottom + 24 - height)
         }
-        Connections { target: page; function onSectionChanged() { rowsView.contentY = 0 } }
+        Connections { target: page; function onSectionChanged() { rowsView.contentY = 0 } function onConsoleSlugChanged() { rowsView.contentY = 0 } }
     Column {
         id: rowsCol
         width: parent.width
@@ -477,8 +652,23 @@ Item {
         Column {
             width: parent.width
             spacing: 10
-            Text { text: page.sections[page.section].name; color: theme.fg; font { family: theme.displayFont; pixelSize: 34; weight: Font.Bold } }
-            Text { width: parent.width; wrapMode: Text.WordWrap; text: page.sections[page.section].intro || ""; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 18 } }
+            // On a console's page: where it comes from, then the console's name.
+            Text {
+                visible: page.consoleSlug !== ""
+                text: "‹  " + qsTr("Consoles")
+                color: theme.fgFaint
+                font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
+            }
+            Text {
+                text: page.consoleSlug ? (page.consoleOf(page.consoleSlug) ? page.consoleOf(page.consoleSlug).name : "") : page.sections[page.section].name
+                color: theme.fg; font { family: theme.displayFont; pixelSize: 34; weight: Font.Bold }
+            }
+            Text {
+                width: parent.width; wrapMode: Text.WordWrap
+                text: page.consoleSlug ? qsTr("These settings apply to every game of this console; a game can have its own, from its page.")
+                                       : page.sections[page.section].intro || ""
+                color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 18 }
+            }
         }
 
         Repeater {
@@ -490,7 +680,8 @@ Item {
                 readonly property bool current: page.row === index
                 onCurrentChanged: if (current) rowsView.ensure(rowItem)
                 width: parent.width
-                height: modelData.kind === "cards" ? cards.height : modelData.kind === "header" ? 58 : Math.max(96, line.height + 52)
+                height: modelData.kind === "cards" ? cards.height : modelData.kind === "header" ? 58
+                        : modelData.kind === "note" ? noteText.height + 8 : Math.max(modelData.kind === "link" ? 84 : 96, line.height + 44)
 
                 // A group title: small capitals, a thin line after it; never focused.
                 Item {
@@ -507,6 +698,18 @@ Item {
                         anchors { left: groupTitle.right; leftMargin: 16; right: parent.right; rightMargin: 8; verticalCenter: groupTitle.verticalCenter }
                         height: 1; color: Qt.rgba(1, 1, 1, 0.1)
                     }
+                }
+
+                // A sentence between rows (a state, an explanation); never focused.
+                Text {
+                    id: noteText
+                    visible: rowItem.modelData.kind === "note"
+                    x: 8; width: parent.width - 16
+                    text: rowItem.modelData.kind === "note" ? rowItem.modelData.desc : ""
+                    wrapMode: Text.WordWrap
+                    lineHeight: 1.25
+                    color: text.indexOf("⚠") === 0 ? theme.bad : theme.fgMuted
+                    font { family: theme.fontFamily; pixelSize: 17 }
                 }
 
                 // Install method: two explained cards.
@@ -545,16 +748,19 @@ Item {
 
                 // Each setting is a card, as in the redesign; the current one stands out.
                 Rectangle {
-                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header"
+                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header" && rowItem.modelData.kind !== "note"
                     anchors.fill: parent
                     radius: 26
+                    // A line that opens something: the focus rings it, as a button.
+                    border.width: rowItem.modelData.kind === "link" && rowItem.current && page.inRows ? 3 : 0
+                    border.color: theme.focusRing
                     color: rowItem.current ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.045)
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
                 // A setting: title and explanation, choices or buttons on the right.
                 Item {
                     id: line
-                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header"
+                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header" && rowItem.modelData.kind !== "note"
                     x: 32
                     width: parent.width - 64
                     height: Math.max(texts.height, choices.height)
@@ -578,8 +784,31 @@ Item {
                         id: choices
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                         spacing: 10
+                        // A line that opens something: its state as a small badge, then a chevron.
+                        Rectangle {
+                            visible: rowItem.modelData.kind === "link" && (rowItem.modelData.badge || "") !== ""
+                            anchors.verticalCenter: parent.verticalCenter
+                            height: 34; radius: 17
+                            width: badgeText.implicitWidth + 28
+                            readonly property string tone: rowItem.modelData.tone || ""
+                            color: tone === "bad" ? theme.badTint : tone === "ok" ? theme.accentSoft : Qt.rgba(1, 1, 1, 0.08)
+                            Text {
+                                id: badgeText
+                                anchors.centerIn: parent
+                                text: rowItem.modelData.badge || ""
+                                color: parent.tone === "bad" ? theme.badSoft : parent.tone === "ok" ? theme.accent : theme.fgMuted
+                                font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold }
+                            }
+                        }
+                        Text {
+                            visible: rowItem.modelData.kind === "link"
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "›"
+                            color: rowItem.current && page.inRows ? theme.fg : theme.fgFaint
+                            font { family: theme.fontFamily; pixelSize: 34; weight: Font.Medium }
+                        }
                         Repeater {
-                            model: rowItem.modelData.kind === "cards" ? [] : rowItem.modelData.items
+                            model: rowItem.modelData.kind === "cards" || rowItem.modelData.kind === "link" ? [] : rowItem.modelData.items
                             Item {
                                 required property var modelData
                                 required property int index
@@ -620,7 +849,9 @@ Item {
         HintBar {
             x: 64; anchors.verticalCenter: parent.verticalCenter
             theme: page.theme
-            hints: [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"], ["◀ ▶", qsTr("Change value"), "right"]]
+            hints: page.inRows && page.rows[page.row] && page.rows[page.row].kind === "link"
+                   ? [["A", qsTr("Open"), "a"], ["B", qsTr("Back"), "b"]]
+                   : [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"], ["◀ ▶", qsTr("Change value"), "right"]]
         }
     }
 }

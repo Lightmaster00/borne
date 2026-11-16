@@ -68,9 +68,9 @@ Item {
             r.push(group(emuOptions && emuOptions.engine ? qsTr("%1 options for this game").arg(emuOptions.engine) : qsTr("Options for this game")))
             if (!opts.length) r.push(note("no-opts", qsTr("This emulator has no option of its own here: the picture settings apply.")))
             for (const o of opts)
-                r.push({ id: "opt:" + o.key, kind: "chips", title: EmuOptions.title(o.key), desc: EmuOptions.desc(o.key) + (o.own ? "" : " · " + qsTr("default")),
+                r.push({ id: "opt:" + o.key, kind: "chips", title: EmuOptions.title(o.key), desc: EmuOptions.desc(o.key) + (o.own ? "" : " · " + qsTr("as for all its games")),
                          selected: o.value, items: o.values.map(v => ({ id: v, label: EmuOptions.label(o.key, v) })) })
-            if (opts.some(o => o.own)) r.push({ id: "opt-reset", kind: "buttons", title: qsTr("This game's options"), desc: qsTr("Back to the emulator's defaults"),
+            if (opts.some(o => o.own)) r.push({ id: "opt-reset", kind: "buttons", title: qsTr("This game's options"), desc: qsTr("Back to the emulator's options for all its games (Settings → Consoles)"),
                                                 items: [{ id: "opt-reset", label: qsTr("Reset") }] })
             r.push(note("applied", qsTr("Applied the next time the game starts.")))
             return r
@@ -115,7 +115,7 @@ Item {
                 r.push(chips("map." + b, qsTr("Button %1").arg(names[b]), qsTr("What it presses in the game"),
                              v => v === "same" ? qsTr("Itself") : names[v]))
             if (controls.options.some(o => o.own))
-                r.push({ id: "ctl-reset", kind: "buttons", title: qsTr("This game's controls"), desc: qsTr("Back to the controller as it is"),
+                r.push({ id: "ctl-reset", kind: "buttons", title: qsTr("This game's controls"), desc: qsTr("Back to the controls for every game (Settings → Controllers)"),
                          items: [{ id: "ctl-reset", label: qsTr("Reset") }] })
             r.push(note("applied", qsTr("Applied the next time the game starts.")))
             return r

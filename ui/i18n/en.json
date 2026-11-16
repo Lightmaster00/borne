@@ -7,6 +7,10 @@
   "%n cheat on",
   "%n cheats on"
  ],
+ "%n console(s)": [
+  "%n console",
+  "%n consoles"
+ ],
  "%n file(s) taken from RomM.": [
   "%n file taken from RomM.",
   "%n files taken from RomM."
@@ -30,6 +34,14 @@
  "%n result(s) for “%1”": [
   "%n result for “%1”",
   "%n results for “%1”"
+ ],
+ "%n system file(s) missing": [
+  "%n system file missing",
+  "%n system files missing"
+ ],
+ "%n to fix": [
+  "%n to fix",
+  "%n to fix"
  ],
  "%n version(s)": [
   "%n version",

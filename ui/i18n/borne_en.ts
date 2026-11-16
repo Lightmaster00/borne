@@ -1313,15 +1313,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>default</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>This game's options</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Back to the emulator's defaults</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1577,11 +1569,19 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Back to the controller as it is</source>
+        <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
+        <source>as for all its games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the emulator's options for all its games (Settings → Consoles)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the controls for every game (Settings → Controllers)</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1677,10 +1677,6 @@
 </context>
 <context>
     <name>Main</name>
-    <message>
-        <source>All games</source>
-        <translation type="unfinished" />
-    </message>
     <message>
         <source>Installed</source>
         <comment>systems bar</comment>
@@ -2212,10 +2208,6 @@
     </message>
     <message>
         <source>Files RomM keeps for this console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Display settings for</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2912,14 +2904,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No build of this emulator for this computer</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Emulator used for this console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
         <translation type="unfinished" />
     </message>
@@ -3024,34 +3008,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Borne takes the missing files from RomM's BIOS and firmware for each console, after each sync and when you ask.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Take them now</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Nothing needed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No console of the library needs a BIOS, keys or firmware.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>This console's own values; the others follow all games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Every game, unless its console or the game has its own</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>All games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>As for all games</source>
         <translation type="unfinished" />
     </message>
@@ -3080,23 +3036,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>One per console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>System files</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>BIOS, keys, firmware</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Game images</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>ScreenScraper</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3304,10 +3248,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Change console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Saves on RomM</source>
         <translation type="unfinished" />
     </message>
@@ -3397,10 +3337,6 @@
     </message>
     <message>
         <source> is not writable</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Installation, saves</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3580,15 +3516,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Applies to</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Picture</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>How games come to this device, and where their saves go. You can switch at any time: games already here stay.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3600,39 +3528,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Picture in games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Shape, sharpness, filters</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>How games look while playing, for every game or one console. A game can also have its own, from its page.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The program that plays each console's games. A game can use another one, from its page.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Some consoles need files from the console itself to start their games.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Case scans, spines, cartridges and console logos, from ScreenScraper.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>RomM</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Server, sync, profile</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The server your games come from, and who is playing.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3676,10 +3572,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Emulators by themselves</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Borne installs the emulators your consoles need and their new versions, never during a game</source>
         <translation type="unfinished" />
     </message>
@@ -3697,6 +3589,342 @@
     </message>
     <message>
         <source>The first start waits for the download</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No build of its emulator for this computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is installed by Borne at the first game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is not installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 not found: choose its program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Missing: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>system files ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n system file(s) missing</source>
+        <translation><numerusform>%n system file missing</numerusform><numerusform>%n system files missing</numerusform></translation>
+    </message>
+    <message>
+        <source>To fix</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulator installation</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Failed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The server cannot be reached: games already here still play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Offline</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloaded: restart to install it</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A new version is available</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>New</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Connect a ScreenScraper account for case scans, cartridges and logos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Suggested</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Needs your attention</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Suggestions</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Everything is ready: every console of the library has its emulator and the files it needs.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>At a glance</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 of %2 ready to play</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>None yet: sync the library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Played from the network</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloaded before playing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>saves stay on this device</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>saves on RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The consoles of your library appear here after a sync.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>In your library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This console is no longer in the library.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Plays these games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A game can use another one, from its page</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 plays these games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 options</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also used for: %1. A game can have its own, from its page.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne's choice</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to Borne's choices</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install and update by themselves</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Used by your consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>For: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also on this computer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Loading…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Connected</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Player %1: %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No controller connected: the keyboard plays.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>For every game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Face buttons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A and B, X and Y, as on the controller or swapped (Nintendo layout)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As on the controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also moves as the D-pad, for games without analog control (RetroArch)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also the D-pad</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stick only</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Button %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>What it presses in the game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Itself</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the controller as it is</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Applied the next time a game starts, by the emulators Borne sets up. A game can have its own, from its page.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Overview</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n to fix</source>
+        <translation><numerusform>%n to fix</numerusform><numerusform>%n to fix</numerusform></translation>
+    </message>
+    <message>
+        <source>Everything is ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>What needs your attention, and the main choices at a glance. Press A on a line to go there.</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n console(s)</source>
+        <translation><numerusform>%n console</numerusform><numerusform>%n consoles</numerusform></translation>
+    </message>
+    <message>
+        <source>Emulator, picture, BIOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Everything about each console of your library: the emulator that plays it, that emulator's options, the picture and the system files. A game can still have its own settings, from its page.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Install, update</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The emulator programs on this computer. Borne installs and updates them; you can also give your own.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installation, saves, picture</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controllers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons for every game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The controllers connected, and how their buttons play in every game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM &amp; images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Server, profile, ScreenScraper</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The server your games come from, who is playing, and where the case scans come from.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture in every game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>These settings apply to every game of this console; a game can have its own, from its page.</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -361,6 +361,9 @@ pub fn emu_args(program: &str, m: &Map<String, Value>) -> Vec<String> {
     }
 }
 
+/// The group under which an emulator's own defaults are kept (for every game it runs).
+pub const ALL_GAMES: &str = "@all";
+
 fn emu_key(group: &str, program: &str, key: &str) -> String {
     format!("emuopt.{group}.{program}.{key}")
 }
@@ -369,30 +372,44 @@ fn emu_own(app: &Shared, group: &str, program: &str, key: &str, values: &[&str])
     app.db.setting(&emu_key(group, program, key)).filter(|v| values.contains(&v.as_str()))
 }
 
-/// The emulator options in effect for a game run by `program`.
+/// The value a game gets when it has none of its own: the emulator's for all games, else Borne's.
+fn emu_inherited(app: &Shared, program: &str, key: &str, values: &[&str], default: &str) -> String {
+    emu_own(app, ALL_GAMES, program, key, values).unwrap_or_else(|| default.to_string())
+}
+
+/// The emulator options in effect for a game run by `program` (its own, else the emulator's for
+/// all games, else Borne's default).
 pub fn emu_options(app: &Shared, program: &str, group: &str) -> Map<String, Value> {
     EMU_OPTIONS
         .iter()
         .filter(|o| o.0 == program)
-        .map(|(p, k, vals, d)| (k.to_string(), json!(emu_own(app, group, p, k, vals).unwrap_or_else(|| d.to_string()))))
+        .map(|(p, k, vals, d)| {
+            let v = emu_own(app, group, p, k, vals).unwrap_or_else(|| emu_inherited(app, p, k, vals, d));
+            (k.to_string(), json!(v))
+        })
         .collect()
 }
 
-/// The options offered for a game run by `program`: each with its values, the one in effect and
-/// whether the game has its own.
+/// The options offered for a game run by `program` (or, with `group` = ALL_GAMES, for every game
+/// it runs): each with its values, the one in effect, whether it is set at that level, and what
+/// it would be otherwise.
 pub fn emu_view(app: &Shared, program: &str, group: &str) -> Value {
     let list: Vec<Value> = EMU_OPTIONS
         .iter()
         .filter(|o| o.0 == program)
         .map(|(p, k, vals, d)| {
             let own = emu_own(app, group, p, k, vals);
-            json!({ "key": k, "values": vals, "default": d, "value": own.clone().unwrap_or_else(|| d.to_string()), "own": own.is_some() })
+            let inherited = if group == ALL_GAMES { d.to_string() } else { emu_inherited(app, p, k, vals, d) };
+            json!({
+                "key": k, "values": vals, "default": d, "inherited": inherited,
+                "value": own.clone().unwrap_or_else(|| inherited.clone()), "own": own.is_some()
+            })
         })
         .collect();
     json!({ "program": program, "options": list })
 }
 
-/// Sets a game's option ("default" removes it).
+/// Sets a game's option, or the emulator's for all games ("default" removes it).
 pub fn emu_set(app: &Shared, program: &str, group: &str, key: &str, value: &str) -> Result<(), String> {
     let (_, _, vals, _) = EMU_OPTIONS.iter().find(|o| o.0 == program && o.1 == key).ok_or("unknown option")?;
     if value == "default" {

@@ -24,6 +24,10 @@ for section in 1 2 3 4 5 6 7 8 9 10; do
   pad right; for _ in $(seq 1 14); do pad down; done; pad b down sleep:0.5
 done
 pad b sleep:1
+pad start sleep:2 down right a sleep:1              # a console's own page, then back to its list
+for _ in $(seq 1 20); do pad down; done
+pad b down a sleep:1 b b b sleep:1
+pad start sleep:2 right a sleep:1 b b b sleep:1     # the overview's first line opens its section
 errors=$(tail -n +"$start" "$LOG" | grep -aE "TypeError|ReferenceError|\.qml:[0-9]+: |Unable to assign" | sort | uniq -c)
 if [ -n "$errors" ]; then echo "FAILED: QML errors during the tour"; echo "$errors"; exit 1; fi
 echo "UI tour passed: no QML error"

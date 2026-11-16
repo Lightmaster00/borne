@@ -104,11 +104,25 @@ fn keys() -> Vec<String> {
     k
 }
 
-fn get(app: &Shared, group: &str, k: &str) -> (String, bool) {
+/// The group under which the controls for every game are kept.
+pub const ALL_GAMES: &str = "@all";
+
+fn own(app: &Shared, group: &str, k: &str) -> Option<String> {
     let vals = values(k);
-    match app.db.setting(&key(group, k)).filter(|v| vals.contains(v)) {
+    app.db.setting(&key(group, k)).filter(|v| vals.contains(v))
+}
+
+/// What a game gets without a value of its own: the one for all games (the pad is always
+/// chosen per game), else the default.
+fn inherited(app: &Shared, group: &str, k: &str) -> String {
+    let global = if group == ALL_GAMES || k == "pad" { None } else { own(app, ALL_GAMES, k) };
+    global.unwrap_or_else(|| values(k)[0].clone())
+}
+
+fn get(app: &Shared, group: &str, k: &str) -> (String, bool) {
+    match own(app, group, k) {
         Some(v) => (v, true),
-        None => (vals[0].clone(), false),
+        None => (inherited(app, group, k), false),
     }
 }
 
@@ -118,9 +132,10 @@ pub fn view(app: &Shared, group: &str, program: &str) -> Value {
     let pads = app.pads.lock().unwrap_or_else(|e| e.into_inner()).pads.clone();
     let options: Vec<Value> = keys()
         .iter()
+        .filter(|k| group != ALL_GAMES || k.as_str() != "pad")
         .map(|k| {
             let (value, own) = get(app, group, k);
-            json!({ "key": k, "value": value, "own": own, "values": values(k) })
+            json!({ "key": k, "value": value, "own": own, "inherited": inherited(app, group, k), "values": values(k) })
         })
         .collect();
     json!({ "applies": APPLIES.contains(&program), "stick": program == "retroarch", "program": program, "pads": pads, "options": options })
@@ -128,10 +143,11 @@ pub fn view(app: &Shared, group: &str, program: &str) -> Value {
 
 pub fn set(app: &Shared, group: &str, k: &str, value: &str) -> Result<(), String> {
     let vals = values(k);
-    if vals.is_empty() {
+    if vals.is_empty() || (group == ALL_GAMES && k == "pad") {
         return Err("unknown setting".into());
     }
-    if value == "default" || value == vals[0] {
+    // A game set back to what it would get anyway keeps nothing of its own.
+    if value == "default" || (value == vals[0] && group == ALL_GAMES) || (group != ALL_GAMES && value == inherited(app, group, k)) {
         app.db.set_setting(&key(group, k), "");
         if k == "pad" {
             app.db.set_setting(&key(group, "pad.id"), "");

@@ -19,6 +19,9 @@
 //!   POST   /api/v1/games/<id>/cheats/file        PS2: the game's .pnach {path} | {url} | {pick}
 //!   GET    /api/v1/screenscraper/report          per console: found, not found (names), not looked up
 //!   GET    /api/v1/games/<id>/emuoptions                  the emulator's own options for this game
+//!   GET    /api/v1/emulators/<program>/options            the same for every game it runs
+//!   POST   /api/v1/emulators/<program>/options            { key, value | "default" }
+//!   GET    /api/v1/controls  ·  POST {key, value|"default"}   controls for every game
 //!   POST   /api/v1/games/<id>/emuoptions                  { key, value | "default" }
 //!   GET    /api/v1/screenscraper/search?q=&platform=   ScreenScraper games by name, to correct a match
 //!   GET|POST /api/v1/games/<id>/screenscraper     box regions available / correct {ss_id} or {region}
@@ -950,6 +953,28 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             }
             None => err(req, 404, "unknown game"),
         },
+        // An emulator's options for every game it runs (a game can still have its own).
+        (Method::Get, ["api", "v1", "emulators", program, "options"]) => {
+            ok(req, crate::gamesettings::emu_view(app, program, crate::gamesettings::ALL_GAMES))
+        }
+        (Method::Post, ["api", "v1", "emulators", program, "options"]) => {
+            let b = body_json(&mut req);
+            let all = crate::gamesettings::ALL_GAMES;
+            match crate::gamesettings::emu_set(app, program, all, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                Ok(()) => ok(req, crate::gamesettings::emu_view(app, program, all)),
+                Err(x) => err(req, 400, &x),
+            }
+        }
+        // The controls for every game (a game can still have its own).
+        (Method::Get, ["api", "v1", "controls"]) => ok(req, crate::controls::view(app, crate::controls::ALL_GAMES, "")),
+        (Method::Post, ["api", "v1", "controls"]) => {
+            let b = body_json(&mut req);
+            let all = crate::controls::ALL_GAMES;
+            match crate::controls::set(app, all, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                Ok(()) => ok(req, crate::controls::view(app, all, "")),
+                Err(x) => err(req, 400, &x),
+            }
+        }
         (Method::Get, ["api", "v1", "session"]) => ok(req, crate::emulators::session()),
         (Method::Post, ["api", "v1", "session", "stop"]) => ok(req, json!({ "stopped": crate::emulators::stop() })),
         (Method::Post, ["api", "v1", "session", "ask"]) => {
