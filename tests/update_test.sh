@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end test of in-app updates (Linux), against a local release server:
 # an installed build 100 finds build 101 on the dev channel (full archive only, as older manifests),
-# downloads it, verifies its SHA-256, swaps the package and restarts on the new core; then build
+# refuses a manifest altered after signing, downloads it, verifies its SHA-256, swaps the package and restarts on the new core; then build
 # 102 is published in parts (scripts/release/parts.py) where only the core changed: only that part
 # is downloaded, the package is assembled and checked, and the core restarts on build 102.
 #
@@ -19,6 +19,22 @@ cleanup() {
 trap cleanup EXIT
 fail() { echo "FAILED: $1"; echo "--- core log ---"; cat "$WORK/core.log" 2>/dev/null; exit 1; }
 ok() { echo "  ok  $1"; }
+
+# A release key made for this test: the builds take only manifests signed with it (as official
+# builds do when the repository has one), and every manifest below is signed with it.
+openssl genpkey -algorithm ed25519 -out "$WORK/key.pem" 2>/dev/null
+export UPDATE_SIGNING_KEY="$(cat "$WORK/key.pem")"
+export UPDATE_PUBLIC_KEY="$(openssl pkey -in "$WORK/key.pem" -pubout -outform DER | tail -c 32 | od -An -tx1 | tr -d ' \n')"
+export BORNE_UPDATE_PUBKEY="$UPDATE_PUBLIC_KEY"
+# Signs a manifest (again, after a change: its old signature taken off first).
+sign() {
+  python3 - "$1" <<'PY'
+import re, sys
+p = sys.argv[1]; b = open(p, "rb").read().strip()
+open(p, "wb").write(re.sub(rb'^\{"signature":"[0-9a-f]*",', b"{", b))
+PY
+  python3 "$HERE/scripts/release/sign.py" "$1" >/dev/null
+}
 
 build_core() {  # <build number> <version> <output binary>
   BORNE_BUILD="$1" BORNE_VERSION="$2" BORNE_COMMIT=test cargo build --release -q --manifest-path "$HERE/core/Cargo.toml"
@@ -41,6 +57,7 @@ cat > "$WORK/release/download/dev/latest.json" <<EOF
 { "version": "0.1.1", "build": 101, "channel": "dev", "commit": "test", "date": "today", "notes": "Test build",
   "assets": { "linux-x86_64": { "url": "$BASE/download/dev/Borne-linux-x86_64.tar.gz", "sha256": "$SHA", "size": $SIZE } } }
 EOF
+sign "$WORK/release/download/dev/latest.json"
 (cd "$WORK/release" && exec python3 -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1) &
 SRV=$!
 
@@ -61,15 +78,27 @@ curl -sf -X POST "$API/api/v1/update/check" >/dev/null
 wait_state available || fail "update not found ($(state))"
 ok "build 101 found on the dev channel"
 
+# A manifest changed after signing (here: another build number) must be refused.
+M="$WORK/release/download/dev/latest.json"
+cp "$M" "$WORK/signed.json"
+sed -i 's/"build": 101/"build": 109/' "$M"
+curl -sf -X POST "$API/api/v1/update/check" >/dev/null
+wait_state error || fail "altered manifest accepted ($(state))"
+curl -sf "$API/api/v1/update" | grep -q "signature" || fail "altered manifest: not refused for its signature"
+ok "altered manifest refused (signature)"
+cp "$WORK/signed.json" "$M"
+
 # A damaged download must be refused and leave the installation untouched.
 GOOD_SHA="$SHA"
-sed -i "s/$GOOD_SHA/0000000000000000000000000000000000000000000000000000000000000000/" "$WORK/release/download/dev/latest.json"
+sed -i "s/$GOOD_SHA/0000000000000000000000000000000000000000000000000000000000000000/" "$M"
+sign "$M"
 curl -sf -X POST "$API/api/v1/update/check" >/dev/null; wait_state available || fail "recheck"
 curl -sf -X POST "$API/api/v1/update/download" >/dev/null
 wait_state error || fail "damaged download not detected ($(state))"
 [ ! -d "$WORK/install/.borne-update-101/Borne" ] || fail "damaged update extracted"
 ok "damaged download refused (SHA-256)"
-sed -i "s/0000000000000000000000000000000000000000000000000000000000000000/$GOOD_SHA/" "$WORK/release/download/dev/latest.json"
+sed -i "s/0000000000000000000000000000000000000000000000000000000000000000/$GOOD_SHA/" "$M"
+sign "$M"
 
 curl -sf -X POST "$API/api/v1/update/check" >/dev/null; wait_state available || fail "recheck"
 curl -sf -X POST "$API/api/v1/update/download" >/dev/null
@@ -105,6 +134,7 @@ asset = {"url": f"{base}/download/dev/Borne-linux-x86_64.tar.gz", "sha256": hash
 json.dump({"version": "0.1.2", "build": 102, "channel": "dev", "commit": "test", "date": "today", "notes": "Test build",
            "assets": {"linux-x86_64": asset}}, open(f"{d}/latest.json", "w"))
 PY
+sign "$D/latest.json"
 CORE_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["core"]["size"])' "$WORK/parts.json")
 curl -sf -X POST "$API/api/v1/update/check" >/dev/null; wait_state available || fail "build 102 not found ($(state))"
 ANNOUNCED=$(curl -sf "$API/api/v1/update" | python3 -c 'import json,sys; u=json.load(sys.stdin)["update"]; print(u["size"], ",".join(u["parts"]))')
