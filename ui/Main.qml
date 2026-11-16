@@ -408,8 +408,17 @@ Window {
             onSession(r)
         })
     }
+    // Escape during a game (macOS; Linux catches it in the core): Borne's question, not the
+    // emulator's menu. Pressed again while asked, the game goes on.
+    // (The launcher's `quitKey`, absent when the page runs elsewhere: connected once loaded.)
+    function quitKeyPressed() {
+        if (!win.session || !win.session.running) return
+        if (win.session.paused) quitAsk.answered(false)
+        else win.api("POST", "/api/v1/session/ask", {}, function () {})
+    }
     function onSession(s) {
         session = s
+        if (typeof quitKey !== "undefined" && quitKey) quitKey.active = !!(s && s.running)
         if (s && s.running) {
             if (!launchGame || launchGame.rom_id !== s.rom_id) launchGame = pageGame && pageGame.rom_id === s.rom_id ? pageGame : launchGame
             gameMode = true
@@ -1607,25 +1616,6 @@ Window {
         note: win.launchNote
     }
 
-    // Escape during a game (macOS; Linux catches it in the core): Borne's question, not the
-    // emulator's menu. Pressed again while asked, the game goes on.
-    readonly property var quitKeyObj: typeof quitKey !== "undefined" ? quitKey : null
-    Binding {
-        target: win.quitKeyObj
-        when: win.quitKeyObj !== null
-        property: "active"
-        value: !!(win.session && win.session.running)
-    }
-    Connections {
-        target: win.quitKeyObj
-        ignoreUnknownSignals: true
-        function onPressed() {
-            if (!win.session || !win.session.running) return
-            if (win.session.paused) quitAsk.answered(false)
-            else win.api("POST", "/api/v1/session/ask", {}, function () {})
-        }
-    }
-
     // Quitting a game: asked when the core paused it on the quit chord or on Escape.
     QuitConfirm {
         id: quitAsk
@@ -1897,6 +1887,7 @@ Window {
     }
 
     Component.onCompleted: {
+        if (typeof quitKey !== "undefined" && quitKey) quitKey.pressed.connect(win.quitKeyPressed)
         graphite.accent = consoleTint
         if (!apiBase) return
         api("GET", "/api/v1/hello", null, function (h, err) {
