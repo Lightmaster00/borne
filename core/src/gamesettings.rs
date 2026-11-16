@@ -667,23 +667,58 @@ pub fn controllers(
                 _ => (userdir.join("config").join(program).join("qt-config.ini"), "player_0_"),
             };
             let p = |extra: &str| format!("\"{extra},guid:{guid},port:{index},engine:sdl\"");
+            // Azahar reads the controls through SDL's game-controller layer (api:controller): the
+            // standard numbers fit every pad. Eden and Citron bind the pad's raw controls, which
+            // SDL_GameControllerDB gives per pad; the standard numbers when the pad is not known.
+            let azahar = program == "azahar";
+            let raw = |control: &str, standard: &str| -> String {
+                if azahar {
+                    let standard = standard.replace("invert:", "direction:");
+                    return p(&format!("{standard},api:controller"));
+                }
+                match crate::sdldb::bind(guid, control) {
+                    Some(crate::sdldb::Bind::Button(n)) => p(&format!("button:{n}")),
+                    Some(crate::sdldb::Bind::Axis { index, positive }) => {
+                        p(&format!("axis:{index},threshold:0.500000,invert:{}", if positive { "+" } else { "-" }))
+                    }
+                    Some(crate::sdldb::Bind::Hat { index, mask }) => {
+                        let dir = match mask {
+                            1 => "up",
+                            2 => "right",
+                            4 => "down",
+                            _ => "left",
+                        };
+                        p(&format!("hat:{index},direction:{dir}"))
+                    }
+                    None => p(standard),
+                }
+            };
             let n = |b: &str| {
-                p(match b {
-                    "a" => "button:0",
-                    "b" => "button:1",
-                    "x" => "button:2",
-                    "y" => "button:3",
-                    "l" => "button:9",
-                    "r" => "button:10",
-                    "l2" => "axis:4,threshold:0.500000,invert:+",
-                    "r2" => "axis:5,threshold:0.500000,invert:+",
-                    "start" => "button:6",
-                    _ => "button:4",
-                })
+                let (control, standard) = match b {
+                    "a" => ("a", "button:0"),
+                    "b" => ("b", "button:1"),
+                    "x" => ("x", "button:2"),
+                    "y" => ("y", "button:3"),
+                    "l" => ("leftshoulder", "button:9"),
+                    "r" => ("rightshoulder", "button:10"),
+                    "l2" => ("lefttrigger", "axis:4,threshold:0.500000,invert:+"),
+                    "r2" => ("righttrigger", "axis:5,threshold:0.500000,invert:+"),
+                    "start" => ("start", "button:6"),
+                    _ => ("back", "button:4"),
+                };
+                raw(control, standard)
+            };
+            let axis = |c: &str, standard: u32| match crate::sdldb::bind(guid, c) {
+                Some(crate::sdldb::Bind::Axis { index, .. }) if !azahar => index,
+                _ => standard,
+            };
+            let stick = |x: &str, y: &str, sx: u32, sy: u32, extra: &str| {
+                let api = if azahar { ",api:controller" } else { "" };
+                p(&format!("axis_x:{},axis_y:{},deadzone:0.150000{extra}{api}", axis(x, sx), axis(y, sy)))
             };
             let none = "\"[empty]\"".to_string();
             let b = |logical: &str| src(logical).map(n).unwrap_or_else(|| none.clone());
-            let (start, select) = if program == "azahar" { ("start", "select") } else { ("plus", "minus") };
+            let (start, select) = if azahar { ("start", "select") } else { ("plus", "minus") };
             let mut pairs: Vec<(String, String)> = vec![
                 ("button_a".into(), b("b")),
                 ("button_b".into(), b("a")),
@@ -695,10 +730,10 @@ pub fn controllers(
                 ("button_zr".into(), b("r2")),
                 (format!("button_{start}"), b("start")),
                 (format!("button_{select}"), b("select")),
-                ("button_dleft".into(), p("button:13")),
-                ("button_dup".into(), p("button:11")),
-                ("button_dright".into(), p("button:14")),
-                ("button_ddown".into(), p("button:12")),
+                ("button_dleft".into(), raw("dpleft", "button:13")),
+                ("button_dup".into(), raw("dpup", "button:11")),
+                ("button_dright".into(), raw("dpright", "button:14")),
+                ("button_ddown".into(), raw("dpdown", "button:12")),
             ];
             if program == "azahar" {
                 for (k, _) in pairs.iter_mut() {
@@ -708,13 +743,13 @@ pub fn controllers(
                         .replace("button_dright", "button_right")
                         .replace("button_ddown", "button_down");
                 }
-                pairs.push(("circle_pad".into(), p("axis_x:0,axis_y:1,deadzone:0.150000")));
-                pairs.push(("c_stick".into(), p("axis_x:2,axis_y:3,deadzone:0.150000")));
+                pairs.push(("circle_pad".into(), stick("leftx", "lefty", 0, 1, "")));
+                pairs.push(("c_stick".into(), stick("rightx", "righty", 2, 3, "")));
             } else {
-                pairs.push(("button_lstick".into(), p("button:7")));
-                pairs.push(("button_rstick".into(), p("button:8")));
-                pairs.push(("lstick".into(), p("axis_x:0,axis_y:1,deadzone:0.150000,range:1.000000")));
-                pairs.push(("rstick".into(), p("axis_x:2,axis_y:3,deadzone:0.150000,range:1.000000")));
+                pairs.push(("button_lstick".into(), raw("leftstick", "button:7")));
+                pairs.push(("button_rstick".into(), raw("rightstick", "button:8")));
+                pairs.push(("lstick".into(), stick("leftx", "lefty", 0, 1, ",range:1.000000")));
+                pairs.push(("rstick".into(), stick("rightx", "righty", 2, 3, ",range:1.000000")));
                 pairs.push(("type".into(), "0".into()));
                 pairs.push(("connected".into(), "true".into()));
             }
@@ -722,6 +757,10 @@ pub fn controllers(
             for (k, x) in pairs {
                 v.push((format!("{prefix}{k}\\default"), "false".into()));
                 v.push((format!("{prefix}{k}"), x));
+            }
+            if azahar {
+                // A Qt settings array: read only up to its size, else the profile is ignored.
+                v.push(("profiles\\size".into(), "1".into()));
             }
             let refs: Vec<(&str, &str, &str)> = v.iter().map(|(k, x)| ("Controls", k.as_str(), x.as_str())).collect();
             ini(&path, &refs)
@@ -773,12 +812,13 @@ pub fn controllers(
             let Some(pad) = pad else { return Ok(()) };
             let path = data.join("input_configs/global/Default.yml");
             let _ = std::fs::create_dir_all(path.parent().unwrap());
+            // RPCS3's names for SDL controls (rpcs3/Input/sdl_pad_handler.cpp).
             let n = |b: &str| {
                 match b {
-                    "a" => "A",
-                    "b" => "B",
-                    "x" => "X",
-                    "y" => "Y",
+                    "a" => "South",
+                    "b" => "East",
+                    "x" => "West",
+                    "y" => "North",
                     "l" => "LB",
                     "r" => "RB",
                     "l2" => "LT",
@@ -789,19 +829,20 @@ pub fn controllers(
                 .to_string()
             };
             let b = |logical: &str| format!("\"{}\"", src(logical).map(n).unwrap_or_default());
+            // Every control written: one left out stays unbound (RPCS3's defaults are empty).
+            // RPCS3 numbers pads per name ("Xbox Controller 1"): the first of that name.
             let yml = format!(
-                "Player 1 Input:\n  Handler: SDL\n  Device: {pad} {}\n  Profile: Default\n  Config:\n    Cross: {}\n    Circle: {}\n    Square: {}\n    Triangle: {}\n    L1: {}\n    R1: {}\n    L2: {}\n    R2: {}\n    Start: {}\n    Select: {}\n  Buddy Device: \"\"\n",
-                index + 1,
+                "Player 1 Input:\n  Handler: SDL\n  Device: {pad} 1\n  Config:\n    Left Stick Left: \"LS X-\"\n    Left Stick Down: \"LS Y-\"\n    Left Stick Right: \"LS X+\"\n    Left Stick Up: \"LS Y+\"\n    Right Stick Left: \"RS X-\"\n    Right Stick Down: \"RS Y-\"\n    Right Stick Right: \"RS X+\"\n    Right Stick Up: \"RS Y+\"\n    Start: {}\n    Select: {}\n    PS Button: \"Guide\"\n    Square: {}\n    Cross: {}\n    Circle: {}\n    Triangle: {}\n    Left: \"Left\"\n    Down: \"Down\"\n    Right: \"Right\"\n    Up: \"Up\"\n    R1: {}\n    R2: {}\n    R3: \"RS\"\n    L1: {}\n    L2: {}\n    L3: \"LS\"\n  Buddy Device: \"\"\n",
+                b("start"),
+                b("select"),
+                b("x"),
                 b("a"),
                 b("b"),
-                b("x"),
                 b("y"),
-                b("l"),
                 b("r"),
-                b("l2"),
                 b("r2"),
-                b("start"),
-                b("select")
+                b("l"),
+                b("l2")
             );
             std::fs::write(&path, yml).map_err(|e| e.to_string())
         }
@@ -911,6 +952,24 @@ mod tests {
     /// The game's controls as they come: each button gives itself.
     fn same(b: &str) -> Option<&'static str> {
         crate::controls::BUTTONS.iter().find(|x| x.0 == b).map(|x| x.0)
+    }
+
+    #[test]
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn eden_and_azahar_get_the_pads_own_controls() {
+        let d = std::env::temp_dir().join(format!("borne-raw-{}", std::process::id()));
+        let g = "050000005e040000130b000022050000"; // Xbox Series X over Bluetooth
+        controllers("eden", &d, &d, 0, Some("Xbox Series X Controller"), Some(g), &same).unwrap();
+        let t = std::fs::read_to_string(d.join("config/eden/qt-config.ini")).unwrap();
+        // Switch Y (west) is the pad's X: raw button 3 on this pad; L is raw button 6.
+        assert!(t.contains(&format!("player_0_button_y = \"button:3,guid:{g},port:0,engine:sdl\"")), "{t}");
+        assert!(t.contains("player_0_button_l = \"button:6,"));
+        assert!(t.contains("player_0_button_dup = \"hat:0,direction:up,"));
+        controllers("azahar", &d, &d, 0, Some("Xbox Series X Controller"), Some(g), &same).unwrap();
+        let a = std::fs::read_to_string(d.join("config/azahar-emu/qt-config.ini")).unwrap();
+        assert!(a.contains("profiles\\size = 1") && a.contains("api:controller"), "{a}");
+        let _ = std::fs::remove_dir_all(d);
     }
 
     #[test]

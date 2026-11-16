@@ -863,8 +863,20 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
     let fails: Vec<String> = p.fails.iter().map(|f| f.to_lowercase()).collect();
+    // Its log where Borne points it, and where it may write anyway: the usual folders of the
+    // user, and a Flatpak's own (Flatpak sets the XDG variables itself).
     let data = data_dir(app, &profile, &p.id);
-    let own: Vec<PathBuf> = p.logs.iter().map(|l| data.join(l)).collect();
+    let base = app.paths.profiles().join(&profile).join(&p.id);
+    let mut dirs = vec![data.clone()];
+    for (from, to) in [("data", ".local/share"), ("config", ".config")] {
+        if let Ok(rel) = data.strip_prefix(base.join(from)) {
+            dirs.push(home().join(to).join(rel));
+            if let Found::Flatpak(id) = &found {
+                dirs.push(home().join(".var/app").join(id).join(from).join(rel));
+            }
+        }
+    }
+    let own: Vec<PathBuf> = dirs.iter().flat_map(|d| p.logs.iter().map(move |l| d.join(l))).collect();
     let app = app.clone();
     std::thread::spawn(move || follow(app, log, own, fails));
     Ok(s)

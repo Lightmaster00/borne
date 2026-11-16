@@ -33,6 +33,7 @@ mod paths;
 mod romm;
 mod savesync;
 mod screenscraper;
+mod sdldb;
 mod secrets;
 mod state;
 mod stream;
