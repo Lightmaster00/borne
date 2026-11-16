@@ -118,7 +118,9 @@ translated by `ui/components/CoreText.js`.
   the console frame. Regenerate the icon PNG with `rsvg-convert -w 1024 -h 1024 resources/borne.svg
   -o resources/borne.png`.
 
-To publish a stable version: set `version` in `core/Cargo.toml` (the tag must match), commit, then
+To publish a stable version: set `version` in `core/Cargo.toml` (the tag must match), optionally
+write its notes in `docs/releases/vX.Y.Z.md` (a first paragraph, then `- ` points; otherwise the
+commit subjects since the previous tag), commit, then
 
 ```bash
 git tag v0.2.0 && git push origin v0.2.0

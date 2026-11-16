@@ -67,6 +67,16 @@ def main():
         }
         files += [archive] + [p["file"] for p in parts.values()]
     subjects = changes(tag, channel)
+    # A stable release can have its notes written by hand (docs/releases/<tag>.md: a first line,
+    # then "- " points): used instead of the commit subjects (the first release has them all).
+    written = os.path.join("docs", "releases", f"{tag}.md")
+    intro = ""
+    if channel == "stable" and os.path.exists(written):
+        text = open(written).read().splitlines()
+        points = [l[2:].strip() for l in text if l.startswith("- ")]
+        intro = " ".join(l.strip() for l in text if l.strip() and not l.startswith("- "))
+        if points:
+            subjects = points
     manifest = {
         "version": os.environ["BORNE_VERSION"], "build": int(os.environ["BORNE_BUILD"]), "channel": channel,
         "commit": os.environ["BORNE_COMMIT"], "date": datetime.date.today().isoformat(),
@@ -82,11 +92,14 @@ def main():
     if channel == "dev":
         lines += [f"Development build {manifest['build']} ({manifest['version']}, {manifest['commit']}), "
                   "rebuilt on every change of `main`. For the tested versions, use the latest stable release.", ""]
-    lines += ["## Changes", ""] + [f"- {s}" for s in subjects] + [""]
+    if intro:
+        lines += [intro, ""]
+    lines += ["## Changes" if not intro else "## Highlights", ""] + [f"- {s}" for s in subjects] + [""]
     lines += ["## Install", "",
               "- **Linux** (x86_64; ChimeraOS, SteamOS, any desktop): download `Borne-linux-x86_64.tar.gz`, then",
               "  ```", "  tar xzf Borne-linux-x86_64.tar.gz && ./Borne/install.sh", "  ```",
-              "  Borne is added to your applications menu (on ChimeraOS / SteamOS, add it to Steam as a non-Steam game).",
+              "  Borne is added to your applications menu and to Steam, with its artwork (on ChimeraOS it shows",
+              "  after the next Steam session start; elsewhere Steam must be closed, or use Settings → Help → Add to Steam).",
               "- **macOS** (Apple Silicon): download `Borne-macos-arm64.zip`, move `Borne.app` to Applications, then the",
               "  first time right-click it → **Open** (the app is not notarized).", "",
               "## Updates", "",
