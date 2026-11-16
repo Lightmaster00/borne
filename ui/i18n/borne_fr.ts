@@ -665,6 +665,22 @@
         <source>offline</source>
         <translation>hors ligne</translation>
     </message>
+    <message>
+        <source>Steam is not installed for this user</source>
+        <translation>Steam n'est pas installé pour cet utilisateur</translation>
+    </message>
+    <message>
+        <source>close Steam first: it rewrites its shortcuts when it quits</source>
+        <translation>ferme d'abord Steam : il réécrit ses raccourcis en quittant</translation>
+    </message>
+    <message>
+        <source>Steam's shortcuts file could not be read</source>
+        <translation>Le fichier des raccourcis de Steam n'a pas pu être lu</translation>
+    </message>
+    <message>
+        <source>no Steam account on this computer yet: open Steam and sign in once</source>
+        <translation>aucun compte Steam sur cet ordinateur : ouvre Steam et connecte-toi une fois</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2542,6 +2558,14 @@
         <source>Sending the save to RomM…</source>
         <translation>Envoi de la sauvegarde à RomM…</translation>
     </message>
+    <message>
+        <source>Borne shows in Steam after the next Steam session start.</source>
+        <translation>Borne apparaîtra dans Steam au prochain démarrage de la session Steam.</translation>
+    </message>
+    <message>
+        <source>Borne shows in Steam the next time it starts.</source>
+        <translation>Borne apparaîtra dans Steam à son prochain démarrage.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3926,6 +3950,58 @@
     <message>
         <source>These settings apply to every game of this console; a game can have its own, from its page.</source>
         <translation>Ces réglages s'appliquent à tous les jeux de cette console ; un jeu peut avoir les siens, depuis sa page.</translation>
+    </message>
+    <message>
+        <source>Steam</source>
+        <translation>Steam</translation>
+    </message>
+    <message>
+        <source>Add Borne to Steam, to start it from the gamepad interface</source>
+        <translation>Ajoute Borne à Steam pour le lancer depuis l'interface manette</translation>
+    </message>
+    <message>
+        <source>Steam, diagnostics, quit</source>
+        <translation>Steam, diagnostic, quitter</translation>
+    </message>
+    <message>
+        <source>When something goes wrong</source>
+        <translation>En cas de problème</translation>
+    </message>
+    <message>
+        <source>Added through ChimeraOS: Borne is in your Steam library after the next Steam session start, with its artwork.</source>
+        <translation>Ajouté via ChimeraOS : Borne apparaît dans ta bibliothèque Steam au prochain démarrage de la session Steam, avec ses visuels.</translation>
+    </message>
+    <message>
+        <source>ChimeraOS adds Borne to your Steam library, with its artwork, at the next Steam session start.</source>
+        <translation>ChimeraOS ajoute Borne à ta bibliothèque Steam, avec ses visuels, au prochain démarrage de la session Steam.</translation>
+    </message>
+    <message>
+        <source>Borne is in your Steam library.</source>
+        <translation>Borne est dans ta bibliothèque Steam.</translation>
+    </message>
+    <message>
+        <source>Steam rewrites its list when it quits: close Steam, then add Borne (from the desktop).</source>
+        <translation>Steam réécrit sa liste en quittant : ferme Steam, puis ajoute Borne (depuis le bureau).</translation>
+    </message>
+    <message>
+        <source>Adds Borne to your Steam library as a non-Steam game, with its artwork.</source>
+        <translation>Ajoute Borne à ta bibliothèque Steam comme jeu non-Steam, avec ses visuels.</translation>
+    </message>
+    <message>
+        <source>Remove from Steam</source>
+        <translation>Retirer de Steam</translation>
+    </message>
+    <message>
+        <source>Add again</source>
+        <translation>Ajouter à nouveau</translation>
+    </message>
+    <message>
+        <source>Add to Steam</source>
+        <translation>Ajouter à Steam</translation>
+    </message>
+    <message>
+        <source>Borne in Steam</source>
+        <translation>Borne dans Steam</translation>
     </message>
 </context>
 <context>

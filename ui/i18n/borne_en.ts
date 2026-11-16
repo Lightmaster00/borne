@@ -665,6 +665,22 @@
         <source>offline</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Steam is not installed for this user</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>close Steam first: it rewrites its shortcuts when it quits</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Steam's shortcuts file could not be read</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no Steam account on this computer yet: open Steam and sign in once</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2542,6 +2558,14 @@
         <source>Sending the save to RomM…</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Borne shows in Steam after the next Steam session start.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne shows in Steam the next time it starts.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3925,6 +3949,58 @@
     </message>
     <message>
         <source>These settings apply to every game of this console; a game can have its own, from its page.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Steam</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add Borne to Steam, to start it from the gamepad interface</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Steam, diagnostics, quit</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>When something goes wrong</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Added through ChimeraOS: Borne is in your Steam library after the next Steam session start, with its artwork.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ChimeraOS adds Borne to your Steam library, with its artwork, at the next Steam session start.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne is in your Steam library.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Steam rewrites its list when it quits: close Steam, then add Borne (from the desktop).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adds Borne to your Steam library as a non-Steam game, with its artwork.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove from Steam</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add to Steam</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne in Steam</source>
         <translation type="unfinished" />
     </message>
 </context>

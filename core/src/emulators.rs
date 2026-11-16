@@ -178,6 +178,56 @@ fn flatpak_installed(id: &str) -> bool {
     user.join("current").exists() || system.join("current").exists()
 }
 
+/// Letters and digits only, lower case: "PCSX2-v2.2.0.AppImage" → "pcsx2v220appimage".
+fn squash(s: &str) -> String {
+    s.chars().filter(|c| c.is_ascii_alphanumeric()).map(|c| c.to_ascii_lowercase()).collect()
+}
+
+/// Where AppImages are usually kept (EmuDeck and most AppImage managers use ~/Applications).
+fn appimage_dirs() -> Vec<PathBuf> {
+    let h = home();
+    vec![h.join("Applications"), h.join("AppImages"), h.join(".local/bin"), h.join("Emulation/tools"), h.join("bin")]
+}
+
+/// The user's own AppImage of a program, if there is one in the usual folders: its file name
+/// starts with the program's name or one of its other names (the newest file when several).
+pub fn user_appimage_in(dirs: &[PathBuf], id: &str, names: &[String]) -> Option<PathBuf> {
+    let mut want: Vec<String> =
+        std::iter::once(id.to_string()).chain(names.iter().cloned()).map(|n| squash(&n)).filter(|n| n.len() >= 3).collect();
+    // Other names the AppImages go by.
+    match id {
+        "ryubing" => want.push("ryujinx".into()),
+        "dolphin" => want.push("dolphinemu".into()),
+        "citron" => want.push("citron".into()),
+        _ => {}
+    }
+    let mut found: Vec<(std::time::SystemTime, PathBuf)> = vec![];
+    for d in dirs {
+        for e in std::fs::read_dir(d).into_iter().flatten().flatten() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if !name.to_lowercase().ends_with(".appimage") {
+                continue;
+            }
+            let s = squash(&name);
+            if want.iter().any(|w| s.starts_with(w.as_str())) && is_executable(&e.path()) {
+                let t = e.metadata().and_then(|m| m.modified()).unwrap_or(std::time::UNIX_EPOCH);
+                found.push((t, e.path()));
+            }
+        }
+    }
+    found.into_iter().max_by_key(|(t, _)| *t).map(|(_, p)| p)
+}
+
+fn user_appimage(p: &Program) -> Option<PathBuf> {
+    let mut names = vec![p.name.clone()];
+    names.extend(p.binaries.iter().cloned());
+    // "Citron Neo", "Ryubing (Ryujinx)": the first word too.
+    if let Some(first) = p.name.split([' ', '(']).next() {
+        names.push(first.to_string());
+    }
+    user_appimage_in(&appimage_dirs(), &p.id, &names)
+}
+
 fn user_path_key(id: &str) -> String {
     format!("emu_path.{id}")
 }
@@ -205,6 +255,11 @@ pub fn find(app: &Shared, id: &str) -> Option<Found> {
     }
     for b in &p.binaries {
         if let Some(found) = which(b) {
+            return Some(Found::Program(found));
+        }
+    }
+    if cfg!(target_os = "linux") {
+        if let Some(found) = user_appimage(&p) {
             return Some(Found::Program(found));
         }
     }
@@ -1278,6 +1333,25 @@ pub fn stop() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_users_own_appimages_are_found() {
+        use std::os::unix::fs::PermissionsExt;
+        let d = std::env::temp_dir().join(format!("borne-appimg-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        for f in ["pcsx2-Qt.AppImage", "Ryujinx.AppImage", "rpcs3-v0.0.34.AppImage", "duckstation-notes.txt", "Cemu.AppImage"] {
+            std::fs::write(d.join(f), b"x").unwrap();
+            std::fs::set_permissions(d.join(f), std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let dirs = [d.clone()];
+        let n = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert_eq!(user_appimage_in(&dirs, "pcsx2", &n(&["PCSX2"])), Some(d.join("pcsx2-Qt.AppImage")));
+        assert_eq!(user_appimage_in(&dirs, "ryubing", &n(&["Ryubing (Ryujinx)", "Ryubing"])), Some(d.join("Ryujinx.AppImage")));
+        assert_eq!(user_appimage_in(&dirs, "rpcs3", &n(&["RPCS3"])), Some(d.join("rpcs3-v0.0.34.AppImage")));
+        assert_eq!(user_appimage_in(&dirs, "duckstation", &n(&["DuckStation"])), None, "not an AppImage");
+        assert_eq!(user_appimage_in(&dirs, "dolphin", &n(&["Dolphin"])), None);
+        let _ = std::fs::remove_dir_all(d);
+    }
 
     #[test]
     fn vita_games_start_by_title_once_installed() {

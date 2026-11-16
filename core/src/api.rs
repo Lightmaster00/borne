@@ -22,6 +22,7 @@
 //!   GET    /api/v1/emulators/<program>/options            the same for every game it runs
 //!   POST   /api/v1/emulators/<program>/options            { key, value | "default" }
 //!   GET    /api/v1/controls  ·  POST {key, value|"default"}   controls for every game
+//!   GET    /api/v1/steam  ·  POST (adds Borne to Steam)  ·  DELETE (ChimeraOS: removes it)
 //!   POST   /api/v1/games/<id>/emuoptions                  { key, value | "default" }
 //!   GET    /api/v1/screenscraper/search?q=&platform=   ScreenScraper games by name, to correct a match
 //!   GET|POST /api/v1/games/<id>/screenscraper     box regions available / correct {ss_id} or {region}
@@ -974,6 +975,19 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(()) => ok(req, crate::controls::view(app, all, "")),
                 Err(x) => err(req, 400, &x),
             }
+        }
+        // Borne in Steam (steam.rs).
+        (Method::Get, ["api", "v1", "steam"]) => ok(req, crate::steam::status()),
+        (Method::Post, ["api", "v1", "steam"]) => match crate::steam::add(&app.resources) {
+            Ok(_) => {
+                app.db.set_setting("steam_shortcut", "");
+                ok(req, crate::steam::status())
+            }
+            Err(e) => err(req, 400, &e),
+        },
+        (Method::Delete, ["api", "v1", "steam"]) => {
+            crate::steam::remove_chimera(app);
+            ok(req, crate::steam::status())
         }
         (Method::Get, ["api", "v1", "session"]) => ok(req, crate::emulators::session()),
         (Method::Post, ["api", "v1", "session", "stop"]) => ok(req, json!({ "stopped": crate::emulators::stop() })),

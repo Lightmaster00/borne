@@ -481,7 +481,20 @@ explains the limits. It never runs privileged commands silently.
 
 ### 8.5 ChimeraOS and Steam integration
 
-- Borne is added to Steam as a non-Steam game (guided or automatic, with consent) and runs under gamescope.
+- Borne is added to Steam as a non-Steam game and runs under gamescope (core/src/steam.rs):
+  - ChimeraOS: `~/.local/share/chimera/shortcuts/borne.yaml` (name, command, Borne's grid, poster,
+    hero, logo and icon from `resources/steam`); Chimera adds it to every Steam account when the
+    Steam session starts. Written by install.sh and kept up to date at each start of Borne (it
+    follows the program when it moves), unless removed from Settings → Help → Steam.
+  - Elsewhere: Borne's entry in each account's `userdata/<id>/config/shortcuts.vdf` (binary VDF:
+    the other entries kept, the previous file kept as `shortcuts.vdf.borne-backup`; id CRC-32 of
+    program and name with the top bit set) and its artwork in `config/grid`. Only while Steam is
+    closed, as Steam rewrites the file when it quits: `borne --add-to-steam` (install.sh runs it)
+    or Settings → Help → Add to Steam. The Overview suggests it while Borne is not in Steam.
+- Emulators already on the computer are used: the program the user chose, then those on the PATH
+  (`binaries` in emulators.json), then the user's own AppImages in ~/Applications (EmuDeck),
+  ~/AppImages, ~/.local/bin, ~/Emulation/tools or ~/bin, by file name (the newest), then a
+  Flatpak Borne installs; else Borne installs its own (AppImages extracted once, no FUSE needed).
 - Emulators are started as child processes of Borne and inherit Borne's Steam Input layout.
 - A "raw gamepad" Steam Input layout is provided and recommended, so Borne and the emulators handle mapping.
 - Gyro, separate Joy-Con and Wiimote are tested specifically under Steam Input.

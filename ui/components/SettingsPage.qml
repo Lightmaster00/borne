@@ -30,6 +30,7 @@ Item {
     property var consoleDisplay: null    // GET /api/v1/display?console=…
     property var consoleOpts: null       // GET /api/v1/emulators/<program>/options
     property var controlsAll: null       // GET /api/v1/controls
+    property var steam: null             // GET /api/v1/steam
     property int consoleRow: 0           // the list's row to come back to
 
     readonly property var upd: settings && settings.update ? settings.update : null
@@ -189,6 +190,8 @@ Item {
         if (status && status.sync && status.sync.error) out.push({ id: "go:library", title: qsTr("Library"), desc: qsTr("Last sync failed: %1").arg(CoreText.tr(status.sync.error)), badge: qsTr("To fix"), tone: "bad" })
         if (updState && (updState.state === "available" || updState.state === "ready") && updState.available && upd && updState.available.build > upd.current.build)
             out.push({ id: "go:updates", title: qsTr("Borne %1").arg(updState.available.version), desc: updState.state === "ready" ? qsTr("Downloaded: restart to install it") : qsTr("A new version is available"), badge: qsTr("New"), tone: "ok" })
+        if (steam && steam.available && !steam.added)
+            out.push({ id: "go:help", title: qsTr("Steam"), desc: qsTr("Add Borne to Steam, to start it from the gamepad interface"), badge: qsTr("Suggested"), tone: "info" })
         if (ss && ss.developer_access && !ss.configured) out.push({ id: "go:library", title: qsTr("Game images"), desc: qsTr("Connect a ScreenScraper account for case scans, cartridges and logos"), badge: qsTr("Suggested"), tone: "info" })
         return out
     }
@@ -393,7 +396,7 @@ Item {
           intro: qsTr("The server your games come from, who is playing, and where the case scans come from.") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable"),
           intro: qsTr("New versions of Borne. They never install during a game.") },
-        { id: "help", name: qsTr("Help"), hint: qsTr("Diagnostics, quit"),
+        { id: "help", name: qsTr("Help"), hint: steam && steam.available ? qsTr("Steam, diagnostics, quit") : qsTr("Diagnostics, quit"),
           intro: qsTr("When something goes wrong: a report to share and measurements of this device.") }
     ]
     readonly property var cacheSizes: [5, 10, 20, 50, 100]
@@ -445,14 +448,28 @@ Item {
             { id: "ss-report", kind: "buttons", title: qsTr("Games found, per console"), desc: qsTr("Which games ScreenScraper recognised, and those it did not: open one to correct its match"),
               items: [{ id: "ss-report", label: qsTr("See the report"), disabled: !(ss && ss.configured) }] }
         ]
-        return [
+        return steamRows().concat([
+            group(qsTr("When something goes wrong")),
             { id: "report", kind: "buttons", title: qsTr("Diagnostic report"),
               desc: reportPaths.length ? qsTr("Saved: %1").arg(reportPaths[reportPaths.length - 1]) : qsTr("Saves the log and settings, without passwords or tokens, to share when something goes wrong"),
               items: [{ id: "report", label: qsTr("Export the report") }] },
             { id: "diag", kind: "buttons", title: qsTr("Measurements"), desc: qsTr("Graphics, memory and disk speed of this device, to understand a slow game"),
               items: [{ id: "diag", label: qsTr("Open") }] },
             { id: "quit", kind: "buttons", title: qsTr("Quit Borne"), desc: qsTr("Back to the system"), items: [{ id: "quit", label: qsTr("Quit") }] }
-        ]
+        ])
+    }
+    // Borne in Steam (Linux): added through Chimera on ChimeraOS, else into Steam's shortcuts.
+    function steamRows() {
+        if (!steam || !steam.available) return []
+        const desc = steam.chimera
+            ? (steam.added ? qsTr("Added through ChimeraOS: Borne is in your Steam library after the next Steam session start, with its artwork.")
+                           : qsTr("ChimeraOS adds Borne to your Steam library, with its artwork, at the next Steam session start."))
+            : steam.added ? qsTr("Borne is in your Steam library.")
+            : steam.steam_running ? qsTr("Steam rewrites its list when it quits: close Steam, then add Borne (from the desktop).")
+            : qsTr("Adds Borne to your Steam library as a non-Steam game, with its artwork.")
+        const items = steam.chimera && steam.added ? [{ id: "steam-remove", label: qsTr("Remove from Steam") }]
+                    : [{ id: "steam-add", label: steam.added ? qsTr("Add again") : qsTr("Add to Steam"), primary: !steam.added, disabled: !!steam.steam_running }]
+        return [group(qsTr("Steam")), { id: "steam", kind: "buttons", title: qsTr("Borne in Steam"), desc: desc, items: items }]
     }
     function syncText() {
         const s = status ? status.sync : null

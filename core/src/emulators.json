@@ -76,6 +76,9 @@
     {
       "id": "dolphin",
       "name": "Dolphin",
+      "binaries": [
+        "dolphin-emu"
+      ],
       "args": [
         "-b",
         "-u",
@@ -105,6 +108,10 @@
     {
       "id": "pcsx2",
       "name": "PCSX2",
+      "binaries": [
+        "pcsx2-qt",
+        "pcsx2"
+      ],
       "args": [
         "-batch",
         "-fullscreen",
@@ -141,6 +148,10 @@
     {
       "id": "duckstation",
       "name": "DuckStation",
+      "binaries": [
+        "duckstation-qt",
+        "duckstation"
+      ],
       "args": [
         "-batch",
         "-fullscreen",
@@ -177,6 +188,10 @@
     {
       "id": "melonds",
       "name": "melonDS",
+      "binaries": [
+        "melonDS",
+        "melonds"
+      ],
       "args": [
         "-f",
         "{rom}"
@@ -373,6 +388,9 @@
     {
       "id": "rpcs3",
       "name": "RPCS3",
+      "binaries": [
+        "rpcs3"
+      ],
       "args": [
         "--no-gui",
         "--fullscreen",
@@ -404,6 +422,10 @@
     {
       "id": "shadps4",
       "name": "shadPS4",
+      "binaries": [
+        "shadps4",
+        "shadPS4"
+      ],
       "args": [
         "-f",
         "true",

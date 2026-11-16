@@ -26,8 +26,11 @@ tar xzf Borne-linux-x86_64.tar.gz
 ./Borne/install.sh            # installs to ~/.local/opt/Borne, adds a menu entry and ~/.local/bin/borne
 ```
 
-On ChimeraOS or SteamOS, add Borne to Steam as a non-Steam game to start it from the gamepad
-interface. `./install.sh --uninstall` removes the program; your games, saves and settings stay in
+`install.sh` also adds Borne to Steam as a non-Steam game, with its artwork: on ChimeraOS through
+Chimera (it shows after the next Steam session start), elsewhere when Steam is closed (or later
+from Settings → Help → Add to Steam). Emulators you already have are used — on the PATH, Flatpak,
+or AppImages in `~/Applications` (EmuDeck's folder) — otherwise Borne installs its own in
+`~/.local/share/borne/emulators`. `./install.sh --uninstall` removes the program; your games, saves and settings stay in
 `~/.local/share/borne`. Playing from the network needs FUSE (`fusermount3`, present on ChimeraOS
 and SteamOS).
 

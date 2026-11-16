@@ -3,7 +3,8 @@
 # release archive). Nothing needs root.
 #
 #   ./install.sh             install or move Borne to ~/.local/opt/Borne, add it to the
-#                            applications menu and to ~/.local/bin
+#                            applications menu, to ~/.local/bin and to Steam (ChimeraOS through
+#                            Chimera; elsewhere when Steam is closed)
 #   ./install.sh --uninstall remove the program, its menu entry and command (your games, saves
 #                            and settings in ~/.local/share/borne stay)
 #
@@ -16,7 +17,8 @@ APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 BIN="$HOME/.local/bin"
 
 if [ "${1:-}" = "--uninstall" ]; then
-  rm -rf "$DEST" "$(dirname "$DEST")/.borne-previous" "$APPS/borne.desktop" "$BIN/borne"
+  rm -rf "$DEST" "$(dirname "$DEST")/.borne-previous" "$APPS/borne.desktop" "$BIN/borne" \
+    "${XDG_DATA_HOME:-$HOME/.local/share}/chimera/shortcuts/borne.yaml"
   echo "Borne removed. Your data stays in ${XDG_DATA_HOME:-$HOME/.local/share}/borne."
   exit 0
 fi
@@ -46,4 +48,7 @@ command -v update-desktop-database >/dev/null && update-desktop-database "$APPS"
 
 echo "Borne is installed in $DEST."
 echo "Start it from your applications menu, or with: $BIN/borne"
-echo "On ChimeraOS / SteamOS: in Steam, Add a Non-Steam Game → Borne, to start it from the gamepad interface."
+# In Steam as a non-Steam game, with its artwork (core/src/steam.rs).
+if ! "$DEST/bin/borne" --add-to-steam; then
+  echo "To add it later: Borne → Settings → Help → Add to Steam, or in Steam: Add a Non-Steam Game → Borne."
+fi

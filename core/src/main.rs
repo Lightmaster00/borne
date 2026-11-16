@@ -8,6 +8,7 @@
 //!
 //! Options:
 //!   --no-ui           core only (prints the addresses; development and tests)
+//!   --add-to-steam    adds Borne to Steam as a non-Steam game (steam.rs) and exits
 //!   --ui <binary>     path to the UI (default: <package>/bin/borne-ui)
 //!   --version         prints the version, build and commit
 //!   --part-hashes <package>   prints the hash of each part of a package (updates; CI checks)
@@ -37,6 +38,7 @@ mod screenscraper;
 mod sdldb;
 mod secrets;
 mod state;
+mod steam;
 mod stream;
 mod systemfiles;
 mod update;
@@ -93,6 +95,20 @@ fn main() {
     }
     let no_ui = args.iter().any(|a| a == "--no-ui");
     let layout = layout();
+    // Adds Borne to Steam as a non-Steam game (install.sh runs it).
+    if args.iter().any(|a| a == "--add-to-steam") {
+        match steam::add(&layout.resources) {
+            Ok(how) if how == "chimera" => {
+                println!("Borne is added to Steam through Chimera: it shows after the next Steam session start.")
+            }
+            Ok(_) => println!("Borne is added to Steam: it shows the next time Steam starts."),
+            Err(e) => {
+                eprintln!("Borne was not added to Steam: {e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     let ui_bin =
         args.iter().position(|a| a == "--ui").and_then(|i| args.get(i + 1)).map(PathBuf::from).unwrap_or_else(|| layout.ui_bin.clone());
 
@@ -163,6 +179,9 @@ fn main() {
 
     // Escape during a game: Borne's question, not the emulator's menu.
     quitkey::spawn(app.clone());
+
+    // ChimeraOS: Borne's Steam shortcut kept pointing at this copy.
+    steam::keep_up_to_date(&app, &layout.resources);
 
     // Pick up the state left by the previous session.
     downloads::verify_local(&app);

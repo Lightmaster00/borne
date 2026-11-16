@@ -565,6 +565,7 @@ Window {
         loadSettings()
         refreshStatus()
         api("GET", "/api/v1/controls", null, function (r) { if (r) settingsPage.controlsAll = r })
+        api("GET", "/api/v1/steam", null, function (r) { if (r) settingsPage.steam = r })
         settingsPage.reset()
         overlay = "settings"
     }
@@ -651,6 +652,12 @@ Window {
             const own = settingsPage.consoleOpts ? settingsPage.consoleOpts.options.filter(o => o.own) : []
             for (const o of own) api("POST", "/api/v1/emulators/" + payload.program + "/options", { key: o.key, value: "default" }, function (r) { if (r) settingsPage.consoleOpts = r })
         }
+        else if (id === "steam-add") api("POST", "/api/v1/steam", {}, function (r, err) {
+            if (err) { toasts.show(CoreText.tr(err), "error"); return }
+            settingsPage.steam = r
+            toasts.show(r.chimera ? qsTr("Borne shows in Steam after the next Steam session start.") : qsTr("Borne shows in Steam the next time it starts."), "ok")
+        })
+        else if (id === "steam-remove") api("DELETE", "/api/v1/steam", null, function (r) { if (r) settingsPage.steam = r })
         else if (id === "controls-all") api("POST", "/api/v1/controls", payload, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); else settingsPage.controlsAll = r })
         else if (id === "controls-all-reset") {
             const own = settingsPage.controlsAll ? settingsPage.controlsAll.options.filter(o => o.own) : []
