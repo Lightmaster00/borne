@@ -1102,7 +1102,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     #[cfg(target_os = "linux")]
     fn eden_and_azahar_get_the_pads_own_controls() {
         let d = std::env::temp_dir().join(format!("borne-raw-{}", std::process::id()));
