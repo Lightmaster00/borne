@@ -217,6 +217,13 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
                     ("EmuCore/GS", "AspectRatio", aspect),
                     ("EmuCore/GS", "OsdShowFPS", if fps { "true" } else { "false" }),
                     ("UI", "ConfirmShutdown", "false"),
+                    // Its first-run wizard never shows: the version must be there, or PCSX2
+                    // takes the file for an old one and starts over with its wizard.
+                    ("UI", "SettingsVersion", "1"),
+                    ("UI", "SetupWizardIncomplete", "false"),
+                    ("UI", "StartFullscreen", "true"),
+                    ("UI", "HideMouseCursor", "true"),
+                    ("AutoUpdater", "CheckAtStartup", "false"),
                 ],
             )
         }
@@ -234,6 +241,12 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
                     ("Display", "AspectRatio", aspect),
                     ("Display", "ShowFPS", if fps { "true" } else { "false" }),
                     ("Main", "ConfirmPowerOff", "false"),
+                    // No first-run wizard (the version kept, or DuckStation resets the file).
+                    ("Main", "SettingsVersion", "3"),
+                    ("Main", "SetupWizardIncomplete", "false"),
+                    ("Main", "StartFullscreen", "true"),
+                    ("Main", "HideCursorInFullscreen", "true"),
+                    ("AutoUpdater", "CheckAtStartup", "false"),
                 ],
             )
         }
@@ -286,6 +299,15 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
             )
         }
         "rpcs3" => {
+            // No welcome window, no update check, no "really quit?" (GUI settings).
+            ini(
+                &data.join("GuiConfigs/CurrentSettings.ini"),
+                &[
+                    ("main_window", "infoBoxEnabledWelcome", "false"),
+                    ("main_window", "confirmationBoxExitGame", "false"),
+                    ("Meta", "checkUpdateStart", "false"),
+                ],
+            )?;
             let scale = (up.parse::<u32>().unwrap_or(1) * 100).to_string();
             let aspect = if s(m, "aspect") == "4:3" { "4:3" } else { "16:9" };
             yaml_set(
@@ -536,7 +558,44 @@ pub fn controllers(
                 ("D-Pad/Right".into(), q("Pad E")),
             ];
             let v: Vec<(&str, &str, &str)> = pairs.iter().map(|(k, x)| ("GCPad1", k.as_str(), x.as_str())).collect();
-            ini(&path, &v)
+            ini(&path, &v)?;
+            // Wii: an emulated Wii Remote with its Nunchuk on the same pad, the pointer on the
+            // right stick (most Wii games need both); the other three remotes off.
+            let wii: Vec<(String, String)> = vec![
+                ("Device".into(), format!("SDL/{index}/{pad}")),
+                ("Source".into(), "1".into()),
+                ("Extension".into(), "Nunchuk".into()),
+                ("Buttons/A".into(), bind("a", &n)),
+                ("Buttons/B".into(), bind("r2", &n)),
+                ("Buttons/1".into(), bind("x", &n)),
+                ("Buttons/2".into(), bind("y", &n)),
+                ("Buttons/-".into(), bind("select", &n)),
+                ("Buttons/+".into(), bind("start", &n)),
+                ("Buttons/Home".into(), q("Guide")),
+                ("D-Pad/Up".into(), q("Pad N")),
+                ("D-Pad/Down".into(), q("Pad S")),
+                ("D-Pad/Left".into(), q("Pad W")),
+                ("D-Pad/Right".into(), q("Pad E")),
+                ("IR/Up".into(), q("Right Y+")),
+                ("IR/Down".into(), q("Right Y-")),
+                ("IR/Left".into(), q("Right X-")),
+                ("IR/Right".into(), q("Right X+")),
+                ("Shake/X".into(), bind("b", &n)),
+                ("Shake/Y".into(), bind("b", &n)),
+                ("Shake/Z".into(), bind("b", &n)),
+                ("Nunchuk/Buttons/C".into(), bind("l", &n)),
+                ("Nunchuk/Buttons/Z".into(), bind("l2", &n)),
+                ("Nunchuk/Stick/Up".into(), q("Left Y+")),
+                ("Nunchuk/Stick/Down".into(), q("Left Y-")),
+                ("Nunchuk/Stick/Left".into(), q("Left X-")),
+                ("Nunchuk/Stick/Right".into(), q("Left X+")),
+                ("Nunchuk/Shake/X".into(), bind("r", &n)),
+                ("Nunchuk/Shake/Y".into(), bind("r", &n)),
+                ("Nunchuk/Shake/Z".into(), bind("r", &n)),
+            ];
+            let mut v: Vec<(&str, &str, &str)> = wii.iter().map(|(k, x)| ("Wiimote1", k.as_str(), x.as_str())).collect();
+            v.extend([("Wiimote2", "Source", "0"), ("Wiimote3", "Source", "0"), ("Wiimote4", "Source", "0")]);
+            ini(&userdir.join("Config/WiimoteNew.ini"), &v)
         }
         "pcsx2" | "duckstation" => {
             let path = if program == "pcsx2" { data.join("PCSX2/inis/PCSX2.ini") } else { data.join("data/duckstation/settings.ini") };
@@ -860,6 +919,13 @@ mod tests {
         controllers("dolphin", &d, &d, 0, Some("Xbox Series X Controller"), None, &same).unwrap();
         let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
         assert!(t.contains("Device = SDL/0/Xbox Series X Controller") && t.contains("Buttons/A = `Button S`"));
+        let w = std::fs::read_to_string(d.join("Config/WiimoteNew.ini")).unwrap();
+        assert!(
+            w.contains("[Wiimote1]")
+                && w.contains("Extension = Nunchuk")
+                && w.contains("IR/Up = `Right Y+`")
+                && w.contains("[Wiimote2]\nSource = 0")
+        );
         // A and B swapped for a game; the second pad chosen.
         let swapped = |b: &str| match b {
             "a" => Some("b"),
@@ -885,6 +951,22 @@ mod tests {
         apply("dolphin", &d, &d, &m).unwrap();
         let gfx = std::fs::read_to_string(d.join("Config/GFX.ini")).unwrap();
         assert!(gfx.contains("InternalResolution = 3") && gfx.contains("AspectRatio = 1"));
+        let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn first_run_windows_are_skipped() {
+        let d = std::env::temp_dir().join(format!("borne-fr-{}", std::process::id()));
+        let m = Map::new();
+        apply("pcsx2", &d, &d, &m).unwrap();
+        apply("duckstation", &d, &d, &m).unwrap();
+        apply("rpcs3", &d, &d, &m).unwrap();
+        let p = std::fs::read_to_string(d.join("PCSX2/inis/PCSX2.ini")).unwrap();
+        assert!(p.contains("SettingsVersion = 1") && p.contains("SetupWizardIncomplete = false"));
+        let ds = std::fs::read_to_string(d.join("data/duckstation/settings.ini")).unwrap();
+        assert!(ds.contains("SettingsVersion = 3") && ds.contains("SetupWizardIncomplete = false"));
+        let r = std::fs::read_to_string(d.join("GuiConfigs/CurrentSettings.ini")).unwrap();
+        assert!(r.contains("infoBoxEnabledWelcome = false"));
         let _ = std::fs::remove_dir_all(d);
     }
 }

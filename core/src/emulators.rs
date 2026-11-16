@@ -450,6 +450,11 @@ fn game_file(app: &Shared, g: &GameRow) -> Result<PathBuf, String> {
     if g.local_state == "local" {
         if let Some(m) = &g.local_main {
             let p = PathBuf::from(m);
+            // Downloaded compressed by an earlier Borne: downloaded again, now extracted.
+            if p.is_file() && crate::downloads::extractable(&p) && !crate::downloads::keeps_archive(&g.platform_slug) {
+                crate::downloads::delete_local(app, g.rom_id)?;
+                return Err(crate::stream::COMPRESSED.into());
+            }
             if p.is_file() {
                 return Ok(p);
             }
@@ -727,18 +732,32 @@ fn emulator_log(app: &Shared) -> PathBuf {
     app.paths.reports().join("emulator.log")
 }
 
+/// The last lines that say something: the error lines when there are some (in any language
+/// RetroArch writes, they are tagged ERROR), without RetroArch's tags and banners.
 fn log_tail(p: &Path) -> String {
     let t = std::fs::read_to_string(p).unwrap_or_default();
-    let lines: Vec<&str> = t.lines().filter(|l| !l.trim().is_empty()).collect();
-    lines[lines.len().saturating_sub(3)..].join(" · ")
+    let clean = |l: &str| {
+        let mut l = l.trim();
+        while let Some(rest) = l.strip_prefix('[').and_then(|r| r.split_once(']')).map(|(_, r)| r.trim_start()) {
+            l = rest;
+        }
+        l.to_string()
+    };
+    let lines: Vec<&str> = t.lines().filter(|l| l.chars().any(|c| c.is_alphanumeric())).collect();
+    let errors: Vec<&str> =
+        lines.iter().copied().filter(|l| l.contains("ERROR") || l.contains("<Critical>") || l.contains("<Error>")).collect();
+    let pick = if errors.is_empty() { &lines } else { &errors };
+    let mut out: Vec<String> = pick[pick.len().saturating_sub(2)..].iter().map(|l| clean(l)).filter(|l| !l.is_empty()).collect();
+    out.dedup();
+    out.join(" · ").chars().take(300).collect()
 }
 
-/// Starts the game. Returns when the emulator is running; the session is then followed in the
-/// background and its end announced with a "session" event.
 /// A game is being started (saves pulled, emulator spawned): a second A press must not start
 /// another one before the session exists.
 static STARTING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+/// Starts the game. Returns when the emulator is running; the session is then followed in the
+/// background and its end announced with a "session" event.
 pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     if SESSION.lock().unwrap_or_else(|e| e.into_inner()).is_some() {
         return Err("a game is already running".into());
@@ -861,7 +880,32 @@ fn failure_line(text: &str, fails: &[String]) -> Option<String> {
             let l = l.to_lowercase();
             fails.iter().any(|f| l.contains(f.as_str()))
         })
-        .map(|l| l.trim().chars().take(200).collect())
+        .map(|l| {
+            // Without the time stamp and tags ("[  0.67] Core <Critical> core/core.cpp:308:Load:").
+            let l = l.trim();
+            let l = match l.find('>') {
+                Some(i) if l[..i].contains('<') => l[i..].split_once(": ").map(|(_, t)| t).unwrap_or(l),
+                _ => l,
+            };
+            l.chars().take(200).collect()
+        })
+}
+
+/// What an emulator's error line means for the player, when it is a known one.
+fn explain(line: &str) -> String {
+    let l = line.to_lowercase();
+    let known = if l.contains("(error 52)") || l.contains("missing a program-type nca") {
+        "the file holds no playable program: the Switch keys (prod.keys) are older than the game, or the file is an update or a DLC"
+    } else if l.contains("(error 13)") || l.contains("missing production key") {
+        "the Switch keys (prod.keys) are missing"
+    } else if l.contains("failed to obtain loader") {
+        "the emulator does not take this file (a .cia must be installed first: a .3ds or .cci copy starts directly)"
+    } else if l.contains("encrypted") {
+        "the game file is encrypted: the emulator needs a decrypted copy"
+    } else {
+        return line.to_string();
+    };
+    known.to_string()
 }
 
 /// A log file as it is now; a folder stands for its newest file. Only what was written since
@@ -919,7 +963,7 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                     let text = std::fs::read_to_string(&log).unwrap_or_default();
                     (!s.stopping && s.started.elapsed() < WATCH_START).then(|| failure_line(&text, &fails)).flatten()
                 });
-                let error = failure.map(|l| format!("{} could not start the game: {l}", s.emulator)).or_else(|| {
+                let error = failure.map(|l| format!("{} could not start the game: {}", s.emulator, explain(&l))).or_else(|| {
                     (!status.success() && quick).then(|| {
                         let t = log_tail(&log);
                         if t.is_empty() {
@@ -1050,6 +1094,17 @@ pub fn stop() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failure_lines_read_plainly() {
+        let fails = vec!["failed to load rom".to_string()];
+        let l = failure_line("[   0.679377] Core <Critical> core/core.cpp:308:Load: Failed to load ROM (Error 52)!\n", &fails);
+        assert_eq!(l.as_deref(), Some("Failed to load ROM (Error 52)!"));
+        let d = std::env::temp_dir().join(format!("borne-tail-{}", std::process::id()));
+        std::fs::write(&d, "[INFO] =====\n[libretro ERROR] [BOOT] Unknown game\n[ERROR] [Content] Failed to load content.\n").unwrap();
+        assert_eq!(log_tail(&d), "Unknown game · Failed to load content.");
+        let _ = std::fs::remove_file(&d);
+    }
 
     #[test]
     fn manifest_reads_and_offers_choices_for_the_v1_consoles() {

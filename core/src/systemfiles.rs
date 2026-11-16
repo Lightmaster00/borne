@@ -578,6 +578,10 @@ pub fn prepare(
                     if console == "nds" {
                         copy_if_changed(f, &bios_dir(app).join("melonDS DS").join(name))?;
                     }
+                    // Flycast looks in a "dc" folder of the system directory.
+                    if console == "dc" {
+                        copy_if_changed(f, &bios_dir(app).join("dc").join(name))?;
+                    }
                 }
             }
             ("keys", "eden" | "citron") => {
@@ -631,10 +635,24 @@ pub fn prepare(
             _ => {}
         }
     }
+    // The BIOS chosen for them: nothing to pick in the emulator.
     if console == "ps2" && program == "pcsx2" {
         let ini = data.join("PCSX2/inis/PCSX2.ini");
         let bios = dir(app, "ps2", "bios");
-        crate::emulators::ini_set(&ini, &[("UI", "SetupWizardIncomplete", "false"), ("Folders", "Bios", &bios.to_string_lossy())])?;
+        let first = files(app, "ps2", "bios").into_iter().next().and_then(|f| f.file_name().map(|n| n.to_string_lossy().into_owned()));
+        let mut values = vec![("UI", "SetupWizardIncomplete", "false"), ("Folders", "Bios", bios.to_str().unwrap_or_default())];
+        if let Some(name) = first.as_deref() {
+            values.push(("Filenames", "BIOS", name));
+        }
+        crate::emulators::ini_set(&ini, &values)?;
+    }
+    if console == "psx" && program == "duckstation" {
+        let ini = data.join("data/duckstation/settings.ini");
+        let bios = dir(app, "psx", "bios");
+        crate::emulators::ini_set(
+            &ini,
+            &[("Main", "SetupWizardIncomplete", "false"), ("BIOS", "SearchDirectory", bios.to_str().unwrap_or_default())],
+        )?;
     }
     Ok(())
 }

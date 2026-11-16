@@ -256,6 +256,8 @@ fn sync(app: &Shared) -> Result<(), RommError> {
     let a = app.clone();
     std::thread::spawn(move || {
         crate::systemfiles::fill_from_romm(&a);
+        // A console new to the library gets its emulator now, not at its first game.
+        crate::emuinstall::install_for_library(&a);
     });
     Ok(())
 }

@@ -16,15 +16,18 @@ use std::time::{Duration, Instant};
 
 /// "Main" file extensions in order of preference, to choose what to launch.
 const MAIN_EXT: &[&str] = &[
-    "m3u", "cue", "gdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md", "gen", "smd", "bin", "sfc", "smc",
-    "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce", "ws", "wsc", "ngp", "ngc", "a26",
-    "lnx", "vb", "cdi", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min",
+    "m3u", "cue", "gdi", "cdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md", "gen", "smd", "bin", "sfc",
+    "smc", "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce", "ws", "wsc", "ngp", "ngc",
+    "a26", "lnx", "vb", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min", "cia",
 ];
 /// Consoles whose games are archives by nature (arcade sets read zipped by MAME and FinalBurn):
 /// kept as they are. Every other console's zip or 7z is extracted, as the standalone emulators
 /// (Azahar, Eden, Dolphin…) do not read archives.
 pub fn keeps_archive(platform: &str) -> bool {
-    matches!(platform, "arcade" | "neogeo" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave")
+    matches!(
+        platform,
+        "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave"
+    )
 }
 
 /// An archive Borne extracts (zip, 7z).

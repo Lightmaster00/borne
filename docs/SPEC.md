@@ -570,6 +570,15 @@ blocks a launch just because a game was not tested or a community database rates
   a folder stands for its newest file), are watched every 250 ms for 90 s for lines that mean the
   game did not start (`fails`): the emulator is then closed and the line shown, instead of leaving
   the player on an error window that needs a mouse.
+- Each console of the library gets its chosen emulator (and RetroArch core) installed after each
+  sync, before its first game: one at a time, never during a game; a failed installation is tried
+  again an hour later.
+- No emulator window asks anything: first-run wizards (PCSX2, DuckStation, with their settings
+  version so the file is kept), RPCS3's welcome window and update check, quit confirmations are
+  turned off; the BIOS is chosen for PCSX2 and DuckStation; Dolphin gets a Wii Remote with its
+  Nunchuk on the pad (pointer on the right stick) besides the GameCube pad.
+- Error statuses of the API are never 409 or 410: Qt's XMLHttpRequest turns them into a network
+  error without text, shown as "core unreachable".
 - A game stored as a zip or 7z on RomM is extracted on download (arcade sets excepted, read zipped
   by their emulators). It cannot be played from the network: linking it, or playing it, downloads
   it instead, and Play starts it once it is ready.

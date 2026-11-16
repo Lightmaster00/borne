@@ -16,6 +16,7 @@
 
 use crate::state::Shared;
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -659,6 +660,77 @@ fn find_program(out: &Path, hint: Option<&str>) -> Result<PathBuf, String> {
     // Some AppImages cannot be extracted: started as they are (FUSE needed).
     Ok(appimage.clone())
 }
+
+// ---------- the library's emulators ----------
+
+static PREPARING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Every console of the library gets its emulator (and RetroArch core) installed ahead, so a new
+/// console is ready before its first game: one at a time, in the background, never during a game.
+/// Run after each sync.
+pub fn install_for_library(app: &Shared) {
+    if PREPARING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+    struct Done;
+    impl Drop for Done {
+        fn drop(&mut self) {
+            PREPARING.store(false, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+    let _done = Done;
+    // What is missing, per program: (program, cores to add).
+    let mut todo: Vec<(String, Vec<String>)> = vec![];
+    for slug in app.db.platforms().into_iter().map(|p| p.slug) {
+        let Some(e) = crate::emulators::chosen(app, &slug) else { continue };
+        let Some(p) = crate::emulators::program(&e.program) else { continue };
+        let have = crate::emulators::find(app, &p.id).is_some();
+        if !have && p.install_spec().is_none() {
+            continue; // a program the player points to by hand
+        }
+        let core = e.core.filter(|c| !core_path(app, c).is_file());
+        if have && core.is_none() {
+            continue;
+        }
+        match todo.iter_mut().find(|(id, _)| *id == p.id) {
+            Some((_, cores)) => {
+                if let Some(c) = core.filter(|c| !cores.contains(c)) {
+                    cores.push(c);
+                }
+            }
+            None => todo.push((p.id.clone(), core.into_iter().collect())),
+        }
+    }
+    for (program, cores) in todo {
+        // One that failed (server down, no network) is tried again an hour later, not at each sync.
+        if FAILED_AT
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&program)
+            .map(|t| t.elapsed() < Duration::from_secs(3600))
+            .unwrap_or(false)
+        {
+            continue;
+        }
+        // Never while a game runs or another installation goes on.
+        while crate::emulators::playing() || busy() {
+            std::thread::sleep(Duration::from_secs(5));
+        }
+        app.db.log("emulators", &format!("installing {program} {cores:?} for the library"));
+        if let Err(e) = start(app, &program, cores) {
+            app.db.log("emulators", &format!("{program}: {e}"));
+            continue;
+        }
+        while busy() {
+            std::thread::sleep(Duration::from_secs(2));
+        }
+        if task()["error"].is_string() {
+            FAILED_AT.lock().unwrap_or_else(|e| e.into_inner()).insert(program, std::time::Instant::now());
+        }
+    }
+}
+
+static FAILED_AT: Mutex<BTreeMap<String, std::time::Instant>> = Mutex::new(BTreeMap::new());
 
 // ---------- updates ----------
 

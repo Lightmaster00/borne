@@ -505,6 +505,22 @@
         <source>the game is compressed on RomM: it is downloaded to be played</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>the file holds no playable program: the Switch keys (prod.keys) are older than the game, or the file is an update or a DLC</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the Switch keys (prod.keys) are missing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the emulator does not take this file (a .cia must be installed first: a .3ds or .cci copy starts directly)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game file is encrypted: the emulator needs a decrypted copy</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>

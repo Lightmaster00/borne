@@ -183,6 +183,61 @@
           ".sprx"
         ]
       }
+    ],
+    "neogeo": [
+      {
+        "id": "bios",
+        "name": "Neo Geo BIOS (neogeo.zip)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "neogeo.zip"
+        ],
+        "ext": [
+          ".zip"
+        ]
+      }
+    ],
+    "neogeoaes": [
+      {
+        "id": "bios",
+        "name": "Neo Geo BIOS (neogeo.zip)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "neogeo.zip"
+        ],
+        "ext": [
+          ".zip"
+        ]
+      }
+    ],
+    "neogeomvs": [
+      {
+        "id": "bios",
+        "name": "Neo Geo BIOS (neogeo.zip)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "neogeo.zip"
+        ],
+        "ext": [
+          ".zip"
+        ]
+      }
+    ],
+    "dc": [
+      {
+        "id": "bios",
+        "name": "Dreamcast BIOS",
+        "kind": "bios",
+        "required": false,
+        "multi": true,
+        "names": [
+          "dc_boot.bin",
+          "dc_flash.bin"
+        ]
+      }
     ]
   }
 }

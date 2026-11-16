@@ -70,7 +70,9 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation, Flycast, PPSSPP…), Dolphin, PCSX2, DuckStation,
   Azahar (3DS), Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary
   (Xbox 360, Linux).
-  Borne downloads each from its official source, configures it and keeps it up to date; you never
+  Borne downloads each from its official source as soon as a console appears in your library,
+  configures it (no first-run wizard, BIOS and keys put in place, fullscreen, the controller set for
+  GameCube, Wii Remote and Nunchuk, PlayStation, Switch, 3DS…) and keeps it up to date; you never
   open it, and Borne sets each one's controller. A launch screen covers the passage to the
   emulator and back; Select + Start together pauses the game and asks whether to quit, and an
   emulator that cannot start the game is closed within a second, with the reason (read from its

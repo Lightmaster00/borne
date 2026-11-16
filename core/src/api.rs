@@ -111,7 +111,10 @@ fn ok(req: Request, body: Value) {
     reply(req, 200, body)
 }
 
+/// Only statuses Qt's XMLHttpRequest passes through (400, 401, 403, 404, 405, 5xx): it turns
+/// others, 409 and 410 among them, into a network error with no text ("core unreachable").
 fn err(req: Request, status: u16, message: &str) {
+    debug_assert!(![409, 410].contains(&status));
     reply(req, status, json!({ "error": message }))
 }
 
@@ -589,7 +592,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         // ---------- library ----------
         (Method::Post, ["api", "v1", "sync"]) => {
             if app.client().is_none() {
-                return err(req, 409, "no paired profile");
+                return err(req, 400, "no paired profile");
             }
             if !too_soon("sync", 3) {
                 catalog::start_sync(app);
@@ -805,7 +808,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Post, ["api", "v1", "games", id, "play"]) => match id.parse::<i64>() {
             Ok(rom_id) => match crate::emulators::play(app, rom_id) {
                 Ok(s) => ok(req, s),
-                Err(e) => err(req, 409, &e),
+                Err(e) => err(req, 400, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),
         },
@@ -931,7 +934,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Some(g) => {
                 let b = body_json(&mut req);
                 let Some(e) = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key) else {
-                    return err(req, 409, "no emulator for this console");
+                    return err(req, 400, "no emulator for this console");
                 };
                 match crate::gamesettings::emu_set(
                     app,
@@ -970,7 +973,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Post, ["api", "v1", "emulators", id, "install"]) => match crate::emuinstall::start(app, id, vec![]) {
             Ok(()) => ok(req, json!({ "started": true })),
-            Err(e) => err(req, 409, &e),
+            Err(e) => err(req, 400, &e),
         },
         (Method::Post, ["api", "v1", "consoles", slug, "emulator"]) => {
             let b = body_json(&mut req);
@@ -1039,7 +1042,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     crate::screenscraper::start(app, false);
                     ok(req, json!({ "account": info, "status": crate::screenscraper::status(app) }))
                 }
-                Err(e) => err(req, 409, &e),
+                Err(e) => err(req, 400, &e),
             }
         }
         (Method::Delete, ["api", "v1", "screenscraper"]) => {
@@ -1130,17 +1133,17 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 // Compressed on RomM: downloaded (and extracted) instead of linked.
                 Err(e) if e == stream::COMPRESSED => match downloads::enqueue(app, rom_id) {
                     Ok(id) => ok(req, json!({ "downloading": id })),
-                    Err(e) => err(req, 409, &e),
+                    Err(e) => err(req, 400, &e),
                 },
-                Err(e) => err(req, 409, &e),
+                Err(e) => err(req, 400, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Delete, ["api", "v1", "games", id, "link"]) => match id.parse::<i64>() {
-            Ok(rom_id) if crate::emulators::playing_rom() == Some(rom_id) => err(req, 409, "a game is running: quit it first"),
+            Ok(rom_id) if crate::emulators::playing_rom() == Some(rom_id) => err(req, 400, "a game is running: quit it first"),
             Ok(rom_id) => match stream::unlink(app, rom_id) {
                 Ok(()) => ok(req, json!({ "unlinked": rom_id })),
-                Err(e) => err(req, 409, &e),
+                Err(e) => err(req, 400, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),
         },
@@ -1153,11 +1156,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Post, ["api", "v1", "update", "download"]) => match update::download(app) {
             Ok(()) => ok(req, update::status(app)),
-            Err(e) => err(req, 409, &e),
+            Err(e) => err(req, 400, &e),
         },
         (Method::Post, ["api", "v1", "update", "apply"]) => match update::apply(app) {
             Ok(()) => ok(req, json!({ "restart": true })),
-            Err(e) => err(req, 409, &e),
+            Err(e) => err(req, 400, &e),
         },
         (Method::Post, ["api", "v1", "settings"]) => {
             let body = body_json(&mut req);
@@ -1166,7 +1169,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     return err(req, 400, "install_mode: download or stream");
                 }
                 if m == "stream" && !stream::available() {
-                    return err(req, 409, "the virtual mount is not available on this system");
+                    return err(req, 400, "the virtual mount is not available on this system");
                 }
                 app.db.set_setting("install_mode", m);
             }
@@ -1196,14 +1199,14 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     choose_version(app, rom_id);
                     ok(req, json!({ "download_id": dl }))
                 }
-                Err(e) => err(req, 409, &e),
+                Err(e) => err(req, 400, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Delete, ["api", "v1", "games", id, "local"]) => match id.parse::<i64>() {
             Ok(rom_id) => match downloads::delete_local(app, rom_id) {
                 Ok(()) => ok(req, json!({ "deleted": rom_id })),
-                Err(e) => err(req, 409, &e),
+                Err(e) => err(req, 400, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),
         },
@@ -1217,7 +1220,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Ok(dl) if (if *action == "pause" { downloads::pause(app, dl) } else { downloads::resume(app, dl) }) => {
                 ok(req, json!({ "id": dl, "action": action }))
             }
-            _ => err(req, 409, "this download cannot do that now"),
+            _ => err(req, 400, "this download cannot do that now"),
         },
         (Method::Delete, ["api", "v1", "downloads", id]) => match id.parse::<i64>() {
             Ok(dl) if downloads::cancel(app, dl) => ok(req, json!({ "cancelled": dl })),

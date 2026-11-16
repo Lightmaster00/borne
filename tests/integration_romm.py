@@ -163,7 +163,7 @@ try:
     with open(g["local_main"], "rb") as f:
         check(hashlib.sha1(f.read()).hexdigest() == small["sha1"], "SHA-1 identical to RomM")
     s, _ = call(api, "POST", f"/api/v1/games/{small['rom_id']}/download")
-    check(s == 409, "downloading an installed game again refused")
+    check(s == 400, "downloading an installed game again refused")
 
     zipped = [x for x in lib if x["fs_name"].endswith(".zip")][0]
     call(api, "POST", f"/api/v1/games/{zipped['rom_id']}/download")
@@ -316,7 +316,7 @@ try:
     check(s == 200 and "developer_access" in st and "password" not in json.dumps(st), "ScreenScraper status exposes no secret")
     if not st["developer_access"]:
         s, e = call(api, "POST", "/api/v1/screenscraper", {"user": "u", "password": "p"})
-        check(s == 409 and "developer access" in e.get("error", ""), "ScreenScraper refused plainly without developer access")
+        check(s == 400 and "developer access" in e.get("error", ""), "ScreenScraper refused plainly without developer access")
     s, _ = call(api, "POST", "/api/v1/screenscraper", {"user": "", "password": ""})
     check(s == 400, "ScreenScraper account needs a user and a password")
     s, em = call(api, "GET", "/api/v1/emulators")
@@ -369,7 +369,7 @@ try:
         mine = next(x for x in eo2["options"] if x["key"] == o["key"])
         check(s == 200 and not mine["own"] and mine["value"] == o["default"], "a game's emulator option back to the default")
     s, e = call(api, "POST", "/api/v1/games/999999/play", {})
-    check(s == 409 and "unknown game" in e.get("error", ""), "playing an unknown game refused")
+    check(s == 400 and "unknown game" in e.get("error", ""), "playing an unknown game refused")
     s, e = call(api, "POST", "/api/v1/emulators/dolphin/path", {"path": "relative/dolphin"})
     check(s == 400, "an emulator path must be an absolute program")
     s, e = call(api, "POST", "/api/v1/session/stop", {})

@@ -52,7 +52,8 @@ for methods, route in sorted(routes):
             for b in bodies if method != "GET" else [None]:
                 st, _ = call(method, path, b)
                 n += 1
-                if st == 0 or st >= 500 and st not in (502, 503):
+                # 409 and 410 reach the UI as "core unreachable" (Qt XMLHttpRequest).
+                if st in (0, 409, 410) or st >= 500 and st not in (502, 503):
                     failures += 1
                     print("!", method, path, b if not isinstance(b, dict) else json.dumps(b)[:60], st)
         if p.poll() is not None:
