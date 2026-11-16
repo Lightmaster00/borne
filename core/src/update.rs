@@ -286,7 +286,32 @@ fn fetch_manifest(channel: &str) -> Result<Manifest, String> {
         return Err(format!("update server answered {}", resp.status().as_u16()));
     }
     let body = resp.body_mut().with_config().limit(1 << 20).read_to_vec().map_err(|e| e.to_string())?;
+    verify_manifest(&body, option_env!("BORNE_UPDATE_PUBKEY").unwrap_or(""))?;
     serde_json::from_slice(&body).map_err(|e| format!("unreadable update information ({e})"))
+}
+
+fn unhex(s: &str) -> Option<Vec<u8>> {
+    s.len().is_multiple_of(2).then_some(())?;
+    (0..s.len()).step_by(2).map(|i| u8::from_str_radix(s.get(i..i + 2)?, 16).ok()).collect()
+}
+
+/// A build made with the release key (BORNE_UPDATE_PUBKEY, Ed25519, hex) takes only manifests
+/// signed with it: `{"signature":"<hex>",` then the rest of the manifest, the signature made over
+/// that manifest without its first key (`{` and the rest). The parts' hashes are in the manifest,
+/// so nothing downloaded can be replaced without the key. A build made without it checks nothing.
+fn verify_manifest(body: &[u8], pubkey: &str) -> Result<(), String> {
+    if pubkey.is_empty() {
+        return Ok(());
+    }
+    let refused = || "update refused: its signature is missing or wrong".to_string();
+    let rest = body.strip_prefix(br#"{"signature":""#).ok_or_else(refused)?;
+    let end = rest.iter().position(|b| *b == b'"').ok_or_else(refused)?;
+    let sig = unhex(std::str::from_utf8(&rest[..end]).map_err(|_| refused())?).ok_or_else(refused)?;
+    let signed: Vec<u8> = [b"{".as_slice(), rest[end + 1..].strip_prefix(b",").ok_or_else(refused)?].concat();
+    let key: [u8; 32] = unhex(pubkey).and_then(|k| k.try_into().ok()).ok_or("the update key of this build is unreadable")?;
+    let key = ed25519_dalek::VerifyingKey::from_bytes(&key).map_err(|_| "the update key of this build is unreadable")?;
+    let sig = ed25519_dalek::Signature::from_slice(&sig).map_err(|_| refused())?;
+    key.verify_strict(&signed, &sig).map_err(|_| refused())
 }
 
 /// The page to download a build by hand: the channel's release on GitHub.
@@ -691,6 +716,23 @@ pub fn start(app: &Shared) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn manifests_are_checked_with_the_release_key() {
+        use ed25519_dalek::Signer;
+        let k = ed25519_dalek::SigningKey::from_bytes(&[7u8; 32]);
+        let pubkey: String = k.verifying_key().to_bytes().iter().map(|b| format!("{b:02x}")).collect();
+        let inner = br#"{"build":12,"version":"1.0"}"#;
+        let sig: String = k.sign(inner).to_bytes().iter().map(|b| format!("{b:02x}")).collect();
+        let signed = format!(r#"{{"signature":"{sig}",{}"#, std::str::from_utf8(&inner[1..]).unwrap());
+        assert!(verify_manifest(signed.as_bytes(), &pubkey).is_ok());
+        // Changed after signing, unsigned, or no key in this build.
+        assert!(verify_manifest(signed.replace("12", "13").as_bytes(), &pubkey).is_err());
+        assert!(verify_manifest(inner, &pubkey).is_err());
+        assert!(verify_manifest(inner, "").is_ok());
+        // Still read as a manifest by older builds (the extra key is ignored).
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&signed).unwrap()["build"], 12);
+    }
 
     #[test]
     fn parts_and_their_hashes() {

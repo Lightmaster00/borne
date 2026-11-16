@@ -577,6 +577,13 @@ blocks a launch just because a game was not tested or a community database rates
   version so the file is kept), RPCS3's welcome window and update check, quit confirmations are
   turned off; the BIOS is chosen for PCSX2 and DuckStation; Dolphin gets a Wii Remote with its
   Nunchuk on the pad (pointer on the right stick) besides the GameCube pad.
+- Pads: Eden and Citron bind the pad's raw controls, taken from SDL_GameControllerDB (bundled) for
+  the connected pad; Azahar reads it through SDL's game-controller layer; RPCS3 gets every control
+  in its own names. With no pad chosen for a game, the pad last used in Borne is given to it.
+- A .cia is installed into Azahar once (`azahar -i`), then its installed program is started.
+- A .rar is extracted by the system's bsdtar, unrar or 7z. Emulator installations check the
+  free space first. Release lists are asked with their ETag (cached), not to spend GitHub's hourly
+  limit, and the copy kept is used when that limit is reached.
 - Error statuses of the API are never 409 or 410: Qt's XMLHttpRequest turns them into a network
   error without text, shown as "core unreachable".
 - A game stored as a zip or 7z on RomM is extracted on download (arcade sets excepted, read zipped

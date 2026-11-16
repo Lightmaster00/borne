@@ -21,6 +21,10 @@ env:
   # Repository secrets only: never in the code, masked in the logs.
   BORNE_SS_DEV_ID: ${{ secrets.SCREENSCRAPER_DEV_ID }}
   BORNE_SS_DEV_PASSWORD: ${{ secrets.SCREENSCRAPER_DEV_PASSWORD }}
+  # The release key's public half (repository variable UPDATE_PUBLIC_KEY, 64 hex digits): built
+  # into Borne, which then takes only update manifests signed with the secret UPDATE_SIGNING_KEY
+  # (scripts/release/sign.py). Neither set: manifests unsigned, nothing checked.
+  BORNE_UPDATE_PUBKEY: ${{ vars.UPDATE_PUBLIC_KEY }}
 
 jobs:
   checks:
@@ -140,6 +144,9 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Manifest, checksums and notes
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          UPDATE_PUBLIC_KEY: ${{ vars.UPDATE_PUBLIC_KEY }}
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             TAG="$GITHUB_REF_NAME"; CHANNEL=stable
@@ -154,6 +161,7 @@ jobs:
             export PREVIOUS_MANIFEST=previous.json
           fi
           scripts/release/manifest.py dist "$TAG" "$CHANNEL"
+          scripts/release/sign.py dist/latest.json
           rm dist/parts-*.json
           cat notes.md >> "$GITHUB_STEP_SUMMARY"
       - name: Publish

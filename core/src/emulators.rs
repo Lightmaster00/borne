@@ -588,8 +588,10 @@ fn command(
         )?;
     }
     let (index, pad, guid) = {
+        // pad_index reads the pad state itself: asked before taking its lock.
+        let count = app.pads.lock().unwrap_or_else(|e| e.into_inner()).pads.len();
+        let i = crate::controls::pad_index(app, &group, count);
         let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
-        let i = crate::controls::pad_index(app, &group, s.pads.len());
         (i, s.pads.get(i).cloned(), s.guids.get(i).cloned())
     };
     let sources = crate::controls::sources(app, &group);
@@ -752,6 +754,77 @@ fn log_tail(p: &Path) -> String {
     out.join(" · ").chars().take(300).collect()
 }
 
+/// The title ID of a CIA, read from its TMD (CIA header, then certificate chain and ticket,
+/// each aligned to 64 bytes; the TMD's signature block, then the ID at 0x4C past it).
+fn cia_title_id(path: &Path) -> Option<u64> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut f = std::fs::File::open(path).ok()?;
+    let mut h = [0u8; 0x20];
+    f.read_exact(&mut h).ok()?;
+    let le = |o: usize| u32::from_le_bytes(h[o..o + 4].try_into().unwrap()) as u64;
+    let align = |n: u64| n.div_ceil(64) * 64;
+    let tmd = align(le(0)) + align(le(8)) + align(le(0x0c));
+    f.seek(SeekFrom::Start(tmd)).ok()?;
+    let mut t = [0u8; 4];
+    f.read_exact(&mut t).ok()?;
+    let sig = match u32::from_be_bytes(t) {
+        0x10000 | 0x10003 => 0x200 + 0x3c,
+        0x10001 | 0x10004 => 0x100 + 0x3c,
+        0x10002 | 0x10005 => 0x3c + 0x40,
+        _ => return None,
+    };
+    f.seek(SeekFrom::Start(tmd + 4 + sig + 0x4c)).ok()?;
+    let mut id = [0u8; 8];
+    f.read_exact(&mut id).ok()?;
+    Some(u64::from_be_bytes(id))
+}
+
+/// The installed program of a CIA in Azahar's SD card, installed first if it is not there yet
+/// (`azahar -i`, which prints its result and quits). Its largest content is the game.
+fn cia_installed(app: &Shared, profile: &str, found: &Found, cia: &Path) -> Result<PathBuf, String> {
+    let tid = cia_title_id(cia).ok_or("the .cia file is not readable")?;
+    let content = data_dir(app, profile, "azahar")
+        .join("sdmc/Nintendo 3DS/00000000000000000000000000000000/00000000000000000000000000000000/title")
+        .join(format!("{:08x}", tid >> 32))
+        .join(format!("{:08x}", tid & 0xffff_ffff))
+        .join("content");
+    let largest = || {
+        std::fs::read_dir(&content)
+            .ok()?
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.extension().map(|x| x.eq_ignore_ascii_case("app")).unwrap_or(false))
+            .max_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0))
+    };
+    if let Some(app_file) = largest() {
+        return Ok(app_file);
+    }
+    app.db.log("play", &format!("installing {} into Azahar", cia.display()));
+    let mut cmd = match found {
+        Found::Program(exe) => Command::new(exe),
+        Found::Flatpak(id) => {
+            let mut c = Command::new("flatpak");
+            c.arg("run");
+            if let Some(dir) = cia.parent() {
+                c.arg(format!("--filesystem={}:ro", dir.to_string_lossy()));
+            }
+            c.arg(format!("--filesystem={}", app.paths.profiles().to_string_lossy())).arg(id);
+            c
+        }
+    };
+    cmd.arg("-i").arg(cia).env("APPIMAGE_EXTRACT_AND_RUN", "1").envs(xdg_env(app, profile, "azahar"));
+    let out = cmd.stdin(Stdio::null()).output().map_err(|e| format!("Azahar could not start: {e}"))?;
+    let said = String::from_utf8_lossy(&out.stdout);
+    let said = said.lines().rev().find(|l| l.contains("CIA")).unwrap_or("").trim().to_string();
+    largest().ok_or_else(|| {
+        if said.contains("encrypted") {
+            "the game file is encrypted: the emulator needs a decrypted copy".to_string()
+        } else {
+            format!("Azahar could not install the game: {}", if said.is_empty() { "no answer".into() } else { said })
+        }
+    })
+}
+
 /// A game is being started (saves pulled, emulator spawned): a second A press must not start
 /// another one before the session exists.
 static STARTING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -816,7 +889,12 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         return Ok(json!({ "running": false, "installing": p.name }));
     }
     let found = found.unwrap();
-    let rom = rom?;
+    let mut rom = rom?;
+    // A .cia is installed into Azahar once, then its installed program is what starts.
+    if p.id == "azahar" && rom.extension().map(|x| x.eq_ignore_ascii_case("cia")).unwrap_or(false) {
+        let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+        rom = cia_installed(app, &profile, &found, &rom)?;
+    }
     let lang = app
         .active_profile()
         .and_then(|p| app.db.game_prefs(&p.id).get(&g.group_key).and_then(|(_, l)| l.clone()))
@@ -912,6 +990,8 @@ fn explain(line: &str) -> String {
         "the Switch keys (prod.keys) are missing"
     } else if l.contains("failed to obtain loader") {
         "the emulator does not take this file (a .cia must be installed first: a .3ds or .cci copy starts directly)"
+    } else if (l.contains("crc") || l.contains("rom")) && (l.contains("required") || l.contains("missing") || l.contains("not found")) {
+        "this arcade game is not in the version the emulator expects (a ROM is missing or different): use a set made for FinalBurn Neo"
     } else if l.contains("encrypted") {
         "the game file is encrypted: the emulator needs a decrypted copy"
     } else {
@@ -981,7 +1061,7 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                         if t.is_empty() {
                             format!("{} stopped at once ({status})", s.emulator)
                         } else {
-                            format!("{} stopped at once: {t}", s.emulator)
+                            format!("{} stopped at once: {}", s.emulator, explain(&t))
                         }
                     })
                 });
@@ -1106,6 +1186,23 @@ pub fn stop() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cia_title_id_is_read_from_its_tmd() {
+        let mut b = vec![0u8; 0x2040]; // header 0x2020, aligned
+        b[0..4].copy_from_slice(&0x2020u32.to_le_bytes());
+        b[8..12].copy_from_slice(&0xa00u32.to_le_bytes());
+        b[0x0c..0x10].copy_from_slice(&0x350u32.to_le_bytes());
+        b.extend(vec![0u8; 0xa00 + 0x380]); // certificates, ticket (aligned)
+        let mut tmd = 0x10004u32.to_be_bytes().to_vec();
+        tmd.extend(vec![0u8; 0x13c + 0x4c]);
+        tmd.extend(0x0004_0000_0019_3a00u64.to_be_bytes());
+        b.extend(tmd);
+        let p = std::env::temp_dir().join(format!("borne-cia-{}.cia", std::process::id()));
+        std::fs::write(&p, &b).unwrap();
+        assert_eq!(cia_title_id(&p), Some(0x0004_0000_0019_3a00));
+        let _ = std::fs::remove_file(&p);
+    }
 
     #[test]
     fn failure_lines_read_plainly() {

@@ -32,7 +32,44 @@ pub fn keeps_archive(platform: &str) -> bool {
 
 /// An archive Borne extracts (zip, 7z).
 pub fn extractable(path: &Path) -> bool {
-    path.extension().map(|e| e.eq_ignore_ascii_case("zip") || e.eq_ignore_ascii_case("7z")).unwrap_or(false)
+    path.extension().map(|e| ["zip", "7z", "rar"].iter().any(|x| e.eq_ignore_ascii_case(x))).unwrap_or(false)
+}
+
+/// A RAR archive, by the system's own tools (no RAR decoder may be bundled): bsdtar (libarchive,
+/// on macOS and most Linux systems), else unrar, else 7z. None of them writes outside the folder
+/// by default; links they made are removed all the same.
+fn extract_rar(archive: &Path, out: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(out).map_err(|e| e.to_string())?;
+    let o = out.to_string_lossy().into_owned();
+    let a = archive.to_string_lossy().into_owned();
+    let tries: [(&str, Vec<String>); 3] = [
+        ("bsdtar", vec!["-xf".into(), a.clone(), "-C".into(), o.clone()]),
+        ("unrar", vec!["x".into(), "-o+".into(), "-idq".into(), a.clone(), format!("{o}/")]),
+        ("7z", vec!["x".into(), "-y".into(), format!("-o{o}"), a.clone()]),
+    ];
+    let mut last = "no tool to open RAR archives (bsdtar, unrar or 7z) on this system".to_string();
+    for (tool, args) in tries {
+        match std::process::Command::new(tool).args(&args).stdin(std::process::Stdio::null()).output() {
+            Ok(r) if r.status.success() => {
+                let mut stack = vec![out.to_path_buf()];
+                while let Some(d) = stack.pop() {
+                    for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+                        match e.file_type() {
+                            Ok(t) if t.is_symlink() => {
+                                let _ = std::fs::remove_file(e.path());
+                            }
+                            Ok(t) if t.is_dir() => stack.push(e.path()),
+                            _ => {}
+                        }
+                    }
+                }
+                return Ok(());
+            }
+            Ok(r) => last = format!("the archive could not be extracted: {}", String::from_utf8_lossy(&r.stderr).trim()),
+            Err(_) => continue,
+        }
+    }
+    Err(last)
 }
 
 /// Games to start once their download ends (a compressed game asked to play from the network).
@@ -379,9 +416,12 @@ fn download(app: &Shared, id: i64, rom_id: i64, flag: &AtomicBool) -> Result<Out
             emit(app, id, rom_id, "extracting", total, total, None, 0.0);
             let out_dir = staging.join(".extracted");
             let _ = std::fs::remove_dir_all(&out_dir);
-            if only.extension().map(|e| e.eq_ignore_ascii_case("7z")).unwrap_or(false) {
+            let ext = only.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+            if ext == "7z" {
                 // The 7z reader refuses entries leading outside the folder (see systemfiles).
                 sevenz_rust2::decompress_file(&only, &out_dir).map_err(|e| format!("the archive could not be extracted: {e}"))?;
+            } else if ext == "rar" {
+                extract_rar(&only, &out_dir)?;
             } else {
                 extract_zip(&only, &out_dir, flag)?;
             }

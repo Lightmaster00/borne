@@ -25,6 +25,9 @@ pub struct PadState {
     pub pads: Vec<String>,
     /// SDL-style GUID of each pad (same order), for emulators that bind a device by it.
     pub guids: Vec<String>,
+    /// The pad that last pressed a button (its place in `pads`): the one in the player's hands,
+    /// given to the game when no pad was chosen for it.
+    pub last: Option<usize>,
 }
 
 pub type SharedPadState = Arc<Mutex<PadState>>;
@@ -105,6 +108,8 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                     match ev.event {
                         EventType::ButtonPressed(b, _) => {
                             let now = Instant::now();
+                            let place = gilrs.gamepads().position(|(id, _)| id == ev.id);
+                            state.lock().unwrap_or_else(|e| e.into_inner()).last = place;
                             match b {
                                 Button::Select => select_at = Some(now),
                                 Button::Start => start_at = Some(now),

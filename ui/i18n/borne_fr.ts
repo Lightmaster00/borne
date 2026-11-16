@@ -521,6 +521,150 @@
         <source>the game file is encrypted: the emulator needs a decrypted copy</source>
         <translation>le fichier du jeu est chiffré : l’émulateur a besoin d’une copie déchiffrée</translation>
     </message>
+    <message>
+        <source>%1 could not install the game: %2</source>
+        <translation>%1 n’a pas pu installer le jeu : %2</translation>
+    </message>
+    <message>
+        <source>the .cia file is not readable</source>
+        <translation>le fichier .cia est illisible</translation>
+    </message>
+    <message>
+        <source>this arcade game is not in the version the emulator expects (a ROM is missing or different): use a set made for FinalBurn Neo</source>
+        <translation>ce jeu d’arcade n’est pas dans la version attendue par l’émulateur (une ROM manque ou diffère) : utilisez un set prévu pour FinalBurn Neo</translation>
+    </message>
+    <message>
+        <source>%1 stopped at once: %2</source>
+        <translation>%1 s’est arrêté aussitôt : %2</translation>
+    </message>
+    <message>
+        <source>%1 stopped at once (%2)</source>
+        <translation>%1 s’est arrêté aussitôt (%2)</translation>
+    </message>
+    <message>
+        <source>%1 could not start: %2</source>
+        <translation>%1 n’a pas pu démarrer : %2</translation>
+    </message>
+    <message>
+        <source>Azahar could not start: %1</source>
+        <translation>Azahar n’a pas pu démarrer : %1</translation>
+    </message>
+    <message>
+        <source>could not prepare the game file: %1</source>
+        <translation>le fichier du jeu n’a pas pu être préparé : %1</translation>
+    </message>
+    <message>
+        <source>%1 is not available for this computer: choose its program in Settings → Emulators</source>
+        <translation>%1 n’existe pas pour cet ordinateur : choisissez son programme dans Réglages → Émulateurs</translation>
+    </message>
+    <message>
+        <source>%1 cannot be installed by Borne: choose its program</source>
+        <translation>%1 ne peut pas être installé par Borne : choisissez son programme</translation>
+    </message>
+    <message>
+        <source>download failed: %1</source>
+        <translation>échec du téléchargement : %1</translation>
+    </message>
+    <message>
+        <source>download interrupted: %1</source>
+        <translation>téléchargement interrompu : %1</translation>
+    </message>
+    <message>
+        <source>download answered %1</source>
+        <translation>le téléchargement a répondu %1</translation>
+    </message>
+    <message>
+        <source>%1 answered %2</source>
+        <translation>%1 a répondu %2</translation>
+    </message>
+    <message>
+        <source>unreadable archive: %1</source>
+        <translation>archive illisible : %1</translation>
+    </message>
+    <message>
+        <source>corrupted file in the archive: %1</source>
+        <translation>fichier corrompu dans l’archive : %1</translation>
+    </message>
+    <message>
+        <source>wrong size for %1 (%2 instead of %3)</source>
+        <translation>taille incorrecte pour %1 (%2 au lieu de %3)</translation>
+    </message>
+    <message>
+        <source>%1 missing from the archive: %2</source>
+        <translation>%1 manque dans l’archive : %2</translation>
+    </message>
+    <message>
+        <source>no game file found after install</source>
+        <translation>aucun fichier de jeu trouvé après l’installation</translation>
+    </message>
+    <message>
+        <source>cannot write: %1</source>
+        <translation>écriture impossible : %1</translation>
+    </message>
+    <message>
+        <source>%1: no core in the archive</source>
+        <translation>%1 : aucun cœur dans l’archive</translation>
+    </message>
+    <message>
+        <source>no RetroArch version on the buildbot</source>
+        <translation>aucune version de RetroArch sur le serveur</translation>
+    </message>
+    <message>
+        <source>disk images only open on macOS</source>
+        <translation>les images disque ne s’ouvrent que sur macOS</translation>
+    </message>
+    <message>
+        <source>no application in the disk image</source>
+        <translation>aucune application dans l’image disque</translation>
+    </message>
+    <message>
+        <source>cannot copy the installed version</source>
+        <translation>impossible de copier la version installée</translation>
+    </message>
+    <message>
+        <source>cannot extract the update</source>
+        <translation>impossible d’extraire la mise à jour</translation>
+    </message>
+    <message>
+        <source>cannot install the update (%1)</source>
+        <translation>impossible d’installer la mise à jour (%1)</translation>
+    </message>
+    <message>
+        <source>cannot move the current version aside (%1)</source>
+        <translation>impossible de mettre de côté la version actuelle (%1)</translation>
+    </message>
+    <message>
+        <source>unreadable update information (%1)</source>
+        <translation>informations de mise à jour illisibles (%1)</translation>
+    </message>
+    <message>
+        <source>update server answered %1</source>
+        <translation>le serveur de mises à jour a répondu %1</translation>
+    </message>
+    <message>
+        <source>update refused: its signature is missing or wrong</source>
+        <translation>mise à jour refusée : sa signature manque ou est fausse</translation>
+    </message>
+    <message>
+        <source>unreadable image (%1)</source>
+        <translation>image illisible (%1)</translation>
+    </message>
+    <message>
+        <source>short read from RomM (%1 of %2 bytes)</source>
+        <translation>lecture incomplète depuis RomM (%1 sur %2 octets)</translation>
+    </message>
+    <message>
+        <source>no gameplay video known for this game</source>
+        <translation>aucune vidéo connue pour ce jeu</translation>
+    </message>
+    <message>
+        <source>no tool to open RAR archives (bsdtar, unrar or 7z) on this system</source>
+        <translation>aucun outil pour ouvrir les archives RAR (bsdtar, unrar ou 7z) sur ce système</translation>
+    </message>
+    <message>
+        <source>offline</source>
+        <translation>hors ligne</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>

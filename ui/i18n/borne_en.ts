@@ -521,6 +521,150 @@
         <source>the game file is encrypted: the emulator needs a decrypted copy</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>%1 could not install the game: %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the .cia file is not readable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this arcade game is not in the version the emulator expects (a ROM is missing or different): use a set made for FinalBurn Neo</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 stopped at once: %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 stopped at once (%2)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 could not start: %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Azahar could not start: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>could not prepare the game file: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is not available for this computer: choose its program in Settings → Emulators</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 cannot be installed by Borne: choose its program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download failed: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download interrupted: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>download answered %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 answered %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unreadable archive: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>corrupted file in the archive: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>wrong size for %1 (%2 instead of %3)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 missing from the archive: %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no game file found after install</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>cannot write: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1: no core in the archive</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no RetroArch version on the buildbot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>disk images only open on macOS</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no application in the disk image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>cannot copy the installed version</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>cannot extract the update</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>cannot install the update (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>cannot move the current version aside (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unreadable update information (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>update server answered %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>update refused: its signature is missing or wrong</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>unreadable image (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>short read from RomM (%1 of %2 bytes)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no gameplay video known for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no tool to open RAR archives (bsdtar, unrar or 7z) on this system</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>offline</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>

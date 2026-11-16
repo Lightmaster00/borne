@@ -48,12 +48,46 @@ fn agent() -> ureq::Agent {
         .into()
 }
 
+/// Where release lists are kept with their ETag (set at start): asking again with it costs
+/// nothing against GitHub's limit of 60 requests an hour, and a refusal for that limit falls back
+/// on the copy kept.
+static HTTP_CACHE: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+pub fn set_http_cache(dir: PathBuf) {
+    let _ = std::fs::create_dir_all(&dir);
+    let _ = HTTP_CACHE.set(dir);
+}
+
 fn get_text(url: &str) -> Result<String, String> {
-    let mut r = agent().get(net(url)).header("Accept", "application/vnd.github+json").call().map_err(|e| format!("{url}: {e}"))?;
-    if r.status().as_u16() != 200 {
-        return Err(format!("{url} answered {}", r.status().as_u16()));
+    let file = HTTP_CACHE.get().map(|d| {
+        let h = <sha2::Sha256 as sha2::Digest>::digest(url.as_bytes());
+        d.join(h.iter().take(12).map(|b| format!("{b:02x}")).collect::<String>())
+    });
+    let kept: Option<(String, String)> = file
+        .as_ref()
+        .and_then(|f| std::fs::read_to_string(f).ok())
+        .and_then(|t| t.split_once('\n').map(|(e, b)| (e.to_string(), b.to_string())));
+    let mut req = agent().get(net(url)).header("Accept", "application/vnd.github+json");
+    if let Some((etag, _)) = &kept {
+        req = req.header("If-None-Match", etag.as_str());
     }
-    r.body_mut().with_config().limit(16 << 20).read_to_string().map_err(|e| e.to_string())
+    let mut r = match req.call() {
+        Ok(r) => r,
+        Err(e) => return kept.map(|(_, b)| b).ok_or(format!("{url}: {e}")),
+    };
+    match r.status().as_u16() {
+        200 => {}
+        304 => return kept.map(|(_, b)| b).ok_or(format!("{url} answered 304")),
+        // Rate-limited: the copy kept, however old, rather than nothing.
+        403 | 429 if kept.is_some() => return Ok(kept.unwrap().1),
+        s => return Err(format!("{url} answered {s}")),
+    }
+    let etag = r.headers().get("etag").and_then(|v| v.to_str().ok()).map(String::from);
+    let body = r.body_mut().with_config().limit(16 << 20).read_to_string().map_err(|e| e.to_string())?;
+    if let (Some(f), Some(etag)) = (file, etag) {
+        let _ = std::fs::write(f, format!("{etag}\n{body}"));
+    }
+    Ok(body)
 }
 
 /// The latest version offered for this system: (version, download address, sha256).
@@ -365,6 +399,13 @@ fn download(app: &Shared, program: &str, url: &str, dest: &Path, sha256: Option<
     let total: u64 = r.headers().get("content-length").and_then(|v| v.to_str().ok()).and_then(|v| v.parse().ok()).unwrap_or(0);
     if let Some(p) = dest.parent() {
         std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
+        // The archive and what it unpacks to (about three times its size), with a margin.
+        let needed = total.saturating_mul(4) + 64 * 1024 * 1024;
+        if let Some(free) = crate::paths::free_space(p) {
+            if free < needed {
+                return Err(format!("not enough disk space: {} MB needed, {} MB free", needed / 1_048_576, free / 1_048_576));
+            }
+        }
     }
     let mut out = std::fs::File::create(dest).map_err(|e| e.to_string())?;
     let mut reader = r.body_mut().with_config().limit(2 << 30).reader();

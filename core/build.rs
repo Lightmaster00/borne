@@ -22,6 +22,7 @@ fn mask(name: &str, value: &str, seed: &mut u64, out: &mut String) {
 fn main() {
     println!("cargo:rerun-if-env-changed=BORNE_SS_DEV_ID");
     println!("cargo:rerun-if-env-changed=BORNE_SS_DEV_PASSWORD");
+    println!("cargo:rerun-if-env-changed=BORNE_UPDATE_PUBKEY");
     let id = std::env::var("BORNE_SS_DEV_ID").unwrap_or_default();
     let password = std::env::var("BORNE_SS_DEV_PASSWORD").unwrap_or_default();
     let mut seed =

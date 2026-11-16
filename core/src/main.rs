@@ -176,6 +176,7 @@ fn main() {
             screenscraper::trim_stored_spines(&app);
         });
     }
+    emuinstall::set_http_cache(app.paths.root.join("cache/releases"));
     emuinstall::start_updates(&app);
     if app.client().is_some() {
         catalog::start_sync(&app);

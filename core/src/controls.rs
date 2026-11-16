@@ -26,7 +26,15 @@ pub fn sources(app: &Shared, group: &str) -> Vec<(&'static str, Option<&'static 
 
 /// Player 1's controller for this game: its index among the connected pads (0 when automatic).
 pub fn pad_index(app: &Shared, group: &str, count: usize) -> usize {
-    get(app, group, "pad").0.parse::<usize>().ok().map(|n| n - 1).filter(|i| *i < count).unwrap_or(0)
+    get(app, group, "pad")
+        .0
+        .parse::<usize>()
+        .ok()
+        .and_then(|n| n.checked_sub(1))
+        .filter(|i| *i < count)
+        // None chosen: the pad last used in Borne, the one in the player's hands.
+        .or_else(|| app.pads.lock().unwrap_or_else(|e| e.into_inner()).last.filter(|i| *i < count))
+        .unwrap_or(0)
 }
 
 /// RetroArch's names of a core's library: its remaps live in a folder of that name. The display

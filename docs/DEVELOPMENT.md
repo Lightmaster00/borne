@@ -36,7 +36,7 @@ scripts/
 tests/
   integration_romm.py end-to-end against a real RomM (pairing, sync, downloads, mount, settings…)
   ui_tour.sh          walks every screen of a running Borne, fails on any QML error
-  api_fuzz.py         every API route with odd ids and bodies: no crash, no 5xx, no panic
+  api_fuzz.py         every API route with odd ids and bodies: no crash, no 5xx/409, no panic
   update_test.sh      in-app updates: full archive, then by parts
   case_bench/         every kind of game case with synthetic scans, faced and turned (to check prints)
 docs/                 specification, this guide, roadmap; assets/ holds the README logos
@@ -151,6 +151,23 @@ previous published build downloads. Before downloading, Settings → Updates sho
 ScreenScraper developer credentials come from the repository secrets `SCREENSCRAPER_DEV_ID` and
 `SCREENSCRAPER_DEV_PASSWORD`, compiled masked into official builds (`core/build.rs`); they never
 appear in the code or the logs.
+
+### Signed updates
+
+Update manifests can be signed with an Ed25519 key, which official builds then require. To turn it
+on, make a key pair once, on your own computer:
+
+```sh
+openssl genpkey -algorithm ed25519 -out borne-release.pem
+openssl pkey -in borne-release.pem -pubout -outform DER | tail -c 32 | od -An -tx1 | tr -d ' \n'
+```
+
+Then, in the repository settings, add the content of `borne-release.pem` as the secret
+`UPDATE_SIGNING_KEY` and the 64 hex digits printed as the variable `UPDATE_PUBLIC_KEY`, and keep
+the file somewhere safe. The release workflow builds the public key into Borne
+(`BORNE_UPDATE_PUBKEY`) and signs `latest.json` (`scripts/release/sign.py`); a build with the key
+refuses a manifest that is not signed with it. Setting only one of the two stops the release.
+Builds made before the key do not check signatures; the first build with it does from then on.
 
 ## Conventions
 
