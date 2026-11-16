@@ -46,7 +46,7 @@ Item {
                         anchors.centerIn: parent
                         text: (index === 0 ? "✓ " : (index + 1) + " · ") + modelData
                         color: index === 1 ? theme.bg : index === 0 ? theme.fgMuted : theme.fgFaint
-                        font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
+                        font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
                     }
                 }
             }

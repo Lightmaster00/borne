@@ -66,11 +66,14 @@ Item {
     function interfaceRows() {
         const on = [[true, qsTr("On")], [false, qsTr("Off")]]
         const rows = [
+            group(qsTr("Language")),
+            pref("language", qsTr("Interface language"), qsTr("Also the language games start in, when they have it"),
+                 [["auto", qsTr("As the system")], ["fr", "Français"], ["en", "English"]]),
             group(qsTr("Videos")),
             pref("bgVideo", qsTr("Video behind the library"), qsTr("The selected game's video plays by itself, muted, behind the boxes"), on),
             pref("attractDelay", qsTr("Video in full screen"), qsTr("Without a press for this long, the boxes fade out and leave the video"),
                  [[5, secs(5)], [15, secs(15)], [30, secs(30)], [60, secs(60)], [0, qsTr("Never")]]),
-            pref("attractRest", qsTr("Full-screen video length"), qsTr("Then the video pauses and the games come back, until another game is selected"),
+            pref("attractRest", qsTr("Full-screen video length"), qsTr("Then the games come back, the video going on dimmed behind them"),
                  [[60, secs(60)], [180, secs(180)], [600, secs(600)], [0, qsTr("No limit")]]),
             pref("pageVideo", qsTr("Videos on the game page"), qsTr("A game's trailer starts on its page after a moment"), on),
             group(qsTr("Look")),
@@ -390,8 +393,8 @@ Item {
           intro: qsTr("How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.") },
         { id: "controls", name: qsTr("Controllers"), hint: qsTr("Buttons for every game"),
           intro: qsTr("The controllers connected, and how their buttons play in every game.") },
-        { id: "interface", name: qsTr("Interface"), hint: qsTr("Videos, look, sounds"),
-          intro: qsTr("Borne itself: its videos, size, animations, sounds and the buttons it shows.") },
+        { id: "interface", name: qsTr("Interface"), hint: qsTr("Language, videos, look"),
+          intro: qsTr("Borne itself: its language, videos, size, animations, sounds and the buttons it shows.") },
         { id: "library", name: qsTr("RomM & images"), hint: qsTr("Server, profile, ScreenScraper"), warn: !!(status && status.server_url && !status.online),
           intro: qsTr("The server your games come from, who is playing, and where the case scans come from.") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable"),
@@ -626,7 +629,7 @@ Item {
                         x: 20; anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text { text: sec.modelData.name; color: sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: Font.DemiBold } }
-                        Text { text: sec.modelData.hint; color: sec.modelData.warn ? theme.bad : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium } }
+                        Text { text: sec.modelData.hint; color: sec.modelData.warn ? theme.bad : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
                     }
                 }
             }
@@ -641,7 +644,7 @@ Item {
             wrapMode: Text.WrapAnywhere
             lineHeight: 1.5
             color: theme.fgFaint
-            font { family: theme.fontFamily; pixelSize: 15 }
+            font { family: theme.fontFamily; pixelSize: 17 }
         }
     }
 
@@ -674,7 +677,7 @@ Item {
                 visible: page.consoleSlug !== ""
                 text: "‹  " + qsTr("Consoles")
                 color: theme.fgFaint
-                font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
+                font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
             }
             Text {
                 text: page.consoleSlug ? (page.consoleOf(page.consoleSlug) ? page.consoleOf(page.consoleSlug).name : "") : page.sections[page.section].name
@@ -709,7 +712,7 @@ Item {
                         id: groupTitle
                         text: (rowItem.modelData.title || "").toUpperCase()
                         color: theme.fgFaint
-                        font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold; letterSpacing: 1.6 }
+                        font { family: theme.fontFamily; pixelSize: 17; weight: Font.Bold; letterSpacing: 1.6 }
                     }
                     Rectangle {
                         anchors { left: groupTitle.right; leftMargin: 16; right: parent.right; rightMargin: 8; verticalCenter: groupTitle.verticalCenter }
@@ -794,7 +797,7 @@ Item {
                             text: rowItem.modelData.desc || ""
                             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                             color: theme.fgMuted
-                            font { family: theme.fontFamily; pixelSize: 16 }
+                            font { family: theme.fontFamily; pixelSize: 18 }
                         }
                     }
                     Row {
@@ -814,7 +817,7 @@ Item {
                                 anchors.centerIn: parent
                                 text: rowItem.modelData.badge || ""
                                 color: parent.tone === "bad" ? theme.badSoft : parent.tone === "ok" ? theme.accent : theme.fgMuted
-                                font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold }
+                                font { family: theme.fontFamily; pixelSize: 17; weight: Font.Bold }
                             }
                         }
                         Text {

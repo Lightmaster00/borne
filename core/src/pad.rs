@@ -54,6 +54,18 @@ pub fn steam_hidden() -> Vec<(u16, u16)> {
         .collect()
 }
 
+/// A Nintendo pad's face buttons by their letters: A is on the right (East), B at the bottom,
+/// X on top, Y on the left.
+fn by_label(b: Button) -> Button {
+    match b {
+        Button::South => Button::East,
+        Button::East => Button::South,
+        Button::North => Button::West,
+        Button::West => Button::North,
+        other => other,
+    }
+}
+
 fn map_button(b: Button) -> Option<&'static str> {
     Some(match b {
         Button::DPadUp => "up",
@@ -98,7 +110,8 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
 
             // held action -> (time of the next repeat, gamepad name)
             let mut held: HashMap<&'static str, (Instant, String)> = HashMap::new();
-            let mut stick: HashMap<&'static str, bool> = HashMap::new();
+            // Each pad's stick directions (several pads must not undo each other's).
+            let mut stick: HashMap<(usize, &'static str), bool> = HashMap::new();
             // Right stick: turns the selected game box (continuous, not actions).
             let (mut rx, mut ry) = (0.0f32, 0.0f32);
             // When Select and Start were last pressed, for the quit chord.
@@ -120,8 +133,22 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                     s.guids = gilrs.gamepads().map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect()).collect();
                     s.ids = gilrs.gamepads().map(|(_, g)| (g.vendor_id().unwrap_or(0), g.product_id().unwrap_or(0))).collect();
                 }
+                // Started from Steam with Steam Input: the pads Steam hides from games also send
+                // their presses here, besides Steam's virtual pad; only the virtual pad is heard,
+                // or every press would count twice.
+                let hidden = steam_hidden();
+                let steam_pad = gilrs.gamepads().any(|(_, g)| g.vendor_id() == Some(0x28de));
                 while let Some(ev) = gilrs.next_event() {
-                    let pad = gilrs.gamepad(ev.id).name().to_string();
+                    let gp = gilrs.gamepad(ev.id);
+                    let ids = (gp.vendor_id().unwrap_or(0), gp.product_id().unwrap_or(0));
+                    if steam_pad && hidden.contains(&ids) {
+                        continue;
+                    }
+                    // A Nintendo pad (Switch Pro, Joy-Con) heard directly: its buttons by their
+                    // letters, as its owner reads them (A on the right confirms), not by place.
+                    let nintendo = ids.0 == 0x057e;
+                    let pad = gp.name().to_string();
+                    let pad_key = usize::from(ev.id);
                     match ev.event {
                         EventType::ButtonPressed(b, _) => {
                             let now = Instant::now();
@@ -142,7 +169,7 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                                     }
                                 }
                             }
-                            if let Some(a) = map_button(b) {
+                            if let Some(a) = map_button(if nintendo { by_label(b) } else { b }) {
                                 emit(a, &pad, false);
                                 if repeatable(a) {
                                     held.insert(a, (Instant::now() + FIRST_REPEAT, pad));
@@ -150,7 +177,7 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                             }
                         }
                         EventType::ButtonReleased(b, _) => {
-                            if let Some(a) = map_button(b) {
+                            if let Some(a) = map_button(if nintendo { by_label(b) } else { b }) {
                                 held.remove(a);
                             }
                         }
@@ -176,14 +203,14 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                             };
                             if let Some((neg, pos)) = dirs {
                                 for (dir, active) in [(neg, v < -STICK_THRESHOLD), (pos, v > STICK_THRESHOLD)] {
-                                    let was = *stick.get(dir).unwrap_or(&false);
+                                    let was = *stick.get(&(pad_key, dir)).unwrap_or(&false);
                                     if active && !was {
                                         emit(dir, &pad, false);
                                         held.insert(dir, (Instant::now() + FIRST_REPEAT, pad.clone()));
                                     } else if !active && was {
                                         held.remove(dir);
                                     }
-                                    stick.insert(dir, active);
+                                    stick.insert((pad_key, dir), active);
                                 }
                             }
                         }

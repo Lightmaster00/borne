@@ -63,7 +63,7 @@ Item {
                 anchors.centerIn: parent
                 text: root.games ? qsTr("%n game(s)", "", root.games.count) : ""
                 color: theme.accentFg
-                font { family: theme.fontFamily; pixelSize: 16; weight: Font.ExtraBold }
+                font { family: theme.fontFamily; pixelSize: 18; weight: Font.ExtraBold }
             }
         }
     }
@@ -123,7 +123,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.text
                             color: modelData.bad ? theme.badSoft : theme.fg
-                            font { family: theme.fontFamily; pixelSize: 14; weight: Font.Medium }
+                            font { family: theme.fontFamily; pixelSize: 16; weight: Font.Medium }
                         }
                     }
                 }

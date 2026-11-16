@@ -22,7 +22,7 @@ rand = "0.10"
 sha1_smol = "1"
 sha2 = "0.11"
 md-5 = "0.11"
-zip = { version = "9", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate", "deflate64"] }
 sevenz-rust2 = { version = "0.25", default-features = false, features = ["util"] }
 quick-xml = "0.42"
 crc32fast = "1"
@@ -34,7 +34,7 @@ ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
 # Borne virtual mount (games played from RomM without a download). Linux only.
 [target.'cfg(target_os = "linux")'.dependencies]
 fuser = { version = "0.18", default-features = false }
-x11rb = "0.13"
+x11rb = { version = "0.13", features = ["res"] }
 
 [dev-dependencies]
 tempfile = "3"

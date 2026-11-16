@@ -51,7 +51,7 @@ Item {
                 anchors.centerIn: parent
                 text: btn.key
                 color: theme.fg
-                font { family: theme.fontFamily; pixelSize: 16; weight: Font.Bold }
+                font { family: theme.fontFamily; pixelSize: 18; weight: Font.Bold }
             }
         }
         Text {

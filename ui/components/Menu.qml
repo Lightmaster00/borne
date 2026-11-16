@@ -41,7 +41,7 @@ Column {
                     text: row.modelData.detail || ""
                     wrapMode: Text.WordWrap
                     color: row.cur ? "#4A4F5C" : theme.fgMuted
-                    font { family: theme.fontFamily; pixelSize: 15 }
+                    font { family: theme.fontFamily; pixelSize: 17 }
                 }
             }
         }

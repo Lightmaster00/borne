@@ -28,12 +28,12 @@ pub fn dir_size(dir: &Path) -> u64 {
     walk_size(dir)
 }
 
-pub fn keeps_archive(platform: &str, archive: &Path) -> bool {
-    let zip = archive.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false);
+pub fn keeps_archive(platform: &str, _archive: &Path) -> bool {
     match platform {
         "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave" => true,
-        // Vita3K installs a .zip (as a .vpk), not a .7z or a .rar: those are extracted.
-        "psvita" => zip,
+        // PS Vita: archives are extracted (Vita3K takes a .zip only when the game is at its
+        // root, and a folder always); a .vpk stays as it is.
+        "psvita" => false,
         _ => false,
     }
 }
@@ -47,15 +47,29 @@ pub fn extractable(path: &Path) -> bool {
 /// on macOS and most Linux systems), else unrar, else 7z. None of them writes outside the folder
 /// by default; links they made are removed all the same.
 fn extract_rar(archive: &Path, out: &Path) -> Result<(), String> {
+    extract_external(archive, out, "no tool to open RAR archives (bsdtar, unrar or 7z) on this system")
+}
+
+/// An archive by the system's own tools (bsdtar, unrar, 7z, unzip): for RAR, and for the zips the
+/// built-in reader does not take (some large or unusual ones).
+fn extract_external(archive: &Path, out: &Path, none: &str) -> Result<(), String> {
     std::fs::create_dir_all(out).map_err(|e| e.to_string())?;
     let o = out.to_string_lossy().into_owned();
     let a = archive.to_string_lossy().into_owned();
-    let tries: [(&str, Vec<String>); 3] = [
+    let rar = archive.extension().map(|e| e.eq_ignore_ascii_case("rar")).unwrap_or(false);
+    let tries: Vec<(&str, Vec<String>)> = vec![
         ("bsdtar", vec!["-xf".into(), a.clone(), "-C".into(), o.clone()]),
-        ("unrar", vec!["x".into(), "-o+".into(), "-idq".into(), a.clone(), format!("{o}/")]),
+        (
+            if rar { "unrar" } else { "unzip" },
+            if rar {
+                vec!["x".into(), "-o+".into(), "-idq".into(), a.clone(), format!("{o}/")]
+            } else {
+                vec!["-o".into(), "-q".into(), a.clone(), "-d".into(), o.clone()]
+            },
+        ),
         ("7z", vec!["x".into(), "-y".into(), format!("-o{o}"), a.clone()]),
     ];
-    let mut last = "no tool to open RAR archives (bsdtar, unrar or 7z) on this system".to_string();
+    let mut last = none.to_string();
     for (tool, args) in tries {
         match std::process::Command::new(tool).args(&args).stdin(std::process::Stdio::null()).output() {
             Ok(r) if r.status.success() => {
@@ -436,8 +450,23 @@ fn download(app: &Shared, id: i64, rom_id: i64, flag: &AtomicBool) -> Result<Out
                 sevenz_rust2::decompress_file(&only, &out_dir).map_err(|e| format!("the archive could not be extracted: {e}"))?;
             } else if ext == "rar" {
                 extract_rar(&only, &out_dir)?;
-            } else {
-                extract_zip(&only, &out_dir, flag)?;
+            } else if let Err(e) = extract_zip(&only, &out_dir, flag) {
+                // The built-in reader refused it: the system's tools may read it.
+                app.db.log("download", &format!("{}: {e}; trying the system's tools", only.display()));
+                let _ = std::fs::remove_dir_all(&out_dir);
+                extract_external(&only, &out_dir, &e).map_err(|x| {
+                    let head = std::fs::File::open(&only).ok().and_then(|mut f| {
+                        let mut b = [0u8; 4];
+                        std::io::Read::read_exact(&mut f, &mut b).ok().map(|_| b)
+                    });
+                    if head != Some(*b"PK\x03\x04") {
+                        "the file on RomM is named .zip but is not a zip archive".to_string()
+                    } else if e.contains("EOCD") {
+                        "the zip on RomM is incomplete (its end is missing): upload it to RomM again".to_string()
+                    } else {
+                        x
+                    }
+                })?;
             }
             if flag.load(Ordering::SeqCst) {
                 return Ok(Outcome::Cancelled);

@@ -517,6 +517,24 @@ explains the limits. It never runs privileged commands silently.
   The first sync of an empty library shows "Preparing your library" (games, then covers) until the
   covers are in (A shows it at once; two minutes at most); covers fade in when they arrive.
 - In the library, B (Backspace) goes back to "Who's playing?"; the profile pill at the top says so.
+  Profile names start with a capital (on creation, renaming, and once for older profiles).
+- Started from Steam, the pads Steam hides are not heard by Borne either (each press would count
+  twice); a Nintendo pad heard directly is read by its letters in Borne (A on the right confirms).
+  In games, a Nintendo pad behind Steam's virtual pad (laid out by letters) gets its face buttons
+  put back in place. RetroArch plays one player per pad in hands (`input_max_users`, each player's
+  `joypad_index` among every pad), so one pad is never two players.
+- The left stick also moves as the D-pad in RetroArch for consoles whose pads had no stick, unless
+  chosen otherwise; DuckStation's analog pad moves the D-pad with the stick in digital mode.
+- The quit question on Linux: the paused game's windows are unmapped (X11, found by _NET_WM_PID or
+  X-Resource) so that Borne's question is seen even under gamescope, and mapped back to resume.
+- A game is over only when its whole process group is (a launcher that hands the game to another
+  process and leaves does not end it), so two games never run together.
+- While a game runs, no interface sound and no video of Borne plays.
+- Interface language: Settings → Interface (As the system, Français, English), switched at once
+  (the launcher reloads the translation), read by the launcher at start (`ui/language`).
+- Zips the built-in reader refuses are extracted with the system's tools (bsdtar, unzip, 7z); a
+  zip whose end is missing on RomM is reported as such.
+- After the full-screen video's time, the games come back and the video goes on, dimmed.
 - A "raw gamepad" Steam Input layout is provided and recommended, so Borne and the emulators handle mapping.
 - Gyro, separate Joy-Con and Wiimote are tested specifically under Steam Input.
 - Returning to the UI is guaranteed when the emulator exits, including after a crash.

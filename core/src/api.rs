@@ -436,6 +436,16 @@ fn prune_videos(dir: &std::path::Path, max: u64) {
     }
 }
 
+/// A profile's name as shown: trimmed, its first letter a capital ("léa" → "Léa").
+pub fn capitalized(name: &str) -> String {
+    let name = name.trim();
+    let mut c = name.chars();
+    match c.next() {
+        Some(f) => f.to_uppercase().chain(c).collect(),
+        None => String::new(),
+    }
+}
+
 fn new_profile_id() -> String {
     use rand::RngExt;
     let mut rng = rand::rng();
@@ -491,7 +501,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Get, ["api", "v1", "profiles"]) => ok(req, json!(app.db.profiles())),
         (Method::Post, ["api", "v1", "profiles"]) => {
             let body = body_json(&mut req);
-            let name = body["name"].as_str().unwrap_or("").trim().to_string();
+            let name = capitalized(body["name"].as_str().unwrap_or(""));
             if name.is_empty() || name.chars().count() > 40 {
                 return err(req, 400, "invalid profile name (1 to 40 characters)");
             }
@@ -507,11 +517,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Put, ["api", "v1", "profiles", id]) => {
             let body = body_json(&mut req);
-            let name = body["name"].as_str().unwrap_or("").trim();
+            let name = capitalized(body["name"].as_str().unwrap_or(""));
             if name.is_empty() || name.chars().count() > 40 {
                 return err(req, 400, "invalid profile name");
             }
-            if app.db.rename_profile(id, name) {
+            if app.db.rename_profile(id, &name) {
                 app.emit(json!({ "type": "profiles", "profiles": app.db.profiles() }));
                 ok(req, json!(app.db.profile(id)))
             } else {

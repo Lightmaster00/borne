@@ -54,7 +54,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: card.badge
                     color: card.selected ? theme.accent : theme.fgMuted
-                    font { family: theme.fontFamily; pixelSize: 14; weight: Font.DemiBold }
+                    font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
                 }
             }
         }
@@ -91,7 +91,7 @@ Rectangle {
             text: card.note
             wrapMode: Text.WordWrap
             color: theme.fgFaint
-            font { family: theme.fontFamily; pixelSize: 15 }
+            font { family: theme.fontFamily; pixelSize: 17 }
         }
     }
     Rectangle {

@@ -141,7 +141,7 @@ Item {
                     anchors.centerIn: parent
                     text: modelData
                     color: "#0C0D10"
-                    font { family: theme ? theme.displayFont : "Fredoka"; pixelSize: 14; weight: Font.Bold }
+                    font { family: theme ? theme.displayFont : "Fredoka"; pixelSize: 16; weight: Font.Bold }
                 }
             }
         }
@@ -150,7 +150,7 @@ Item {
             text: screen.keyboard ? qsTr("Pause and quit the game")
                                   : qsTr("Together: pause and quit the game")
             color: theme ? theme.fgSoft : "#ccc"
-            font { family: theme ? theme.fontFamily : "Manrope"; pixelSize: 16 }
+            font { family: theme ? theme.fontFamily : "Manrope"; pixelSize: 18 }
         }
     }
 }

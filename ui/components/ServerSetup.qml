@@ -36,7 +36,7 @@ Item {
             wrapMode: Text.WordWrap
             text: qsTr("Enter the address of your RomM server, for example http://192.168.1.20:8080 or https://romm.home.lan.")
             color: theme.fgMuted
-            font { family: theme.fontFamily; pixelSize: 16 }
+            font { family: theme.fontFamily; pixelSize: 18 }
         }
         OnScreenKeyboard {
             id: kb
@@ -56,7 +56,7 @@ Item {
                   : setup.found.length > 1 ? qsTr("RomM servers found: %1. The first is filled in; press Start to connect.").arg(setup.found.map(f => f.url).join(", "))
                   : ""
             color: theme.accent
-            font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
+            font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
         }
         Text {
             width: parent.width
@@ -64,7 +64,7 @@ Item {
             text: setup.busy ? qsTr("Connecting to the server…") : setup.error
             visible: text !== ""
             color: setup.busy ? theme.fgMuted : theme.bad
-            font { family: theme.fontFamily; pixelSize: 15 }
+            font { family: theme.fontFamily; pixelSize: 17 }
         }
         HintBar {
             theme: setup.theme

@@ -204,7 +204,14 @@ Item {
         if (visible && trailers && !paused && trailerUrl !== "") delay.restart()
     }
     property bool videoShown: false
-    onGameChanged: { restartVideo(); boxModel.clear(); if (game) boxModel.append(game) }
+    // Another game: everything starts over. The same game updated (a download's progress, a cover
+    // arriving): updated in place, so the box and the video do not flash.
+    property int shownRom: -1
+    onGameChanged: {
+        if (game && game.rom_id === shownRom && boxModel.count === 1) { boxModel.set(0, game); return }
+        shownRom = game ? game.rom_id : -1
+        restartVideo(); boxModel.clear(); if (game) boxModel.append(game)
+    }
     onPausedChanged: restartVideo()
     onVisibleChanged: restartVideo()
     onTrailersChanged: restartVideo()
@@ -328,7 +335,7 @@ Item {
                         text: page.videoError !== "" ? qsTr("The trailer cannot be played: %1").arg(page.videoError)
                             : page.trailerState.startsWith("error") ? qsTr("Trailer unavailable: %1").arg(page.trailerState.substring(7))
                             : qsTr("Loading the trailer…")
-                        color: theme.fg; font { family: theme.fontFamily; pixelSize: 15 }
+                        color: theme.fg; font { family: theme.fontFamily; pixelSize: 17 }
                     }
                 }
 
@@ -401,7 +408,7 @@ Item {
                                 width: Math.min(implicitWidth, 420)
                                 elide: Text.ElideRight
                                 color: page.game && page.game.dl_state === "failed" ? theme.bad : theme.fgMuted
-                                font { family: theme.fontFamily; pixelSize: 16 }
+                                font { family: theme.fontFamily; pixelSize: 18 }
                             }
                             Rectangle {
                                 visible: page.busy
@@ -450,7 +457,7 @@ Item {
                         text: qsTr("Playing from the network is unavailable here: %1").arg(page.streamError)
                         wrapMode: Text.WordWrap
                         color: theme.fgFaint
-                        font { family: theme.fontFamily; pixelSize: 15 }
+                        font { family: theme.fontFamily; pixelSize: 17 }
                     }
                 }
             }

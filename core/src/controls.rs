@@ -44,6 +44,12 @@ pub fn pad_index(app: &Shared, group: &str, pads: &[String], guids: &[String], l
 /// The players of a game: player 1's pad first, then the other connected pads in order (local
 /// multiplayer), up to four.
 pub fn players(app: &Shared, group: &str) -> Vec<crate::gamesettings::PadRef> {
+    players_placed(app, group).into_iter().map(|(p, _)| p).collect()
+}
+
+/// The players, each with its pad's place among every pad connected (Steam's hidden ones too):
+/// RetroArch reads the pads itself and numbers them all.
+pub fn players_placed(app: &Shared, group: &str) -> Vec<(crate::gamesettings::PadRef, usize)> {
     let (all, all_guids, ids, last) = {
         let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
         (s.pads.clone(), s.guids.clone(), s.ids.clone(), s.last)
@@ -66,11 +72,16 @@ pub fn players(app: &Shared, group: &str) -> Vec<crate::gamesettings::PadRef> {
     let order = std::iter::once(first).chain((0..pads.len()).filter(|i| *i != first));
     order
         .take(4)
-        .map(|i| crate::gamesettings::PadRef {
-            index: i,
-            name: pads[i].clone(),
-            guid: guids.get(i).cloned(),
-            rank: pads[..=i].iter().filter(|n| **n == pads[i]).count(),
+        .map(|i| {
+            (
+                crate::gamesettings::PadRef {
+                    index: i,
+                    name: pads[i].clone(),
+                    guid: guids.get(i).cloned(),
+                    rank: pads[..=i].iter().filter(|n| **n == pads[i]).count(),
+                },
+                visible[i],
+            )
         })
         .collect()
 }
@@ -182,7 +193,14 @@ pub fn set(app: &Shared, group: &str, k: &str, value: &str) -> Result<(), String
 /// Which RetroPad button each pad button presses for this game (by RetroPad id).
 fn mapping(app: &Shared, group: &str) -> Vec<(&'static str, u8)> {
     let id = |name: &str| BUTTONS.iter().find(|b| b.0 == name).map(|b| b.1);
-    let swap = get(app, group, "face").0 == "swap";
+    // Started from Steam with a Nintendo pad, the game plays on Steam's virtual pad, which Steam
+    // lays out by the letters (its A where the Nintendo A is, on the right): its buttons are put
+    // back in their places, as with the pad itself.
+    let steam_nintendo = {
+        let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
+        s.ids.iter().any(|x| x.0 == 0x28de) && crate::pad::steam_hidden().iter().any(|x| x.0 == 0x057e)
+    };
+    let swap = (get(app, group, "face").0 == "swap") != steam_nintendo;
     BUTTONS
         .iter()
         .map(|(name, own)| {
@@ -199,6 +217,56 @@ fn mapping(app: &Shared, group: &str) -> Vec<(&'static str, u8)> {
         .collect()
 }
 
+/// Cores of consoles whose pads had no analog stick: there the left stick also moves as the D-pad
+/// unless chosen otherwise (the games read the D-pad only).
+const DIGITAL_CORES: &[&str] = &[
+    "snes9x",
+    "bsnes",
+    "nestopia",
+    "fceumm",
+    "mesen",
+    "genesis_plus_gx",
+    "picodrive",
+    "blastem",
+    "mgba",
+    "gambatte",
+    "sameboy",
+    "gearboy",
+    "mednafen_pce",
+    "mednafen_pce_fast",
+    "mednafen_supergrafx",
+    "fbneo",
+    "mame",
+    "mame2003_plus",
+    "stella",
+    "mednafen_ngp",
+    "mednafen_wswan",
+    "mednafen_saturn",
+    "yabause",
+    "yabasanshiro",
+    "kronos",
+    "vecx",
+    "prosystem",
+    "handy",
+    "bluemsx",
+    "opera",
+    "gearsystem",
+    "smsplus",
+    "virtualjaguar",
+    "mednafen_vb",
+    "pokemini",
+    "atari800",
+];
+
+/// Whether the left stick also moves as the D-pad: as chosen for the game, else for every game,
+/// else on consoles without analog stick.
+fn stick_moves_dpad(app: &Shared, group: &str, core: &str) -> bool {
+    match own(app, group, "stick").or_else(|| own(app, ALL_GAMES, "stick")) {
+        Some(v) => v == "dpad",
+        None => DIGITAL_CORES.contains(&core),
+    }
+}
+
 /// RetroArch: the settings for the main configuration, and the game's remap file written under
 /// `remaps` for the core (`core`, `display`: its id and name), named after the game file.
 pub fn retroarch(app: &Shared, group: &str, remaps: &Path, core: &str, display: &str, rom: &Path) -> Vec<(String, String)> {
@@ -206,11 +274,14 @@ pub fn retroarch(app: &Shared, group: &str, remaps: &Path, core: &str, display: 
         ("auto_remaps_enable".to_string(), "true".to_string()),
         ("input_remap_binds_enable".into(), "true".into()),
         ("input_remapping_directory".into(), remaps.to_string_lossy().replace('"', "")),
-        ("input_player1_analog_dpad_mode".into(), if get(app, group, "stick").0 == "dpad" { "1" } else { "0" }.into()),
+        ("input_player1_analog_dpad_mode".into(), if stick_moves_dpad(app, group, core) { "1" } else { "0" }.into()),
     ];
-    if get(app, group, "pad").0.parse::<u32>().is_ok() {
-        let first = players(app, group).first().map(|p| p.index).unwrap_or(0);
-        v.push(("input_player1_joypad_index".into(), first.to_string()));
+    // One player per pad in hands: a pad is never two players at once (with Steam Input, the
+    // pad itself and Steam's virtual pad are both seen by RetroArch; only one of them plays).
+    let placed = players_placed(app, group);
+    v.push(("input_max_users".into(), placed.len().max(1).to_string()));
+    for (n, (_, full)) in placed.iter().enumerate() {
+        v.push((format!("input_player{}_joypad_index", n + 1), full.to_string()));
     }
     let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
     let mut text = String::from("input_remap_port_p1 = \"0\"\n");

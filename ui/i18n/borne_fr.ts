@@ -3472,10 +3472,6 @@
         <translation>Durée de la vidéo en plein écran</translation>
     </message>
     <message>
-        <source>Then the video pauses and the games come back, until another game is selected</source>
-        <translation>Ensuite la vidéo se met en pause et les jeux reviennent, jusqu’au choix d’un autre jeu</translation>
-    </message>
-    <message>
         <source>No limit</source>
         <translation>Sans limite</translation>
     </message>
@@ -3582,14 +3578,6 @@
     <message>
         <source>Picture</source>
         <translation>Image</translation>
-    </message>
-    <message>
-        <source>Videos, look, sounds</source>
-        <translation>Vidéos, apparence, sons</translation>
-    </message>
-    <message>
-        <source>Borne itself: its videos, size, animations, sounds and the buttons it shows.</source>
-        <translation>Borne elle-même : ses vidéos, sa taille, ses animations, ses sons et les boutons qu’elle affiche.</translation>
     </message>
     <message>
         <source>RomM</source>
@@ -4042,6 +4030,34 @@
     <message>
         <source>Borne in Steam</source>
         <translation>Borne dans Steam</translation>
+    </message>
+    <message>
+        <source>Then the games come back, the video going on dimmed behind them</source>
+        <translation>Puis les jeux reviennent, la vidéo continuant en sourdine derrière eux</translation>
+    </message>
+    <message>
+        <source>Language</source>
+        <translation>Langue</translation>
+    </message>
+    <message>
+        <source>Interface language</source>
+        <translation>Langue de l'interface</translation>
+    </message>
+    <message>
+        <source>Also the language games start in, when they have it</source>
+        <translation>C'est aussi la langue dans laquelle les jeux démarrent, quand ils l'ont</translation>
+    </message>
+    <message>
+        <source>As the system</source>
+        <translation>Comme le système</translation>
+    </message>
+    <message>
+        <source>Language, videos, look</source>
+        <translation>Langue, vidéos, apparence</translation>
+    </message>
+    <message>
+        <source>Borne itself: its language, videos, size, animations, sounds and the buttons it shows.</source>
+        <translation>Borne lui-même : sa langue, ses vidéos, sa taille, ses animations, ses sons et les boutons qu'il affiche.</translation>
     </message>
 </context>
 <context>

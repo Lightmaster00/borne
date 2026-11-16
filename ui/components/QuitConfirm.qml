@@ -74,7 +74,7 @@ Item {
                 text: qsTr("Select + Start again: quit at once")
                 color: theme ? theme.fgSoft : "#ccc"
                 opacity: 0.8
-                font { family: theme ? theme.fontFamily : "Manrope"; pixelSize: 14 }
+                font { family: theme ? theme.fontFamily : "Manrope"; pixelSize: 16 }
             }
         }
     }

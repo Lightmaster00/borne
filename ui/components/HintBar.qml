@@ -52,14 +52,14 @@ Row {
                         anchors.centerIn: parent
                         text: hint.cap
                         color: parent.act === "a" ? bar.theme.accentFg : bar.theme.bg
-                        font { family: bar.theme.displayFont; pixelSize: 15; weight: Font.Bold }
+                        font { family: bar.theme.displayFont; pixelSize: 17; weight: Font.Bold }
                     }
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: hint.modelData[1]
                     color: bar.theme.fgSoft
-                    font { family: bar.theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
+                    font { family: bar.theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
                 }
             }
         }

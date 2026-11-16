@@ -181,6 +181,14 @@ fn main() {
     // Escape during a game: Borne's question, not the emulator's menu.
     quitkey::spawn(app.clone());
 
+    // Profiles named before names took a capital: given one.
+    for p in app.db.profiles() {
+        let c = api::capitalized(&p.name);
+        if c != p.name {
+            app.db.rename_profile(&p.id, &c);
+        }
+    }
+
     // ChimeraOS: Borne's Steam shortcut kept pointing at this copy.
     steam::keep_up_to_date(&app, &layout.resources);
 

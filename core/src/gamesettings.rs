@@ -934,6 +934,11 @@ fn player(
             let section = format!("Pad{n1}");
             let mut v: Vec<(&str, &str, &str)> = map.iter().map(|(k, x)| (section.as_str(), *k, x.as_str())).collect();
             v.push(("InputSources", "SDL", "true"));
+            // DuckStation: most PS1 games read the D-pad only (digital mode); the left stick moves
+            // as the D-pad there.
+            if program == "duckstation" {
+                v.push((section.as_str(), "AnalogDPadInDigitalMode", "true"));
+            }
             ini(&path, &v)
         }
         // Eden / Citron (and Azahar, the same input code): player 1 on the SDL gamepad by its

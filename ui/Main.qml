@@ -77,7 +77,8 @@ Window {
     readonly property bool anyVideo: bgVideos || trailers
     readonly property var activeProfile: status ? status.active_profile : null
     readonly property bool textEntry: screen === "server" || nameEntry.visible
-    readonly property string uiLang: Qt.locale().name.substring(0, 2)
+    // The interface's language: chosen in Settings → Interface, else the system's.
+    readonly property string uiLang: prefs.language !== "auto" ? prefs.language : Qt.locale().name.substring(0, 2)
     property var settings: ({ install_mode: "download", stream: { available: false, error: "" } })
     // Game page
     property var page: null              // API answer for the open game
@@ -124,7 +125,7 @@ Window {
             group_key: g.group_key || "",
             favourite: !!g.favourite, last_played: g.last_played || 0, alt_names: g.alt_names || "",
             // The revision changes when a game's images are corrected, so they are asked again.
-            art: apiBase + "/api/v1/games/" + g.rom_id + "/art/" + artRev + "/",
+            art: apiBase + "/api/v1/games/" + g.rom_id + "/art/" + (artRevs[g.group_key] || 0) + "/",
             art_kinds: "," + (g.art_kinds || []).join(",") + ",",
             // Pixel sizes of the case scans: the box is shaped before the images load.
             front_ar: g.media_sizes && g.media_sizes.front ? g.media_sizes.front[0] / g.media_sizes.front[1] : 0,
@@ -146,7 +147,9 @@ Window {
     onConsoleTintChanged: graphite.accent = consoleTint
     readonly property bool framed: !gameMode
     readonly property real frameMargin: framed ? Math.round(Math.min(width, height) * 0.036) : 0
-    property int artRev: 0
+    // Each game's images' revision: bumped when its own arrive, so only its images reload (never
+    // the whole shelf).
+    property var artRevs: ({})
     property int platformsSeq: 0
     function loadPlatforms() {
         // Only the latest request's answer is used (a profile switch can cross an older one).
@@ -244,6 +247,8 @@ Window {
         })
     }
     Timer { id: libReload; interval: 300; onTriggered: { win.loadPlatforms(); win.loadLibrary(false) } }
+    // Images arriving while a game's page is open: the page refreshed once they settle.
+    Timer { id: pageMediaReload; interval: 2500; onTriggered: if (win.page && win.overlay === "game") win.reloadGame() }
 
     function onDownloadEvent(m) {
         const i = indexByRom[m.rom_id]
@@ -372,7 +377,7 @@ Window {
         running: win.attractAllowed && !win.attract
         onTriggered: if (Date.now() - win.lastActivity >= prefs.attractDelay * 1000) win.attract = true
     }
-    // After a minute alone on screen (prefs.attractRest; 0: never), the video pauses and the games
+    // After a minute alone on screen (prefs.attractRest; 0: never), the video goes on dimmed and the games
     // come back; it stays paused until another game is selected.
     property bool videoRested: false
     Timer {
@@ -1081,7 +1086,9 @@ Window {
             else if (m.type === "stick") { win.padTurnX = m.x; win.padTurnY = m.y }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
-            else if (m.type === "media") { win.artRev++; libReload.restart(); if (win.page && win.overlay === "game") win.reloadGame() }
+            else if (m.type === "media") {
+                if (m.group_key) { const r = Object.assign({}, win.artRevs); r[m.group_key] = (r[m.group_key] || 0) + 1; win.artRevs = r }
+                libReload.restart(); if (win.page && win.overlay === "game") pageMediaReload.restart() }
             else if (m.type === "platforms") win.loadPlatforms()
             else if (m.type === "session") win.onSession(m.session)
             // The save of the game just ended, sent after it (another game can start meanwhile).
@@ -1417,7 +1424,7 @@ Window {
                         : !parent.s ? "" : parent.s.running ? qsTr("Syncing %1/%2").arg(parent.s.done).arg(parent.s.total)
                         : qsTr("Covers… %1").arg(parent.s.covers_pending)
                     color: !win.status || !win.status.online ? theme.bad : theme.fgSoft
-                    font { family: theme.fontFamily; pixelSize: 16 }
+                    font { family: theme.fontFamily; pixelSize: 18 }
                 }
             }
             Rectangle {
@@ -1717,11 +1724,11 @@ Window {
         z: 40
         Column {
             id: hudCol; x: 12; y: 8
-            Text { text: frames.fps + " fps"; color: frames.fps < 55 ? "#f87171" : "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 16; bold: true } }
-            Text { text: "p95 " + frames.p95 + " ms · p99 " + frames.p99 + " ms"; color: "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 12 } }
-            Text { text: "stutters >25 ms: " + frames.jank + " / 10 s"; color: frames.jank > 0 ? "#f87171" : "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 12 } }
-            Text { text: "video: " + win.videoFrames + " frames"; color: "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 12 } }
-            Text { text: win.lastInput; color: "#8b97ab"; font { family: "DejaVu Sans Mono"; pixelSize: 12 } }
+            Text { text: frames.fps + " fps"; color: frames.fps < 55 ? "#f87171" : "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 18; bold: true } }
+            Text { text: "p95 " + frames.p95 + " ms · p99 " + frames.p99 + " ms"; color: "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 15 } }
+            Text { text: "stutters >25 ms: " + frames.jank + " / 10 s"; color: frames.jank > 0 ? "#f87171" : "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 15 } }
+            Text { text: "video: " + win.videoFrames + " frames"; color: "#e8edf5"; font { family: "DejaVu Sans Mono"; pixelSize: 15 } }
+            Text { text: win.lastInput; color: "#8b97ab"; font { family: "DejaVu Sans Mono"; pixelSize: 15 } }
         }
     }
 
@@ -1768,7 +1775,7 @@ Window {
             anchors.centerIn: parent
             text: graphite.input === "keyboard" ? qsTr("Game mode (test) — Esc to go back") : qsTr("Game mode (test) — B to go back")
             color: "#8b97ab"
-            font { family: theme.fontFamily; pixelSize: 16 }
+            font { family: theme.fontFamily; pixelSize: 18 }
         }
     }
 
@@ -1792,7 +1799,8 @@ Window {
         trailers: win.trailers
         trailerUrl: win.pageTrailer
         trailerState: win.pageTrailerState
-        paused: menu.visible || downloadsPanel.visible || !visible
+        // Nothing plays while a game runs (its sound would play under the game's).
+        paused: menu.visible || downloadsPanel.visible || !visible || win.gameMode || !!(win.session && win.session.running)
         facts: win.pageFacts
         shotBase: win.pageGame ? win.apiBase + "/api/v1/games/" + win.pageGame.rom_id + "/screenshots/" : ""
         onAction: (id, payload) => win.pageAction(id, payload)
@@ -1830,7 +1838,8 @@ Window {
     QtObject {
         id: sfx
         readonly property string base: win.uiRoot + "/sounds/" + theme.soundSet + "/"
-        readonly property bool on: prefs.sounds && theme.soundSet !== "" && !bench.running
+        readonly property bool on: prefs.sounds && theme.soundSet !== "" && !bench.running && !win.gameMode
+                                   && !(win.session && win.session.running && !win.session.paused)
         function play(kind) {
             if (!on) return
             const e = kind === "accept" ? sAccept : kind === "back" ? sBack : sMove
@@ -1920,7 +1929,7 @@ Window {
             Column {
                 x: 32; y: 72; width: parent.width * 0.4 - 32; spacing: 14
                 Menu { width: parent.width; theme: win.theme; currentIndex: diag.index; items: diag.items }
-                Text { visible: diag.report !== null; text: qsTr("LAST BENCHMARK"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 12; letterSpacing: 1 } }
+                Text { visible: diag.report !== null; text: qsTr("LAST BENCHMARK"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 15; letterSpacing: 1 } }
                 KeyValues {
                     visible: diag.report !== null; width: parent.width; theme: win.theme; keyWidth: 200
                     rows: diag.report ? [
@@ -1931,7 +1940,7 @@ Window {
                         [qsTr("verdict"), diag.report.verdict, diag.report.verdict.indexOf("OK") === 0 ? "ok" : "bad"]
                     ] : []
                 }
-                Text { visible: diag.reportPath !== ""; width: parent.width; wrapMode: Text.WrapAnywhere; text: qsTr("Saved: %1").arg(diag.reportPath); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 12 } }
+                Text { visible: diag.reportPath !== ""; width: parent.width; wrapMode: Text.WrapAnywhere; text: qsTr("Saved: %1").arg(diag.reportPath); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 15 } }
                 KeyValues {
                     visible: diag.vramTest !== null; width: parent.width; theme: win.theme; keyWidth: 200
                     rows: diag.vramTest ? [[qsTr("VRAM before"), qsTr("%1 MB").arg(diag.vramTest.before)], [qsTr("VRAM in game mode"), qsTr("%1 MB").arg(diag.vramTest.during)], [qsTr("VRAM after"), qsTr("%1 MB").arg(diag.vramTest.after)], [qsTr("freed"), qsTr("%1 MB").arg(diag.vramTest.freed), typeof diag.vramTest.freed === "number" ? "ok" : ""]] : []
@@ -1939,7 +1948,7 @@ Window {
             }
             Column {
                 x: parent.width * 0.4 + 16; y: 72; width: parent.width * 0.6 - 48; spacing: 6
-                Text { text: qsTr("SESSION"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 12; letterSpacing: 1 } }
+                Text { text: qsTr("SESSION"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 15; letterSpacing: 1 } }
                 KeyValues {
                     width: parent.width; theme: win.theme
                     rows: diag.diagData ? [
@@ -1959,7 +1968,7 @@ Window {
                         [qsTr("input"), qsTr("keyboard %1 · gamepad (core) %2").arg(win.inputCounts.keyboard || 0).arg(win.inputCounts.pad || 0)]
                     ] : [["", qsTr("loading…")]]
                 }
-                Text { topPadding: 8; text: qsTr("ENVIRONMENT"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 12; letterSpacing: 1 } }
+                Text { topPadding: 8; text: qsTr("ENVIRONMENT"); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 15; letterSpacing: 1 } }
                 KeyValues { width: parent.width; theme: win.theme; size: 11; keyWidth: 260; rows: diag.diagData ? diag.diagData.env : [] }
             }
         }
@@ -1996,6 +2005,12 @@ Window {
         property int attractDelay: 5          // s without input before the video fills the screen; 0: never
         property int attractRest: 60          // s of full-screen video before the games come back; 0: never
         property int uiScale: 100             // interface size, %
+        property string language: "auto"      // interface language: "auto" (the system's) | "en" | "fr"
+        // Switched at once (the launcher reloads the translation); the library comes back in it.
+        onLanguageChanged: {
+            if (typeof uiLanguage !== "undefined" && uiLanguage) uiLanguage.set(language)
+            libReload.restart()
+        }
         property string motion: "normal"      // "normal" | "reduced"
         property string soundVolume: "medium" // "low" | "medium" | "high"
         property string prompts: "auto"       // buttons shown in the hints: "auto" | "pad" | "keyboard"

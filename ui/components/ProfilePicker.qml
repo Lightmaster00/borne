@@ -73,7 +73,7 @@ Item {
                             visible: !parent.parent.isAdd
                             text: parent.parent.p ? (parent.parent.p.paired ? qsTr("RomM: %1").arg(parent.parent.p.romm_user) : qsTr("Not paired")) : ""
                             color: parent.parent.p && !parent.parent.p.paired ? theme.bad : theme.fgMuted
-                            font { family: theme.fontFamily; pixelSize: 16 }
+                            font { family: theme.fontFamily; pixelSize: 18 }
                         }
                     }
                 }
@@ -83,7 +83,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             text: (picker.serverUrl ? picker.serverUrl + "  ·  " + (picker.online ? qsTr("online") : qsTr("offline")) : "")
             color: picker.online ? theme.fgFaint : theme.bad
-            font { family: theme.fontFamily; pixelSize: 16 }
+            font { family: theme.fontFamily; pixelSize: 18 }
         }
         HintBar {
             anchors.horizontalCenter: parent.horizontalCenter

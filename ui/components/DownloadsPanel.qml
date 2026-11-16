@@ -101,7 +101,7 @@ Rectangle {
                                 width: parent.width * 0.45; horizontalAlignment: Text.AlignRight
                                 text: panel.stateLabel(rowItem.modelData) + (rowItem.modelData.total > 0 && (rowItem.modelData.state === "downloading" || rowItem.modelData.state === "paused") ? " · " + panel.fmt(rowItem.modelData.received) + " / " + panel.fmt(rowItem.modelData.total) : "")
                                 color: rowItem.modelData.state === "failed" ? theme.bad : theme.fgMuted
-                                font { family: theme.fontFamily; pixelSize: 16 }
+                                font { family: theme.fontFamily; pixelSize: 18 }
                             }
                         }
                         Rectangle {
@@ -113,7 +113,7 @@ Rectangle {
                                 width: parent.width * (rowItem.modelData.state === "done" ? 1 : rowItem.modelData.total > 0 ? Math.min(1, rowItem.modelData.received / rowItem.modelData.total) : 0)
                             }
                         }
-                        Text { visible: rowItem.modelData.state === "failed"; width: parent.width; elide: Text.ElideRight; text: CoreText.tr(rowItem.modelData.error || ""); color: theme.bad; font { family: theme.fontFamily; pixelSize: 16 } }
+                        Text { visible: rowItem.modelData.state === "failed"; width: parent.width; elide: Text.ElideRight; text: CoreText.tr(rowItem.modelData.error || ""); color: theme.bad; font { family: theme.fontFamily; pixelSize: 18 } }
                     }
                     Row {
                         id: btns

@@ -38,7 +38,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             text: chip.detail
             color: chip.selected ? "#4A4F5C" : theme.fgFaint
-            font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium }
+            font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium }
         }
         Rectangle {
             visible: chip.badge

@@ -19,7 +19,7 @@ Item {
     property bool trailers: true      // videos may play (the library is on top, trailers allowed)
     property string videoUrl: ""      // "video" style: local file of the game being played
     property bool paused: false
-    property bool rest: false         // the video holds still on its current frame (attract over)
+    property bool rest: false         // attract over: the video goes on, dimmed behind the games (economy)
     property real dim: 0              // extra darkening for pages drawn over it
     property bool scrims: true
     property bool attract: false      // the library has faded out: the video is the subject
@@ -121,11 +121,9 @@ Item {
         anchors.fill: parent
         readonly property bool live: amb.trailers && amb.visible && !amb.paused
                                      && amb.videoUrl !== ""
-        readonly property bool shown: live && (gpPlayer.playbackState === MediaPlayer.PlayingState
-                                               || amb.rest && gpPlayer.playbackState === MediaPlayer.PausedState)
-                                      && amb.framesDecoded > 0
+        readonly property bool shown: live && gpPlayer.playbackState === MediaPlayer.PlayingState && amb.framesDecoded > 0
         visible: opacity > 0
-        opacity: shown ? 1 : 0
+        opacity: shown ? (amb.rest ? 0.45 : 1) : 0
         Behavior on opacity { NumberAnimation { duration: 700; easing.type: Easing.InOutQuad } }
         onLiveChanged: sync()
         Connections { target: amb; function onRestChanged() { gameplay.sync() } }
@@ -136,8 +134,7 @@ Item {
                     amb.framesDecoded = 0
                     gpPlayer.source = amb.videoUrl
                 }
-                if (amb.rest) gpPlayer.pause()
-                else gpPlayer.play()
+                gpPlayer.play()
             } else {
                 gpPlayer.stop()
                 if (amb.videoUrl === "") gpPlayer.source = ""

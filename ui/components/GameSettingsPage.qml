@@ -279,7 +279,7 @@ Item {
                         x: 20; anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text { text: sec.modelData.name; color: sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: Font.DemiBold } }
-                        Text { visible: text !== ""; text: sec.modelData.hint; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 15; weight: Font.Medium } }
+                        Text { visible: text !== ""; text: sec.modelData.hint; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
                     }
                 }
             }
@@ -327,7 +327,7 @@ Item {
                             id: groupTitle
                             text: (rowItem.modelData.title || "").toUpperCase()
                             color: theme.fgFaint
-                            font { family: theme.fontFamily; pixelSize: 15; weight: Font.Bold; letterSpacing: 1.6 }
+                            font { family: theme.fontFamily; pixelSize: 17; weight: Font.Bold; letterSpacing: 1.6 }
                         }
                         Rectangle {
                             anchors { left: groupTitle.right; leftMargin: 16; right: parent.right; rightMargin: 8; verticalCenter: groupTitle.verticalCenter }
@@ -370,7 +370,7 @@ Item {
                                 text: rowItem.modelData.desc || ""
                                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                 color: theme.fgMuted
-                                font { family: theme.fontFamily; pixelSize: 16 }
+                                font { family: theme.fontFamily; pixelSize: 18 }
                             }
                         }
                         Flow {

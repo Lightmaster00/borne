@@ -207,7 +207,7 @@ Item {
                                     text: modelData.sub
                                     elide: Text.ElideRight
                                     color: root.theme.fgMuted
-                                    font { family: root.theme.fontFamily; pixelSize: 15; weight: Font.Medium }
+                                    font { family: root.theme.fontFamily; pixelSize: 17; weight: Font.Medium }
                                 }
                             }
                         }

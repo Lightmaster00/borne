@@ -3472,10 +3472,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Then the video pauses and the games come back, until another game is selected</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No limit</source>
         <translation type="unfinished" />
     </message>
@@ -3581,14 +3577,6 @@
     </message>
     <message>
         <source>Picture</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Videos, look, sounds</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne itself: its videos, size, animations, sounds and the buttons it shows.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -4041,6 +4029,34 @@
     </message>
     <message>
         <source>Borne in Steam</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Then the games come back, the video going on dimmed behind them</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Interface language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also the language games start in, when they have it</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As the system</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Language, videos, look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne itself: its language, videos, size, animations, sounds and the buttons it shows.</source>
         <translation type="unfinished" />
     </message>
 </context>

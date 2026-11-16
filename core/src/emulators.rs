@@ -976,8 +976,32 @@ fn log_tail(p: &Path) -> String {
 /// a .vpk or .zip, given as they are.
 fn vita_content(rom: &Path) -> Option<PathBuf> {
     let ext = rom.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
-    if rom.is_file() && (ext == "vpk" || ext == "zip") {
+    if rom.is_file() && ext == "vpk" {
         return None;
+    }
+    // A .zip with the game at its root goes as it is; another one (NoNpDrm's app/<TITLE ID>/…, a
+    // folder inside) is extracted once next to it, and its game folder given.
+    if rom.is_file() && ext == "zip" {
+        let at_root =
+            std::fs::File::open(rom).ok().and_then(|f| zip::ZipArchive::new(f).ok()).map(|mut z| z.by_name("sce_sys/param.sfo").is_ok());
+        if at_root != Some(false) {
+            return None;
+        }
+        let out = rom.with_extension("");
+        if !out.is_dir() {
+            let tmp = rom.with_extension("extracting");
+            let _ = std::fs::remove_dir_all(&tmp);
+            let ok = std::fs::File::open(rom)
+                .ok()
+                .and_then(|f| zip::ZipArchive::new(f).ok())
+                .map(|mut z| z.extract(&tmp).is_ok())
+                .unwrap_or(false);
+            if !ok || std::fs::rename(&tmp, &out).is_err() {
+                let _ = std::fs::remove_dir_all(&tmp);
+                return None;
+            }
+        }
+        return if out.join("sce_sys/param.sfo").is_file() { Some(out) } else { vita_content(&out) };
     }
     let has = |d: &Path| d.join("sce_sys/param.sfo").is_file();
     if rom.is_dir() && has(rom) {
@@ -1324,6 +1348,19 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                 continue;
             }
             Ok(Some(status)) => {
+                // The program started may hand the game to another process and leave (a launcher
+                // script, an AppImage runtime): the game runs as long as its process group does.
+                // Only then is the session over, so that a second game cannot start beside it.
+                #[cfg(unix)]
+                {
+                    let pgid = s.child.id() as i32;
+                    if unsafe { libc::kill(-pgid, 0) } == 0 {
+                        if s.stopping {
+                            unsafe { libc::kill(-pgid, libc::SIGKILL) };
+                        }
+                        continue;
+                    }
+                }
                 let quick = s.started.elapsed() < Duration::from_secs(8) && !s.stopping;
                 let failure = s.failure.take().or_else(|| {
                     // A last look, for an emulator that wrote its error and quit at once.
@@ -1403,6 +1440,7 @@ pub fn ask_quit(app: &Shared) {
     }
     s.paused = true;
     drop(g);
+    crate::quitkey::hide_game(pid);
     app.emit(json!({ "type": "session", "session": session() }));
     let app = app.clone();
     std::thread::spawn(move || {
@@ -1429,6 +1467,7 @@ pub fn resume(app: &Shared) {
     s.paused = false;
     let bundle = s.bundle.clone();
     drop(g);
+    crate::quitkey::show_game();
     if let Some(b) = bundle {
         let _ = Command::new("open").arg("-a").arg(b).status();
     }

@@ -11,6 +11,7 @@
 #include <QLocale>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QSettings>
 #include <QTranslator>
 #include <QUrl>
 #include <QVariantMap>
@@ -117,6 +118,29 @@ private:
     bool m_active = false;
 };
 
+// The interface's language, chosen in Settings → Interface ("auto": the system's), switched at
+// once: the translation reloaded and every text of the page translated again.
+class UiLanguage : public QObject
+{
+    Q_OBJECT
+public:
+    UiLanguage(QTranslator *t, QString dir) : m_t(t), m_dir(std::move(dir)) {}
+    QQmlApplicationEngine *engine = nullptr;
+    Q_INVOKABLE void set(const QString &code)
+    {
+        QLocale::setDefault(code == QStringLiteral("auto") || code.isEmpty() ? QLocale::system() : QLocale(code));
+        QCoreApplication::removeTranslator(m_t);
+        if (m_t->load(QLocale(), QStringLiteral("borne"), QStringLiteral("_"), m_dir))
+            QCoreApplication::installTranslator(m_t);
+        if (engine)
+            engine->retranslate();
+    }
+
+private:
+    QTranslator *m_t;
+    QString m_dir;
+};
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -133,7 +157,13 @@ int main(int argc, char *argv[])
 
     // UI language: the system's, or BORNE_LANG (e.g. "en", "fr") to force one.
     // English is the source language; other languages come from ui/i18n/borne_<lang>.qm.
-    const QString lang = qEnvironmentVariable("BORNE_LANG");
+    // The one chosen in Borne (its settings, written by the page: ui/language) comes first.
+    QString lang = qEnvironmentVariable("BORNE_LANG");
+    if (lang.isEmpty()) {
+        const QString chosen = QSettings().value(QStringLiteral("ui/language"), QStringLiteral("auto")).toString();
+        if (chosen != QStringLiteral("auto"))
+            lang = chosen;
+    }
     if (!lang.isEmpty())
         QLocale::setDefault(QLocale(lang));
     QTranslator translator;
@@ -154,6 +184,9 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     QuitKey quitKey;
     engine.rootContext()->setContextProperty(QStringLiteral("quitKey"), &quitKey);
+    UiLanguage uiLanguage(&translator, ui + QStringLiteral("/i18n"));
+    uiLanguage.engine = &engine;
+    engine.rootContext()->setContextProperty(QStringLiteral("uiLanguage"), &uiLanguage);
     // QML module for the theme API: import Borne.Theme
     engine.addImportPath(ui + QStringLiteral("/imports"));
     engine.setInitialProperties({
