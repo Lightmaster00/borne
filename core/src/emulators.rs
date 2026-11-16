@@ -280,6 +280,14 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
             }
         }
         "xenia" => xdg_data.join("Xenia"),
+        // Its PS Vita file system (ux0, vs0…).
+        "vita3k" => {
+            if mac_os {
+                mac.join("Vita3K/Vita3K/fs")
+            } else {
+                xdg_data.join("Vita3K/Vita3K")
+            }
+        }
         "azahar" => {
             if mac_os {
                 mac.join("Azahar")
@@ -587,21 +595,24 @@ fn command(
             &[("MemoryCards", "Card1Type", "PerGameFileTitle")],
         )?;
     }
-    let (index, pad, guid) = {
-        // pad_index reads the pad state itself: asked before taking its lock.
-        let count = app.pads.lock().unwrap_or_else(|e| e.into_inner()).pads.len();
-        let i = crate::controls::pad_index(app, &group, count);
-        let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
-        (i, s.pads.get(i).cloned(), s.guids.get(i).cloned())
-    };
+    let players = crate::controls::players(app, &group);
     let sources = crate::controls::sources(app, &group);
     let src = |logical: &str| sources.iter().find(|(l, _)| *l == logical).and_then(|(_, p)| *p);
-    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, index, pad.as_deref(), guid.as_deref(), &src)?;
+    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, &players, &src)?;
     let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
     let renamed = renamed_rom(app, p, rom)?;
     let rom = renamed.as_deref().unwrap_or(rom);
     let mut args: Vec<String> = vec![];
+    // Vita3K installs a .vpk and starts it; once installed, the game starts by its title ID
+    // (no second installation).
+    let vita = if p.id == "vita3k" { vita_installed(&data_dir(app, &profile, &p.id), rom) } else { None };
     for a in &p.args {
+        if a == "{rom}" {
+            if let Some(tid) = &vita {
+                args.extend(["-r".to_string(), tid.clone()]);
+                continue;
+            }
+        }
         let v = a
             .replace("{rom}", &rom.to_string_lossy())
             .replace("{core}", &core.as_ref().map(|c| c.to_string_lossy().into_owned()).unwrap_or_default())
@@ -754,6 +765,18 @@ fn log_tail(p: &Path) -> String {
     out.join(" · ").chars().take(300).collect()
 }
 
+/// A PS Vita game's title ID (PCSE00001…), from the param.sfo of its .vpk (a zip), when Vita3K
+/// has it installed already (`ux0/app/<ID>` in its file system).
+fn vita_installed(data: &Path, vpk: &Path) -> Option<String> {
+    let f = std::fs::File::open(vpk).ok()?;
+    let mut z = zip::ZipArchive::new(f).ok()?;
+    let mut sfo = Vec::new();
+    std::io::Read::read_to_end(&mut z.by_name("sce_sys/param.sfo").ok()?, &mut sfo).ok()?;
+    let tid = crate::savesync::sfo_value(&sfo, "TITLE_ID")?;
+    let ok = tid.len() == 9 && tid.chars().all(|c| c.is_ascii_alphanumeric());
+    (ok && data.join("ux0/app").join(&tid).is_dir()).then_some(tid)
+}
+
 /// The title ID of a CIA, read from its TMD (CIA header, then certificate chain and ticket,
 /// each aligned to 64 bytes; the TMD's signature block, then the ID at 0x4C past it).
 fn cia_title_id(path: &Path) -> Option<u64> {
@@ -874,6 +897,9 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         }
         r => r,
     };
+    if crate::stream::is_temporary(app, rom_id) {
+        crate::stream::mark_temporary(app, rom_id); // used now: kept longest
+    }
     let found = find(app, &p.id);
     let core_missing = e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false);
     if found.is_none() || core_missing {
@@ -1186,6 +1212,31 @@ pub fn stop() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn vita_games_start_by_title_once_installed() {
+        let d = std::env::temp_dir().join(format!("borne-vita-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        let mut sfo = b"\0PSF".to_vec();
+        for v in [1u32, 36, 48, 1] {
+            sfo.extend(v.to_le_bytes());
+        }
+        sfo.extend(0u16.to_le_bytes());
+        sfo.extend(0x0204u16.to_le_bytes());
+        for v in [10u32, 12, 0] {
+            sfo.extend(v.to_le_bytes());
+        }
+        sfo.extend(b"TITLE_ID\0\0\0\0PCSE00001\0\0\0");
+        let vpk = d.join("Game.vpk");
+        let mut z = zip::ZipWriter::new(std::fs::File::create(&vpk).unwrap());
+        z.start_file("sce_sys/param.sfo", zip::write::SimpleFileOptions::default()).unwrap();
+        std::io::Write::write_all(&mut z, &sfo).unwrap();
+        z.finish().unwrap();
+        assert_eq!(vita_installed(&d, &vpk), None); // not installed: the .vpk is given
+        std::fs::create_dir_all(d.join("ux0/app/PCSE00001")).unwrap();
+        assert_eq!(vita_installed(&d, &vpk).as_deref(), Some("PCSE00001"));
+        let _ = std::fs::remove_dir_all(d);
+    }
 
     #[test]
     fn cia_title_id_is_read_from_its_tmd() {

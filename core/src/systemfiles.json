@@ -238,6 +238,19 @@
           "dc_flash.bin"
         ]
       }
+    ],
+    "psvita": [
+      {
+        "id": "firmware",
+        "name": "PS Vita firmware (PSVUPDAT.PUP) and fonts (PSP2UPDAT.PUP)",
+        "kind": "vita-pup",
+        "required": true,
+        "multi": true,
+        "names": [
+          "PSVUPDAT.PUP",
+          "PSP2UPDAT.PUP"
+        ]
+      }
     ]
   }
 }

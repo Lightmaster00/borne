@@ -2,6 +2,46 @@
   "_comment": "Emulators Borne installs, configures and starts. 'programs' says where each program comes from on each system and how it is started ({rom}, {core}, {config}, {lang_dolphin}); 'consoles' lists, per console, the choices offered in Settings -> Emulators (the first one is the default). Read by core/src/emulators.rs and core/src/emuinstall.rs. A console with an empty list has no usable emulator yet (Xbox One).",
   "programs": [
     {
+      "id": "vita3k",
+      "name": "Vita3K",
+      "args": [
+        "-F",
+        "--frontend",
+        "sdl",
+        "{rom}"
+      ],
+      "binaries": [
+        "Vita3K",
+        "vita3k"
+      ],
+      "mac_apps": [
+        "Vita3K.app/Contents/MacOS/Vita3K"
+      ],
+      "fails": [
+        "is not a supported content type",
+        "needs an installed app to run",
+        "Failed to install"
+      ],
+      "install": {
+        "linux": {
+          "type": "github",
+          "repo": "Vita3K/Vita3K",
+          "has": [
+            "x86_64"
+          ],
+          "ends": ".appimage"
+        },
+        "macos": {
+          "type": "github",
+          "repo": "Vita3K/Vita3K",
+          "has": [
+            "macos-arm64"
+          ],
+          "ends": ".dmg"
+        }
+      }
+    },
+    {
       "id": "retroarch",
       "name": "RetroArch",
       "args": [
@@ -822,6 +862,12 @@
       [
         "fbneo",
         "FinalBurn Neo"
+      ]
+    ],
+    "psvita": [
+      [
+        "vita3k",
+        "Vita3K"
       ]
     ]
   }

@@ -63,13 +63,15 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 - **Game page**: the trailer, the game's logo, the languages it really exists in (choosing one
   chooses the version), Play, favourite, and the game's own settings.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
-  **play from the network** (Linux): only the games you pick are mounted, read from RomM on demand.
+  **play from the network**: on Linux only the games you pick are mounted, read from RomM on demand;
+  on macOS they are downloaded as temporary copies, the least recently played removed first past
+  the cache size.
   Games stored as zip or 7z on RomM are extracted (arcade sets stay zipped), and downloaded rather
   than played from the network.
 - **Emulators managed for you**: one per console, chosen in Settings → Emulators — RetroArch cores
   (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation, Flycast, PPSSPP…), Dolphin, PCSX2, DuckStation,
   Azahar (3DS), Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary
-  (Xbox 360, Linux).
+  (Xbox 360, Linux), Vita3K (PS Vita).
   Borne downloads each from its official source as soon as a console appears in your library,
   configures it (no first-run wizard, BIOS and keys put in place, fullscreen, the controller set for
   GameCube, Wii Remote and Nunchuk, PlayStation, Switch, 3DS…) and keeps it up to date; you never

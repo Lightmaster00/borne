@@ -580,6 +580,16 @@ blocks a launch just because a game was not tested or a community database rates
 - Pads: Eden and Citron bind the pad's raw controls, taken from SDL_GameControllerDB (bundled) for
   the connected pad; Azahar reads it through SDL's game-controller layer; RPCS3 gets every control
   in its own names. With no pad chosen for a game, the pad last used in Borne is given to it.
+- Local multiplayer: every connected pad gets a player (up to four) in Dolphin (GameCube pads and
+  Wii Remotes), PCSX2, DuckStation, Eden, Citron, Ryujinx and RPCS3; player 1 has the game's
+  controls. The pad chosen for a game is remembered by name and GUID, found again wherever it is
+  plugged. Pads are numbered the way each emulator counts them (SDL's list for PCSX2/DuckStation,
+  per kind for the others).
+- shadPS4 gets the game's controls in its input file (default and each game's).
+- PS Vita: Vita3K installs a .vpk and starts it (SDL frontend, fullscreen), then starts it by title
+  ID; its firmware and fonts (PSVUPDAT.PUP, PSP2UPDAT.PUP) are installed by Vita3K once.
+- macOS has no virtual mount: playing from the network downloads a temporary copy; past the cache
+  size the least recently played copies are removed (never the one in play).
 - A .cia is installed into Azahar once (`azahar -i`), then its installed program is started.
 - A .rar is extracted by the system's bsdtar, unrar or 7z. Emulator installations check the
   free space first. Release lists are asked with their ETag (cached), not to spend GitHub's hourly

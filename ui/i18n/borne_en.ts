@@ -2542,6 +2542,10 @@
         <source>%1 is compressed on RomM: it is downloaded instead.</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>%1 is downloaded to be played: a temporary copy, removed first when space is needed.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3673,6 +3677,22 @@
     </message>
     <message>
         <source>Borne installs the emulators your consoles need and their new versions, never during a game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne downloads the game you pick as a temporary copy; the least recently played go first when the cache is full.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nothing to tidy: the space used stays under the cache size</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games you play often stay ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The first start waits for the download</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -530,8 +530,12 @@ Item {
                         theme: page.theme
                         title: qsTr("Mount")
                         badge: page.installMode === "stream" ? qsTr("Current") : page.streamAvailable ? "" : qsTr("Linux only")
-                        summary: qsTr("Borne reads the game from RomM while you play. Only games you pick are exposed.")
-                        points: [qsTr("Starts in seconds, even for large games"), qsTr("Keeps the disk free; a small cache speeds up replays"), qsTr("Needs the server reachable during play")]
+                        summary: Qt.platform.os === "osx"
+                                 ? qsTr("Borne downloads the game you pick as a temporary copy; the least recently played go first when the cache is full.")
+                                 : qsTr("Borne reads the game from RomM while you play. Only games you pick are exposed.")
+                        points: Qt.platform.os === "osx"
+                                ? [qsTr("Nothing to tidy: the space used stays under the cache size"), qsTr("Games you play often stay ready"), qsTr("The first start waits for the download")]
+                                : [qsTr("Starts in seconds, even for large games"), qsTr("Keeps the disk free; a small cache speeds up replays"), qsTr("Needs the server reachable during play")]
                         note: !page.streamAvailable && page.settings && page.settings.stream.error ? qsTr("Unavailable here: %1").arg(CoreText.tr(page.settings.stream.error)) : ""
                         selected: page.installMode === "stream"
                         disabled: !page.streamAvailable

@@ -15,7 +15,7 @@ pub const BUTTONS: [(&str, u8); 10] =
 const OTHERS: [(&str, u8); 6] = [("up", 4), ("down", 5), ("left", 6), ("right", 7), ("l3", 14), ("r3", 15)];
 
 /// The programs whose controller Borne writes (the others read the pad as they find it).
-const APPLIES: [&str; 9] = ["retroarch", "dolphin", "pcsx2", "duckstation", "eden", "citron", "ryubing", "rpcs3", "azahar"];
+const APPLIES: [&str; 10] = ["retroarch", "dolphin", "pcsx2", "duckstation", "eden", "citron", "ryubing", "rpcs3", "azahar", "shadps4"];
 
 /// For each pad-space button (a, b, x, y, l, r, l2, r2, start, select), the pad button that gives
 /// it in this game, or None when the game's controls leave it on no button.
@@ -24,17 +24,44 @@ pub fn sources(app: &Shared, group: &str) -> Vec<(&'static str, Option<&'static 
     BUTTONS.iter().map(|(logical, id)| (*logical, m.iter().find(|(_, target)| target == id).map(|(pad, _)| *pad))).collect()
 }
 
-/// Player 1's controller for this game: its index among the connected pads (0 when automatic).
-pub fn pad_index(app: &Shared, group: &str, count: usize) -> usize {
-    get(app, group, "pad")
-        .0
-        .parse::<usize>()
-        .ok()
-        .and_then(|n| n.checked_sub(1))
-        .filter(|i| *i < count)
-        // None chosen: the pad last used in Borne, the one in the player's hands.
-        .or_else(|| app.pads.lock().unwrap_or_else(|e| e.into_inner()).last.filter(|i| *i < count))
-        .unwrap_or(0)
+/// Player 1's controller for this game, among the `pads` connected now (with their GUIDs): the
+/// pad chosen for it, found again by name and GUID wherever it is plugged now; the pad last used
+/// in Borne when none was chosen (the one in the player's hands); else the first.
+pub fn pad_index(app: &Shared, group: &str, pads: &[String], guids: &[String]) -> usize {
+    let count = pads.len();
+    let chosen = get(app, group, "pad").0.parse::<usize>().ok().and_then(|n| n.checked_sub(1));
+    let id = app.db.setting(&key(group, "pad.id")).unwrap_or_default();
+    if chosen.is_some() && !id.is_empty() {
+        let at = |i: usize| format!("{}|{}", pads[i], guids.get(i).map(String::as_str).unwrap_or(""));
+        // The same pad at the place chosen, else the first of its kind.
+        if let Some(i) = chosen.filter(|i| *i < count && at(*i) == id).or_else(|| (0..count).find(|i| at(*i) == id)) {
+            return i;
+        }
+    }
+    chosen.filter(|i| *i < count).or_else(|| app.pads.lock().unwrap_or_else(|e| e.into_inner()).last.filter(|i| *i < count)).unwrap_or(0)
+}
+
+/// The players of a game: player 1's pad first, then the other connected pads in order (local
+/// multiplayer), up to four.
+pub fn players(app: &Shared, group: &str) -> Vec<crate::gamesettings::PadRef> {
+    let (pads, guids) = {
+        let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
+        (s.pads.clone(), s.guids.clone())
+    };
+    if pads.is_empty() {
+        return vec![];
+    }
+    let first = pad_index(app, group, &pads, &guids);
+    let order = std::iter::once(first).chain((0..pads.len()).filter(|i| *i != first));
+    order
+        .take(4)
+        .map(|i| crate::gamesettings::PadRef {
+            index: i,
+            name: pads[i].clone(),
+            guid: guids.get(i).cloned(),
+            rank: pads[..=i].iter().filter(|n| **n == pads[i]).count(),
+        })
+        .collect()
 }
 
 /// RetroArch's names of a core's library: its remaps live in a folder of that name. The display
@@ -106,12 +133,22 @@ pub fn set(app: &Shared, group: &str, k: &str, value: &str) -> Result<(), String
     }
     if value == "default" || value == vals[0] {
         app.db.set_setting(&key(group, k), "");
+        if k == "pad" {
+            app.db.set_setting(&key(group, "pad.id"), "");
+        }
         return Ok(());
     }
     if !vals.iter().any(|v| v == value) {
         return Err("unknown value".into());
     }
     app.db.set_setting(&key(group, k), value);
+    if k == "pad" {
+        // The pad itself is remembered (name and GUID), not only its place.
+        let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
+        let i = value.parse::<usize>().unwrap_or(1).saturating_sub(1);
+        let id = s.pads.get(i).map(|n| format!("{n}|{}", s.guids.get(i).map(String::as_str).unwrap_or(""))).unwrap_or_default();
+        app.db.set_setting(&key(group, "pad.id"), &id);
+    }
     Ok(())
 }
 
@@ -144,9 +181,9 @@ pub fn retroarch(app: &Shared, group: &str, remaps: &Path, core: &str, display: 
         ("input_remapping_directory".into(), remaps.to_string_lossy().replace('"', "")),
         ("input_player1_analog_dpad_mode".into(), if get(app, group, "stick").0 == "dpad" { "1" } else { "0" }.into()),
     ];
-    let pad = get(app, group, "pad").0;
-    if let Ok(n) = pad.parse::<u32>() {
-        v.push(("input_player1_joypad_index".into(), (n - 1).to_string()));
+    if get(app, group, "pad").0.parse::<u32>().is_ok() {
+        let first = players(app, group).first().map(|p| p.index).unwrap_or(0);
+        v.push(("input_player1_joypad_index".into(), first.to_string()));
     }
     let stem = rom.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
     let mut text = String::from("input_remap_port_p1 = \"0\"\n");

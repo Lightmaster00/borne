@@ -367,6 +367,7 @@ Window {
     function link(g) {
         api("POST", "/api/v1/games/" + g.rom_id + "/link", {}, function (r, err) {
             if (err) toasts.show(err, "error")
+            else if (r && r.temporary) toasts.show(qsTr("%1 is downloaded to be played: a temporary copy, removed first when space is needed.").arg(g.name), "info")
             else if (r && r.downloading) toasts.show(qsTr("%1 is compressed on RomM: it is downloaded instead.").arg(g.name), "info")
             else toasts.show(qsTr("%1 is ready to play from the network.").arg(g.name), "ok")
             reloadGame(); libReload.restart()

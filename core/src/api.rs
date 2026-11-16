@@ -1135,6 +1135,14 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     Ok(id) => ok(req, json!({ "downloading": id })),
                     Err(e) => err(req, 400, &e),
                 },
+                // No virtual mount here: a temporary copy, downloaded now.
+                Err(e) if e == stream::TEMPORARY => match downloads::enqueue(app, rom_id) {
+                    Ok(id) => {
+                        stream::mark_temporary(app, rom_id);
+                        ok(req, json!({ "downloading": id, "temporary": true }))
+                    }
+                    Err(e) => err(req, 400, &e),
+                },
                 Err(e) => err(req, 400, &e),
             },
             Err(_) => err(req, 400, "invalid identifier"),

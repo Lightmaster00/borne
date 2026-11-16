@@ -18,15 +18,20 @@ use std::time::{Duration, Instant};
 const MAIN_EXT: &[&str] = &[
     "m3u", "cue", "gdi", "cdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md", "gen", "smd", "bin", "sfc",
     "smc", "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce", "ws", "wsc", "ngp", "ngc",
-    "a26", "lnx", "vb", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min", "cia",
+    "a26", "lnx", "vb", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min", "cia", "vpk",
 ];
 /// Consoles whose games are archives by nature (arcade sets read zipped by MAME and FinalBurn):
 /// kept as they are. Every other console's zip or 7z is extracted, as the standalone emulators
 /// (Azahar, Eden, Dolphin…) do not read archives.
+/// The size of a folder's files (links not followed).
+pub fn dir_size(dir: &Path) -> u64 {
+    walk_size(dir)
+}
+
 pub fn keeps_archive(platform: &str) -> bool {
     matches!(
         platform,
-        "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave"
+        "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave" | "psvita"
     )
 }
 
@@ -107,6 +112,8 @@ pub fn spawn_worker(app: Shared) {
 }
 
 pub fn enqueue(app: &Shared, rom_id: i64) -> Result<i64, String> {
+    // Asked for itself: a kept copy, not a temporary one (the network route marks it after).
+    crate::stream::clear_temporary(app, rom_id);
     let game = app.db.game(rom_id).ok_or("unknown game")?;
     if game.local_state == "local" {
         return Err("game already installed".into());
@@ -190,6 +197,10 @@ fn run(app: &Shared, id: i64, rom_id: i64) {
                 l.retain(|r| *r != rom_id);
                 w
             };
+            if crate::stream::is_temporary(app, rom_id) {
+                crate::stream::mark_temporary(app, rom_id);
+                crate::stream::evict_temporary(app, rom_id);
+            }
             if wanted {
                 if let Err(e) = crate::emulators::play(app, rom_id) {
                     app.emit(serde_json::json!({ "type": "session", "session": { "running": false, "error": e } }));

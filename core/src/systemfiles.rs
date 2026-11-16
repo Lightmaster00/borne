@@ -607,6 +607,30 @@ pub fn prepare(
                     copy_if_changed(f, &reg.join(f.file_name().unwrap()).join("00"))?;
                 }
             }
+            // PS Vita firmware and its font package, installed by Vita3K itself, once per file.
+            ("vita-pup", "vita3k") => {
+                for f in &fs {
+                    let marker = data.join(format!(".borne-{}", f.file_name().unwrap().to_string_lossy()));
+                    let stamp = f.metadata().map(|m| m.len().to_string()).unwrap_or_default();
+                    if std::fs::read_to_string(&marker).ok().as_deref() == Some(stamp.as_str()) {
+                        continue;
+                    }
+                    let Some(exe) = exe else { continue };
+                    let st = std::process::Command::new(exe)
+                        .arg("--firmware")
+                        .arg(f)
+                        .env("APPIMAGE_EXTRACT_AND_RUN", "1")
+                        .envs(env.iter().cloned())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
+                        .status()
+                        .map_err(|e| format!("Vita3K could not install the firmware: {e}"))?;
+                    if !st.success() {
+                        return Err("Vita3K could not install the PS Vita firmware".into());
+                    }
+                    let _ = std::fs::write(&marker, stamp);
+                }
+            }
             ("ps4-modules", "shadps4") => {
                 for f in &fs {
                     copy_if_changed(f, &data.join("sys_modules").join(f.file_name().unwrap()))?;

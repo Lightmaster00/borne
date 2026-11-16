@@ -497,16 +497,162 @@ pub fn emu_apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Val
 /// on the gamepad without being set up: player 1 on the chosen pad (`index`, `pad`, `guid` as SDL
 /// sees it), each console button on the pad button of the same place, as the game's controls say
 /// (`src`: which pad button gives each pad-space button, None when none does; see controls.rs).
+/// A connected pad given to a player: its place among the pads, its name, its SDL GUID, and its
+/// rank among the pads of the same name (1 for the first), as RPCS3 numbers them.
+#[derive(Clone, Debug, Default)]
+pub struct PadRef {
+    pub index: usize,
+    pub name: String,
+    pub guid: Option<String>,
+    pub rank: usize,
+}
+
+/// The pads of a game, player 1 first (with the game's controls, `src`), the others as they are
+/// (local multiplayer, up to four). Written before each game.
 pub fn controllers(
     program: &str,
     data: &Path,
     userdir: &Path,
+    players: &[PadRef],
+    src: &dyn Fn(&str) -> Option<&'static str>,
+) -> Result<(), String> {
+    let same = |b: &str| crate::controls::BUTTONS.iter().find(|x| x.0 == b).map(|x| x.0);
+    if program == "rpcs3" {
+        // One file for every player.
+        let path = data.join("input_configs/global/Default.yml");
+        let _ = std::fs::create_dir_all(path.parent().unwrap());
+        let mut yml = String::new();
+        for (slot, p) in players.iter().take(4).enumerate() {
+            let s: &dyn Fn(&str) -> Option<&'static str> = if slot == 0 { src } else { &same };
+            yml.push_str(&rpcs3_player(slot, p, s));
+        }
+        if yml.is_empty() {
+            return Ok(());
+        }
+        return std::fs::write(&path, yml).map_err(|e| e.to_string());
+    }
+    if program == "shadps4" {
+        return if players.is_empty() { Ok(()) } else { shadps4_controls(data, src) };
+    }
+    for (slot, p) in players.iter().take(4).enumerate() {
+        // The 3DS has one player.
+        if slot > 0 && program == "azahar" {
+            break;
+        }
+        let s: &dyn Fn(&str) -> Option<&'static str> = if slot == 0 { src } else { &same };
+        // PCSX2 and DuckStation number pads in SDL's list ("SDL-1"); Dolphin, the yuzu family,
+        // Azahar and Ryujinx count among the pads of the same kind ("SDL/0/<name>", "port:0").
+        let number = if matches!(program, "pcsx2" | "duckstation") { p.index } else { p.rank.max(1) - 1 };
+        player(program, data, userdir, slot, number, Some(p.name.as_str()), p.guid.as_deref(), s)?;
+    }
+    Ok(())
+}
+
+/// shadPS4: its input file ("output = input" lines, shadPS4's names from
+/// src/input/input_handler.h), the keyboard as shadPS4 sets it and the pad by the game's controls.
+/// Written as the default and over each game's own file (made from the default by shadPS4).
+fn shadps4_controls(data: &Path, src: &dyn Fn(&str) -> Option<&'static str>) -> Result<(), String> {
+    let n = |b: &str| match b {
+        "a" => "cross",
+        "b" => "circle",
+        "x" => "square",
+        "y" => "triangle",
+        "l" => "l1",
+        "r" => "r1",
+        "l2" => "l2",
+        "r2" => "r2",
+        "start" => "options",
+        _ => "back",
+    };
+    let mut t = String::from(
+        "# Written by Borne before each game: the controls are set in Borne.\n\n\
+         triangle = c\ncircle = b\ncross = n\nsquare = v\nl1 = q\nr1 = u\nl2 = e\nr2 = o\nl3 = x\nr3 = m\n\
+         options = enter\ntouchpad_center = space\npad_up = up\npad_down = down\npad_left = left\npad_right = right\n\
+         axis_left_x_minus = a\naxis_left_x_plus = d\naxis_left_y_minus = w\naxis_left_y_plus = s\n\
+         axis_right_x_minus = j\naxis_right_x_plus = l\naxis_right_y_minus = i\naxis_right_y_plus = k\n\n",
+    );
+    // PS4 button ← the pad button that gives it (the PS4 button's own pad-space name first).
+    for (out, logical) in [
+        ("cross", "a"),
+        ("circle", "b"),
+        ("square", "x"),
+        ("triangle", "y"),
+        ("l1", "l"),
+        ("r1", "r"),
+        ("l2", "l2"),
+        ("r2", "r2"),
+        ("options", "start"),
+        ("touchpad_center", "select"),
+    ] {
+        if let Some(pad) = src(logical) {
+            t.push_str(&format!("{out} = {}\n", n(pad)));
+        }
+    }
+    t.push_str(
+        "l3 = l3\nr3 = r3\npad_up = pad_up\npad_down = pad_down\npad_left = pad_left\npad_right = pad_right\n\
+         axis_left_x = axis_left_x\naxis_left_y = axis_left_y\naxis_right_x = axis_right_x\naxis_right_y = axis_right_y\n\
+         analog_deadzone = leftjoystick, 5, 127\nanalog_deadzone = rightjoystick, 5, 127\n",
+    );
+    let dir = data.join("input_config");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    for e in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+        let p = e.path();
+        if p.extension().map(|x| x == "ini").unwrap_or(false) && p.file_stem().map(|s| s != "global").unwrap_or(false) {
+            std::fs::write(&p, &t).map_err(|e| e.to_string())?;
+        }
+    }
+    std::fs::write(dir.join("default.ini"), &t).map_err(|e| e.to_string())
+}
+
+/// RPCS3's settings of one player (`Player N Input`), every control written: one left out stays
+/// unbound (RPCS3's defaults are empty). Names from rpcs3/Input/sdl_pad_handler.cpp; pads are
+/// numbered per name ("Xbox Controller 2" for the second of that name).
+fn rpcs3_player(slot: usize, p: &PadRef, src: &dyn Fn(&str) -> Option<&'static str>) -> String {
+    let n = |b: &str| match b {
+        "a" => "South",
+        "b" => "East",
+        "x" => "West",
+        "y" => "North",
+        "l" => "LB",
+        "r" => "RB",
+        "l2" => "LT",
+        "r2" => "RT",
+        "start" => "Start",
+        _ => "Back",
+    };
+    let b = |logical: &str| format!("\"{}\"", src(logical).map(n).unwrap_or_default());
+    format!(
+        "Player {} Input:\n  Handler: SDL\n  Device: {} {}\n  Config:\n    Left Stick Left: \"LS X-\"\n    Left Stick Down: \"LS Y-\"\n    Left Stick Right: \"LS X+\"\n    Left Stick Up: \"LS Y+\"\n    Right Stick Left: \"RS X-\"\n    Right Stick Down: \"RS Y-\"\n    Right Stick Right: \"RS X+\"\n    Right Stick Up: \"RS Y+\"\n    Start: {}\n    Select: {}\n    PS Button: \"Guide\"\n    Square: {}\n    Cross: {}\n    Circle: {}\n    Triangle: {}\n    Left: \"Left\"\n    Down: \"Down\"\n    Right: \"Right\"\n    Up: \"Up\"\n    R1: {}\n    R2: {}\n    R3: \"RS\"\n    L1: {}\n    L2: {}\n    L3: \"LS\"\n  Buddy Device: \"\"\n",
+        slot + 1,
+        p.name,
+        p.rank.max(1),
+        b("start"),
+        b("select"),
+        b("x"),
+        b("a"),
+        b("b"),
+        b("y"),
+        b("r"),
+        b("r2"),
+        b("l"),
+        b("l2")
+    )
+}
+
+/// One player's pad (`slot`, 0 for player 1) in a standalone emulator's settings.
+#[allow(clippy::too_many_arguments)]
+fn player(
+    program: &str,
+    data: &Path,
+    userdir: &Path,
+    slot: usize,
     index: usize,
     pad: Option<&str>,
     guid: Option<&str>,
     src: &dyn Fn(&str) -> Option<&'static str>,
 ) -> Result<(), String> {
     let ini = crate::emulators::ini_set;
+    let n1 = slot + 1;
     // A console button bound to the pad button that gives `logical`, in the emulator's own names
     // (`names`: pad-space name → its word); "" when no pad button does.
     let bind = |logical: &str, names: &dyn Fn(&str) -> String| src(logical).map(names).unwrap_or_default();
@@ -557,7 +703,8 @@ pub fn controllers(
                 ("D-Pad/Left".into(), q("Pad W")),
                 ("D-Pad/Right".into(), q("Pad E")),
             ];
-            let v: Vec<(&str, &str, &str)> = pairs.iter().map(|(k, x)| ("GCPad1", k.as_str(), x.as_str())).collect();
+            let section = format!("GCPad{n1}");
+            let v: Vec<(&str, &str, &str)> = pairs.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
             ini(&path, &v)?;
             // Wii: an emulated Wii Remote with its Nunchuk on the same pad, the pointer on the
             // right stick (most Wii games need both); the other three remotes off.
@@ -593,8 +740,12 @@ pub fn controllers(
                 ("Nunchuk/Shake/Y".into(), bind("r", &n)),
                 ("Nunchuk/Shake/Z".into(), bind("r", &n)),
             ];
-            let mut v: Vec<(&str, &str, &str)> = wii.iter().map(|(k, x)| ("Wiimote1", k.as_str(), x.as_str())).collect();
-            v.extend([("Wiimote2", "Source", "0"), ("Wiimote3", "Source", "0"), ("Wiimote4", "Source", "0")]);
+            let section = format!("Wiimote{n1}");
+            let mut v: Vec<(&str, &str, &str)> = wii.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
+            // Player 1 turns the others off; each further player turns its own on after.
+            if slot == 0 {
+                v.extend([("Wiimote2", "Source", "0"), ("Wiimote3", "Source", "0"), ("Wiimote4", "Source", "0")]);
+            }
             ini(&userdir.join("Config/WiimoteNew.ini"), &v)
         }
         "pcsx2" | "duckstation" => {
@@ -646,7 +797,8 @@ pub fn controllers(
                 ("SmallMotor", fixed("SmallMotor")),
                 ("LargeMotor", fixed("LargeMotor")),
             ];
-            let mut v: Vec<(&str, &str, &str)> = map.iter().map(|(k, x)| ("Pad1", *k, x.as_str())).collect();
+            let section = format!("Pad{n1}");
+            let mut v: Vec<(&str, &str, &str)> = map.iter().map(|(k, x)| (section.as_str(), *k, x.as_str())).collect();
             v.push(("InputSources", "SDL", "true"));
             ini(&path, &v)
         }
@@ -666,6 +818,8 @@ pub fn controllers(
                 _ if cfg!(target_os = "macos") => (data.join("config/qt-config.ini"), "player_0_"),
                 _ => (userdir.join("config").join(program).join("qt-config.ini"), "player_0_"),
             };
+            let player_prefix = format!("player_{slot}_");
+            let prefix = if program == "azahar" { prefix } else { player_prefix.as_str() };
             let p = |extra: &str| format!("\"{extra},guid:{guid},port:{index},engine:sdl\"");
             // Azahar reads the controls through SDL's game-controller layer (api:controller): the
             // standard numbers fit every pad. Eden and Citron bind the pad's raw controls, which
@@ -800,51 +954,13 @@ pub fn controllers(
                                  "dpad_up": "DpadUp", "dpad_down": "DpadDown", "dpad_left": "DpadLeft", "dpad_right": "DpadRight" },
                 "right_joycon": { "button_plus": b("start"), "button_r": b("r"), "button_zr": b("r2"), "button_sl": "Unbound", "button_sr": "Unbound",
                                   "button_x": b("y"), "button_b": b("a"), "button_y": b("x"), "button_a": b("b") },
-                "version": 1, "backend": "GamepadSDL2", "id": format!("{index}-{id}"), "controller_type": "ProController", "player_index": "Player1"
+                "version": 1, "backend": "GamepadSDL2", "id": format!("{index}-{id}"), "controller_type": "ProController", "player_index": format!("Player{n1}")
             });
-            let mut rest: Vec<serde_json::Value> = list.into_iter().filter(|c| c["player_index"].as_str() != Some("Player1")).collect();
-            rest.insert(0, pad_cfg);
+            let me = format!("Player{n1}");
+            let mut rest: Vec<serde_json::Value> = list.into_iter().filter(|c| c["player_index"].as_str() != Some(me.as_str())).collect();
+            rest.insert(slot.min(rest.len()), pad_cfg);
             cfg["input_config"] = serde_json::Value::Array(rest);
             std::fs::write(&path, serde_json::to_string_pretty(&cfg).unwrap_or_default()).map_err(|e| e.to_string())
-        }
-        // RPCS3: player 1 on the SDL handler, buttons by the game's controls.
-        "rpcs3" => {
-            let Some(pad) = pad else { return Ok(()) };
-            let path = data.join("input_configs/global/Default.yml");
-            let _ = std::fs::create_dir_all(path.parent().unwrap());
-            // RPCS3's names for SDL controls (rpcs3/Input/sdl_pad_handler.cpp).
-            let n = |b: &str| {
-                match b {
-                    "a" => "South",
-                    "b" => "East",
-                    "x" => "West",
-                    "y" => "North",
-                    "l" => "LB",
-                    "r" => "RB",
-                    "l2" => "LT",
-                    "r2" => "RT",
-                    "start" => "Start",
-                    _ => "Back",
-                }
-                .to_string()
-            };
-            let b = |logical: &str| format!("\"{}\"", src(logical).map(n).unwrap_or_default());
-            // Every control written: one left out stays unbound (RPCS3's defaults are empty).
-            // RPCS3 numbers pads per name ("Xbox Controller 1"): the first of that name.
-            let yml = format!(
-                "Player 1 Input:\n  Handler: SDL\n  Device: {pad} 1\n  Config:\n    Left Stick Left: \"LS X-\"\n    Left Stick Down: \"LS Y-\"\n    Left Stick Right: \"LS X+\"\n    Left Stick Up: \"LS Y+\"\n    Right Stick Left: \"RS X-\"\n    Right Stick Down: \"RS Y-\"\n    Right Stick Right: \"RS X+\"\n    Right Stick Up: \"RS Y+\"\n    Start: {}\n    Select: {}\n    PS Button: \"Guide\"\n    Square: {}\n    Cross: {}\n    Circle: {}\n    Triangle: {}\n    Left: \"Left\"\n    Down: \"Down\"\n    Right: \"Right\"\n    Up: \"Up\"\n    R1: {}\n    R2: {}\n    R3: \"RS\"\n    L1: {}\n    L2: {}\n    L3: \"LS\"\n  Buddy Device: \"\"\n",
-                b("start"),
-                b("select"),
-                b("x"),
-                b("a"),
-                b("b"),
-                b("y"),
-                b("r"),
-                b("r2"),
-                b("l"),
-                b("l2")
-            );
-            std::fs::write(&path, yml).map_err(|e| e.to_string())
         }
         _ => Ok(()),
     }
@@ -927,7 +1043,14 @@ mod tests {
             r#"{"version": 50, "input_config": [{"backend": "WindowKeyboard", "player_index": "Player1"}]}"#,
         )
         .unwrap();
-        controllers("ryubing", &d, &d, 0, Some("Pad"), Some("030000005e0400008e02000014010000"), &same).unwrap();
+        controllers(
+            "ryubing",
+            &d,
+            &d,
+            &[PadRef { index: 0, name: "Pad".to_string(), guid: Some("030000005e0400008e02000014010000".to_string()), rank: 1 }],
+            &same,
+        )
+        .unwrap();
         let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(d.join("Config.json")).unwrap()).unwrap();
         assert_eq!(v["input_config"][0]["id"], "0-00000003-045e-0000-8e02-000014010000");
         assert_eq!(v["input_config"].as_array().unwrap().len(), 1);
@@ -939,12 +1062,19 @@ mod tests {
     fn switch_and_ps3_pads() {
         let d = std::env::temp_dir().join(format!("borne-pads-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
-        controllers("eden", &d, &d, 0, Some("Pad"), Some("030000005e0400008e02000014010000"), &same).unwrap();
+        controllers(
+            "eden",
+            &d,
+            &d,
+            &[PadRef { index: 0, name: "Pad".to_string(), guid: Some("030000005e0400008e02000014010000".to_string()), rank: 1 }],
+            &same,
+        )
+        .unwrap();
         let ini = if cfg!(target_os = "macos") { d.join("config/qt-config.ini") } else { d.join("config/eden/qt-config.ini") };
         let t = std::fs::read_to_string(&ini).unwrap();
         assert!(t.contains("player_0_button_a = \"button:1,guid:030000005e0400008e02000014010000,port:0,engine:sdl\""));
         assert!(t.contains("player_0_button_a\\default = false"));
-        controllers("rpcs3", &d, &d, 0, Some("Pad"), None, &same).unwrap();
+        controllers("rpcs3", &d, &d, &[PadRef { index: 0, name: "Pad".to_string(), guid: None, rank: 1 }], &same).unwrap();
         assert!(std::fs::read_to_string(d.join("input_configs/global/Default.yml")).unwrap().contains("Handler: SDL"));
         let _ = std::fs::remove_dir_all(&d);
     }
@@ -960,22 +1090,92 @@ mod tests {
     fn eden_and_azahar_get_the_pads_own_controls() {
         let d = std::env::temp_dir().join(format!("borne-raw-{}", std::process::id()));
         let g = "050000005e040000130b000022050000"; // Xbox Series X over Bluetooth
-        controllers("eden", &d, &d, 0, Some("Xbox Series X Controller"), Some(g), &same).unwrap();
+        controllers(
+            "eden",
+            &d,
+            &d,
+            &[PadRef { index: 0, name: "Xbox Series X Controller".to_string(), guid: Some(g.to_string()), rank: 1 }],
+            &same,
+        )
+        .unwrap();
         let t = std::fs::read_to_string(d.join("config/eden/qt-config.ini")).unwrap();
         // Switch Y (west) is the pad's X: raw button 3 on this pad; L is raw button 6.
         assert!(t.contains(&format!("player_0_button_y = \"button:3,guid:{g},port:0,engine:sdl\"")), "{t}");
         assert!(t.contains("player_0_button_l = \"button:6,"));
         assert!(t.contains("player_0_button_dup = \"hat:0,direction:up,"));
-        controllers("azahar", &d, &d, 0, Some("Xbox Series X Controller"), Some(g), &same).unwrap();
+        controllers(
+            "azahar",
+            &d,
+            &d,
+            &[PadRef { index: 0, name: "Xbox Series X Controller".to_string(), guid: Some(g.to_string()), rank: 1 }],
+            &same,
+        )
+        .unwrap();
         let a = std::fs::read_to_string(d.join("config/azahar-emu/qt-config.ini")).unwrap();
         assert!(a.contains("profiles\\size = 1") && a.contains("api:controller"), "{a}");
         let _ = std::fs::remove_dir_all(d);
     }
 
     #[test]
+    fn shadps4_gets_the_games_controls() {
+        let d = std::env::temp_dir().join(format!("borne-ps4-{}", std::process::id()));
+        std::fs::create_dir_all(d.join("input_config")).unwrap();
+        std::fs::write(d.join("input_config/CUSA00001.ini"), "cross = cross\n").unwrap();
+        std::fs::write(d.join("input_config/global.ini"), "# mine\n").unwrap();
+        let swapped = |b: &str| match b {
+            "a" => Some("b"),
+            "b" => Some("a"),
+            x => crate::controls::BUTTONS.iter().find(|y| y.0 == x).map(|y| y.0),
+        };
+        let pad = [PadRef { index: 0, name: "Pad".into(), guid: None, rank: 1 }];
+        controllers("shadps4", &d, &d, &pad, &swapped).unwrap();
+        for f in ["default.ini", "CUSA00001.ini"] {
+            let t = std::fs::read_to_string(d.join("input_config").join(f)).unwrap();
+            assert!(t.contains("cross = circle\n") && t.contains("circle = cross\n") && t.contains("touchpad_center = back"), "{t}");
+        }
+        assert_eq!(std::fs::read_to_string(d.join("input_config/global.ini")).unwrap(), "# mine\n");
+        let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn every_connected_pad_gets_a_player() {
+        let d = std::env::temp_dir().join(format!("borne-mp-{}", std::process::id()));
+        let pad = |index: usize, rank: usize| PadRef {
+            index,
+            name: "Xbox Controller".into(),
+            guid: Some("030000005e0400008e02000014010000".into()),
+            rank,
+        };
+        let two = [pad(1, 2), pad(0, 1)];
+        // Player 1 swaps A and B for this game; player 2 keeps the pad as it is.
+        let swapped = |b: &str| match b {
+            "a" => Some("b"),
+            "b" => Some("a"),
+            x => crate::controls::BUTTONS.iter().find(|y| y.0 == x).map(|y| y.0),
+        };
+        controllers("rpcs3", &d, &d, &two, &swapped).unwrap();
+        let y = std::fs::read_to_string(d.join("input_configs/global/Default.yml")).unwrap();
+        assert!(y.contains("Player 1 Input:\n  Handler: SDL\n  Device: Xbox Controller 2") && y.contains("Player 2 Input:"));
+        assert!(y.contains("Device: Xbox Controller 1"));
+        controllers("dolphin", &d, &d, &two, &swapped).unwrap();
+        let g = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
+        assert!(g.contains("[GCPad1]\nDevice = SDL/1/Xbox Controller") && g.contains("[GCPad2]\nDevice = SDL/0/Xbox Controller"));
+        let w = std::fs::read_to_string(d.join("Config/WiimoteNew.ini")).unwrap();
+        assert!(w.contains("[Wiimote2]") && !w.contains("[Wiimote2]\nSource = 0"));
+        controllers("pcsx2", &d, &d, &two, &swapped).unwrap();
+        let p = std::fs::read_to_string(d.join("PCSX2/inis/PCSX2.ini")).unwrap();
+        assert!(p.contains("[Pad2]") && p.contains("Cross = SDL-0/FaceSouth") && p.contains("Cross = SDL-1/FaceEast"));
+        controllers("eden", &d, &d, &two, &swapped).unwrap();
+        let e = std::fs::read_to_string(d.join("config/eden/qt-config.ini")).unwrap();
+        assert!(e.contains("player_1_connected = true") && e.contains("port:1"));
+        let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
     fn controllers_follow_the_games_controls() {
         let d = std::env::temp_dir().join(format!("borne-pad-{}", std::process::id()));
-        controllers("dolphin", &d, &d, 0, Some("Xbox Series X Controller"), None, &same).unwrap();
+        controllers("dolphin", &d, &d, &[PadRef { index: 0, name: "Xbox Series X Controller".to_string(), guid: None, rank: 1 }], &same)
+            .unwrap();
         let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
         assert!(t.contains("Device = SDL/0/Xbox Series X Controller") && t.contains("Buttons/A = `Button S`"));
         let w = std::fs::read_to_string(d.join("Config/WiimoteNew.ini")).unwrap();
@@ -991,10 +1191,10 @@ mod tests {
             "b" => Some("a"),
             other => same(other),
         };
-        controllers("dolphin", &d, &d, 1, Some("Other"), None, &swapped).unwrap();
+        controllers("dolphin", &d, &d, &[PadRef { index: 1, name: "Other".to_string(), guid: None, rank: 1 }], &swapped).unwrap();
         let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
-        assert!(t.contains("Device = SDL/1/Other") && t.contains("Buttons/A = `Button E`"));
-        controllers("pcsx2", &d, &d, 0, Some("Pad"), None, &swapped).unwrap();
+        assert!(t.contains("Device = SDL/0/Other") && t.contains("Buttons/A = `Button E`"));
+        controllers("pcsx2", &d, &d, &[PadRef { index: 0, name: "Pad".to_string(), guid: None, rank: 1 }], &swapped).unwrap();
         let t = std::fs::read_to_string(d.join("PCSX2/inis/PCSX2.ini")).unwrap();
         assert!(t.contains("Cross = SDL-0/FaceEast") && t.contains("Circle = SDL-0/FaceSouth"));
         let _ = std::fs::remove_dir_all(d);

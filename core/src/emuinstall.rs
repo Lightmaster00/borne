@@ -108,7 +108,7 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
                 if let Some(a) = r["assets"].as_array().into_iter().flatten().find(|a| a["name"].as_str().map(fits).unwrap_or(false)) {
                     let version = r["tag_name"].as_str().unwrap_or("?").to_string();
                     // A rolling tag ("latest"): the asset's date tells versions apart.
-                    let version = if version == "latest" || version == "preview" {
+                    let version = if version == "latest" || version == "preview" || version == "continuous" {
                         format!("{version}-{}", a["updated_at"].as_str().unwrap_or(""))
                     } else {
                         version

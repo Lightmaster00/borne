@@ -32,9 +32,62 @@ pub fn status(app: &Shared) -> Value {
     })
 }
 
-/// Whether this system can host the virtual mount at all.
+/// Whether games can be played from the network here: through the virtual mount on Linux; as
+/// temporary copies elsewhere (macOS has no FUSE without a kernel extension).
 pub fn available() -> bool {
-    cfg!(target_os = "linux")
+    true
+}
+
+/// The answer of `link` where there is no virtual mount: the game is downloaded and kept as a
+/// temporary copy, the least recently played ones removed past the cache limit.
+pub const TEMPORARY: &str = "the game is downloaded to be played (temporary copy)";
+
+fn temp_key(rom_id: i64) -> String {
+    format!("netcache.{rom_id}")
+}
+
+/// A game downloaded to be played from the network (macOS): marked, with when it was last used.
+pub fn mark_temporary(app: &Shared, rom_id: i64) {
+    app.db.set_setting(&temp_key(rom_id), &crate::db::now().to_string());
+}
+
+pub fn clear_temporary(app: &Shared, rom_id: i64) {
+    app.db.set_setting(&temp_key(rom_id), "");
+}
+
+pub fn is_temporary(app: &Shared, rom_id: i64) -> bool {
+    app.db.setting(&temp_key(rom_id)).map(|v| !v.is_empty()).unwrap_or(false)
+}
+
+/// Removes the least recently used temporary copies until they fit the cache limit, never the
+/// game being played nor `keep` (the one just downloaded).
+pub fn evict_temporary(app: &Shared, keep: i64) {
+    let limit = cache_limit_mb(app) * 1024 * 1024;
+    let mut temps: Vec<(i64, i64, u64)> = app
+        .db
+        .local_games()
+        .into_iter()
+        .filter(|(id, ..)| is_temporary(app, *id))
+        .map(|(id, dir, ..)| {
+            let used = app.db.setting(&temp_key(id)).and_then(|v| v.parse().ok()).unwrap_or(0);
+            (id, used, crate::downloads::dir_size(Path::new(&dir)))
+        })
+        .collect();
+    let mut total: u64 = temps.iter().map(|t| t.2).sum();
+    temps.sort_by_key(|t| t.1);
+    for (id, _, size) in temps {
+        if total <= limit {
+            break;
+        }
+        if id == keep || crate::emulators::playing_rom() == Some(id) {
+            continue;
+        }
+        if crate::downloads::delete_local(app, id).is_ok() {
+            app.db.set_setting(&temp_key(id), "");
+            total = total.saturating_sub(size);
+            app.db.log("stream", &format!("temporary copy of game {id} removed (cache limit)"));
+        }
+    }
 }
 
 fn set_state(mounted: bool, error: Option<String>) {
@@ -50,6 +103,9 @@ pub fn cache_limit_mb(app: &Shared) -> u64 {
 pub const COMPRESSED: &str = "the game is compressed on RomM: it is downloaded to be played";
 
 pub fn link(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
+    if !cfg!(target_os = "linux") {
+        return Err(TEMPORARY.into());
+    }
     if !STATE.lock().unwrap_or_else(|e| e.into_inner()).mounted {
         return Err(STATE.lock().unwrap_or_else(|e| e.into_inner()).error.clone().unwrap_or_else(|| "virtual mount unavailable".into()));
     }
@@ -105,7 +161,8 @@ pub fn stop() {
 mod imp {
     use crate::state::Shared;
     pub fn start(_app: &Shared) {
-        super::set_state(false, Some("the virtual mount is only available on Linux".into()));
+        // No virtual mount: games are played from temporary copies (see TEMPORARY).
+        super::set_state(true, None);
     }
     pub fn refresh(_app: &Shared) {}
     pub fn stop() {}

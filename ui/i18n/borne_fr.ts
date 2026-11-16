@@ -2542,6 +2542,10 @@
         <source>%1 is compressed on RomM: it is downloaded instead.</source>
         <translation>%1 est compressé sur RomM : il est téléchargé à la place.</translation>
     </message>
+    <message>
+        <source>%1 is downloaded to be played: a temporary copy, removed first when space is needed.</source>
+        <translation>%1 est téléchargé pour être joué : une copie temporaire, supprimée en premier quand la place manque.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3674,6 +3678,22 @@
     <message>
         <source>Borne installs the emulators your consoles need and their new versions, never during a game</source>
         <translation>Borne installe les émulateurs dont vos consoles ont besoin et leurs nouvelles versions, jamais pendant une partie</translation>
+    </message>
+    <message>
+        <source>Borne downloads the game you pick as a temporary copy; the least recently played go first when the cache is full.</source>
+        <translation>Borne télécharge le jeu choisi en copie temporaire ; les moins récemment joués partent en premier quand le cache est plein.</translation>
+    </message>
+    <message>
+        <source>Nothing to tidy: the space used stays under the cache size</source>
+        <translation>Rien à ranger : l’espace utilisé reste sous la taille du cache</translation>
+    </message>
+    <message>
+        <source>Games you play often stay ready</source>
+        <translation>Les jeux joués souvent restent prêts</translation>
+    </message>
+    <message>
+        <source>The first start waits for the download</source>
+        <translation>Le premier lancement attend le téléchargement</translation>
     </message>
 </context>
 <context>
