@@ -405,6 +405,18 @@ pub fn video(app: &Shared, group_key: &str, dir: &std::path::Path) -> Result<std
     }
     let noted = m.stamp.strip_prefix("ss|").ok_or("no gameplay video on ScreenScraper for this game")?;
     let c = credentials(app).ok_or("no ScreenScraper account")?;
+    // One download per game at a time (the selected game's and its neighbours' are asked together):
+    // a second ask waits for the first, then finds the file.
+    let lock = {
+        static LOCKS: std::sync::Mutex<Option<std::collections::HashMap<String, std::sync::Arc<std::sync::Mutex<()>>>>> =
+            std::sync::Mutex::new(None);
+        let mut g = LOCKS.lock().unwrap_or_else(|e| e.into_inner());
+        g.get_or_insert_with(std::collections::HashMap::new).entry(group_key.to_string()).or_default().clone()
+    };
+    let _held = lock.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(m) = app.db.media(group_key, "video").filter(|m| !m.path.is_empty() && std::path::Path::new(&m.path).is_file()) {
+        return Ok(m.path.into());
+    }
     std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     let name: String = group_key.chars().map(|ch| if ch.is_ascii_alphanumeric() { ch } else { '_' }).take(80).collect();
     let path = dir.join(format!("ss-{name}.mp4"));

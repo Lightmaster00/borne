@@ -232,10 +232,16 @@ pub fn languages_of(g: &GameRow) -> Vec<String> {
     out
 }
 
+/// An update, a DLC or a patch stored by RomM as a game of its own (a Switch "[v131072]" or a
+/// DLC title ID), next to the game: never the version launched unless chosen.
+pub fn is_extra(g: &GameRow) -> bool {
+    crate::downloads::is_extra(std::path::Path::new(&g.fs_name))
+}
+
 /// Higher is better.
 fn score(g: &GameRow, lang: &str) -> i64 {
     let (language, regions) = language_hints(lang);
-    let mut s = 0;
+    let mut s = if is_extra(g) { -100_000 } else { 0 };
     if g.local_state == "local" || g.linked {
         s += 1000;
     }
@@ -341,6 +347,7 @@ pub fn entry(shown: &GameRow, versions: &[GameRow]) -> Value {
 pub fn version_json(g: &GameRow) -> Value {
     let mut v = json!(g);
     v["langs"] = json!(languages_of(g));
+    v["extra"] = json!(is_extra(g));
     v
 }
 
@@ -356,6 +363,23 @@ pub fn fill_media(v: &mut Value, versions: &[GameRow]) {
             v["video_remote"] = json!(c);
         }
     }
+}
+
+/// The language a game is played in (the console's system language set in the emulator): the one
+/// chosen for it if the version has it, else the interface's if the version has it (or lists no
+/// language: a European release usually carries several), else the version's first.
+pub fn play_language(g: &GameRow, chosen: Option<&str>, ui: &str) -> String {
+    let codes: Vec<&str> =
+        languages_of(g).iter().filter_map(|l| LANGUAGE_CODES.iter().find(|(name, _)| name == l).map(|(_, c)| *c)).collect();
+    if let Some(c) = chosen.filter(|c| *c != "auto") {
+        if codes.is_empty() || codes.contains(&c) {
+            return c.to_string();
+        }
+    }
+    if codes.is_empty() || codes.contains(&ui) {
+        return ui.to_string();
+    }
+    codes[0].to_string()
 }
 
 /// Language codes accepted as a game's language ("auto" follows the UI language).
@@ -405,6 +429,20 @@ pub fn game_languages(versions: &[GameRow]) -> Vec<Value> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_language_a_game_is_played_in() {
+        use super::*;
+        let mut g = crate::db::GameRow { fs_name: "X (Europe).sfc".into(), regions: Some("Europe".into()), ..Default::default() };
+        assert_eq!(play_language(&g, None, "fr"), "fr", "a European version: the interface's");
+        g.languages = Some("English, German".into());
+        assert_eq!(play_language(&g, None, "fr"), "en", "not in French: its first");
+        assert_eq!(play_language(&g, Some("de"), "fr"), "de", "the one chosen");
+        g.languages = Some("English, French".into());
+        assert_eq!(play_language(&g, Some("auto"), "fr"), "fr");
+        g.fs_name = "X [0100ABCD12340800][v131072].nsp".into();
+        assert!(is_extra(&g));
+    }
+
     #[test]
     fn console_names_without_the_maker() {
         assert_eq!(console_name("gamegear", "Sega Game Gear"), "Game Gear");

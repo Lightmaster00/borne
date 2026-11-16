@@ -38,7 +38,9 @@ Item {
     property var col: [0, 0]
 
     readonly property bool busy: game !== null && ["queued", "downloading", "verifying", "extracting"].indexOf(game.dl_state) >= 0
-    readonly property var rows: gameLanguages.length > 0 ? ["actions", "language", "more"] : ["actions", "more"]
+    // The versions a player can choose (an update or a DLC stored as a game of its own is not one).
+    readonly property var playable: versions.filter(v => !v.extra)
+    readonly property var rows: playable.length > 1 ? ["actions", "version", "more"] : ["actions", "more"]
     readonly property bool hasTrailer: !!(game && game.trailer)
 
     function fmtSize(b) {
@@ -99,6 +101,19 @@ Item {
                       Australia: "AU", Brazil: "BR", Korea: "KR", China: "CN", Canada: "CA", Netherlands: "NL" }
         return v ? (v.regions || "").split(",").map(x => x.trim()).filter(x => x).map(r => map[r] || r).join("/") : ""
     }
+    // A version as the player knows it: its regions, then its languages and revision.
+    function versionLabel(v) {
+        const regions = (v.regions || "").split(",").map(x => x.trim()).filter(x => x)
+        return regions.length ? regions.map(regionName).join(" / ") : qsTr("Version %1").arg(playable.indexOf(v) + 1)
+    }
+    function versionDetail(v) {
+        const codes = { English: "EN", French: "FR", German: "DE", Spanish: "ES", Italian: "IT", Dutch: "NL", Portuguese: "PT",
+                        Japanese: "JA", Swedish: "SV", Danish: "DA", Norwegian: "NO", Finnish: "FI", Polish: "PL", Russian: "RU",
+                        Korean: "KO", Chinese: "ZH" }
+        const langs = (v.langs || []).map(l => codes[l] || l).join(" ")
+        const rev = v.revision ? qsTr("rev %1").arg(v.revision) : ""
+        return [langs, rev].filter(x => x).join(" · ")
+    }
     function regionName(r) {
         const map = {
             "Europe": qsTr("Europe"), "USA": qsTr("USA"), "Japan": qsTr("Japan"), "World": qsTr("World"),
@@ -129,18 +144,18 @@ Item {
         row = 0
         sound = false
         body.contentY = 0
-        col = [0, Math.max(0, gameLanguages.findIndex(l => l.code === currentLang))]
+        col = [0, Math.max(0, playable.findIndex(v => game && v.rom_id === game.rom_id))]
     }
-    function rowItems(name) { return name === "actions" ? allActions : name === "language" ? gameLanguages : [] }
+    function rowItems(name) { return name === "actions" ? allActions : name === "version" ? playable : [] }
     function setCol(r, c) { const n = col.slice(); n[r] = c; col = n }
     function activate(name, i) {
         if (name === "actions") {
             const a = allActions[i]
             if (!a || a.disabled) return
             page.action(a.id, null)
-        } else if (name === "language") {
-            const l = gameLanguages[i]
-            if (l) page.action("lang", l)
+        } else if (name === "version") {
+            const v = playable[i]
+            if (v && game && v.rom_id !== game.rom_id) page.action("version", v.rom_id)
         }
     }
     function scrollTo(y) {
@@ -170,7 +185,7 @@ Item {
     onRowChanged: {
         const name = rows[row]
         if (name === "actions") scrollTo(0)
-        else if (name === "language") scrollTo(0)
+        else if (name === "version") scrollTo(0)
         else if (name === "more") scrollTo(hero.height - 160)
     }
     NumberAnimation { id: scrollAnim; target: body; property: "contentY"; duration: 260; easing.type: Easing.OutCubic }
@@ -400,13 +415,14 @@ Item {
                             }
                         }
                     }
-                    // Languages the game exists in; each one launches its version.
+                    // The versions of the game (regions, languages): the one chosen is launched,
+                    // in the interface's language when it has it.
                     Row {
-                        visible: page.gameLanguages.length > 0
+                        visible: page.playable.length > 1
                         spacing: 16
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: qsTr("Language")
+                            text: qsTr("Version")
                             color: theme.fgMuted
                             font { family: theme.fontFamily; pixelSize: 17; weight: Font.DemiBold }
                         }
@@ -414,17 +430,16 @@ Item {
                             width: info.width - 140
                             spacing: 10
                             Repeater {
-                                model: page.gameLanguages
+                                model: page.playable
                                 Chip {
                                     required property var modelData
                                     required property int index
-                                    readonly property var v: page.versionOf(modelData.version)
                                     theme: page.theme
-                                    text: page.languageName(modelData.code)
-                                    detail: page.regionShort(v)
-                                    selected: modelData.code === page.currentLang
-                                    badge: !!v && (v.local_state === "local" || v.linked)
-                                    focused: page.rows[page.row] === "language" && page.col[1] === index
+                                    text: page.versionLabel(modelData)
+                                    detail: page.versionDetail(modelData)
+                                    selected: !!page.game && modelData.rom_id === page.game.rom_id
+                                    badge: modelData.local_state === "local" || modelData.linked
+                                    focused: page.rows[page.row] === "version" && page.col[1] === index
                                 }
                             }
                         }

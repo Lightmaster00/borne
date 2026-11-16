@@ -1214,10 +1214,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>About</source>
         <translation type="unfinished" />
     </message>
@@ -1243,6 +1239,18 @@
     </message>
     <message>
         <source>Download paused at %1%</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation type="unfinished">Version %1</translation>
+    </message>
+    <message>
+        <source>rev %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Version</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2566,6 +2574,26 @@
         <source>Borne shows in Steam the next time it starts.</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Change profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Preparing your library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games from RomM: %1 of %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Covers: %1 left</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A: see it now</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -2806,6 +2834,18 @@
     </message>
     <message>
         <source>Enter</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Looking for RomM on your network…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM found on your network: %1. Press Start to connect.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM servers found: %1. The first is filled in; press Start to connect.</source>
         <translation type="unfinished" />
     </message>
 </context>

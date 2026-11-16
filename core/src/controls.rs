@@ -27,7 +27,7 @@ pub fn sources(app: &Shared, group: &str) -> Vec<(&'static str, Option<&'static 
 /// Player 1's controller for this game, among the `pads` connected now (with their GUIDs): the
 /// pad chosen for it, found again by name and GUID wherever it is plugged now; the pad last used
 /// in Borne when none was chosen (the one in the player's hands); else the first.
-pub fn pad_index(app: &Shared, group: &str, pads: &[String], guids: &[String]) -> usize {
+pub fn pad_index(app: &Shared, group: &str, pads: &[String], guids: &[String], last: Option<usize>) -> usize {
     let count = pads.len();
     let chosen = get(app, group, "pad").0.parse::<usize>().ok().and_then(|n| n.checked_sub(1));
     let id = app.db.setting(&key(group, "pad.id")).unwrap_or_default();
@@ -38,20 +38,31 @@ pub fn pad_index(app: &Shared, group: &str, pads: &[String], guids: &[String]) -
             return i;
         }
     }
-    chosen.filter(|i| *i < count).or_else(|| app.pads.lock().unwrap_or_else(|e| e.into_inner()).last.filter(|i| *i < count)).unwrap_or(0)
+    chosen.filter(|i| *i < count).or_else(|| last.filter(|i| *i < count)).unwrap_or(0)
 }
 
 /// The players of a game: player 1's pad first, then the other connected pads in order (local
 /// multiplayer), up to four.
 pub fn players(app: &Shared, group: &str) -> Vec<crate::gamesettings::PadRef> {
-    let (pads, guids) = {
+    let (all, all_guids, ids, last) = {
         let s = app.pads.lock().unwrap_or_else(|e| e.into_inner());
-        (s.pads.clone(), s.guids.clone())
+        (s.pads.clone(), s.guids.clone(), s.ids.clone(), s.last)
     };
+    // Started from Steam, the emulators do not see the pads Steam hides (they play through its
+    // virtual pad): those are left out, and the numbering is that of the pads they see.
+    let hidden = crate::pad::steam_hidden();
+    let visible: Vec<usize> = (0..all.len()).filter(|i| !hidden.contains(ids.get(*i).unwrap_or(&(0, 0)))).collect();
+    let pads: Vec<String> = visible.iter().map(|i| all[*i].clone()).collect();
+    let guids: Vec<String> = visible.iter().filter_map(|i| all_guids.get(*i).cloned()).collect();
     if pads.is_empty() {
         return vec![];
     }
-    let first = pad_index(app, group, &pads, &guids);
+    // The pad in the player's hands (among those seen); when Steam hides it, Steam's virtual pad
+    // (vendor 0x28de) stands for it.
+    let last = last
+        .and_then(|l| visible.iter().position(|i| *i == l))
+        .or_else(|| last.and(visible.iter().position(|i| ids.get(*i).map(|x| x.0 == 0x28de).unwrap_or(false))));
+    let first = pad_index(app, group, &pads, &guids, last);
     let order = std::iter::once(first).chain((0..pads.len()).filter(|i| *i != first));
     order
         .take(4)

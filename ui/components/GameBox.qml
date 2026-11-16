@@ -238,6 +238,9 @@ Item {
                 anchors.fill: parent
                 source: box.frontScan ? box.game.art + "front" : box.game && box.game.cover ? box.game.cover : ""
                 asynchronous: true
+                // Comes in softly when it arrives, rather than popping.
+                opacity: status === Image.Ready ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
                 // The case takes the picture's proportions (Cases.shape): it fills the face; a picture
                 // of absurd proportions is fitted whole, never cut.
                 fillMode: box.coverAspect > 0 && Math.abs(box.coverAspect / (width / Math.max(1, height)) - 1) > 0.05 ? Image.PreserveAspectFit : Image.Stretch

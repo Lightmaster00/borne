@@ -180,6 +180,25 @@ Window {
           })
         })
     }
+    // First import: an empty library being filled by its first sync is shown once its games and
+    // their covers are in, not while boxes appear bare and get dressed one by one. A shows it at
+    // once; two minutes at most.
+    property bool importing: false
+    property int importCovers: 0
+    function checkImport() {
+        const s = status && status.sync ? status.sync : null
+        if (!s) return
+        if (!importing && s.running && libModel.count === 0 && screen === "library") {
+            importing = true; importCovers = 0; importCap.restart()
+        }
+        if (importing) {
+            importCovers = Math.max(importCovers, s.covers_pending || 0)
+            if (!s.running && !(s.covers_pending > 0)) importing = false
+        }
+    }
+    onStatusChanged: checkImport()
+    onScreenChanged: checkImport()
+    Timer { id: importCap; interval: 120000; onTriggered: win.importing = false }
     property int libSeq: 0
     // Reloads the list keeping the selection; updates in place if the list did not change.
     function loadLibrary(resetFocus) {
@@ -189,7 +208,6 @@ Window {
         // The Recent tab is always newest first; the others follow the chosen order and genre.
         const order = s.id === "recent" ? "played" : prefs.librarySort
         const q = "?lang=" + uiLang + tab + "&sort=" + order + (prefs.libraryGenre ? "&genre=" + encodeURIComponent(prefs.libraryGenre) : "")
-        const keep = !resetFocus && focusedGame ? focusedGame.rom_id : -1
         const t0 = Date.now()
         // Tabs switched quickly: only the latest request's answer is shown (answers can cross).
         const seq = ++libSeq
@@ -197,9 +215,15 @@ Window {
             if (seq !== libSeq) return
             if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); return }
             const rows = list.map(toRow)
+            // The game selected now (the player may have moved while the answer came): kept.
+            const keep = !resetFocus && focusedGame ? focusedGame.rom_id : -1
             const same = rows.length === libModel.count && rows.every((r, i) => libModel.get(i).rom_id === r.rom_id)
             if (same) {
-                for (let i = 0; i < rows.length; i++) libModel.set(i, rows[i])
+                // Same games in the same order: updated in place, the selection untouched.
+                for (let i = 0; i < rows.length; i++) {
+                    const cur = libModel.get(i)
+                    if (Object.keys(rows[i]).some(k => cur[k] !== rows[i][k])) libModel.set(i, rows[i])
+                }
             } else {
                 libModel.clear()
                 libModel.append(rows)
@@ -211,7 +235,8 @@ Window {
             rows.forEach((r, i) => { const l = letterOf(r.name); if (starts[l] === undefined) { starts[l] = i; order.push(l) } })
             letterStart = starts
             letters = order
-            if (keep >= 0 && idx[keep] !== undefined) focusIndex = idx[keep]
+            if (same && !resetFocus) {}
+            else if (keep >= 0 && idx[keep] !== undefined) focusIndex = idx[keep]
             else if (resetFocus || focusIndex >= rows.length) focusIndex = 0
             loadMs = Date.now() - t0
             ready = true
@@ -307,8 +332,14 @@ Window {
             if (!g || !win.bgVideoWanted || g.rom_id === win.bgVideoFor) return
             win.bgVideoFor = g.rom_id
             win.bgVideo = ""
-            api("POST", "/api/v1/games/" + g.rom_id + "/gameplay", {}, function (r) {
+            api("POST", "/api/v1/games/" + g.rom_id + "/gameplay", {}, function (r, err) {
                 if (win.bgVideoFor === g.rom_id && r && r.path) win.bgVideo = fileUrl(r.path, 0)
+                if (!r && err) console.log("No video for " + g.name + ": " + err)
+                // The neighbours' videos fetched meanwhile, so the next one starts at once.
+                for (const d of [1, -1]) {
+                    const n = win.focusIndex + d
+                    if (n >= 0 && n < libModel.count) api("POST", "/api/v1/games/" + libModel.get(n).rom_id + "/gameplay", {}, function () {})
+                }
             })
         }
     }
@@ -961,10 +992,19 @@ Window {
     // enough to show its spine well (never its back), and comes back as soon as you let go.
     readonly property real maxYaw: 60
     readonly property real maxPitch: 40
-    property real boxYaw: turnX * maxYaw
-    property real boxPitch: turnY * maxPitch
-    Behavior on boxYaw { SmoothedAnimation { velocity: 160; reversingMode: SmoothedAnimation.Immediate } }
-    Behavior on boxPitch { SmoothedAnimation { velocity: 110; reversingMode: SmoothedAnimation.Immediate } }
+    // Follows the stick each frame (exponential easing): steady however often the stick reports,
+    // no restart of an animation at each small change.
+    property real boxYaw: 0
+    property real boxPitch: 0
+    FrameAnimation {
+        running: win.turnActive || Math.abs(win.boxYaw) > 0.05 || Math.abs(win.boxPitch) > 0.05
+        onTriggered: {
+            const k = 1 - Math.exp(-Math.min(frameTime, 0.05) * 14)
+            const ty = win.turnX * win.maxYaw, tp = win.turnY * win.maxPitch
+            win.boxYaw = Math.abs(ty - win.boxYaw) < 0.05 ? ty : win.boxYaw + (ty - win.boxYaw) * k
+            win.boxPitch = Math.abs(tp - win.boxPitch) < 0.05 ? tp : win.boxPitch + (tp - win.boxPitch) * k
+        }
+    }
     readonly property bool turning: turnActive || Math.abs(boxYaw) > 0.5 || Math.abs(boxPitch) > 0.5
     readonly property bool turnActive: Math.abs(turnX) > 0.01 || Math.abs(turnY) > 0.01
     function setTurnKey(k, down) { const t = Object.assign({}, turnKeys); t[k] = down; turnKeys = t }
@@ -981,6 +1021,7 @@ Window {
         // the question it raises is answered here.
         if (session && session.running) return session.paused ? quitAsk.handle(a) : undefined
         if (bench.running && a !== "start") return
+        if (importing && screen === "library" && overlay === "") { if (a === "a") importing = false; return }
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
         if (search.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return search.handle(a) }
@@ -999,7 +1040,7 @@ Window {
         else if (a === "x") { if (focusedGame) play(focusedGame) }
         else if (a === "start") settingsMenu()
         else if (a === "select") sortMenu()
-        else if (a === "b") { /* root: nothing to close */ }
+        else if (a === "b") { sfx.play("back"); showProfiles() }
         else if (a === "lb") setSystem(-1)
         else if (a === "rb") setSystem(1)
         else if (a === "r3") openDownloads()
@@ -1402,18 +1443,29 @@ Window {
                 color: theme.fgSoft
                 font { family: theme.fontFamily; pixelSize: 20; features: { "tnum": 1 } }
             }
+            // Who is playing, and how to change: B (Backspace on the keyboard) goes back to the profiles.
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 48; height: 48; radius: 24
-                color: theme.accent
-                Ink { z: -1; theme: win.theme; radius: 24 }
+                width: profileRow.implicitWidth + 12; height: 48; radius: 24
+                color: theme.glass
+                Ink { z: -1; theme: win.theme; radius: 24; opacity: 0.5 }
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Profile: %1").arg(win.activeProfile ? win.activeProfile.name : "")
-                Text {
-                    anchors.centerIn: parent
-                    text: win.activeProfile ? win.activeProfile.name.charAt(0).toUpperCase() : ""
-                    color: theme.accentFg
-                    font { family: theme.displayFont; pixelSize: 22; weight: Font.Bold }
+                Row {
+                    id: profileRow
+                    anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
+                    spacing: 8
+                    Rectangle {
+                        width: 40; height: 40; radius: 20
+                        color: theme.accent
+                        Text {
+                            anchors.centerIn: parent
+                            text: win.activeProfile ? win.activeProfile.name.charAt(0).toUpperCase() : ""
+                            color: theme.accentFg
+                            font { family: theme.displayFont; pixelSize: 20; weight: Font.Bold }
+                        }
+                    }
+                    HintBar { anchors.verticalCenter: parent.verticalCenter; theme: win.theme; hints: [["B", qsTr("Change profile"), "b"]] }
                 }
             }
         }
@@ -1498,6 +1550,15 @@ Window {
             else connect(url)
         }
         onCancelled: if (win.status && win.status.server_url) win.showProfiles()
+        // First start: RomM looked for on the local network, so its address is already there.
+        onVisibleChanged: {
+            if (!visible || (win.status && win.status.server_url) || searching) return
+            searching = true
+            win.api("GET", "/api/v1/server/discover", null, function (r) {
+                setup.searching = false
+                if (r) setup.offer(r.servers)
+            })
+        }
     }
     ProfilePicker {
         id: picker
@@ -1530,6 +1591,57 @@ Window {
         text: win.fatal || (win.apiBase ? qsTr("Loading…") : qsTr("Start through borne (BORNE_API / BORNE_WS variables missing)."))
         color: win.fatal ? theme.bad : theme.fgMuted
         font { family: theme.fontFamily; pixelSize: 18 }
+    }
+
+    // The first import (see importing).
+    Rectangle {
+        visible: win.importing && win.screen === "library" && win.overlay === ""
+        anchors.fill: parent
+        color: theme.bg
+        z: 60
+        readonly property var s: win.status && win.status.sync ? win.status.sync : null
+        readonly property bool games: !!(s && s.running)
+        readonly property real progress: !s ? 0
+            : games ? (s.total > 0 ? s.done / s.total : 0)
+            : (win.importCovers > 0 ? 1 - (s.covers_pending || 0) / win.importCovers : 1)
+        Column {
+            anchors.centerIn: parent
+            width: Math.min(parent.width * 0.6, 760)
+            spacing: 22
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: qsTr("Preparing your library")
+                color: theme.fg
+                font { family: theme.displayFont; pixelSize: 44; weight: Font.Bold }
+            }
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: !parent.parent.s ? "" : parent.parent.games
+                      ? qsTr("Games from RomM: %1 of %2").arg(parent.parent.s.done).arg(parent.parent.s.total)
+                      : qsTr("Covers: %1 left").arg(parent.parent.s.covers_pending || 0)
+                color: theme.fgMuted
+                font { family: theme.fontFamily; pixelSize: 22 }
+            }
+            Rectangle {
+                width: parent.width; height: 8; radius: 4
+                color: Qt.rgba(1, 1, 1, 0.1)
+                Rectangle {
+                    height: parent.height; radius: 4; color: theme.accent
+                    width: parent.width * Math.max(0.02, Math.min(1, parent.parent.parent.progress))
+                    Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+                }
+            }
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: qsTr("A: see it now")
+                color: theme.fgFaint
+                font { family: theme.fontFamily; pixelSize: 17 }
+            }
+        }
     }
 
     // Name entry (profile) with the on-screen keyboard.

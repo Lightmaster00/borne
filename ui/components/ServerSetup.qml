@@ -7,6 +7,13 @@ Item {
     property bool busy: false
     property string error: ""
     property string initial: "http://"
+    // RomM servers found on the network ([{url, version}]); the first is filled in.
+    property var found: []
+    property bool searching: false
+    function offer(list) {
+        found = list || []
+        if (found.length && (kb.text === initial || kb.text === "" || kb.text === "http://")) kb.text = found[0].url
+    }
     signal submit(string url)
     signal cancelled()
 
@@ -39,6 +46,17 @@ Item {
             placeholder: "http://…"
             onAccepted: (t) => { setup.error = ""; setup.submit(t) }
             onCancelled: setup.cancelled()
+        }
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            visible: text !== ""
+            text: setup.searching ? qsTr("Looking for RomM on your network…")
+                  : setup.found.length === 1 ? qsTr("RomM found on your network: %1. Press Start to connect.").arg(setup.found[0].url)
+                  : setup.found.length > 1 ? qsTr("RomM servers found: %1. The first is filled in; press Start to connect.").arg(setup.found.map(f => f.url).join(", "))
+                  : ""
+            color: theme.accent
+            font { family: theme.fontFamily; pixelSize: 16; weight: Font.DemiBold }
         }
         Text {
             width: parent.width

@@ -25,6 +25,8 @@ pub struct PadState {
     pub pads: Vec<String>,
     /// SDL-style GUID of each pad (same order), for emulators that bind a device by it.
     pub guids: Vec<String>,
+    /// USB vendor and product of each pad (same order; 0 when unknown).
+    pub ids: Vec<(u16, u16)>,
     /// The pad that last pressed a button (its place in `pads`): the one in the player's hands,
     /// given to the game when no pad was chosen for it.
     pub last: Option<usize>,
@@ -37,6 +39,20 @@ const NEXT_REPEAT: Duration = Duration::from_millis(85);
 const STICK_THRESHOLD: f32 = 0.6;
 /// Select and Start pressed together, or one within this time of the other, quit the game.
 const QUIT_CHORD: Duration = Duration::from_millis(700);
+
+/// The pads Steam hides from the games it starts (Steam Input: SDL_GAMECONTROLLER_IGNORE_DEVICES,
+/// "0x057e/0x2009,…"), which then play through Steam's virtual pad instead. Inherited by the
+/// emulators when Borne is started from Steam.
+pub fn steam_hidden() -> Vec<(u16, u16)> {
+    let list = std::env::var("SDL_GAMECONTROLLER_IGNORE_DEVICES").unwrap_or_default();
+    list.split(',')
+        .filter_map(|e| {
+            let (v, p) = e.trim().split_once('/')?;
+            let hex = |x: &str| u16::from_str_radix(x.trim().trim_start_matches("0x").trim_start_matches("0X"), 16).ok();
+            Some((hex(v)?, hex(p)?))
+        })
+        .collect()
+}
 
 fn map_button(b: Button) -> Option<&'static str> {
     Some(match b {
@@ -102,6 +118,7 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                     let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
                     s.pads = gilrs.gamepads().map(|(_, g)| g.name().to_string()).collect();
                     s.guids = gilrs.gamepads().map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect()).collect();
+                    s.ids = gilrs.gamepads().map(|(_, g)| (g.vendor_id().unwrap_or(0), g.product_id().unwrap_or(0))).collect();
                 }
                 while let Some(ev) = gilrs.next_event() {
                     let pad = gilrs.gamepad(ev.id).name().to_string();
@@ -138,8 +155,11 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                             }
                         }
                         EventType::AxisChanged(axis @ (Axis::RightStickX | Axis::RightStickY), v, _) => {
-                            // Dead zone, then steps of 0.05 so small jitter sends nothing.
-                            let q = if v.abs() < 0.18 { 0.0 } else { (v * 20.0).round() / 20.0 };
+                            // Dead zone, then the rest of the travel rescaled from 0 (no jump at its
+                            // edge), in steps of 0.02 so small jitter sends nothing; the interface
+                            // smooths the angle (Main.qml).
+                            const DEAD: f32 = 0.15;
+                            let q = if v.abs() < DEAD { 0.0 } else { (v.signum() * (v.abs() - DEAD) / (1.0 - DEAD) * 50.0).round() / 50.0 };
                             let (nx, ny) = if axis == Axis::RightStickX { (q, ry) } else { (rx, -q) };
                             if (nx, ny) != (rx, ry) {
                                 rx = nx;

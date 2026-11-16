@@ -562,7 +562,7 @@ pub fn pick_main_of(mut files: Vec<(u64, PathBuf)>) -> Option<PathBuf> {
 
 /// An update, a DLC or a patch rather than the game itself, by its name: the words, a version tag
 /// other than v0, or a Switch title ID that is not a base game's (those end in 000).
-fn is_extra(p: &Path) -> bool {
+pub fn is_extra(p: &Path) -> bool {
     let name = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
     if ["update", "dlc", "patch", "[upd]"].iter().any(|w| name.contains(w)) {
         return true;

@@ -597,11 +597,18 @@ fn command(
     let group = app.db.game(rom_id).map(|g| g.group_key).unwrap_or_default();
     let display = crate::gamesettings::resolve(app, system, &group);
     let options = crate::gamesettings::emu_options(app, &p.id, &group);
+    // The console's language: the game's choice, else the interface's when the version has it.
+    let language = {
+        let chosen = app.active_profile().and_then(|pr| app.db.game_prefs(&pr.id).get(&group).and_then(|x| x.1.clone()));
+        let ui = app.db.setting("ui.lang").filter(|l| !l.is_empty()).unwrap_or_else(|| "en".into());
+        app.db.game(rom_id).map(|g| crate::library::play_language(&g, chosen.as_deref(), &ui)).unwrap_or(ui)
+    };
     let config = if p.id == "retroarch" {
         let mut cheats = crate::cheats::retroarch_settings(app, rom_id, &e.name, rom);
         let crt = crate::emuinstall::crt_shader(app);
         cheats.extend(crate::gamesettings::retroarch(&display, crt.as_deref()));
         cheats.extend(crate::gamesettings::emu_retroarch(&options));
+        cheats.extend(crate::gamesettings::retroarch_language(&language));
         let remaps = app.paths.profiles().join(&profile).join("remaps");
         cheats.extend(crate::controls::retroarch(app, &group, &remaps, e.core.as_deref().unwrap_or(""), &e.name, rom));
         Some(retroarch_config(app, &profile, system, cheats)?)
@@ -612,6 +619,8 @@ fn command(
     std::fs::create_dir_all(&userdir).map_err(|e| e.to_string())?;
     crate::gamesettings::apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &display)?;
     crate::gamesettings::emu_apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &options)?;
+    crate::gamesettings::language_apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &language)?;
+    app.db.log("play", &format!("game {rom_id} played in {language}"));
     if p.id == "melonds" {
         if let Err(e) = crate::cheats::melonds_settings(app, rom_id, &data_dir(app, &profile, &p.id), rom) {
             app.db.log("cheats", &format!("melonDS: {e}"));
@@ -656,10 +665,31 @@ fn command(
         )?;
     }
     let players = crate::controls::players(app, &group);
+    // Which pad each player has, in the log (the diagnostic report shows it).
+    let hidden = crate::pad::steam_hidden();
+    app.db.log(
+        "pads",
+        &format!(
+            "{}: {}{}",
+            p.id,
+            if players.is_empty() {
+                "no pad".to_string()
+            } else {
+                players
+                    .iter()
+                    .enumerate()
+                    .map(|(n, x)| format!("P{} {} #{} {}", n + 1, x.name, x.index, x.guid.as_deref().unwrap_or("?")))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            },
+            if hidden.is_empty() { String::new() } else { format!(" (Steam hides {} pad(s) from games)", hidden.len()) }
+        ),
+    );
     let sources = crate::controls::sources(app, &group);
     let src = |logical: &str| sources.iter().find(|(l, _)| *l == logical).and_then(|(_, p)| *p);
     crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, &players, &src)?;
-    let lang_dolphin = if system == "ngc" { dolphin_language(lang).unwrap_or("") } else { "" };
+    let _ = lang;
+    let lang_dolphin = if system == "ngc" { dolphin_language(&language).unwrap_or("") } else { "" };
     let renamed = renamed_rom(app, p, rom)?;
     let rom = renamed.as_deref().unwrap_or(rom);
     let mut args: Vec<String> = vec![];
@@ -723,6 +753,12 @@ fn command(
     };
     // AppImages extracted by Borne find their own libraries this way.
     cmd.env("APPIMAGE_EXTRACT_AND_RUN", "1");
+    // Linux: the pads as the kernel gives them (evdev), as Borne sees them, rather than SDL's own
+    // drivers (HIDAPI) that name a Switch Pro or a DualSense pad differently: the pad Borne set up
+    // is the one the emulator finds (same SDL GUID). Unless the user asked otherwise.
+    if cfg!(target_os = "linux") && std::env::var_os("SDL_JOYSTICK_HIDAPI").is_none() {
+        cmd.env("SDL_JOYSTICK_HIDAPI", "0");
+    }
     // Linux: the emulator as an X11 client (Xwayland on a Wayland desktop), where Borne catches
     // Escape before it (quitkey.rs). Under gamescope they already are.
     if cfg!(target_os = "linux") && std::env::var_os("DISPLAY").is_some() {
@@ -799,6 +835,14 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
         ("frontend_log_level".into(), "3".into()),
         ("libretro_log_level".into(), "3".into()),
     ];
+    // Linux: the pads' profiles where RetroArch looks for them (an extracted RetroArch has none
+    // of its own): one per connected pad, from SDL_GameControllerDB, and those it ships.
+    if cfg!(target_os = "linux") {
+        if let Ok(dir) = retroarch_autoconfig(app, &base) {
+            lines.push(("joypad_autoconfig_dir".into(), q(&dir)));
+            lines.push(("input_joypad_driver".into(), "udev".into()));
+        }
+    }
     // Per-console and per-game settings chosen in Borne come on top (see game_settings).
     for (k, v) in crate::emulators::extra_retroarch(app, system).into_iter().chain(cheats) {
         lines.retain(|(key, _)| key != &k);
@@ -808,6 +852,94 @@ fn retroarch_config(app: &Shared, profile: &str, system: &str, cheats: Vec<(Stri
     let path = base.join("retroarch.cfg");
     std::fs::write(&path, text).map_err(|e| e.to_string())?;
     Ok(path)
+}
+
+/// RetroArch's profile of a pad (udev driver) from its SDL mapping: each RetroPad control on the
+/// pad's raw button, axis or hat. None when SDL_GameControllerDB does not know the pad.
+pub fn retroarch_pad_profile(name: &str, guid: &str, vendor: u16, product: u16) -> Option<String> {
+    use crate::sdldb::{bind, Bind};
+    bind(guid, "a")?;
+    let mut out = format!(
+        "input_driver = \"udev\"\ninput_device = \"{}\"\ninput_vendor_id = \"{vendor}\"\ninput_product_id = \"{product}\"\n",
+        name.replace('"', "")
+    );
+    let hat = |m: u32| match m {
+        1 => "up",
+        2 => "right",
+        4 => "down",
+        _ => "left",
+    };
+    // (RetroArch's control, SDL's) — RetroArch's B is the bottom face button, as SDL's A.
+    let pairs = [
+        ("b", "a"),
+        ("a", "b"),
+        ("y", "x"),
+        ("x", "y"),
+        ("select", "back"),
+        ("start", "start"),
+        ("up", "dpup"),
+        ("down", "dpdown"),
+        ("left", "dpleft"),
+        ("right", "dpright"),
+        ("l", "leftshoulder"),
+        ("r", "rightshoulder"),
+        ("l2", "lefttrigger"),
+        ("r2", "righttrigger"),
+        ("l3", "leftstick"),
+        ("r3", "rightstick"),
+    ];
+    for (ra, sdl) in pairs {
+        match bind(guid, sdl) {
+            Some(Bind::Button(n)) => out.push_str(&format!("input_{ra}_btn = \"{n}\"\n")),
+            Some(Bind::Hat { index, mask }) => out.push_str(&format!("input_{ra}_btn = \"h{index}{}\"\n", hat(mask))),
+            Some(Bind::Axis { index, positive }) => {
+                out.push_str(&format!("input_{ra}_axis = \"{}{index}\"\n", if positive { '+' } else { '-' }))
+            }
+            None => {}
+        }
+    }
+    for (ra, sdl) in [("l_x", "leftx"), ("l_y", "lefty"), ("r_x", "rightx"), ("r_y", "righty")] {
+        if let Some(Bind::Axis { index, .. }) = bind(guid, sdl) {
+            out.push_str(&format!("input_{ra}_plus_axis = \"+{index}\"\ninput_{ra}_minus_axis = \"-{index}\"\n"));
+        }
+    }
+    Some(out)
+}
+
+/// The folder of RetroArch's pad profiles: those RetroArch ships (copied once), then one per
+/// connected pad.
+fn retroarch_autoconfig(app: &Shared, base: &Path) -> Result<PathBuf, String> {
+    let dir = base.join("autoconfig");
+    let udev = dir.join("udev");
+    std::fs::create_dir_all(&udev).map_err(|e| e.to_string())?;
+    if !dir.join(".shipped").exists() {
+        let mut stack = vec![(crate::emuinstall::program_dir(app, "retroarch"), 0)];
+        while let Some((d, depth)) = stack.pop() {
+            for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+                let p = e.path();
+                if !p.is_dir() {
+                    continue;
+                }
+                if e.file_name() == "autoconfig" && p.join("udev").is_dir() {
+                    for f in std::fs::read_dir(p.join("udev")).into_iter().flatten().flatten() {
+                        let _ = std::fs::copy(f.path(), udev.join(f.file_name()));
+                    }
+                } else if depth < 6 {
+                    stack.push((p, depth + 1));
+                }
+            }
+        }
+        let _ = std::fs::write(dir.join(".shipped"), "");
+    }
+    let s = app.pads.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    for (i, name) in s.pads.iter().enumerate() {
+        let (Some(guid), Some((v, p))) = (s.guids.get(i), s.ids.get(i)) else { continue };
+        if let Some(text) = retroarch_pad_profile(name, guid, *v, *p) {
+            let file: String = name.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '_' }).collect();
+            std::fs::write(udev.join(format!("borne-{file}.cfg")), text).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(dir)
 }
 
 /// Settings for RetroArch set in Borne (none yet beyond the defaults above).
@@ -1333,6 +1465,23 @@ pub fn stop() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retroarch_profile_of_a_pad_from_sdl() {
+        if cfg!(target_os = "macos") {
+            return;
+        }
+        // Xbox Series X over Bluetooth (SDL_GameControllerDB): X on button 3, triggers on axes.
+        let t = retroarch_pad_profile("Xbox Wireless Controller", "050000005e040000130b000022050000", 0x045e, 0x0b13).unwrap();
+        assert!(t.contains("input_device = \"Xbox Wireless Controller\""), "{t}");
+        assert!(t.contains("input_vendor_id = \"1118\""));
+        assert!(t.contains("input_b_btn = \"0\""), "RetroArch's B is SDL's A (bottom)");
+        assert!(t.contains("input_y_btn = \"3\""), "{t}");
+        assert!(t.contains("input_up_btn = \"h0up\""), "{t}");
+        assert!(t.contains("input_r2_axis = \"+4\""), "{t}");
+        assert!(t.contains("input_l_x_plus_axis = \"+0\""));
+        assert!(retroarch_pad_profile("?", "0300000000000000ffff000000000000", 0, 0).is_none());
+    }
 
     #[test]
     fn the_users_own_appimages_are_found() {

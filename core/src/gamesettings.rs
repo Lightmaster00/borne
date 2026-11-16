@@ -323,6 +323,123 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
     }
 }
 
+// ---------- The console's language ----------
+//
+// The system language of the emulated console, set before each game so that a game carrying
+// several languages starts in the one chosen (library::play_language). Each console numbers its
+// languages its own way; a language it does not have leaves English.
+
+/// RetroArch's language (RETRO_LANGUAGE): the cores that ask for one get it.
+pub fn retroarch_language(code: &str) -> Vec<(String, String)> {
+    let n = match code {
+        "ja" => 1,
+        "fr" => 2,
+        "es" => 3,
+        "de" => 4,
+        "it" => 5,
+        "nl" => 6,
+        "pt" => 8,
+        "ru" => 9,
+        "ko" => 10,
+        "zh" => 12,
+        "pl" => 14,
+        _ => 0,
+    };
+    vec![("user_language".into(), n.to_string())]
+}
+
+/// The PS3, PS4 and PS Vita list (CellSysutilLang, SceSystemParamLang).
+fn sony_language(code: &str) -> u32 {
+    match code {
+        "ja" => 0,
+        "fr" => 2,
+        "es" => 3,
+        "de" => 4,
+        "it" => 5,
+        "nl" => 6,
+        "pt" => 7,
+        "ru" => 8,
+        "ko" => 9,
+        "zh" => 11,
+        "fi" => 12,
+        "sv" => 13,
+        "da" => 14,
+        "no" => 15,
+        "pl" => 16,
+        _ => 1,
+    }
+}
+
+pub fn language_apply(program: &str, data: &Path, userdir: &Path, code: &str) -> Result<(), String> {
+    let ini = crate::emulators::ini_set;
+    match program {
+        // Dolphin (GameCube): given on its command line (emulators.json, dolphin_language).
+        // Switch: 0 Japanese, 1 American English, 2 French, 3 German, 4 Italian, 5 Spanish,
+        // 6 Chinese, 7 Korean, 8 Dutch, 9 Portuguese, 10 Russian.
+        "eden" | "citron" => {
+            let n = match code {
+                "ja" => "0",
+                "fr" => "2",
+                "de" => "3",
+                "it" => "4",
+                "es" => "5",
+                "zh" => "6",
+                "ko" => "7",
+                "nl" => "8",
+                "pt" => "9",
+                "ru" => "10",
+                _ => "1",
+            };
+            let path = if cfg!(target_os = "macos") {
+                data.join("config/qt-config.ini")
+            } else {
+                userdir.join("config").join(program).join("qt-config.ini")
+            };
+            ini(&path, &[("System", "language_index\\default", "false"), ("System", "language_index", n)])
+        }
+        "ryubing" => {
+            let name = match code {
+                "ja" => "Japanese",
+                "fr" => "French",
+                "de" => "German",
+                "it" => "Italian",
+                "es" => "Spanish",
+                "zh" => "SimplifiedChinese",
+                "ko" => "Korean",
+                "nl" => "Dutch",
+                "pt" => "Portuguese",
+                "ru" => "Russian",
+                _ => "AmericanEnglish",
+            };
+            json_patch(&data.join("Config.json"), &[("system_language", json!(name))])
+        }
+        "rpcs3" => {
+            let names = [
+                "Japanese",
+                "English (US)",
+                "French",
+                "Spanish",
+                "German",
+                "Italian",
+                "Dutch",
+                "Portuguese (Portugal)",
+                "Russian",
+                "Korean",
+                "Chinese (Trad.)",
+                "Chinese (Simp.)",
+                "Finnish",
+                "Swedish",
+                "Danish",
+                "Norwegian",
+                "Polish",
+            ];
+            yaml_set(&data.join("config.yml"), &[("System", "Language", names[sony_language(code) as usize])])
+        }
+        "shadps4" => ini(&data.join("config.toml"), &[("Settings", "consoleLanguage", &sony_language(code).to_string())]),
+        _ => Ok(()),
+    }
+}
+
 // ---------- Emulator options of one game ----------
 //
 // Settings of the emulator itself, chosen for one game (a widescreen hack, docked mode, rewind…):

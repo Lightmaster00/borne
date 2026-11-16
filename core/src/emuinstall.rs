@@ -247,6 +247,11 @@ fn root(app: &Shared) -> PathBuf {
     app.paths.root.join("emulators")
 }
 
+/// Where Borne installs a program (each version in a folder of its own).
+pub fn program_dir(app: &Shared, program: &str) -> PathBuf {
+    root(app).join(program)
+}
+
 pub fn cores_dir(app: &Shared) -> PathBuf {
     root(app).join("retroarch-cores")
 }

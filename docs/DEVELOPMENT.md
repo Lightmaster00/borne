@@ -95,7 +95,8 @@ bleeding one shows another edge's colour. Look at it after any change to `Case3D
 
 Useful variables: `BORNE_DATA_DIR` (data folder), `BORNE_LANG` (UI language),
 `BORNE_DEBUG_INPUT=1` (`POST /api/v1/debug/pad?action=` and `/debug/stick?x=&y=` drive the UI),
-`BORNE_DEBUG_DL_KBPS` (download rate limit), `BORNE_UPDATE_URL` (another release server).
+`BORNE_DEBUG_DL_KBPS` (download rate limit), `BORNE_UPDATE_URL` (another release server),
+`BORNE_DISCOVER_NET=a.b.c` (the network searched for RomM, e.g. `127.0.0` in tests).
 
 ## Translations
 

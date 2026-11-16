@@ -20,6 +20,7 @@ mod cheats;
 mod controls;
 mod db;
 mod diag;
+mod discover;
 mod downloads;
 mod emuinstall;
 mod emulators;

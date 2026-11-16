@@ -288,8 +288,8 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
 ### 5.4.1 Game page and input
 
 - A game opens on its own page before anything is downloaded: details, state, actions (download, play from
-  the network, play, delete…), version chips (region, languages, revision), emulator language chips
-  (Automatic follows the UI language), summary. Choices are stored per profile. The title and the
+  the network, play, delete…), version chips (region, languages, revision; updates and DLC left
+  out), summary. Choices are stored per profile. The title and the
   summary follow the interface language when ScreenScraper has them in it (else RomM's summary).
 - Everything works with the gamepad or the keyboard (focus rings, row/column navigation). The mouse is
   not used: the launcher hides the pointer and drops mouse, wheel and touch events.
@@ -377,7 +377,16 @@ reports the offline state and syncs on reconnection according to section 6.4.
 - Local deletion is separate from remote deletion in RomM; clear confirmation, never any confusion between the two.
 - Versions of the same game (regions, languages, revisions) are grouped into one library entry, keyed by the
   metadata id RomM matched (RomM's own "sibling" identity) or by the file name without tags. The version shown
-  is the profile's choice, then an installed one, then the best match for the UI language.
+  is the profile's choice, then an installed one, then the best match for the UI language. An update, a
+  DLC or a patch that RomM stores as a game of its own (a Switch "[v131072]", a DLC title ID) is grouped
+  with it but never launched by default, nor offered as a version (`extra` in the version rows).
+- The game page offers the playable versions (regions, languages, revision); the one chosen is
+  launched. The console's system language is set in the emulator before each game
+  (`library::play_language`, `gamesettings::language_apply`): the language chosen for the game in
+  its settings if the version has it, else the interface's when the version has it or lists none
+  (European releases carry several), else the version's first. Applied to RetroArch
+  (`user_language`), Dolphin (GameCube, command line), Eden and Citron (`language_index`),
+  Ryubing (`system_language`), RPCS3 (`System: Language`) and shadPS4 (`consoleLanguage`).
 
 ### 6.7 Playing from the network (Borne virtual mount)
 
@@ -496,6 +505,18 @@ explains the limits. It never runs privileged commands silently.
   ~/AppImages, ~/.local/bin, ~/Emulation/tools or ~/bin, by file name (the newest), then a
   Flatpak Borne installs; else Borne installs its own (AppImages extracted once, no FUSE needed).
 - Emulators are started as child processes of Borne and inherit Borne's Steam Input layout.
+- Pads: on Linux the emulators see the pads as the kernel gives them (`SDL_JOYSTICK_HIDAPI=0`), as
+  Borne does, so the pad Borne set up (its SDL GUID) is the one they find — a Switch Pro or
+  DualSense pad otherwise gets another GUID from SDL's own drivers. Started from Steam, the pads
+  Steam hides from games (`SDL_GAMECONTROLLER_IGNORE_DEVICES`) are left out of the players and
+  Steam's virtual pad stands for the one in the player's hands. RetroArch gets a profile per
+  connected pad (udev, from SDL_GameControllerDB) next to those it ships, in Borne's own
+  autoconfig folder. Each game's pads are written in the log ("pads").
+- First start: the RomM server is looked for on the local network (`GET /api/v1/server/discover`:
+  the /24 of this computer, ports 8080, 80 and 8443, RomM's heartbeat; a few seconds) and filled in.
+  The first sync of an empty library shows "Preparing your library" (games, then covers) until the
+  covers are in (A shows it at once; two minutes at most); covers fade in when they arrive.
+- In the library, B (Backspace) goes back to "Who's playing?"; the profile pill at the top says so.
 - A "raw gamepad" Steam Input layout is provided and recommended, so Borne and the emulators handle mapping.
 - Gyro, separate Joy-Con and Wiimote are tested specifically under Steam Input.
 - Returning to the UI is guaranteed when the emulator exits, including after a crash.
@@ -1005,7 +1026,7 @@ About and screenshots side by side on the game page, credits on one line.
   stored by RomM (`ss_metadata.*_path`), from any version of the game, fetched once with the profile's
   token and cached in `media/art`. Library entries and the game page list the kinds available
   (`art_kinds`) so the UI asks only for those.
-- Game page `languages`: the languages found across the game's versions, each with the version
+- Game settings `languages`: the languages found across the game's versions, each with the version
   launched for it (the region that natively speaks it first, then installed, then the usual score).
   Choosing one stores both the version and the language.
 

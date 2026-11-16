@@ -1214,10 +1214,6 @@
         <translation>Chargement de la bande-annonce…</translation>
     </message>
     <message>
-        <source>Language</source>
-        <translation>Langue</translation>
-    </message>
-    <message>
         <source>About</source>
         <translation>À propos</translation>
     </message>
@@ -1244,6 +1240,18 @@
     <message>
         <source>Download paused at %1%</source>
         <translation>Téléchargement en pause à %1 %</translation>
+    </message>
+    <message>
+        <source>Version %1</source>
+        <translation>Version %1</translation>
+    </message>
+    <message>
+        <source>rev %1</source>
+        <translation>rév. %1</translation>
+    </message>
+    <message>
+        <source>Version</source>
+        <translation>Version</translation>
     </message>
 </context>
 <context>
@@ -2566,6 +2574,26 @@
         <source>Borne shows in Steam the next time it starts.</source>
         <translation>Borne apparaîtra dans Steam à son prochain démarrage.</translation>
     </message>
+    <message>
+        <source>Change profile</source>
+        <translation>Changer de profil</translation>
+    </message>
+    <message>
+        <source>Preparing your library</source>
+        <translation>Préparation de ta bibliothèque</translation>
+    </message>
+    <message>
+        <source>Games from RomM: %1 of %2</source>
+        <translation>Jeux de RomM : %1 sur %2</translation>
+    </message>
+    <message>
+        <source>Covers: %1 left</source>
+        <translation>Jaquettes : encore %1</translation>
+    </message>
+    <message>
+        <source>A: see it now</source>
+        <translation>A : la voir tout de suite</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -2807,6 +2835,18 @@
     <message>
         <source>Enter</source>
         <translation>Entrée</translation>
+    </message>
+    <message>
+        <source>Looking for RomM on your network…</source>
+        <translation>Recherche de RomM sur ton réseau…</translation>
+    </message>
+    <message>
+        <source>RomM found on your network: %1. Press Start to connect.</source>
+        <translation>RomM trouvé sur ton réseau : %1. Appuie sur Start pour te connecter.</translation>
+    </message>
+    <message>
+        <source>RomM servers found: %1. The first is filled in; press Start to connect.</source>
+        <translation>Serveurs RomM trouvés : %1. Le premier est rempli ; appuie sur Start pour te connecter.</translation>
     </message>
 </context>
 <context>

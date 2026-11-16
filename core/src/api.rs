@@ -22,6 +22,7 @@
 //!   GET    /api/v1/emulators/<program>/options            the same for every game it runs
 //!   POST   /api/v1/emulators/<program>/options            { key, value | "default" }
 //!   GET    /api/v1/controls  ·  POST {key, value|"default"}   controls for every game
+//!   GET    /api/v1/server/discover                       RomM servers on the local network
 //!   GET    /api/v1/steam  ·  POST (adds Borne to Steam)  ·  DELETE (ChimeraOS: removes it)
 //!   POST   /api/v1/games/<id>/emuoptions                  { key, value | "default" }
 //!   GET    /api/v1/screenscraper/search?q=&platform=   ScreenScraper games by name, to correct a match
@@ -231,6 +232,14 @@ fn settings(app: &Shared) -> Value {
             "system_files": crate::systemfiles::status(app),
             "display": crate::gamesettings::view(app, crate::gamesettings::Scope::All, ""),
             "save_sync": crate::savesync::enabled(app) })
+}
+
+/// The interface's language, as the library is asked in it: the language games are played in
+/// when they have it (emulators.rs).
+fn remember_ui_lang(app: &Shared, lang: &str) {
+    if crate::library::EMU_LANGUAGES.contains(&lang) && app.db.setting("ui.lang").as_deref() != Some(lang) {
+        app.db.set_setting("ui.lang", lang);
+    }
 }
 
 /// Installing or linking a version makes it the one the active profile sees for that game.
@@ -664,6 +673,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             let search = query(&q, "q");
             let local = query(&q, "local").as_deref() == Some("1");
             let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
+            remember_ui_lang(app, &lang);
             let rows = match platform.as_deref().and_then(library::joined_parts) {
                 Some(parts) => parts.iter().flat_map(|p| app.db.games(Some(p), search.as_deref(), local)).collect(),
                 None => app.db.games(platform.as_deref(), search.as_deref(), local),
@@ -976,6 +986,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Err(x) => err(req, 400, &x),
             }
         }
+        // RomM servers on the local network (first start: no address to type).
+        (Method::Get, ["api", "v1", "server", "discover"]) => ok(req, crate::discover::scan()),
         // Borne in Steam (steam.rs).
         (Method::Get, ["api", "v1", "steam"]) => ok(req, crate::steam::status()),
         (Method::Post, ["api", "v1", "steam"]) => match crate::steam::add(&app.resources) {
