@@ -439,6 +439,11 @@ pub fn playing() -> bool {
     SESSION.lock().unwrap_or_else(|e| e.into_inner()).is_some()
 }
 
+/// Whether the game is paused by the quit question.
+pub fn paused() -> bool {
+    SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|s| s.paused).unwrap_or(false)
+}
+
 /// The game being played, if any.
 pub fn playing_rom() -> Option<i64> {
     SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|s| s.rom_id)
@@ -459,7 +464,7 @@ fn game_file(app: &Shared, g: &GameRow) -> Result<PathBuf, String> {
         if let Some(m) = &g.local_main {
             let p = PathBuf::from(m);
             // Downloaded compressed by an earlier Borne: downloaded again, now extracted.
-            if p.is_file() && crate::downloads::extractable(&p) && !crate::downloads::keeps_archive(&g.platform_slug) {
+            if p.is_file() && crate::downloads::extractable(&p) && !crate::downloads::keeps_archive(&g.platform_slug, &p) {
                 crate::downloads::delete_local(app, g.rom_id)?;
                 return Err(crate::stream::COMPRESSED.into());
             }
@@ -605,6 +610,10 @@ fn command(
     let mut args: Vec<String> = vec![];
     // Vita3K installs a .vpk and starts it; once installed, the game starts by its title ID
     // (no second installation).
+    // A game dumped as a folder (sce_sys/param.sfo, eboot.bin…) is given as that folder: Vita3K
+    // installs a folder as it does a .vpk, not one of its files.
+    let vita_dir = if p.id == "vita3k" { vita_content(rom) } else { None };
+    let rom = vita_dir.as_deref().unwrap_or(rom);
     let vita = if p.id == "vita3k" { vita_installed(&data_dir(app, &profile, &p.id), rom) } else { None };
     for a in &p.args {
         if a == "{rom}" {
@@ -659,6 +668,16 @@ fn command(
     };
     // AppImages extracted by Borne find their own libraries this way.
     cmd.env("APPIMAGE_EXTRACT_AND_RUN", "1");
+    // Linux: the emulator as an X11 client (Xwayland on a Wayland desktop), where Borne catches
+    // Escape before it (quitkey.rs). Under gamescope they already are.
+    if cfg!(target_os = "linux") && std::env::var_os("DISPLAY").is_some() {
+        cmd.env_remove("WAYLAND_DISPLAY");
+        for var in ["QT_QPA_PLATFORM", "SDL_VIDEODRIVER", "GDK_BACKEND"] {
+            if std::env::var(var).map(|v| v.to_lowercase().contains("wayland")).unwrap_or(false) {
+                cmd.env_remove(var);
+            }
+        }
+    }
     cmd.envs(xdg_env(app, &profile, &p.id));
     // BIOS, keys and firmware where this emulator reads them.
     let exe = match found {
@@ -765,13 +784,51 @@ fn log_tail(p: &Path) -> String {
     out.join(" · ").chars().take(300).collect()
 }
 
+/// The folder of a PS Vita game dumped as files (the one holding sce_sys/param.sfo), when the
+/// file Borne picked is one of them: looked for above the file, then below its folder. None for
+/// a .vpk or .zip, given as they are.
+fn vita_content(rom: &Path) -> Option<PathBuf> {
+    let ext = rom.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if rom.is_file() && (ext == "vpk" || ext == "zip") {
+        return None;
+    }
+    let has = |d: &Path| d.join("sce_sys/param.sfo").is_file();
+    if rom.is_dir() && has(rom) {
+        return None;
+    }
+    let start = if rom.is_dir() { rom } else { rom.parent()? };
+    if let Some(d) = start.ancestors().take(4).find(|d| has(d)) {
+        return Some(d.to_path_buf());
+    }
+    let mut stack = vec![(start.to_path_buf(), 0)];
+    while let Some((d, depth)) = stack.pop() {
+        for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                if has(&p) {
+                    return Some(p);
+                }
+                if depth < 3 {
+                    stack.push((p, depth + 1));
+                }
+            }
+        }
+    }
+    None
+}
+
 /// A PS Vita game's title ID (PCSE00001…), from the param.sfo of its .vpk (a zip), when Vita3K
 /// has it installed already (`ux0/app/<ID>` in its file system).
 fn vita_installed(data: &Path, vpk: &Path) -> Option<String> {
-    let f = std::fs::File::open(vpk).ok()?;
-    let mut z = zip::ZipArchive::new(f).ok()?;
-    let mut sfo = Vec::new();
-    std::io::Read::read_to_end(&mut z.by_name("sce_sys/param.sfo").ok()?, &mut sfo).ok()?;
+    let sfo = if vpk.is_dir() {
+        std::fs::read(vpk.join("sce_sys/param.sfo")).ok()?
+    } else {
+        let f = std::fs::File::open(vpk).ok()?;
+        let mut z = zip::ZipArchive::new(f).ok()?;
+        let mut sfo = Vec::new();
+        std::io::Read::read_to_end(&mut z.by_name("sce_sys/param.sfo").ok()?, &mut sfo).ok()?;
+        sfo
+    };
     let tid = crate::savesync::sfo_value(&sfo, "TITLE_ID")?;
     let ok = tid.len() == 9 && tid.chars().all(|c| c.is_ascii_alphanumeric());
     (ok && data.join("ux0/app").join(&tid).is_dir()).then_some(tid)
@@ -847,6 +904,9 @@ fn cia_installed(app: &Shared, profile: &str, found: &Found, cia: &Path) -> Resu
         }
     })
 }
+
+/// Held while a finished game's save is sent to RomM.
+static SAVING: Mutex<()> = Mutex::new(());
 
 /// A game is being started (saves pulled, emulator spawned): a second A press must not start
 /// another one before the session exists.
@@ -929,6 +989,8 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
     let emu_name = e.core.clone().unwrap_or_else(|| p.id.clone());
     let sync = Some((profile.clone(), system.clone(), p.id.clone(), rom.clone(), emu_name));
+    // The previous game's save on its way to RomM first (the same game may be played again).
+    drop(SAVING.lock().unwrap_or_else(|e| e.into_inner()));
     crate::savesync::claim(app, &profile, &p.id);
     crate::savesync::retry_pending(app);
     match crate::savesync::pull(app, &profile, rom_id, &system, &p.id, &rom) {
@@ -1093,12 +1155,23 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                 });
                 let played = s.started.elapsed().as_secs();
                 let (rom_id, name, sync) = (s.rom_id, s.name.clone(), s.sync.clone());
+                // The save is sent while the player already moves on: held by SAVING until done,
+                // so that a game started meanwhile waits for it before taking its saves.
+                let saving = SAVING.lock().unwrap_or_else(|e| e.into_inner());
                 *g = None;
                 drop(g);
-                // The save to RomM, then the end of the session is announced with the outcome.
+                app.db.log("play", &format!("{name}: session ended after {played} s ({status})"));
+                // Recently played and time played, for the library's "Recent" tab and sorting.
+                if error.is_none() {
+                    if let (Some(p), Some(g)) = (app.active_profile(), app.db.game(rom_id)) {
+                        app.db.record_play(&p.id, &g.group_key, played as i64);
+                    }
+                }
+                app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": rom_id, "seconds": played, "error": error, "saving": sync.is_some() } }));
                 let saved = sync.map(|(profile, system, program, rom, emu)| {
                     crate::savesync::push(&app, &profile, rom_id, &system, &program, &rom, &emu)
                 });
+                drop(saving);
                 let save_note = match &saved {
                     Some(Ok(n)) if *n > 0 => Some("save sent to RomM".to_string()),
                     Some(Err(e)) => Some(e.clone()),
@@ -1107,14 +1180,7 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                 if let Some(n) = &save_note {
                     app.db.log("saves", &format!("{name}: {n}"));
                 }
-                app.db.log("play", &format!("{name}: session ended after {played} s ({status})"));
-                // Recently played and time played, for the library's "Recent" tab and sorting.
-                if error.is_none() {
-                    if let (Some(p), Some(g)) = (app.active_profile(), app.db.game(rom_id)) {
-                        app.db.record_play(&p.id, &g.group_key, played as i64);
-                    }
-                }
-                app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": rom_id, "seconds": played, "error": error, "saves": save_note } }));
+                app.emit(json!({ "type": "saves", "rom_id": rom_id, "note": save_note }));
                 return;
             }
             Err(e) => {
@@ -1235,6 +1301,18 @@ mod tests {
         assert_eq!(vita_installed(&d, &vpk), None); // not installed: the .vpk is given
         std::fs::create_dir_all(d.join("ux0/app/PCSE00001")).unwrap();
         assert_eq!(vita_installed(&d, &vpk).as_deref(), Some("PCSE00001"));
+        // A folder dump: the folder, whichever of its files was picked.
+        let dump = d.join("Game (Europe)/PCSE00001");
+        std::fs::create_dir_all(dump.join("sce_sys")).unwrap();
+        std::fs::create_dir_all(dump.join("sce_module")).unwrap();
+        std::fs::write(dump.join("sce_sys/param.sfo"), &sfo).unwrap();
+        std::fs::write(dump.join("eboot.bin"), b"x").unwrap();
+        std::fs::write(dump.join("sce_module/libc.suprx"), b"x").unwrap();
+        assert_eq!(vita_content(&dump.join("eboot.bin")).as_deref(), Some(dump.as_path()));
+        assert_eq!(vita_content(&dump.join("sce_module/libc.suprx")).as_deref(), Some(dump.as_path()));
+        assert_eq!(vita_content(&d.join("Game (Europe)/x.bin")).as_deref(), Some(dump.as_path()), "found below");
+        assert_eq!(vita_content(&vpk), None);
+        assert_eq!(vita_installed(&d, &dump).as_deref(), Some("PCSE00001"), "installed folder dump");
         let _ = std::fs::remove_dir_all(d);
     }
 

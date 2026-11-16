@@ -470,20 +470,6 @@ pub fn sha256_bytes(b: &[u8]) -> String {
     sha2::Digest::finalize(h).iter().map(|b| format!("{b:02x}")).collect()
 }
 
-pub fn sha256_file(p: &Path) -> String {
-    let mut h = <sha2::Sha256 as sha2::Digest>::new();
-    if let Ok(mut f) = std::fs::File::open(p) {
-        let mut buf = vec![0u8; 1 << 16];
-        while let Ok(n) = std::io::Read::read(&mut f, &mut buf) {
-            if n == 0 {
-                break;
-            }
-            sha2::Digest::update(&mut h, &buf[..n]);
-        }
-    }
-    sha2::Digest::finalize(h).iter().map(|b| format!("{b:02x}")).collect()
-}
-
 fn walk(dir: &Path) -> Vec<PathBuf> {
     let mut out = vec![];
     let mut stack = vec![dir.to_path_buf()];

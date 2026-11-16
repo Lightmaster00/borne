@@ -24,3 +24,7 @@ else()
     BUILD_WITH_INSTALL_RPATH ON)
 endif()
 target_link_libraries(borne-ui PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick)
+if(APPLE)
+  # Escape caught while a game runs (main.cpp, QuitKey).
+  target_link_libraries(borne-ui PRIVATE "-framework Carbon")
+endif()

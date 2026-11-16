@@ -10,9 +10,14 @@
 #include <QGuiApplication>
 #include <QLocale>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QTranslator>
 #include <QUrl>
 #include <QVariantMap>
+
+#ifdef Q_OS_MACOS
+#include <Carbon/Carbon.h>
+#endif
 
 // Borne is played with a gamepad or a keyboard only: the pointer stays hidden and mouse,
 // wheel and touch input never reach the interface.
@@ -47,6 +52,69 @@ protected:
             return QObject::eventFilter(watched, event);
         }
     }
+};
+
+// Escape while a game runs: Borne's quit question, never the emulator's own menu. The key is
+// taken from every application only while `active` (a game is running); the interface then asks
+// the core to pause and ask, or to resume. Linux does the same in the core (core/src/quitkey.rs);
+// macOS needs the application's event loop, so it is here (a Carbon hot key: no permission asked).
+class QuitKey : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged)
+    Q_PROPERTY(bool available READ available CONSTANT)
+
+public:
+    explicit QuitKey(QObject *parent = nullptr) : QObject(parent)
+    {
+#ifdef Q_OS_MACOS
+        EventTypeSpec spec{kEventClassKeyboard, kEventHotKeyPressed};
+        InstallApplicationEventHandler(&QuitKey::onHotKey, 1, &spec, this, nullptr);
+#endif
+    }
+    ~QuitKey() override { setActive(false); }
+
+    bool active() const { return m_active; }
+    bool available() const
+    {
+#ifdef Q_OS_MACOS
+        return true;
+#else
+        return false;
+#endif
+    }
+    void setActive(bool on)
+    {
+        if (on == m_active)
+            return;
+#ifdef Q_OS_MACOS
+        if (on) {
+            const EventHotKeyID id{'BRNE', 1};
+            if (RegisterEventHotKey(kVK_Escape, 0, id, GetApplicationEventTarget(), 0, &m_ref) != noErr)
+                m_ref = nullptr;
+        } else if (m_ref) {
+            UnregisterEventHotKey(m_ref);
+            m_ref = nullptr;
+        }
+#endif
+        m_active = on;
+        emit activeChanged();
+    }
+
+signals:
+    void activeChanged();
+    void pressed();
+
+private:
+#ifdef Q_OS_MACOS
+    static OSStatus onHotKey(EventHandlerCallRef, EventRef, void *self)
+    {
+        QMetaObject::invokeMethod(static_cast<QuitKey *>(self), "pressed", Qt::QueuedConnection);
+        return noErr;
+    }
+    EventHotKeyRef m_ref = nullptr;
+#endif
+    bool m_active = false;
 };
 
 int main(int argc, char *argv[])
@@ -84,6 +152,8 @@ int main(int argc, char *argv[])
     app.installEventFilter(&noPointer);
 
     QQmlApplicationEngine engine;
+    QuitKey quitKey;
+    engine.rootContext()->setContextProperty(QStringLiteral("quitKey"), &quitKey);
     // QML module for the theme API: import Borne.Theme
     engine.addImportPath(ui + QStringLiteral("/imports"));
     engine.setInitialProperties({

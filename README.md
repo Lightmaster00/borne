@@ -86,8 +86,9 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 - **Saves on RomM**, per profile: fetched before a game when newer, sent after it, replaced copies
   archived — for RetroArch, memory cards per game (Dolphin, PCSX2, DuckStation), Switch, PS3, PS4,
   Xbox 360 save folders. Profiles never share saves.
-- **Cheats** from public databases (libretro, DeadSkullzJr's DS codes, Dolphin's codes,
-  switch-cheats-db), or a `.pnach` you give for a PS2 game.
+- **Cheats** from public databases (libretro, matched by the game's title and region;
+  DeadSkullzJr's DS codes, else libretro's; Dolphin's codes; switch-cheats-db), or a `.pnach` you
+  give for a PS2 game.
 - **System files** (BIOS, keys, firmware) taken from RomM or given by you, checked and placed for
   each emulator; Borne never downloads them by itself.
 - **Settings in plain words**: installation and saves, the interface (videos, size, animations,
@@ -114,7 +115,7 @@ and the emulators' releases).
 | R3 | Tab | Downloads |
 | Start | M or F1 | Settings |
 | Select | F2 | Sort and filter |
-| Select + Start, together | Esc twice (RetroArch) | Pause and ask whether to quit |
+| Select + Start, together | Escape | Pause and ask whether to quit (any emulator) |
 
 The hints on screen show the buttons of the device in use (or the one chosen in Settings →
 Interface). Borne is played with a gamepad or a keyboard only: the mouse is ignored.

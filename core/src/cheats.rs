@@ -24,7 +24,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 const LIBRETRO_ZIP: &str = "https://buildbot.libretro.com/assets/frontend/cheats.zip";
-const DS_REPO: &str = "DeadSkullzJr/NDS-i-Cheat-Databases";
+/// DS: DeadSkullzJr's database (cheats.xml). His own GitHub repository was taken down; this public
+/// copy of it on GitHub keeps the file. Without it, libretro's DS cheat files are used.
+const DS_XML: &str = "https://raw.githubusercontent.com/murmury/nds-i-cheat-databases/main/Cheat%20Databases/cheats.xml";
 /// Switch: HamletDuFromage's database in Atmosphère's layout (contents/<title id>/cheats/<build id>.txt).
 const SWITCH_ZIP: &str = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents.zip";
 
@@ -102,36 +104,20 @@ fn refresh(app: &Shared) {
             let _ = std::fs::remove_file(dir.join("cheats.zip.part"));
         }
         if !fresh(&dir.join("nds.stamp")) {
-            let spec = json!({ "type": "github", "repo": DS_REPO, "ends": [".7z", ".zip"] });
-            match crate::emuinstall::latest(&spec).and_then(|(_, url, sha)| {
-                let file = dir.join("nds.download");
-                crate::emuinstall::fetch_file(&url, &file)?;
-                if let Some(want) = sha {
-                    if !crate::emuinstall::sha256_file(&file).eq_ignore_ascii_case(&want) {
-                        return Err("the DS database does not match its checksum".into());
-                    }
+            let part = dir.join("nds-cheats.xml.part");
+            match crate::emuinstall::fetch_file(DS_XML, &part).and_then(|_| {
+                let head = std::fs::read(&part).map(|b| b.into_iter().take(200).collect::<Vec<_>>()).unwrap_or_default();
+                if !String::from_utf8_lossy(&head).contains("<codelist") {
+                    return Err("the DS database is not a cheat list".into());
                 }
-                let out = dir.join("nds.part");
-                let _ = std::fs::remove_dir_all(&out);
-                if url.to_lowercase().ends_with(".7z") {
-                    sevenz_rust2::decompress_file(&file, &out).map_err(|e| e.to_string())?;
-                } else {
-                    crate::downloads::extract_zip(&file, &out, &std::sync::atomic::AtomicBool::new(false))?;
-                }
-                let _ = std::fs::remove_file(&file);
-                let xml = walk(&out)
-                    .into_iter()
-                    .find(|p| p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case("cheats.xml")).unwrap_or(false));
-                let xml = xml.ok_or("no cheats.xml in the DS database")?;
-                std::fs::rename(&xml, dir.join("nds-cheats.xml")).map_err(|e| e.to_string())?;
-                let _ = std::fs::remove_dir_all(&out);
-                Ok(())
+                std::fs::rename(&part, dir.join("nds-cheats.xml")).map_err(|e| e.to_string())
             }) {
                 Ok(()) => {
                     let _ = std::fs::write(dir.join("nds.stamp"), "");
                 }
                 Err(e) => errors.push(format!("DS: {e}")),
             }
+            let _ = std::fs::remove_file(&part);
         }
         // The Switch database is large: only with Switch games in the library.
         let has_switch = app.db.platforms().iter().any(|p| p.slug == "switch");
@@ -152,24 +138,24 @@ fn refresh(app: &Shared) {
         }
         *STATE.lock().unwrap_or_else(|e| e.into_inner()) =
             Some(json!({ "running": false, "error": if errors.is_empty() { Value::Null } else { json!(errors.join("; ")) } }));
+        if !errors.is_empty() {
+            *FAILED_AT.lock().unwrap_or_else(|e| e.into_inner()) = Some(std::time::Instant::now());
+        }
         app.emit(json!({ "type": "cheats" }));
     });
 }
 
-fn walk(dir: &Path) -> Vec<PathBuf> {
-    let mut out = vec![];
-    let mut stack = vec![dir.to_path_buf()];
-    while let Some(d) = stack.pop() {
-        for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
-            let p = e.path();
-            if p.is_dir() {
-                stack.push(p);
-            } else {
-                out.push(p);
-            }
-        }
+/// When a download last failed: not tried again for half an hour.
+static FAILED_AT: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+
+/// Whether a database is missing or older than a week (and the last try did not just fail).
+fn stale(app: &Shared) -> bool {
+    if FAILED_AT.lock().unwrap_or_else(|e| e.into_inner()).map(|t| t.elapsed().as_secs() < 1800).unwrap_or(false) {
+        return false;
     }
-    out
+    let dir = root(app);
+    let switch = app.db.platforms().iter().any(|p| p.slug == "switch");
+    !fresh(&dir.join("libretro.stamp")) || !fresh(&dir.join("nds.stamp")) || (switch && !fresh(&dir.join("switch.stamp")))
 }
 
 /// One cheat: a name (with its folder), and its codes.
@@ -189,12 +175,94 @@ fn stem(name: &str) -> String {
     }
 }
 
-/// The game's .cht: the one named exactly after its file (case and spacing ignored).
-fn libretro_file(app: &Shared, slug: &str, fs_name: &str) -> Option<PathBuf> {
-    let folder = root(app).join("libretro").join(libretro_folder(slug)?);
+/// The console's folder in libretro's database, wherever the archive put it.
+fn libretro_dir(app: &Shared, slug: &str) -> Option<PathBuf> {
+    let name = libretro_folder(slug)?;
+    let base = root(app).join("libretro");
+    [base.join(name), base.join("cht").join(name)].into_iter().find(|p| p.is_dir()).or_else(|| {
+        let mut stack = vec![(base, 0)];
+        while let Some((d, depth)) = stack.pop() {
+            for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    if e.file_name().to_string_lossy() == name {
+                        return Some(p);
+                    }
+                    if depth < 3 {
+                        stack.push((p, depth + 1));
+                    }
+                }
+            }
+        }
+        None
+    })
+}
+
+/// The title alone: what is in brackets and parentheses left out ("Zelda (USA) [!]" → "zelda").
+fn bare(s: &str) -> String {
+    let mut out = String::new();
+    let mut depth = 0;
+    for c in s.chars() {
+        match c {
+            '(' | '[' => depth += 1,
+            ')' | ']' => depth = (depth - 1).max(0),
+            _ if depth == 0 => out.push(c),
+            _ => {}
+        }
+    }
+    norm(&out.replace(['_', '.'], " ")).replace(" - ", " ").replace(['\'', ','], "")
+}
+
+/// The game's .cht: the one named exactly after its file (case and spacing ignored); else one
+/// with the same title, of the same region when the names tell it, the plain one before an
+/// "(Action Replay)" or "(Game Genie)" set.
+pub fn pick_cht(names: &[String], fs_name: &str) -> Option<usize> {
     let want = norm(&stem(fs_name));
-    let dir = std::fs::read_dir(&folder).ok()?;
-    dir.flatten().map(|e| e.path()).find(|p| norm(&stem(&p.file_name().unwrap_or_default().to_string_lossy())) == want)
+    if let Some(i) = names.iter().position(|n| norm(&stem(n)) == want) {
+        return Some(i);
+    }
+    let title = bare(&stem(fs_name));
+    if title.is_empty() {
+        return None;
+    }
+    let tags = |s: &str| -> Vec<String> {
+        s.to_lowercase().split(['(', ')', '[', ']', ',']).map(|t| t.trim().to_string()).filter(|t| !t.is_empty()).collect()
+    };
+    let mine = tags(&stem(fs_name));
+    let region = |t: &[String]| -> Option<&'static str> {
+        t.iter().find_map(|x| match x.as_str() {
+            "usa" | "u" | "us" => Some("usa"),
+            "europe" | "e" | "eu" | "france" | "fr" | "f" => Some("europe"),
+            "japan" | "j" | "jp" => Some("japan"),
+            "world" | "w" => Some("world"),
+            _ => None,
+        })
+    };
+    let my_region = region(&mine);
+    names
+        .iter()
+        .enumerate()
+        .filter(|(_, n)| bare(&stem(n)) == title)
+        .min_by_key(|(i, n)| {
+            let t = tags(&stem(n));
+            let same = my_region.is_some() && region(&t) == my_region;
+            let device = t.iter().any(|x| x.contains("action replay") || x.contains("game genie") || x.contains("gameshark"));
+            // Best first: same region, then the plain set, then the fewest extra tags, then the first.
+            (!same, device, t.len(), *i)
+        })
+        .map(|(i, _)| i)
+}
+
+fn libretro_file(app: &Shared, slug: &str, fs_name: &str) -> Option<PathBuf> {
+    let dir = libretro_dir(app, slug)?;
+    let files: Vec<PathBuf> = std::fs::read_dir(&dir)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.extension().map(|e| e.eq_ignore_ascii_case("cht")).unwrap_or(false))
+        .collect();
+    let names: Vec<String> = files.iter().map(|p| p.file_name().unwrap_or_default().to_string_lossy().into_owned()).collect();
+    pick_cht(&names, fs_name).map(|i| files[i].clone())
 }
 
 fn norm(s: &str) -> String {
@@ -323,9 +391,27 @@ fn game_cheats(app: &Shared, rom_id: i64) -> Result<(Vec<Cheat>, &'static str), 
             .filter(|m| Path::new(m).is_file())
             .ok_or("download the game first: its exact version is read from the file")?;
         let (code, crc) = ds_id(Path::new(&rom)).ok_or("this file is not a DS game")?;
-        let xml =
-            std::fs::read_to_string(root(app).join("nds-cheats.xml")).map_err(|_| "the DS cheat database is not here yet".to_string())?;
-        return Ok((ds_cheats(&xml, &code, crc).unwrap_or_default(), "ds"));
+        let xml = std::fs::read_to_string(root(app).join("nds-cheats.xml")).unwrap_or_default();
+        if let Some(list) = ds_cheats(&xml, &code, crc).filter(|l| !l.is_empty()) {
+            return Ok((list, "ds"));
+        }
+        // Not in DeadSkullzJr's list (or the list is not here): libretro's file for the game, its
+        // codes written as the DS list writes them ("AAAAAAAA BBBBBBBB" pairs).
+        if let Some(f) = libretro_file(app, "nds", &g.fs_name) {
+            let list = parse_cht(&std::fs::read_to_string(f).unwrap_or_default())
+                .into_iter()
+                .filter_map(|c| {
+                    let words: Vec<&str> = c.code.split(['+', ' ']).filter(|w| !w.is_empty()).collect();
+                    let pairs: Vec<String> = words.chunks(2).filter(|p| p.len() == 2).map(|p| format!("{} {}", p[0], p[1])).collect();
+                    (!pairs.is_empty()).then(|| Cheat { name: c.name, code: pairs.join("+") })
+                })
+                .collect();
+            return Ok((list, "libretro"));
+        }
+        if xml.is_empty() {
+            return Err("the DS cheat database is not here yet".into());
+        }
+        return Ok((vec![], "ds"));
     }
     if g.platform_slug == "ps2" {
         let file = ps2_file(app, &g.group_key);
@@ -362,8 +448,8 @@ fn game_cheats(app: &Shared, rom_id: i64) -> Result<(Vec<Cheat>, &'static str), 
 
 pub fn list(app: &Shared, rom_id: i64) -> Value {
     let dir = root(app);
-    let ready = dir.join("libretro.stamp").exists() || dir.join("nds.stamp").exists();
-    if !fresh(&dir.join("libretro.stamp")) || !fresh(&dir.join("nds.stamp")) {
+    let ready = dir.join("libretro.stamp").exists() || dir.join("nds.stamp").exists() || dir.join("switch.stamp").exists();
+    if stale(app) {
         refresh(app);
     }
     let on: Vec<String> =
@@ -824,6 +910,24 @@ mod tests {
         std::fs::write(d.join("g.rvz"), &rvz).unwrap();
         assert_eq!(disc_id(&d.join("g.rvz")).as_deref(), Some("RMCP01"));
         let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn picks_the_cheat_file_of_the_game() {
+        let names: Vec<String> = [
+            "Super Mario World (USA).cht",
+            "Super Mario World (Europe) (Rev 1).cht",
+            "Super Mario World (USA) (Action Replay).cht",
+            "Super Mario Kart (USA).cht",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+        assert_eq!(pick_cht(&names, "Super Mario World (USA).sfc"), Some(0), "exact name");
+        assert_eq!(pick_cht(&names, "Super Mario World (U) [!].smc"), Some(0), "same title and region");
+        assert_eq!(pick_cht(&names, "Super Mario World (E).sfc"), Some(1), "European file");
+        assert_eq!(pick_cht(&names, "super_mario_world.sfc"), Some(0), "no region: the plain set");
+        assert_eq!(pick_cht(&names, "Zelda (USA).sfc"), None);
     }
 
     #[test]

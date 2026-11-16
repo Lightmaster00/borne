@@ -670,9 +670,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             // Titles in the interface language (ScreenScraper), the list ordered on them: by their
             // first three letters, then by release date (library::shelf_order).
             for v in list.iter_mut() {
-                if let Some(t) = v["group_key"].as_str().and_then(|k| crate::screenscraper::title(app, k, &lang)) {
-                    v["name"] = json!(t);
-                }
+                crate::screenscraper::localize(app, v, &lang);
             }
             library::shelf_order(&mut list);
             // The profile's record: favourites, recently played; then the tab, filter and order asked.
@@ -745,9 +743,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     .map(|p| app.db.play_stats(&p.id).get(&g.group_key).map(|s| s.2).unwrap_or(false))
                     .unwrap_or(false));
                 let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
-                if let Some(t) = crate::screenscraper::title(app, &g.group_key, &lang) {
-                    game["name"] = json!(t);
-                }
+                game["group_key"] = json!(g.group_key);
+                crate::screenscraper::localize(app, &mut game, &lang);
                 let all = if versions.is_empty() { vec![g.clone()] } else { versions.clone() };
                 library::fill_media(&mut game, &versions);
                 let ids: Vec<i64> = std::iter::once(g.rom_id).chain(versions.iter().map(|v| v.rom_id)).collect();

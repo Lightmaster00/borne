@@ -124,7 +124,7 @@ pub fn link(app: &Shared, rom_id: i64) -> Result<PathBuf, String> {
         pick_main_of(files.iter().map(|(_, rel, _, size)| (*size as u64, PathBuf::from(rel))).collect()).ok_or("no game file found")?;
     // A compressed game cannot be handed to the emulator from the network: it is downloaded
     // (and extracted) instead, see emulators::play.
-    if crate::downloads::extractable(&main) && !crate::downloads::keeps_archive(&game.platform_slug) {
+    if crate::downloads::extractable(&main) && !crate::downloads::keeps_archive(&game.platform_slug, &main) {
         return Err(COMPRESSED.into());
     }
     // RomM must be able to serve the game's file: asked directly, so that its own answer (a file

@@ -30,6 +30,7 @@ mod media;
 mod pad;
 mod pairing;
 mod paths;
+mod quitkey;
 mod romm;
 mod savesync;
 mod screenscraper;
@@ -159,6 +160,9 @@ fn main() {
             },
         );
     }
+
+    // Escape during a game: Borne's question, not the emulator's menu.
+    quitkey::spawn(app.clone());
 
     // Pick up the state left by the previous session.
     downloads::verify_local(&app);

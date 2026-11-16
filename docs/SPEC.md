@@ -289,7 +289,8 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
 
 - A game opens on its own page before anything is downloaded: details, state, actions (download, play from
   the network, play, delete…), version chips (region, languages, revision), emulator language chips
-  (Automatic follows the UI language), summary. Choices are stored per profile.
+  (Automatic follows the UI language), summary. Choices are stored per profile. The title and the
+  summary follow the interface language when ScreenScraper has them in it (else RomM's summary).
 - Everything works with the gamepad or the keyboard (focus rings, row/column navigation). The mouse is
   not used: the launcher hides the pointer and drops mouse, wheel and touch events.
 - Button hints, and texts that name a button (`theme.key(action)`), follow the device in use (`theme.input`): the gamepad's buttons, or the keyboard's
@@ -565,7 +566,15 @@ blocks a launch just because a game was not tested or a community database rates
   works whatever the emulator and the interface do. The game pauses (its process group stopped)
   and Borne comes to the front to ask: Keep playing (chosen first, also B) or Quit the game; the
   chord again quits at once; with no answer in 30 s the game goes on. On macOS the emulator is
-  brought back to the front after. RetroArch quits on Esc pressed twice (keyboard).
+  brought back to the front after. Escape does the same on the keyboard (Escape again: the game
+  goes on), for every emulator, which never sees the key: on Linux the core grabs it on the X
+  server while a game runs (core/src/quitkey.rs; emulators are started as X11 clients, Xwayland on
+  a Wayland desktop), on macOS the interface registers it as a hot key (ui/launcher/main.cpp).
+- After the game, the session's end is told at once and the save is sent to RomM after it (a
+  "saves" event gives the outcome), so another game can be chosen straight away; a game started
+  meanwhile waits for that save before taking its own.
+- PS Vita: a .vpk or .zip is given to Vita3K as it is (a .7z or .rar is extracted); a game dumped
+  as files is given as its folder (the one holding sce_sys/param.sfo).
 - The emulator's output, and its own log files (`logs` in emulators.json, inside its data folder;
   a folder stands for its newest file), are watched every 250 ms for 90 s for lines that mean the
   game did not start (`fails`): the emulator is then closed and the line shown, instead of leaving

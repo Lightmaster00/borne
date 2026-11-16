@@ -28,11 +28,14 @@ pub fn dir_size(dir: &Path) -> u64 {
     walk_size(dir)
 }
 
-pub fn keeps_archive(platform: &str) -> bool {
-    matches!(
-        platform,
-        "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave" | "psvita"
-    )
+pub fn keeps_archive(platform: &str, archive: &Path) -> bool {
+    let zip = archive.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false);
+    match platform {
+        "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave" => true,
+        // Vita3K installs a .zip (as a .vpk), not a .7z or a .rar: those are extracted.
+        "psvita" => zip,
+        _ => false,
+    }
 }
 
 /// An archive Borne extracts (zip, 7z).
@@ -420,9 +423,9 @@ fn download(app: &Shared, id: i64, rom_id: i64, flag: &AtomicBool) -> Result<Out
 
     // Extract archives for the systems that need it.
     let mut install_root = staging.clone();
-    if files.len() == 1 && !keeps_archive(&game.platform_slug) {
+    if files.len() == 1 {
         let only = staging.join(relative_path(&detail, &files[0]).unwrap());
-        if extractable(&only) {
+        if extractable(&only) && !keeps_archive(&game.platform_slug, &only) {
             app.db.update_download(id, "extracting", total, total, None);
             emit(app, id, rom_id, "extracting", total, total, None, 0.0);
             let out_dir = staging.join(".extracted");

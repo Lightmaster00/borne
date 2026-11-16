@@ -1604,12 +1604,12 @@
         <translation>Lancement du jeu…</translation>
     </message>
     <message>
-        <source>Quit the game (in RetroArch; otherwise the emulator's own key or menu)</source>
-        <translation>Quitter le jeu (dans RetroArch ; sinon la touche ou le menu de l’émulateur)</translation>
-    </message>
-    <message>
         <source>Together: pause and quit the game</source>
         <translation>Ensemble : mettre en pause et quitter le jeu</translation>
+    </message>
+    <message>
+        <source>Pause and quit the game</source>
+        <translation>Mettre en pause et quitter le jeu</translation>
     </message>
 </context>
 <context>
@@ -2545,6 +2545,10 @@
     <message>
         <source>%1 is downloaded to be played: a temporary copy, removed first when space is needed.</source>
         <translation>%1 est téléchargé pour être joué : une copie temporaire, supprimée en premier quand la place manque.</translation>
+    </message>
+    <message>
+        <source>Sending the save to RomM…</source>
+        <translation>Envoi de la sauvegarde à RomM…</translation>
     </message>
 </context>
 <context>

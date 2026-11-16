@@ -1604,11 +1604,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Quit the game (in RetroArch; otherwise the emulator's own key or menu)</source>
+        <source>Together: pause and quit the game</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Together: pause and quit the game</source>
+        <source>Pause and quit the game</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2544,6 +2544,10 @@
     </message>
     <message>
         <source>%1 is downloaded to be played: a temporary copy, removed first when space is needed.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sending the save to RomM…</source>
         <translation type="unfinished" />
     </message>
 </context>

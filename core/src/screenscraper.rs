@@ -317,6 +317,34 @@ pub fn title(app: &Shared, group_key: &str, lang: &str) -> Option<String> {
     None
 }
 
+/// The game's description in the interface language, from its ScreenScraper record.
+pub fn synopsis_in(rec: &Value, lang: &str) -> Option<String> {
+    let code = match lang {
+        "ja" => "jp",
+        l => l,
+    };
+    rec["jeu"]["synopsis"]
+        .as_array()?
+        .iter()
+        .find(|s| s["langue"].as_str() == Some(code))
+        .and_then(|s| s["text"].as_str())
+        .map(|t| t.trim().to_string())
+        .filter(|t| !t.is_empty())
+}
+
+/// A game of the library shown in the interface language: its title, and its description when
+/// ScreenScraper has one in that language (RomM's, usually English, stays otherwise).
+pub fn localize(app: &Shared, v: &mut Value, lang: &str) {
+    let Some(key) = v["group_key"].as_str().map(str::to_string) else { return };
+    if let Some(t) = title(app, &key, lang) {
+        v["name"] = json!(t);
+    }
+    let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return };
+    if let Some(s) = synopsis_in(&rec, lang).or_else(|| v["summary"].is_null().then(|| synopsis_in(&rec, "en")).flatten()) {
+        v["summary"] = json!(s);
+    }
+}
+
 /// Every title ScreenScraper knows for the game (each region's), for the search.
 pub fn all_titles(app: &Shared, group_key: &str) -> Vec<String> {
     let Some(rec) = app.db.ss_record(group_key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return vec![] };
@@ -946,6 +974,16 @@ pub fn start(app: &Shared, again: bool) {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn description_in_the_interface_language() {
+        let rec = serde_json::json!({ "jeu": { "synopsis": [
+            { "langue": "en", "text": "A plumber." }, { "langue": "fr", "text": " Un plombier. " }, { "langue": "jp", "text": "配管工" }
+        ] } });
+        assert_eq!(super::synopsis_in(&rec, "fr").as_deref(), Some("Un plombier."));
+        assert_eq!(super::synopsis_in(&rec, "ja").as_deref(), Some("配管工"));
+        assert_eq!(super::synopsis_in(&rec, "de"), None);
+    }
+
     use super::*;
 
     #[test]

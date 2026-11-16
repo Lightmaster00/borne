@@ -254,7 +254,11 @@ Window {
                   [{ id: "yes", label: qsTr("Delete from this device") }, { id: "no", label: qsTr("Cancel") }], function (c) {
             if (c !== "yes") return
             api("DELETE", "/api/v1/games/" + g.rom_id + "/local", null, function (r, err) {
-                if (err) toasts.show(err, "error"); else toasts.show(qsTr("%1 deleted from this device.").arg(g.name), "ok")
+                if (err) { toasts.show(CoreText.tr(err), "error"); return }
+                toasts.show(qsTr("%1 deleted from this device.").arg(g.name), "ok")
+                // Back to the library, where the game was chosen.
+                if (gameSettingsPage.visible) gameSettingsPage.close()
+                if (overlay === "game") closeGame()
             })
         })
     }
@@ -414,11 +418,16 @@ Window {
             gameMode = false
             if (s && s.error) { launchPhase = ""; toasts.show(CoreText.tr(s.error), "error") }
             else {
-                launchNote = s && s.saves ? (s.saves === "save sent to RomM" ? qsTr("Save sent to RomM.") : qsTr("RomM unreachable: the save will be sent later.")) : ""
+                launchNote = s && s.saving ? qsTr("Sending the save to RomM…") : ""
                 launchPhase = "ending"; launchEnded.restart()
             }
             reloadGame(); libReload.restart()
         }
+    }
+    function onSaves(note) {
+        const text = !note ? "" : note === "save sent to RomM" ? qsTr("Save sent to RomM.") : qsTr("RomM unreachable: the save will be sent later.")
+        if (launchPhase === "ending") launchNote = text
+        else if (note && note !== "save sent to RomM") toasts.show(text, "info")
     }
     // The emulator's window covers the screen within a few seconds; then "playing".
     Timer { id: launchStarted; interval: 4000; onTriggered: if (win.launchPhase === "starting") win.launchPhase = "playing" }
@@ -995,6 +1004,8 @@ Window {
             else if (m.type === "media") { win.artRev++; libReload.restart(); if (win.page && win.overlay === "game") win.reloadGame() }
             else if (m.type === "platforms") win.loadPlatforms()
             else if (m.type === "session") win.onSession(m.session)
+            // The save of the game just ended, sent after it (another game can start meanwhile).
+            else if (m.type === "saves") win.onSaves(m.note)
             else if (m.type === "emulators" || m.type === "systemfiles") { if (win.overlay === "settings") loadSettings() }
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
@@ -1573,7 +1584,26 @@ Window {
         note: win.launchNote
     }
 
-    // Quitting a game: asked when the core paused it on the quit chord.
+    // Escape during a game (macOS; Linux catches it in the core): Borne's question, not the
+    // emulator's menu. Pressed again while asked, the game goes on.
+    readonly property var quitKeyObj: typeof quitKey !== "undefined" ? quitKey : null
+    Binding {
+        target: win.quitKeyObj
+        when: win.quitKeyObj !== null
+        property: "active"
+        value: !!(win.session && win.session.running)
+    }
+    Connections {
+        target: win.quitKeyObj
+        ignoreUnknownSignals: true
+        function onPressed() {
+            if (!win.session || !win.session.running) return
+            if (win.session.paused) quitAsk.answered(false)
+            else win.api("POST", "/api/v1/session/ask", {}, function () {})
+        }
+    }
+
+    // Quitting a game: asked when the core paused it on the quit chord or on Escape.
     QuitConfirm {
         id: quitAsk
         anchors.fill: parent
@@ -1581,7 +1611,11 @@ Window {
         theme: win.theme
         game: win.session && win.session.name ? win.session.name : ""
         shown: !!(win.session && win.session.running && win.session.paused)
-        onShownChanged: if (shown) { win.raise(); win.requestActivate() }
+        // Back to the emulator (Escape again, or B): Borne steps behind it (macOS: the core brings it forward).
+        onShownChanged: {
+            if (shown) { win.raise(); win.requestActivate() }
+            else if (win.session && win.session.running && Qt.platform.os !== "osx") win.lower()
+        }
         onAnswered: function (quit) {
             sfx.play(quit ? "accept" : "back")
             if (quit) win.api("POST", "/api/v1/session/stop", {}, function () {})
