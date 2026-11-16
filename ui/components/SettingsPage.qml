@@ -143,7 +143,7 @@ Item {
                   : !c.available ? qsTr("No build of this emulator for this computer") : qsTr("Emulator used for this console"),
             selected: c.chosen,
             items: c.choices.map(x => ({ id: x.id, label: x.name })) }))
-        rows.push({ id: "emu-auto", kind: "chips", title: qsTr("Emulator updates"), desc: qsTr("Borne installs new versions by itself, never during a game"),
+        rows.push({ id: "emu-auto", kind: "chips", title: qsTr("Emulators by themselves"), desc: qsTr("Borne installs the emulators your consoles need and their new versions, never during a game"),
                     selected: emus.auto_update ? "on" : "off", items: onOff() })
         const used = {}
         emus.consoles.forEach(c => c.choices.forEach(x => { if (x.id === c.chosen) used[x.program] = true }))

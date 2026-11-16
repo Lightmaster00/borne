@@ -2912,14 +2912,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Emulator updates</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne installs new versions by itself, never during a game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
         <translation type="unfinished" />
     </message>
@@ -3673,6 +3665,14 @@
     </message>
     <message>
         <source>Switch to the dev channel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulators by themselves</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne installs the emulators your consoles need and their new versions, never during a game</source>
         <translation type="unfinished" />
     </message>
 </context>

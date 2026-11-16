@@ -2912,14 +2912,6 @@
         <translation>Émulateur utilisé pour cette console</translation>
     </message>
     <message>
-        <source>Emulator updates</source>
-        <translation>Mises à jour des émulateurs</translation>
-    </message>
-    <message>
-        <source>Borne installs new versions by itself, never during a game</source>
-        <translation>Borne installe les nouvelles versions tout seul, jamais pendant une partie</translation>
-    </message>
-    <message>
         <source>This build of Borne has no ScreenScraper developer access: the official builds include it. Images still come from RomM.</source>
         <translation>Cette version de Borne n’a pas d’accès développeur ScreenScraper : les versions officielles l’incluent. Les images viennent toujours de RomM.</translation>
     </message>
@@ -3674,6 +3666,14 @@
     <message>
         <source>Switch to the dev channel</source>
         <translation>Passer au canal dev</translation>
+    </message>
+    <message>
+        <source>Emulators by themselves</source>
+        <translation>Émulateurs automatiques</translation>
+    </message>
+    <message>
+        <source>Borne installs the emulators your consoles need and their new versions, never during a game</source>
+        <translation>Borne installe les émulateurs dont vos consoles ont besoin et leurs nouvelles versions, jamais pendant une partie</translation>
     </message>
 </context>
 <context>

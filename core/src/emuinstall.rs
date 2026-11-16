@@ -594,6 +594,11 @@ fn unpack_release(app: &Shared, program: &str, version: &str, url: &str, sha256:
     // Move into place: the old version stays until the new one is complete.
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::rename(&staging, &dir).map_err(|e| e.to_string())?;
+    // macOS: no "downloaded from the Internet" mark, so Gatekeeper does not stop the emulator
+    // with a window asking whether to open it (Borne fetched it from its official source).
+    if cfg!(target_os = "macos") {
+        let _ = std::process::Command::new("xattr").args(["-dr", "com.apple.quarantine"]).arg(&dir).status();
+    }
     let exe = dir.join(exe.strip_prefix(&staging).map_err(|_| "unexpected program path")?);
     app.db.set_setting(&format!("emu_install.{program}"), &json!({ "version": version, "exe": exe }).to_string());
     for e in std::fs::read_dir(&base).into_iter().flatten().flatten() {
@@ -710,6 +715,10 @@ static PREPARING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool:
 /// console is ready before its first game: one at a time, in the background, never during a game.
 /// Run after each sync.
 pub fn install_for_library(app: &Shared) {
+    // The same switch as updates: "Borne installs and updates the emulators by itself".
+    if app.db.setting("emu_auto_update").as_deref() == Some("off") {
+        return;
+    }
     if PREPARING.swap(true, std::sync::atomic::Ordering::SeqCst) {
         return;
     }
