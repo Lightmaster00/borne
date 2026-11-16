@@ -7,6 +7,7 @@
 // Gamepad: up/down between rows (actions, language, then the rest of the page),
 // left/right inside a row, A to activate, B to go back.
 import QtQuick
+import "ConsoleNeeds.js" as Needs
 import QtQuick.Effects
 import QtMultimedia
 
@@ -15,6 +16,7 @@ Item {
     property QtObject theme
     property var game: null            // shown version, as a library row (cover, trailer, states…)
     property var versions: []          // every version of the game (raw API rows)
+    property var needs: []             // what its console's games need that is missing here
     property string emuLanguage: "auto"
     property var gameLanguages: []     // [{ code, version }]: the game's real languages
     property string uiLang: "en"
@@ -449,6 +451,19 @@ Item {
                                     focused: page.rows[page.row] === "version" && page.col[1] === index
                                 }
                             }
+                        }
+                    }
+                    // What this console's games need that this computer lacks (touch screen,
+                    // Wii Remote, motion…): said before playing, not discovered stuck in a game.
+                    Repeater {
+                        model: Needs.warnings(page.needs)
+                        Text {
+                            required property string modelData
+                            width: info.width
+                            wrapMode: Text.WordWrap
+                            text: "⚠ " + modelData
+                            color: theme.badSoft
+                            font { family: theme.fontFamily; pixelSize: 17 }
                         }
                     }
                     Text {

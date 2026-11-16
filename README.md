@@ -71,9 +71,16 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   the cache size.
   Games stored as zip or 7z on RomM are extracted (arcade sets stay zipped), and downloaded rather
   than played from the network.
+- **Your consoles, your choice**: after the first sync Borne asks which consoles of the RomM library it
+  shows (Settings → Consoles → Choose to change it later); the others stay on RomM, and Borne installs
+  no emulator for them. Borne looks at the machine it runs on (touch screen, mouse, motion-sensor pad,
+  Wii Remote, Bluetooth, threads and memory, Steam Deck) and says beside each console, on its settings
+  page and on each game's page what its games need that this machine lacks: the 3DS and DS touch
+  screen, the Wii Remote and its sensor bar, Joy-Con-only Switch games, the Wii U GamePad's screen,
+  or a computer too weak for the heaviest consoles.
 - **Emulators managed for you**: one per console, chosen in Settings → Emulators — RetroArch cores
   (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation, Flycast, PPSSPP…), Dolphin, PCSX2, DuckStation,
-  Azahar (3DS), Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary
+  Azahar (3DS), Cemu (Wii U), Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary
   (Xbox 360, Linux), Vita3K (PS Vita).
   Borne downloads each from its official source as soon as a console appears in your library,
   configures it (no first-run wizard, BIOS and keys put in place, fullscreen, the controller set for

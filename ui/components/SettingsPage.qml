@@ -8,6 +8,7 @@ import QtQuick
 import "CoreText.js" as CoreText
 import "Display.js" as Display
 import "EmuOptions.js" as EmuOptions
+import "ConsoleNeeds.js" as Needs
 
 Item {
     id: page
@@ -218,8 +219,11 @@ Item {
         return rows
     }
     function consolesRows() {
-        if (!consoles.length) return [note("no-consoles", qsTr("The consoles of your library appear here after a sync."))]
-        const rows = [group(qsTr("In your library"))]
+        const pick = { id: "pick-consoles", kind: "buttons", title: qsTr("Consoles shown in Borne"),
+                       desc: qsTr("Add or leave out consoles of your RomM library; what their games need of this computer is said for each"),
+                       items: [{ id: "pick-consoles", label: qsTr("Choose"), primary: true }] }
+        if (!consoles.length) return [pick, note("no-consoles", qsTr("The consoles of your library appear here after a sync."))]
+        const rows = [pick, group(qsTr("In your library"))]
         consoles.forEach(c => {
             const issues = consoleIssues(c)
             const bad = issues.find(i => i.tone === "bad")
@@ -234,6 +238,8 @@ Item {
         if (!c) return [note("gone", qsTr("This console is no longer in the library."))]
         const rows = []
         consoleIssues(c).forEach((i, n) => rows.push(note("issue:" + n, (i.tone === "bad" ? "⚠ " : "") + i.text)))
+        // What its games need that this computer lacks.
+        Needs.warnings(c.warnings).forEach((t, n) => rows.push(note("need:" + n, "⚠ " + t)))
         rows.push(group(qsTr("Emulator")))
         // A choice only when there is one to make.
         if (c.choices.length > 1)
@@ -551,6 +557,7 @@ Item {
         else if (r.id.startsWith("cdisp:")) page.action("display", { console: page.consoleSlug, key: r.id.substring(6), value: item.id })
         else if (r.id.startsWith("console:")) openConsole(r.id.substring(8))
         else if (r.id.startsWith("go:")) go(r.id.substring(3))
+        else if (r.id === "pick-consoles") page.action("pick-consoles", null)
         else if (r.id.startsWith("emu-choice:")) page.action("console-emu", { slug: r.id.substring(11), engine: item.id })
         else if (r.id.startsWith("opt:")) { const k = r.id.split(":"); page.action("emu-option", { program: k[1], key: k[2], value: item.id }) }
         else if (r.id.startsWith("opt-reset:")) page.action("emu-options-reset", { program: r.id.substring(10) })

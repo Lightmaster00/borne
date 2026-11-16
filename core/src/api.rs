@@ -22,6 +22,7 @@
 //!   GET    /api/v1/emulators/<program>/options            the same for every game it runs
 //!   POST   /api/v1/emulators/<program>/options            { key, value | "default" }
 //!   GET    /api/v1/controls  ·  POST {key, value|"default"}   controls for every game
+//!   GET    /api/v1/consoles  ·  POST /consoles/chosen {shown?}  ·  POST /consoles/<slug>/shown {shown}
 //!   GET    /api/v1/server/discover                       RomM servers on the local network
 //!   GET    /api/v1/steam  ·  POST (adds Borne to Steam)  ·  DELETE (ChimeraOS: removes it)
 //!   POST   /api/v1/games/<id>/emuoptions                  { key, value | "default" }
@@ -626,7 +627,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             // With the console images ScreenScraper gave (logo, monochrome logo, photo, frame).
             // Consoles that are one in practice share a tab (library::JOINED): their games are
             // counted under the first.
+            // The consoles the player chose (Settings → Consoles) only.
             let mut platforms = app.db.platforms();
+            platforms.retain(|p| !crate::consoles::is_hidden(app, &p.slug));
             for (main, parts) in library::JOINED {
                 let into = platforms.iter().position(|p| p.slug == *main || parts.contains(&p.slug.as_str()));
                 if let Some(i) = into {
@@ -688,6 +691,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Some(parts) => parts.iter().flat_map(|p| app.db.games(Some(p), search.as_deref(), local)).collect(),
                 None => app.db.games(platform.as_deref(), search.as_deref(), local),
             };
+            let hidden = crate::consoles::hidden(app);
+            let rows: Vec<_> = rows.into_iter().filter(|g| !hidden.contains(&g.platform_slug)).collect();
             let prefs = app.active_profile().map(|p| app.db.game_prefs(&p.id)).unwrap_or_default();
             crate::screenscraper::set_ui_lang(app, &lang);
             let mut list = library::groups(rows, &prefs, &lang);
@@ -791,6 +796,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                             .map(library::version_json)
                             .collect::<Vec<_>>(),
                         "emu_language": prefs.1.unwrap_or_else(|| "auto".into()),
+                        // What this console's games need that this machine lacks.
+                        "warnings": crate::consoles::warnings(game["platform_slug"].as_str().unwrap_or(""), &crate::consoles::hardware(app))
+                            .into_iter().filter(|w| w["missing"] == true).collect::<Vec<_>>(),
                         "emu_languages": library::EMU_LANGUAGES,
                         "languages": library::game_languages(&all),
                         "install_mode": install_mode(app),
@@ -995,6 +1003,29 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(()) => ok(req, crate::controls::view(app, all, "")),
                 Err(x) => err(req, 400, &x),
             }
+        }
+        // The consoles shown in Borne, and what their games need of this machine (consoles.rs).
+        (Method::Get, ["api", "v1", "consoles"]) => ok(req, crate::consoles::list(app)),
+        (Method::Post, ["api", "v1", "consoles", "chosen"]) => {
+            // The whole choice at once: {shown: [slugs]} (first start), or just "done".
+            let b = body_json(&mut req);
+            if let Some(shown) = b["shown"].as_array() {
+                let shown: Vec<&str> = shown.iter().filter_map(|v| v.as_str()).collect();
+                for p in app.db.platforms() {
+                    crate::consoles::set_shown(app, &p.slug, shown.contains(&p.slug.as_str()));
+                }
+            }
+            crate::consoles::mark_chosen(app);
+            app.emit(json!({ "type": "platforms" }));
+            crate::emuinstall::install_for_library(app);
+            ok(req, crate::consoles::list(app))
+        }
+        (Method::Post, ["api", "v1", "consoles", slug, "shown"]) => {
+            let b = body_json(&mut req);
+            crate::consoles::set_shown(app, slug, b["shown"].as_bool().unwrap_or(true));
+            app.emit(json!({ "type": "platforms" }));
+            crate::emuinstall::install_for_library(app);
+            ok(req, crate::consoles::list(app))
         }
         // RomM servers on the local network (first start: no address to type).
         (Method::Get, ["api", "v1", "server", "discover"]) => ok(req, crate::discover::scan()),

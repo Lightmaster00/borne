@@ -267,7 +267,10 @@
       },
       "fails": [
         "Failed to load ROM",
-        "Failed to obtain loader"
+        "Failed to obtain loader",
+        "Error while loading ROM",
+        "missing a program-type nca",
+        "Firmware is missing"
       ],
       "logs": [
         "log/eden_log.txt"
@@ -457,6 +460,48 @@
       ]
     },
     {
+      "id": "cemu",
+      "name": "Cemu",
+      "args": [
+        "-f",
+        "-g",
+        "{rom}"
+      ],
+      "binaries": [
+        "cemu",
+        "Cemu"
+      ],
+      "mac_apps": [
+        "Cemu.app/Contents/MacOS/Cemu"
+      ],
+      "install": {
+        "linux": {
+          "type": "github",
+          "repo": "cemu-project/Cemu",
+          "has": [
+            "x86_64"
+          ],
+          "ends": ".appimage"
+        },
+        "macos": {
+          "type": "github",
+          "repo": "cemu-project/Cemu",
+          "has": [
+            "macos"
+          ],
+          "ends": ".dmg"
+        }
+      },
+      "fails": [
+        "Unable to launch game",
+        "Failed to launch",
+        "Missing keys"
+      ],
+      "logs": [
+        "log.txt"
+      ]
+    },
+    {
       "id": "azahar",
       "name": "Azahar",
       "args": [
@@ -472,7 +517,10 @@
       "fails": [
         "Failed to load ROM",
         "Failed to obtain loader",
-        "Failed to determine system mode"
+        "Failed to determine system mode",
+        "Fatal error type",
+        "System archive not found",
+        "shared font file missing"
       ],
       "logs": [
         "log/azahar_log.txt"
@@ -619,6 +667,12 @@
       [
         "desmume",
         "DeSmuME"
+      ]
+    ],
+    "wiiu": [
+      [
+        "!cemu",
+        "Cemu"
       ]
     ],
     "3ds": [

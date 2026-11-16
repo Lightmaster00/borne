@@ -196,12 +196,12 @@ Window {
         }
         if (importing) {
             importCovers = Math.max(importCovers, s.covers_pending || 0)
-            if (!s.running && !(s.covers_pending > 0)) importing = false
+            if (!s.running && !(s.covers_pending > 0)) { importing = false; maybeAskConsoles() }
         }
     }
     onStatusChanged: checkImport()
     onScreenChanged: checkImport()
-    Timer { id: importCap; interval: 120000; onTriggered: win.importing = false }
+    Timer { id: importCap; interval: 120000; onTriggered: { win.importing = false; win.maybeAskConsoles() } }
     property int libSeq: 0
     // Reloads the list keeping the selection; updates in place if the list did not change.
     function loadLibrary(resetFocus) {
@@ -243,6 +243,7 @@ Window {
             else if (resetFocus || focusIndex >= rows.length) focusIndex = 0
             loadMs = Date.now() - t0
             ready = true
+            if (rows.length) maybeAskConsoles()
             libRevision++
         })
     }
@@ -688,6 +689,7 @@ Window {
             const own = settingsPage.consoleOpts ? settingsPage.consoleOpts.options.filter(o => o.own) : []
             for (const o of own) api("POST", "/api/v1/emulators/" + payload.program + "/options", { key: o.key, value: "default" }, function (r) { if (r) settingsPage.consoleOpts = r })
         }
+        else if (id === "pick-consoles") pickConsoles()
         else if (id === "steam-add") api("POST", "/api/v1/steam", {}, function (r, err) {
             if (err) { toasts.show(CoreText.tr(err), "error"); return }
             settingsPage.steam = r
@@ -1026,7 +1028,8 @@ Window {
         // the question it raises is answered here.
         if (session && session.running) return session.paused ? quitAsk.handle(a) : undefined
         if (bench.running && a !== "start") return
-        if (importing && screen === "library" && overlay === "") { if (a === "a") importing = false; return }
+        if (consolePicker.visible) { if (a !== "a" && a !== "start") sfx.play("move"); else sfx.play("accept"); return consolePicker.handle(a) }
+        if (importing && screen === "library" && overlay === "") { if (a === "a") { importing = false; maybeAskConsoles() } return }
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
         if (search.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return search.handle(a) }
@@ -1243,6 +1246,19 @@ Window {
         }
     }
     Timer { id: benchTimer; onTriggered: bench.step() }
+
+    property bool consolesAsked: false
+    // Once the library is in (and its first import over): the player chooses their consoles.
+    function maybeAskConsoles() {
+        if (consolesAsked || importing || screen !== "library" || overlay !== "" || gameMode) return
+        consolesAsked = true
+        api("GET", "/api/v1/consoles", null, function (d) {
+            if (d && !d.chosen && d.consoles.length > 0) consolePicker.open(d, true)
+        })
+    }
+    function pickConsoles() {
+        api("GET", "/api/v1/consoles", null, function (d) { if (d) consolePicker.open(d, false) })
+    }
 
     // ---------- Scene: 1920×1080, scaled to the window ----------
     Item {
@@ -1742,6 +1758,19 @@ Window {
         note: win.launchNote
     }
 
+    // The consoles shown (asked once after the first sync; then Settings → Consoles).
+    ConsolePicker {
+        id: consolePicker
+        anchors.fill: parent
+        z: 65
+        theme: win.theme
+        onDone: (slugs) => {
+            win.api("POST", "/api/v1/consoles/chosen", { shown: slugs }, function () {
+                win.loadPlatforms(); libReload.restart()
+                if (win.overlay === "settings") win.loadSettings()
+            })
+        }
+    }
     // Quitting a game: asked when the core paused it on the quit chord or on Escape.
     QuitConfirm {
         id: quitAsk
@@ -1787,6 +1816,7 @@ Window {
         theme: win.theme
         game: win.pageGame
         versions: win.page ? win.page.versions : []
+        needs: win.page && win.page.warnings ? win.page.warnings : []
         emuLanguage: win.page ? win.page.emu_language : "auto"
         gameLanguages: win.page && win.page.languages ? win.page.languages : []
         boxYaw: win.boxYaw

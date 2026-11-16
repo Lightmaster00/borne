@@ -16,9 +16,10 @@ use std::time::{Duration, Instant};
 
 /// "Main" file extensions in order of preference, to choose what to launch.
 const MAIN_EXT: &[&str] = &[
-    "m3u", "cue", "gdi", "cdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md", "gen", "smd", "bin", "sfc",
-    "smc", "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce", "ws", "wsc", "ngp", "ngc",
-    "a26", "lnx", "vb", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min", "cia", "vpk",
+    // Wii U first: a folder dump's game files include .bin data, its program is the .rpx.
+    "wua", "wud", "wux", "rpx", "m3u", "cue", "gdi", "cdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md",
+    "gen", "smd", "bin", "sfc", "smc", "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce",
+    "ws", "wsc", "ngp", "ngc", "a26", "lnx", "vb", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min", "cia", "vpk",
 ];
 /// Consoles whose games are archives by nature (arcade sets read zipped by MAME and FinalBurn):
 /// kept as they are. Every other console's zip or 7z is extracted, as the standalone emulators

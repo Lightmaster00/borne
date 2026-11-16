@@ -12,6 +12,120 @@
     </message>
 </context>
 <context>
+    <name>ConsoleNeeds</name>
+    <message>
+        <source>Many games are played on the lower touch screen: there is none here, the pointer moves with the right stick (slower, some games are hard).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Touch screen: the lower screen is touched directly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Two screens, shown side by side or one above the other.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some games are played by tilting the console: they need a pad with motion sensors (Switch Pro, DualShock 4, DualSense, Steam Deck).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Motion: your pad has motion sensors.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most Wii games are played with a Wii Remote pointed at the screen: without one, the pointer moves with the right stick and many games are awkward. Best: a Wii Remote with a sensor bar or a DolphinBar.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii Remote: found.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii games ask you to shake the Remote: a pad with motion sensors or a Wii Remote is needed for those moves.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shaking: your pad has motion sensors.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Many Wii U games use the GamePad's touch screen: there is none here, the pointer moves with the right stick.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Touch screen: the GamePad's screen is touched directly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some Switch games need Joy-Con (motion, two halves held apart): they cannot be played on a pad without motion sensors.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A few Switch games are played only on the touch screen: not playable here.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Touch screen: found.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some PS Vita games use the front touch screen or the rear touch pad: there is none here, the right stick stands in for them.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Heavy to emulate: this computer may be too slow (%1 threads, %2 GB of memory).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Power: this computer should run these games.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>ConsolePicker</name>
+    <message>
+        <source>Your consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose the consoles Borne shows. The others stay on RomM and can be added later, in Settings → Consoles. What a console's games need that this computer lacks is said beside it.</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
+    </message>
+    <message>
+        <source>not playable in Borne yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne cannot start these games yet: no emulator for this console.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nothing particular: a pad is enough.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Show or leave out</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Confirm</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Good to know</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>CoreText</name>
     <message>
         <source>a game is already running</source>
@@ -4057,6 +4171,14 @@
     </message>
     <message>
         <source>Borne itself: its language, videos, size, animations, sounds and the buttons it shows.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Consoles shown in Borne</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add or leave out consoles of your RomM library; what their games need of this computer is said for each</source>
         <translation type="unfinished" />
     </message>
 </context>

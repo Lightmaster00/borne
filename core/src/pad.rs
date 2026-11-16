@@ -27,6 +27,8 @@ pub struct PadState {
     pub guids: Vec<String>,
     /// USB vendor and product of each pad (same order; 0 when unknown).
     pub ids: Vec<(u16, u16)>,
+    /// The name the system gives each pad (same order), which SDL 3 hashes into its GUID.
+    pub os_names: Vec<String>,
     /// The pad that last pressed a button (its place in `pads`): the one in the player's hands,
     /// given to the game when no pad was chosen for it.
     pub last: Option<usize>,
@@ -132,6 +134,7 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                     s.pads = gilrs.gamepads().map(|(_, g)| g.name().to_string()).collect();
                     s.guids = gilrs.gamepads().map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect()).collect();
                     s.ids = gilrs.gamepads().map(|(_, g)| (g.vendor_id().unwrap_or(0), g.product_id().unwrap_or(0))).collect();
+                    s.os_names = gilrs.gamepads().map(|(_, g)| g.os_name().to_string()).collect();
                 }
                 // Started from Steam with Steam Input: the pads Steam hides from games also send
                 // their presses here, besides Steam's virtual pad; only the virtual pad is heard,

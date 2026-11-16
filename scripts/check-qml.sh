@@ -29,5 +29,11 @@ while IFS= read -r f; do
     echo "✗ ${f#$HERE/}"; echo "$out" | grep -v "locale" | head -5; status=1
   fi
 done < <(find "$HERE/ui" -name '*.qml' -not -path '*/launcher/*')
+# Third pass: a property named like one of Item's own (data, children…) takes its place and the
+# component's children go nowhere, with no error at load.
+if shadow=$(grep -rnE '^\s*(readonly\s+)?property\s+\w+\s+(data|children|resources|parent|states|transitions|state|anchors|layer)\b' \
+      "$HERE/ui" --include='*.qml' | grep -v '/launcher/'); then
+  echo "✗ properties shadowing Item's own:"; echo "$shadow"; status=1
+fi
 [ $status -eq 0 ] && echo "QML: no syntax errors, no duplicated properties or bindings"
 exit $status

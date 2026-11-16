@@ -722,7 +722,7 @@ pub fn install_for_library(app: &Shared) {
     let _done = Done;
     // What is missing, per program: (program, cores to add).
     let mut todo: Vec<(String, Vec<String>)> = vec![];
-    for slug in app.db.platforms().into_iter().map(|p| p.slug) {
+    for slug in app.db.platforms().into_iter().map(|p| p.slug).filter(|s| !crate::consoles::is_hidden(app, s)) {
         let Some(e) = crate::emulators::chosen(app, &slug) else { continue };
         let Some(p) = crate::emulators::program(&e.program) else { continue };
         let have = crate::emulators::find(app, &p.id).is_some();

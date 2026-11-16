@@ -32,6 +32,7 @@ Version 1.8 — November 2026
 | 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
 | 1.7 | One built-in look, "Halo" (living background from the selected game's art, game boxes in space, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
 | 1.8 | Emulators managed by Borne, saves on RomM, cheats, system files, display settings; 3D cel-shaded cases from ScreenScraper scans; gamepad or keyboard only (no mouse); a game settings page with per-game emulator options; interface preferences; downloads that pause; updates by parts (only what changed is downloaded) and releases ready to install; the Borne logo and pictogram, and a website. |
+| 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
 
 ## 1. Executive summary
 
@@ -103,6 +104,7 @@ the final decision to the user. Compatibility checks inform and recommend; they 
 | Game Boy Advance | V1.x | RetroArch | Standard controls; per-game profiles if needed. |
 | Dreamcast | V1.x | Flycast | Graphics dependencies and BIOS to check. |
 | Wii | V1.x | Dolphin | Wiimote / pointer controls handled as specific capabilities. |
+| Wii U | V1.x | Cemu | Keys (keys.txt) from the user's console; the GamePad's touch screen and motion are warned about when the machine lacks them. Its controller written as a Cemu profile (SDL GUID with the name's CRC). |
 | PlayStation 3 | Experimental | RPCS3 | CPU/GPU requirements, firmware and per-game compatibility vary widely. |
 
 This list is the requested functional scope, not a promise that every system works on every machine.
@@ -143,6 +145,29 @@ USB/Bluetooth accessories) are never assumed: they are detected or reported as u
 
 Rule: only battery / memory saves are considered portable between devices. Save states are synced but
 flagged as tied to a specific emulator version.
+
+### 3.5 Consoles shown and hardware warnings
+
+- After the first sync (once the first import is over), the player chooses which consoles of the RomM
+  library Borne shows; every console Borne plays is ticked at first. Settings → Consoles → Choose
+  changes it later. Hidden consoles leave the library tabs and lists, the platforms list and the
+  emulator list, and Borne installs no emulator for them; their games stay on RomM untouched.
+  Settings `consoles.hidden` (comma list of slugs) and `consoles.chosen`.
+  API: `GET /api/v1/consoles` (each console with its games, shown, supported and warnings, plus the
+  machine's hardware), `POST /api/v1/consoles/chosen {shown:[slugs]}`,
+  `POST /api/v1/consoles/<slug>/shown {shown}`.
+- The core detects the machine (`hardware.rs`): on Linux, touch screens from
+  `/sys/class/input/*/properties` (INPUT_PROP_DIRECT) with absolute multitouch axes, mice from
+  relative X/Y axes with a left button, Steam Deck and chassis from DMI, memory from `/proc/meminfo`,
+  Bluetooth from `/sys/class/bluetooth`; motion-sensor pads (Switch Pro, Joy-Con, DualShock 4,
+  DualSense, Steam Deck) and Wii Remotes from the connected pads' vendor and product ids. On macOS,
+  the same as far as it can be known (no touch screen; pointer present).
+- Each console has its needs (`consoles.rs`), each said missing or met on this machine: DS and 3DS
+  (touch screen, two screens, motion on 3DS), Wii (Wii Remote and sensor bar, motion), Wii U
+  (GamePad touch screen, motion, power), Switch (Joy-Con-only games, touch-only games, power), PS Vita
+  (front and rear touch), PS2, GameCube, PS3, PS4 and Xbox 360 (power, from threads and memory).
+  Missing needs are shown in the console chooser, on the console's settings page and on each of its
+  games' pages, in the player's words (`ConsoleNeeds.js`). They inform; they never block a launch.
 
 ## 4. Target architecture
 
@@ -667,6 +692,16 @@ blocks a launch just because a game was not tested or a community database rates
   before each game, by the pad buttons' positions (Nintendo consoles: their A on the right).
   Xenia and shadPS4 read the pad by themselves. The standalone melonDS is no longer offered (it
   needs a manual mapping); the melonDS DS core plays DS games.
+- Cemu (Wii U): `-f -g <game>`; its `settings.xml` written without first-run prompts (update
+  check, Vulkan warning, graphic packs download, macOS notice off; fullscreen) and with the game's
+  console language; a `controllerProfiles/controller<n>.xml` per player, the pad named by its SDL3
+  GUID (gilrs' GUID with the CRC-16 of the device name in bytes 2-3). The user's `keys.txt` goes into
+  Cemu's data folder. Formats: .wua, .wud, .wux, .rpx.
+- Saturn BIOS files are also copied under the names the Beetle Saturn core looks for (recognised
+  by md5): `sega_101.bin` (Japan), `mpr-17933.bin` (US/Europe).
+- Failures read from the emulator's output are named: Azahar's fatal errors and missing system
+  archives or shared fonts (3DS games that need the console's system files), Eden's missing
+  program NCA (an update or DLC given instead of the base game) and missing firmware.
 
 ### 10.4 Special cases
 

@@ -12,6 +12,120 @@
     </message>
 </context>
 <context>
+    <name>ConsoleNeeds</name>
+    <message>
+        <source>Many games are played on the lower touch screen: there is none here, the pointer moves with the right stick (slower, some games are hard).</source>
+        <translation>Beaucoup de jeux se jouent sur l'écran tactile du bas : il n'y en a pas ici, le pointeur se déplace au stick droit (plus lent, certains jeux sont difficiles).</translation>
+    </message>
+    <message>
+        <source>Touch screen: the lower screen is touched directly.</source>
+        <translation>Écran tactile : l'écran du bas se touche directement.</translation>
+    </message>
+    <message>
+        <source>Two screens, shown side by side or one above the other.</source>
+        <translation>Deux écrans, affichés côte à côte ou l'un au-dessus de l'autre.</translation>
+    </message>
+    <message>
+        <source>Some games are played by tilting the console: they need a pad with motion sensors (Switch Pro, DualShock 4, DualSense, Steam Deck).</source>
+        <translation>Certains jeux se jouent en inclinant la console : il faut une manette avec capteurs de mouvement (Switch Pro, DualShock 4, DualSense, Steam Deck).</translation>
+    </message>
+    <message>
+        <source>Motion: your pad has motion sensors.</source>
+        <translation>Mouvements : ta manette a des capteurs de mouvement.</translation>
+    </message>
+    <message>
+        <source>Most Wii games are played with a Wii Remote pointed at the screen: without one, the pointer moves with the right stick and many games are awkward. Best: a Wii Remote with a sensor bar or a DolphinBar.</source>
+        <translation>La plupart des jeux Wii se jouent avec une Wiimote pointée vers l'écran : sans elle, le pointeur se déplace au stick droit et beaucoup de jeux sont pénibles. L'idéal : une Wiimote avec une barre de capteurs ou une DolphinBar.</translation>
+    </message>
+    <message>
+        <source>Wii Remote: found.</source>
+        <translation>Wiimote : trouvée.</translation>
+    </message>
+    <message>
+        <source>Wii games ask you to shake the Remote: a pad with motion sensors or a Wii Remote is needed for those moves.</source>
+        <translation>Les jeux Wii font secouer la Wiimote : il faut une manette avec capteurs de mouvement ou une Wiimote pour ces gestes.</translation>
+    </message>
+    <message>
+        <source>Shaking: your pad has motion sensors.</source>
+        <translation>Secouer : ta manette a des capteurs de mouvement.</translation>
+    </message>
+    <message>
+        <source>Many Wii U games use the GamePad's touch screen: there is none here, the pointer moves with the right stick.</source>
+        <translation>Beaucoup de jeux Wii U utilisent l'écran tactile du GamePad : il n'y en a pas ici, le pointeur se déplace au stick droit.</translation>
+    </message>
+    <message>
+        <source>Touch screen: the GamePad's screen is touched directly.</source>
+        <translation>Écran tactile : l'écran du GamePad se touche directement.</translation>
+    </message>
+    <message>
+        <source>Some Switch games need Joy-Con (motion, two halves held apart): they cannot be played on a pad without motion sensors.</source>
+        <translation>Certains jeux Switch demandent des Joy-Con (mouvements, deux moitiés séparées) : ils ne se jouent pas sur une manette sans capteurs de mouvement.</translation>
+    </message>
+    <message>
+        <source>A few Switch games are played only on the touch screen: not playable here.</source>
+        <translation>Quelques jeux Switch se jouent uniquement à l'écran tactile : injouables ici.</translation>
+    </message>
+    <message>
+        <source>Touch screen: found.</source>
+        <translation>Écran tactile : présent.</translation>
+    </message>
+    <message>
+        <source>Some PS Vita games use the front touch screen or the rear touch pad: there is none here, the right stick stands in for them.</source>
+        <translation>Certains jeux PS Vita utilisent l'écran tactile avant ou le pavé arrière : il n'y en a pas ici, le stick droit les remplace.</translation>
+    </message>
+    <message>
+        <source>Heavy to emulate: this computer may be too slow (%1 threads, %2 GB of memory).</source>
+        <translation>Lourde à émuler : cet ordinateur risque d'être trop lent (%1 threads, %2 Go de mémoire).</translation>
+    </message>
+    <message>
+        <source>Power: this computer should run these games.</source>
+        <translation>Puissance : cet ordinateur devrait faire tourner ces jeux.</translation>
+    </message>
+</context>
+<context>
+    <name>ConsolePicker</name>
+    <message>
+        <source>Your consoles</source>
+        <translation>Tes consoles</translation>
+    </message>
+    <message>
+        <source>Choose the consoles Borne shows. The others stay on RomM and can be added later, in Settings → Consoles. What a console's games need that this computer lacks is said beside it.</source>
+        <translation>Choisis les consoles que Borne affiche. Les autres restent sur RomM et pourront être ajoutées plus tard, dans Paramètres → Consoles. Ce que les jeux d'une console demandent et qui manque sur cet ordinateur est indiqué à côté.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
+    </message>
+    <message>
+        <source>not playable in Borne yet</source>
+        <translation>pas encore jouable dans Borne</translation>
+    </message>
+    <message>
+        <source>Borne cannot start these games yet: no emulator for this console.</source>
+        <translation>Borne ne peut pas encore lancer ces jeux : aucun émulateur pour cette console.</translation>
+    </message>
+    <message>
+        <source>Nothing particular: a pad is enough.</source>
+        <translation>Rien de particulier : une manette suffit.</translation>
+    </message>
+    <message>
+        <source>Show or leave out</source>
+        <translation>Afficher ou retirer</translation>
+    </message>
+    <message>
+        <source>Confirm</source>
+        <translation>Valider</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Retour</translation>
+    </message>
+    <message>
+        <source>Good to know</source>
+        <translation>À savoir</translation>
+    </message>
+</context>
+<context>
     <name>CoreText</name>
     <message>
         <source>a game is already running</source>
@@ -4058,6 +4172,14 @@
     <message>
         <source>Borne itself: its language, videos, size, animations, sounds and the buttons it shows.</source>
         <translation>Borne lui-même : sa langue, ses vidéos, sa taille, ses animations, ses sons et les boutons qu'il affiche.</translation>
+    </message>
+    <message>
+        <source>Consoles shown in Borne</source>
+        <translation>Consoles affichées dans Borne</translation>
+    </message>
+    <message>
+        <source>Add or leave out consoles of your RomM library; what their games need of this computer is said for each</source>
+        <translation>Ajoute ou retire des consoles de ta bibliothèque RomM ; ce que leurs jeux demandent à cet ordinateur est indiqué pour chacune</translation>
     </message>
 </context>
 <context>

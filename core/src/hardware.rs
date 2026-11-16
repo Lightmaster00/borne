@@ -1,0 +1,151 @@
+//! What Borne runs on, as far as the games care: a touch screen, a mouse, pads with motion
+//! sensors, a Wii Remote, Bluetooth, the kind of machine (desktop, laptop, handheld, Steam Deck),
+//! its processor and memory. Read from the system (Linux: /sys; macOS: sysctl), never asked.
+//! Used to warn before a console whose games need what is missing (consoles.rs).
+
+use serde_json::{json, Value};
+
+/// Pads with motion sensors (vendor, product): Switch Pro and Joy-Con, DualShock 4, DualSense,
+/// the Steam Deck's controls and the Steam Controller.
+const MOTION_PADS: &[(u16, u16)] = &[
+    (0x057e, 0x2009),
+    (0x057e, 0x2006),
+    (0x057e, 0x2007),
+    (0x057e, 0x200e),
+    (0x054c, 0x05c4),
+    (0x054c, 0x09cc),
+    (0x054c, 0x0ce6),
+    (0x054c, 0x0df2),
+    (0x28de, 0x1205),
+    (0x28de, 0x1102),
+    (0x28de, 0x1142),
+];
+
+/// Wii Remotes (and a DolphinBar, which shows them as such).
+const WIIMOTES: &[(u16, u16)] = &[(0x057e, 0x0306), (0x057e, 0x0330)];
+
+#[derive(Default, Debug, Clone)]
+pub struct Hardware {
+    pub touchscreen: bool,
+    pub mouse: bool,
+    pub motion_pad: bool,
+    pub wiimote: bool,
+    pub bluetooth: bool,
+    /// "desktop" | "laptop" | "handheld" | "steamdeck" | "unknown"
+    pub machine: String,
+    pub threads: usize,
+    pub ram_gb: u64,
+}
+
+#[cfg(target_os = "linux")]
+fn read(p: &str) -> String {
+    std::fs::read_to_string(p).unwrap_or_default().trim().to_string()
+}
+
+/// A bit of a /sys capabilities line (words of the machine's size, highest first).
+#[cfg(target_os = "linux")]
+fn has_bit(words: &str, bit: usize) -> bool {
+    let words: Vec<u64> = words.split_whitespace().rev().map(|w| u64::from_str_radix(w, 16).unwrap_or(0)).collect();
+    words.get(bit / 64).map(|w| w & (1 << (bit % 64)) != 0).unwrap_or(false)
+}
+
+#[cfg(target_os = "linux")]
+fn input_devices() -> (bool, bool, Vec<(u16, u16)>) {
+    let (mut touch, mut mouse, mut ids) = (false, false, vec![]);
+    for e in std::fs::read_dir("/sys/class/input").into_iter().flatten().flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if !name.starts_with("input") {
+            continue;
+        }
+        let p = e.path().to_string_lossy().into_owned();
+        let props = read(&format!("{p}/properties"));
+        let abs = read(&format!("{p}/capabilities/abs"));
+        let rel = read(&format!("{p}/capabilities/rel"));
+        let key = read(&format!("{p}/capabilities/key"));
+        // A touch screen: "direct" input (INPUT_PROP_DIRECT) with multi-touch positions (ABS_MT_POSITION_X = 0x35).
+        if has_bit(&props, 1) && has_bit(&abs, 0x35) {
+            touch = true;
+        }
+        // A mouse: relative X and Y, and a left button (BTN_LEFT = 0x110).
+        if has_bit(&rel, 0) && has_bit(&rel, 1) && has_bit(&key, 0x110) {
+            mouse = true;
+        }
+        let hex = |f: &str| u16::from_str_radix(&read(&format!("{p}/id/{f}")), 16).unwrap_or(0);
+        ids.push((hex("vendor"), hex("product")));
+    }
+    (touch, mouse, ids)
+}
+
+#[cfg(target_os = "linux")]
+pub fn detect(pads: &[(u16, u16)]) -> Hardware {
+    let (touchscreen, mouse, mut ids) = input_devices();
+    ids.extend_from_slice(pads);
+    let product = read("/sys/class/dmi/id/product_name").to_lowercase();
+    let chassis: u32 = read("/sys/class/dmi/id/chassis_type").parse().unwrap_or(0);
+    let machine = if product.contains("jupiter") || product.contains("galileo") {
+        "steamdeck"
+    } else if ["ally", "legion go", "claw", "gpd win", "ayaneo", "onexplayer"].iter().any(|h| product.contains(h)) {
+        "handheld"
+    } else {
+        match chassis {
+            3..=7 | 13 | 15 | 16 | 17 | 23 | 24 | 35 | 36 => "desktop",
+            8..=10 | 14 | 30 | 31 | 32 => "laptop",
+            _ => "unknown",
+        }
+    };
+    let ram_kb: u64 = read("/proc/meminfo")
+        .lines()
+        .find(|l| l.starts_with("MemTotal:"))
+        .and_then(|l| l.split_whitespace().nth(1).and_then(|n| n.parse().ok()))
+        .unwrap_or(0);
+    Hardware {
+        touchscreen,
+        mouse,
+        motion_pad: ids.iter().any(|i| MOTION_PADS.contains(i)) || machine == "steamdeck",
+        wiimote: ids.iter().any(|i| WIIMOTES.contains(i)),
+        bluetooth: std::fs::read_dir("/sys/class/bluetooth").map(|d| d.count() > 0).unwrap_or(false),
+        machine: machine.into(),
+        threads: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
+        ram_gb: (ram_kb + 512 * 1024) / (1024 * 1024),
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn detect(pads: &[(u16, u16)]) -> Hardware {
+    let sysctl = |k: &str| {
+        std::process::Command::new("sysctl").arg("-n").arg(k).output().ok().map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+    };
+    let model = sysctl("hw.model").unwrap_or_default().to_lowercase();
+    let mem: u64 = sysctl("hw.memsize").and_then(|m| m.parse().ok()).unwrap_or(0);
+    Hardware {
+        touchscreen: false,
+        // A Mac has a trackpad or a mouse.
+        mouse: true,
+        motion_pad: pads.iter().any(|i| MOTION_PADS.contains(i)),
+        wiimote: pads.iter().any(|i| WIIMOTES.contains(i)),
+        bluetooth: true,
+        machine: if model.contains("book") { "laptop".into() } else { "desktop".into() },
+        threads: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
+        ram_gb: (mem + (1 << 29)) >> 30,
+    }
+}
+
+pub fn to_json(h: &Hardware) -> Value {
+    json!({
+        "touchscreen": h.touchscreen, "mouse": h.mouse, "motion_pad": h.motion_pad, "wiimote": h.wiimote,
+        "bluetooth": h.bluetooth, "machine": h.machine, "threads": h.threads, "ram_gb": h.ram_gb,
+    })
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod tests {
+    #[test]
+    fn capability_bits() {
+        // INPUT_PROP_DIRECT (bit 1); ABS_MT_POSITION_X (0x35) in the first word of 64 bits.
+        assert!(super::has_bit("2", 1));
+        assert!(super::has_bit("660000000000003", 0x35));
+        assert!(!super::has_bit("3", 0x35));
+        // Several words: the last one is the lowest.
+        assert!(super::has_bit("1 0", 64));
+    }
+}

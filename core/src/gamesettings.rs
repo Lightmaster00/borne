@@ -436,8 +436,141 @@ pub fn language_apply(program: &str, data: &Path, userdir: &Path, code: &str) ->
             yaml_set(&data.join("config.yml"), &[("System", "Language", names[sony_language(code) as usize])])
         }
         "shadps4" => ini(&data.join("config.toml"), &[("Settings", "consoleLanguage", &sony_language(code).to_string())]),
+        // Wii U: 0 Japanese, 1 English, 2 French, 3 German, 4 Italian, 5 Spanish, 6 Chinese,
+        // 7 Korean, 8 Dutch, 9 Portuguese, 10 Russian.
+        "cemu" => {
+            let n = match code {
+                "ja" => "0",
+                "fr" => "2",
+                "de" => "3",
+                "it" => "4",
+                "es" => "5",
+                "zh" => "6",
+                "ko" => "7",
+                "nl" => "8",
+                "pt" => "9",
+                "ru" => "10",
+                _ => "1",
+            };
+            cemu_settings(data, &[("console_language", n)])
+        }
         _ => Ok(()),
     }
+}
+
+// ---------- Cemu (Wii U) ----------
+
+/// Cemu's settings folder: on Linux its XDG config folder (next to the data one Borne gives it),
+/// on macOS its data folder.
+pub fn cemu_config(data: &Path) -> std::path::PathBuf {
+    if cfg!(target_os = "macos") {
+        return data.to_path_buf();
+    }
+    // <profile>/cemu/data/Cemu → <profile>/cemu/config/Cemu
+    data.parent().and_then(|d| d.parent()).map(|b| b.join("config").join("Cemu")).unwrap_or_else(|| data.to_path_buf())
+}
+
+/// Cemu's settings.xml with these values (`<content><key>value</key>…`): written whole the first
+/// time (its presence also skips Cemu's first-start wizard), else each value replaced or added.
+pub fn cemu_settings(data: &Path, values: &[(&str, &str)]) -> Result<(), String> {
+    let file = cemu_config(data).join("settings.xml");
+    let defaults: &[(&str, &str)] = &[
+        ("check_update", "false"),
+        ("vk_warning", "true"),
+        ("gp_download", "true"),
+        ("macos_disclaimer", "true"),
+        ("fullscreen", "true"),
+        ("use_discord_presence", "false"),
+    ];
+    let mut text =
+        std::fs::read_to_string(&file).unwrap_or_else(|_| "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<content>\n</content>\n".into());
+    for (k, v) in defaults.iter().chain(values.iter()) {
+        let (open, close) = (format!("<{k}>"), format!("</{k}>"));
+        let explicit = values.iter().any(|(x, _)| x == k);
+        match (text.find(&open), text.find(&close)) {
+            (Some(a), Some(b)) if b > a => {
+                if explicit {
+                    text.replace_range(a + open.len()..b, v);
+                }
+            }
+            _ => {
+                if let Some(end) = text.rfind("</content>") {
+                    text.insert_str(end, &format!("    {open}{v}{close}\n"));
+                }
+            }
+        }
+    }
+    std::fs::create_dir_all(file.parent().unwrap()).map_err(|e| e.to_string())?;
+    std::fs::write(&file, text).map_err(|e| e.to_string())
+}
+
+/// SDL 3's GUID of a pad, as Cemu finds it: Borne's (no name check) with the CRC-16 of the
+/// pad's system name in bytes 2-3.
+pub fn sdl3_guid(guid: &str, os_name: &str) -> String {
+    fn crc16_byte(mut r: u8) -> u16 {
+        let mut crc: u16 = 0;
+        for _ in 0..8 {
+            crc = (if (crc ^ r as u16) & 1 != 0 { 0xA001 } else { 0 }) ^ (crc >> 1);
+            r >>= 1;
+        }
+        crc
+    }
+    let mut crc: u16 = 0;
+    for b in os_name.as_bytes() {
+        crc = crc16_byte((crc as u8) ^ b) ^ (crc >> 8);
+    }
+    if guid.len() != 32 {
+        return guid.to_string();
+    }
+    format!("{}{:02x}{:02x}{}", &guid[..4], crc & 0xff, crc >> 8, &guid[8..])
+}
+
+/// Cemu's controller profile of player `slot`: a Wii U GamePad (player 1) or a Pro Controller on
+/// the SDL pad, buttons by place (the Wii U's A on the right), as Cemu's own defaults.
+fn cemu_controller(data: &Path, slot: usize, rank: usize, guid: &str, name: &str) -> Result<(), String> {
+    // Cemu's numbers: the emulated buttons, and the pad's (SDL buttons 0-31, then ZL ZR, the
+    // D-pad, then the axes: left stick 38/44 for X+/X-, 39/45 for Y+/Y-, right stick 40/46,
+    // 41/47, triggers 42/43).
+    let pairs: &[(u32, u32)] = &[
+        (1, 1),   // A ← east
+        (2, 0),   // B ← south
+        (3, 3),   // X ← north
+        (4, 2),   // Y ← west
+        (5, 9),   // L
+        (6, 10),  // R
+        (7, 42),  // ZL ← left trigger
+        (8, 43),  // ZR ← right trigger
+        (9, 6),   // +
+        (10, 4),  // -
+        (11, 11), // up
+        (12, 12), // down
+        (13, 13), // left
+        (14, 14), // right
+        (15, 7),  // left stick click
+        (16, 8),  // right stick click
+        (17, 45), // left stick up
+        (18, 39),
+        (19, 44),
+        (20, 38),
+        (21, 47), // right stick up
+        (22, 41),
+        (23, 46),
+        (24, 40),
+        (27, 5), // home ← guide
+    ];
+    let kind = if slot == 0 { "Wii U GamePad" } else { "Wii U Pro Controller" };
+    let mut x = format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<emulated_controller>\n    <type>{kind}</type>\n    <controller>\n        <api>SDLController</api>\n        <uuid>{}_{guid}</uuid>\n        <display_name>{}</display_name>\n        <rumble>0</rumble>\n        <axis><deadzone>0.25</deadzone><range>1</range></axis>\n        <rotation><deadzone>0.25</deadzone><range>1</range></rotation>\n        <trigger><deadzone>0.25</deadzone><range>1</range></trigger>\n        <mappings>\n",
+        rank.saturating_sub(1),
+        name.replace(['<', '>', '&'], "")
+    );
+    for (m, b) in pairs {
+        x.push_str(&format!("            <entry><mapping>{m}</mapping><button>{b}</button></entry>\n"));
+    }
+    x.push_str("        </mappings>\n    </controller>\n</emulated_controller>\n");
+    let dir = cemu_config(data).join("controllerProfiles");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    std::fs::write(dir.join(format!("controller{slot}.xml")), x).map_err(|e| e.to_string())
 }
 
 // ---------- Emulator options of one game ----------
@@ -667,6 +800,17 @@ pub fn controllers(
     }
     if program == "shadps4" {
         return if players.is_empty() { Ok(()) } else { shadps4_controls(data, src) };
+    }
+    // Cemu: the GamePad on player 1's pad, Pro Controllers for the others (their GUIDs as SDL 3
+    // gives them, emulators.rs). The settings that skip its first-start wizard come with it.
+    if program == "cemu" {
+        cemu_settings(data, &[])?;
+        for (slot, p) in players.iter().take(4).enumerate() {
+            if let Some(g) = p.guid.as_deref() {
+                cemu_controller(data, slot, p.rank.max(1), g, &p.name)?;
+            }
+        }
+        return Ok(());
     }
     for (slot, p) in players.iter().take(4).enumerate() {
         // The 3DS has one player.
@@ -1364,6 +1508,34 @@ mod tests {
         assert!(ds.contains("SettingsVersion = 3") && ds.contains("SetupWizardIncomplete = false"));
         let r = std::fs::read_to_string(d.join("GuiConfigs/CurrentSettings.ini")).unwrap();
         assert!(r.contains("infoBoxEnabledWelcome = false"));
+        let _ = std::fs::remove_dir_all(d);
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod cemu_tests {
+    use super::*;
+
+    #[test]
+    fn cemu_guid_settings_and_profile() {
+        // SDL's CRC-16 (as SDL_crc16) of the name in bytes 2-3, the rest kept.
+        let g = sdl3_guid("030000005e0400008e02000014010000", "Microsoft X-Box 360 pad");
+        assert_eq!(&g[..4], "0300");
+        assert_ne!(&g[4..8], "0000");
+        assert_eq!(&g[8..], "5e0400008e02000014010000");
+        assert_eq!(sdl3_guid("short", "x"), "short");
+        let d = std::env::temp_dir().join(format!("borne-cemu-{}", std::process::id()));
+        let data = d.join("cemu/data/Cemu");
+        cemu_settings(&data, &[("console_language", "2")]).unwrap();
+        cemu_settings(&data, &[("console_language", "1")]).unwrap();
+        let cfg = d.join("cemu/config/Cemu");
+        let text = std::fs::read_to_string(cfg.join("settings.xml")).unwrap();
+        assert!(text.contains("<console_language>1</console_language>") && text.matches("<console_language>").count() == 1, "{text}");
+        assert!(text.contains("<check_update>false</check_update>"));
+        cemu_controller(&data, 0, 1, &g, "Pad").unwrap();
+        let x = std::fs::read_to_string(cfg.join("controllerProfiles/controller0.xml")).unwrap();
+        assert!(x.contains("<type>Wii U GamePad</type>") && x.contains(&format!("<uuid>0_{g}</uuid>")));
+        assert!(x.contains("<entry><mapping>1</mapping><button>1</button></entry>"), "A on the east button");
         let _ = std::fs::remove_dir_all(d);
     }
 }

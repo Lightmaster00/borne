@@ -17,6 +17,7 @@
 mod api;
 mod catalog;
 mod cheats;
+mod consoles;
 mod controls;
 mod db;
 mod diag;
@@ -26,6 +27,7 @@ mod emuinstall;
 mod emulators;
 mod events;
 mod gamesettings;
+mod hardware;
 mod library;
 mod logfile;
 mod media;

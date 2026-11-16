@@ -582,11 +582,29 @@ pub fn prepare(
                     if console == "dc" {
                         copy_if_changed(f, &bios_dir(app).join("dc").join(name))?;
                     }
+                    // Beetle Saturn reads its BIOS by these names only (Europe/USA, Japan):
+                    // a BIOS given under another name (saturn_bios.bin) is also put under its own.
+                    if console == "saturn" {
+                        let own = match md5_of(f).as_deref() {
+                            Some("85ec9ca47d8f6807718151cbcca8b964") => Some("sega_101.bin"),
+                            Some("3240872c70984b6cbfda1586cab68dbe") => Some("mpr-17933.bin"),
+                            _ => None,
+                        };
+                        if let Some(own) = own {
+                            copy_if_changed(f, &bios_dir(app).join(own))?;
+                        }
+                    }
                 }
             }
             ("keys", "eden" | "citron") => {
                 for f in &fs {
                     copy_if_changed(f, &data.join("keys").join(f.file_name().unwrap()))?;
+                }
+            }
+            // Cemu reads keys.txt in its user data folder.
+            ("keys", "cemu") => {
+                for f in &fs {
+                    copy_if_changed(f, &data.join(f.file_name().unwrap()))?;
                 }
             }
             ("keys", "ryubing") => {

@@ -96,6 +96,11 @@ fn engine(id: &str, name: &str) -> Engine {
     }
 }
 
+/// The consoles Borne plays (an emulator in its list).
+pub fn known_consoles() -> Vec<String> {
+    manifest().consoles.into_iter().filter(|(_, v)| !v.is_empty()).map(|(k, _)| k).collect()
+}
+
 pub fn engines(system: &str) -> Vec<Engine> {
     manifest().consoles.get(system).map(|v| v.iter().map(|(i, n)| engine(i, n)).collect()).unwrap_or_default()
 }
@@ -335,6 +340,14 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
             }
         }
         "xenia" => xdg_data.join("Xenia"),
+        // Cemu: its user data (keys.txt, mlc01); its settings are in the config folder next to it.
+        "cemu" => {
+            if mac_os {
+                mac.join("Cemu")
+            } else {
+                xdg_data.join("Cemu")
+            }
+        }
         // Its PS Vita file system (ux0, vs0…).
         "vita3k" => {
             if mac_os {
@@ -413,7 +426,14 @@ fn dolphin_language(code: &str) -> Option<&'static str> {
 /// Settings view: per console of the library, the choices and the one chosen; per program, what
 /// is installed.
 pub fn list(app: &Shared) -> Value {
-    let systems: Vec<(String, String)> = app.db.platforms().into_iter().map(|p| (p.slug.clone(), p.name.clone())).collect();
+    let hw = crate::consoles::hardware(app);
+    let systems: Vec<(String, String)> = app
+        .db
+        .platforms()
+        .into_iter()
+        .filter(|p| !crate::consoles::is_hidden(app, &p.slug))
+        .map(|p| (p.slug.clone(), p.name.clone()))
+        .collect();
     let consoles: Vec<Value> = systems
         .iter()
         .map(|(slug, name)| {
@@ -425,7 +445,8 @@ pub fn list(app: &Shared) -> Value {
                 })
                 .collect();
             let available = !choices.is_empty() && engines(slug).iter().any(|e| program(&e.program).map(|p| p.install_spec().is_some() || find(app, &p.id).is_some()).unwrap_or(false));
-            json!({ "slug": slug, "name": name, "choices": choices, "chosen": chosen(app, slug).map(|e| e.id), "known": manifest().consoles.contains_key(slug), "available": available })
+            json!({ "slug": slug, "name": name, "choices": choices, "chosen": chosen(app, slug).map(|e| e.id), "known": manifest().consoles.contains_key(slug), "available": available,
+                    "warnings": crate::consoles::warnings(slug, &hw) })
         })
         .collect();
     let programs: Vec<Value> = programs()
@@ -687,6 +708,24 @@ fn command(
     );
     let sources = crate::controls::sources(app, &group);
     let src = |logical: &str| sources.iter().find(|(l, _)| *l == logical).and_then(|(_, p)| *p);
+    // Cemu reads pads with SDL 3, whose GUIDs also carry the CRC of the pad's system name.
+    let players: Vec<crate::gamesettings::PadRef> = if p.id == "cemu" {
+        let st = app.pads.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        players
+            .into_iter()
+            .map(|mut x| {
+                if let Some(g) = x.guid.clone() {
+                    let i = (0..st.pads.len()).find(|i| st.pads[*i] == x.name && st.guids.get(*i) == Some(&g));
+                    if let Some(os) = i.and_then(|i| st.os_names.get(i)) {
+                        x.guid = Some(crate::gamesettings::sdl3_guid(&g, os));
+                    }
+                }
+                x
+            })
+            .collect()
+    } else {
+        players
+    };
     crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, &players, &src)?;
     let _ = lang;
     let lang_dolphin = if system == "ngc" { dolphin_language(&language).unwrap_or("") } else { "" };
@@ -1287,6 +1326,10 @@ fn explain(line: &str) -> String {
         "the file holds no playable program: the Switch keys (prod.keys) are older than the game, or the file is an update or a DLC"
     } else if l.contains("(error 13)") || l.contains("missing production key") {
         "the Switch keys (prod.keys) are missing"
+    } else if l.contains("fatal error type") || l.contains("system archive not found") || l.contains("shared font") {
+        "the game stopped on a 3DS error: it needs the 3DS system files (in Azahar: File → Set Up System Files, from a 3DS), or the game file is damaged or still encrypted"
+    } else if l.contains("firmware is missing") {
+        "the Switch firmware is missing: add it in Settings → Consoles → Switch"
     } else if l.contains("failed to obtain loader") {
         "the emulator does not take this file (a .cia must be installed first: a .3ds or .cci copy starts directly)"
     } else if (l.contains("crc") || l.contains("rom")) && (l.contains("required") || l.contains("missing") || l.contains("not found")) {

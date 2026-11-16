@@ -132,6 +132,17 @@
         }
       }
     ],
+    "wiiu": [
+      {
+        "id": "keys",
+        "name": "Wii U keys (keys.txt), for .wud and .wux discs",
+        "kind": "keys",
+        "required": false,
+        "names": [
+          "keys.txt"
+        ]
+      }
+    ],
     "switch": [
       {
         "id": "prod-keys",
