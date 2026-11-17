@@ -238,6 +238,7 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
         let _ = writeln!(r, "steam hides: {:?}", crate::pad::steam_hidden());
     }
     let _ = writeln!(r, "hardware: {}", crate::hardware::to_json(&crate::consoles::hardware(app)));
+    r.push_str(&switch_report(app));
     let _ = writeln!(r, "\n--- log ---");
     r.push_str(&crate::logfile::tail(512 * 1024));
     // The last game's emulator output, and the emulators' own logs of the last two days.
@@ -291,4 +292,83 @@ mod tests {
         assert_eq!(super::redact_url("https://bob:secret@romm.lan:8443/romm"), "https://romm.lan:8443/romm");
         assert_eq!(super::redact_url("http://romm.lan"), "http://romm.lan");
     }
+}
+
+/// The Switch side of the report: the keys and firmware each Switch emulator has, and for each
+/// Switch game on this device or played from the network, its files and what each package holds
+/// (read from its header: base game, update or DLC, by its ticket's title ID).
+fn switch_report(app: &crate::state::Shared) -> String {
+    use std::fmt::Write;
+    let mut r = String::new();
+    let games: Vec<_> = app.db.games(Some("switch"), None, false).into_iter().filter(|g| g.local_state == "local" || g.linked).collect();
+    let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+    let _ = writeln!(r, "\n--- switch ---");
+    for emu in ["eden", "citron", "ryubing"] {
+        let data = crate::emulators::data_dir(app, &profile, emu);
+        if !data.is_dir() {
+            continue;
+        }
+        let keys = data.join(if emu == "ryubing" { "system" } else { "keys" });
+        let prod = std::fs::read_to_string(keys.join("prod.keys")).unwrap_or_default();
+        // The newest master key says which firmware generations the keys open.
+        let newest = prod
+            .lines()
+            .filter_map(|l| {
+                l.trim().strip_prefix("master_key_").and_then(|x| x.split_whitespace().next()).and_then(|h| u32::from_str_radix(h, 16).ok())
+            })
+            .max();
+        let firmware = std::fs::read_dir(data.join("nand/system/Contents/registered")).map(|d| d.count()).unwrap_or(0);
+        let _ = writeln!(
+            r,
+            "{emu}: prod.keys {} ({} lines, newest master key {:?}), title.keys {}, firmware files {firmware}",
+            if prod.is_empty() { "MISSING" } else { "present" },
+            prod.lines().count(),
+            newest,
+            if keys.join("title.keys").is_file() { "present" } else { "absent" },
+        );
+    }
+    for g in games.iter().take(12) {
+        let main = if g.local_state == "local" {
+            g.local_main.clone().map(std::path::PathBuf::from)
+        } else {
+            crate::stream::link(app, g.rom_id).ok()
+        };
+        let _ = writeln!(
+            r,
+            "game {} ({}): {}",
+            g.name,
+            g.rom_id,
+            main.as_deref().map(|p| p.display().to_string()).unwrap_or_else(|| "no file".into())
+        );
+        let Some(dir) = main.as_deref().and_then(|p| p.parent()) else { continue };
+        let mut files: Vec<_> = std::fs::read_dir(dir).into_iter().flatten().flatten().map(|e| e.path()).collect();
+        files.sort();
+        for f in files.iter().take(20) {
+            let size = f.metadata().map(|m| m.len()).unwrap_or(0);
+            let inner = crate::downloads::pfs0_names(f);
+            let tickets: Vec<String> =
+                inner.iter().flatten().filter(|n| n.ends_with(".tik")).map(|n| n[..16.min(n.len())].to_string()).collect();
+            let _ = writeln!(
+                r,
+                "  {} · {} MB · {} · {}",
+                f.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
+                size / 1_048_576,
+                match &inner {
+                    Some(n) => format!(
+                        "PFS0 with {} files ({} .nca, {} .ncz)",
+                        n.len(),
+                        n.iter().filter(|x| x.ends_with(".nca")).count(),
+                        n.iter().filter(|x| x.ends_with(".ncz")).count()
+                    ),
+                    None if f.is_dir() => "folder".to_string(),
+                    None => "not a PFS0 package".to_string(),
+                },
+                match crate::downloads::switch_kind(f) {
+                    Some(k) => format!("{k} (title {})", tickets.join(", ")),
+                    None => "kind unknown (no ticket)".to_string(),
+                }
+            );
+        }
+    }
+    r
 }

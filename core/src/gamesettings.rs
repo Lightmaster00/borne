@@ -991,7 +991,7 @@ fn dolphin_seen_pads(userdir: &Path) -> Vec<String> {
     out
 }
 
-/// Dolphin's log of the pads it finds, read by the next game (`dolphin_seen_pads`) and kept in
+/// Dolphin's log of the pads it finds and of the Wii's system memory, read by the next game (`dolphin_seen_pads`) and kept in
 /// the diagnostic report.
 pub fn dolphin_logging(userdir: &Path) -> Result<(), String> {
     crate::emulators::ini_set(
@@ -1001,6 +1001,10 @@ pub fn dolphin_logging(userdir: &Path) -> Result<(), String> {
             ("Options", "WriteToFile", "True"),
             ("Options", "WriteToConsole", "False"),
             ("Logs", "ControllerInterface", "True"),
+            // Wii system memory (NAND) and its titles, for the diagnostic report.
+            ("Logs", "IOS_FS", "True"),
+            ("Logs", "IOS_ES", "True"),
+            ("Logs", "BOOT", "True"),
         ],
     )
 }

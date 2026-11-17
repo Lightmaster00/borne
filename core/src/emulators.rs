@@ -507,6 +507,22 @@ struct Session {
     paused: bool,
     /// The emulator's .app on macOS, brought back to the front after that question.
     bundle: Option<PathBuf>,
+    /// The Flatpak the emulator runs in: its sandbox lives apart from the process group.
+    flatpak: Option<String>,
+}
+
+/// Ends every sandbox of this Flatpak application.
+fn flatpak_kill(id: &str) {
+    let _ = Command::new("flatpak").args(["kill", id]).stdout(Stdio::null()).stderr(Stdio::null()).status();
+}
+
+/// Whether a sandbox of this Flatpak application runs.
+fn flatpak_running(id: &str) -> bool {
+    Command::new("flatpak")
+        .args(["ps", "--columns=application"])
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).lines().any(|l| l.trim() == id))
+        .unwrap_or(false)
 }
 
 static SESSION: Mutex<Option<Session>> = Mutex::new(None);
@@ -789,8 +805,13 @@ fn command(
             c
         }
         Found::Flatpak(id) => {
+            // One of this emulator's sandboxes left from before (killing `flatpak run` does not
+            // end its sandbox): ended, so that no old game plays on behind the new one.
+            flatpak_kill(id);
             let mut c = Command::new("flatpak");
             c.arg("run");
+            // The sandbox ends with the `flatpak run` Borne started and stops.
+            c.arg("--die-with-parent");
             // The sandbox sees the game's folder and Borne's per-profile folders, nothing more.
             if let Some(dir) = rom.parent() {
                 c.arg(format!("--filesystem={}:ro", dir.to_string_lossy()));
@@ -807,6 +828,22 @@ fn command(
     // is the one the emulator finds (same SDL GUID). Unless the user asked otherwise.
     if cfg!(target_os = "linux") && std::env::var_os("SDL_JOYSTICK_HIDAPI").is_none() {
         cmd.env("SDL_JOYSTICK_HIDAPI", "0");
+    }
+    // Under Steam, SDL shows Steam's virtual pad only when it can read Steam's note about it (a
+    // file in /tmp), which a Flatpak's sandbox cannot: the emulator then saw no pad at all (the
+    // real ones hidden by Steam). The virtual pad is shown whatever.
+    if std::env::var_os("SteamVirtualGamepadInfo").is_some() || std::env::var_os("SDL_GAMECONTROLLER_IGNORE_DEVICES").is_some() {
+        cmd.env("SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD", "1");
+        if let Found::Flatpak(_) = found {
+            // The note itself, where the sandbox can read it (its /tmp is its own).
+            if let Some(info) = std::env::var_os("SteamVirtualGamepadInfo") {
+                let from = PathBuf::from(&info);
+                let to = app.paths.profiles().join("steam-virtual-gamepads.txt");
+                if std::fs::copy(&from, &to).is_ok() {
+                    cmd.env("SteamVirtualGamepadInfo", &to);
+                }
+            }
+        }
     }
     // Linux: the emulator as an X11 client (Xwayland on a Wayland desktop), where Borne catches
     // Escape before it (quitkey.rs). Under gamescope they already are.
@@ -1166,10 +1203,10 @@ fn cia_installed(app: &Shared, profile: &str, found: &Found, cia: &Path) -> Resu
 }
 
 /// The one game waiting to start once its file is downloaded or its emulator installed: the last
-/// game the player pressed Play on. Any other Play, a game starting, or ten minutes, forget it, so
+/// game the player pressed Play on. Any other Play, a game starting, or three hours, forget it, so
 /// that a game never starts by itself long after it was asked, or instead of another.
 static WAITING: Mutex<Option<(i64, Instant)>> = Mutex::new(None);
-const WAIT_FOR: Duration = Duration::from_secs(600);
+const WAIT_FOR: Duration = Duration::from_secs(3 * 3600);
 
 fn wait_for(rom_id: i64) {
     *WAITING.lock().unwrap_or_else(|e| e.into_inner()) = Some((rom_id, Instant::now()));
@@ -1460,6 +1497,10 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         failure: None,
         paused: false,
         bundle,
+        flatpak: match &found {
+            Found::Flatpak(id) => Some(id.clone()),
+            _ => None,
+        },
     });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
@@ -1588,6 +1629,17 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                         }
                         continue;
                     }
+                    // A Flatpak's sandbox outlives its `flatpak run`: the game runs as long as it.
+                    if let Some(id) = s.flatpak.clone() {
+                        if flatpak_running(&id) {
+                            if s.stopping {
+                                flatpak_kill(&id);
+                            }
+                            drop(g);
+                            std::thread::sleep(Duration::from_millis(700));
+                            continue;
+                        }
+                    }
                 }
                 let quick = s.started.elapsed() < Duration::from_secs(8) && !s.stopping;
                 let failure = s.failure.take().or_else(|| {
@@ -1708,6 +1760,9 @@ pub fn stop() -> bool {
     let Some(s) = g.as_mut() else { return false };
     s.stopping = true;
     let pid = s.child.id() as i32;
+    if let Some(id) = s.flatpak.clone() {
+        std::thread::spawn(move || flatpak_kill(&id));
+    }
     unsafe {
         libc::kill(-pid, libc::SIGTERM);
         // A game paused by the quit question runs again to receive it.

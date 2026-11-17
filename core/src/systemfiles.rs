@@ -595,6 +595,21 @@ pub fn prepare(
                         }
                     }
                 }
+                // Beetle Saturn wants the BIOS of the game's region (Japan: sega_101.bin; USA and
+                // Europe: mpr-17933.bin) and refuses the game without it ("failed to load
+                // content"): with one BIOS only, it stands for the other region too.
+                if console == "saturn" {
+                    let dir = bios_dir(app);
+                    let (jp, west) = (dir.join("sega_101.bin"), dir.join("mpr-17933.bin"));
+                    let any = [&jp, &west].into_iter().find(|p| p.is_file()).cloned().or_else(|| fs.first().cloned());
+                    if let Some(any) = any {
+                        for p in [&jp, &west] {
+                            if !p.is_file() {
+                                copy_if_changed(&any, p)?;
+                            }
+                        }
+                    }
+                }
             }
             ("keys", "eden" | "citron") => {
                 for f in &fs {

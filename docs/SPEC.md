@@ -686,8 +686,8 @@ blocks a launch just because a game was not tested or a community database rates
   by their emulators). It cannot be played from the network: linking it, or playing it, downloads
   it instead, and Play starts it once it is ready.
 - A game waiting for its file or its emulator (download, installation) is remembered alone: the
-  last game the player pressed Play on. Pressing Play on another game, a game starting, or ten
-  minutes forget it, so that no game starts by itself later or instead of another. When it cannot
+  last game the player pressed Play on. Pressing Play on another game, a game starting, or three
+  hours forget it, so that no game starts by itself later or instead of another. When it cannot
   start (a game is running), a `play_failed` event says so; it is never sent as a session's end,
   which would take the interface out of game mode while a game runs. The launch screen shows the
   game that actually runs (by its id).
@@ -725,6 +725,21 @@ blocks a launch just because a game was not tested or a community database rates
 - Update checks: a minute at most, whole answer included; checking again while a check or a
   download runs says the current state; the check or download frees its lock however it ends.
   "Up to date" names the version and the time of the check.
+- Flatpak emulators: started with `flatpak run --die-with-parent` (killing `flatpak run` alone
+  leaves its sandbox, and its game, running), any sandbox of the same application left from
+  before ended first (`flatpak kill`), the session kept while a sandbox of it runs (`flatpak ps`),
+  and ended with it on quit.
+- Under Steam, emulators are told to show Steam's virtual pad
+  (`SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD=1`): SDL shows it only when it can read
+  Steam's note about it (`SteamVirtualGamepadInfo`, a file in /tmp), which a Flatpak's sandbox
+  cannot; the note is also copied where the sandbox reads it.
+- Saturn: with the BIOS of one region only, it is also given under the other region's name (Beetle
+  Saturn refuses a game without its region's BIOS).
+- Library navigation: the left stick counts as released only below 0.35 once past 0.6, so a stick
+  resting near the threshold sends no stream of moves.
+- Diagnostic report, Switch: each Switch emulator's keys (present, newest master key), title keys
+  and firmware files, and each Switch game on this device or on the network with its files and
+  what each package holds (PFS0 header: files, tickets, base game, update or DLC).
 - Closed by the system (Steam's "Exit game": SIGTERM, SIGINT, SIGHUP), the core closes the
   interface (two seconds, then stopped), the running game and the virtual mount (two seconds at
   most), and quits; an interface ended by such a signal is never started again as after a crash.

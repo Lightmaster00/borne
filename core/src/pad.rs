@@ -108,6 +108,8 @@ fn sdl_known_name(ids: (u16, u16)) -> Option<&'static str> {
 const FIRST_REPEAT: Duration = Duration::from_millis(380);
 const NEXT_REPEAT: Duration = Duration::from_millis(85);
 const STICK_THRESHOLD: f32 = 0.6;
+/// Below this, a stick pushed past STICK_THRESHOLD counts as released.
+const STICK_RELEASE: f32 = 0.35;
 /// Select and Start pressed together, or one within this time of the other, quit the game.
 const QUIT_CHORD: Duration = Duration::from_millis(700);
 
@@ -281,8 +283,11 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                                 _ => None,
                             };
                             if let Some((neg, pos)) = dirs {
-                                for (dir, active) in [(neg, v < -STICK_THRESHOLD), (pos, v > STICK_THRESHOLD)] {
+                                for (dir, past, sign) in [(neg, v < -STICK_THRESHOLD, -1.0f32), (pos, v > STICK_THRESHOLD, 1.0)] {
                                     let was = *stick.get(&(pad_key, dir)).unwrap_or(&false);
+                                    // Held until the stick comes well back (below 0.35): a stick
+                                    // resting near the threshold never sends a stream of moves.
+                                    let active = past || (was && v * sign > STICK_RELEASE);
                                     if active && !was {
                                         emit(dir, &pad, false);
                                         held.insert(dir, (Instant::now() + FIRST_REPEAT, pad.clone()));

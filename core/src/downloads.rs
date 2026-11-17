@@ -574,10 +574,9 @@ pub fn pick_main_of(mut files: Vec<(u64, PathBuf)>) -> Option<PathBuf> {
     files.into_iter().max_by_key(|(size, p)| (!is_extra(p), *size)).map(|(_, p)| p)
 }
 
-/// What a Switch package (.nsp, .nsz: a PFS0 archive) holds, read from its ticket's name (the
-/// rights ID starts with the title ID): "base", "update" or "dlc". None when it cannot tell (no
-/// ticket, another format).
-pub fn switch_kind(path: &Path) -> Option<&'static str> {
+/// The files inside a Switch package (.nsp, .nsz: a PFS0 archive), as listed in its header. None
+/// for another format or a damaged header.
+pub fn pfs0_names(path: &Path) -> Option<Vec<String>> {
     use std::io::Read;
     let mut f = std::fs::File::open(path).ok()?;
     let mut head = [0u8; 16];
@@ -593,11 +592,22 @@ pub fn switch_kind(path: &Path) -> Option<&'static str> {
     let mut rest = vec![0u8; count * 24 + strings];
     f.read_exact(&mut rest).ok()?;
     let table = &rest[count * 24..];
-    let names = (0..count).filter_map(|i| {
-        let at = u32::from_le_bytes(rest[i * 24 + 16..i * 24 + 20].try_into().ok()?) as usize;
-        let end = table.get(at..)?.iter().position(|b| *b == 0)? + at;
-        std::str::from_utf8(&table[at..end]).ok()
-    });
+    Some(
+        (0..count)
+            .filter_map(|i| {
+                let at = u32::from_le_bytes(rest[i * 24 + 16..i * 24 + 20].try_into().ok()?) as usize;
+                let end = table.get(at..)?.iter().position(|b| *b == 0)? + at;
+                std::str::from_utf8(&table[at..end]).ok().map(String::from)
+            })
+            .collect(),
+    )
+}
+
+/// What a Switch package (.nsp, .nsz: a PFS0 archive) holds, read from its ticket's name (the
+/// rights ID starts with the title ID): "base", "update" or "dlc". None when it cannot tell (no
+/// ticket, another format).
+pub fn switch_kind(path: &Path) -> Option<&'static str> {
+    let names = pfs0_names(path)?;
     let mut kind = None;
     for n in names {
         let Some(id) = n.strip_suffix(".tik").filter(|i| i.len() >= 16) else { continue };

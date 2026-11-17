@@ -58,10 +58,12 @@ Rectangle {
         }
     }
 
+    // The panel: its title, the list (scrolled to keep the chosen download in view) and the hints.
     Rectangle {
+        id: box
         anchors.centerIn: parent
         width: Math.min(1100, parent.width - 80)
-        height: Math.min(parent.height - 80, col.height + 72)
+        height: Math.min(parent.height - 80, col.height + list.contentHeight + hints.height + 72 + 24)
         radius: 28; color: theme.panel; border.color: theme.panelBorder
         Ink { z: -1; theme: panel.theme; radius: 28 }
         clip: true
@@ -81,64 +83,92 @@ Rectangle {
                 }
             }
             Text { visible: panel.downloads.length === 0; text: qsTr("No recent downloads."); color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 19 } }
-            Repeater {
-                model: panel.downloads
-                Rectangle {
-                    id: rowItem
-                    required property var modelData
-                    required property int index
-                    readonly property bool cur: index === panel.index
-                    readonly property var buttons: panel.buttonsOf(modelData)
-                    width: col.width; height: 92; radius: 16
-                    color: cur ? theme.glass : "transparent"
-                    Column {
-                        x: 20; anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width - 40 - (btns.width > 0 ? btns.width + 24 : 0); spacing: 10
-                        Row {
-                            width: parent.width
-                            Text { width: parent.width * 0.55; text: rowItem.modelData.name; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontFamily; pixelSize: 20; weight: Font.DemiBold } }
-                            Text {
-                                width: parent.width * 0.45; horizontalAlignment: Text.AlignRight
-                                text: panel.stateLabel(rowItem.modelData) + (rowItem.modelData.total > 0 && (rowItem.modelData.state === "downloading" || rowItem.modelData.state === "paused") ? " · " + panel.fmt(rowItem.modelData.received) + " / " + panel.fmt(rowItem.modelData.total) : "")
-                                color: rowItem.modelData.state === "failed" ? theme.bad : theme.fgMuted
-                                font { family: theme.fontFamily; pixelSize: 18 }
-                            }
-                        }
+        }
+        Flickable {
+            id: list
+            x: 36; y: col.y + col.height + 12
+            width: parent.width - 72
+            height: box.height - y - hints.height - 36 - 12
+            contentHeight: rowsCol.height
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            Behavior on contentY { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            // The chosen download kept in view.
+            function ensure() {
+                if (panel.index < 0) { contentY = 0; return }
+                const top = panel.index * (92 + rowsCol.spacing), bottom = top + 92
+                if (top < contentY) contentY = top
+                else if (bottom > contentY + height) contentY = Math.min(Math.max(0, contentHeight - height), bottom - height)
+            }
+            Connections { target: panel; function onIndexChanged() { list.ensure() } function onVisibleChanged() { if (panel.visible) list.ensure() } }
+            Column {
+                id: rowsCol
+                width: parent.width; spacing: 12
+                    Repeater {
+                        model: panel.downloads
                         Rectangle {
-                            visible: rowItem.modelData.state !== "failed"
-                            width: parent.width; height: 4; radius: 2; color: Qt.rgba(1, 1, 1, 0.16)
-                            Rectangle {
-                                height: parent.height; radius: 2
-                                color: rowItem.modelData.state === "paused" ? theme.fgMuted : theme.fg
-                                width: parent.width * (rowItem.modelData.state === "done" ? 1 : rowItem.modelData.total > 0 ? Math.min(1, rowItem.modelData.received / rowItem.modelData.total) : 0)
+                            id: rowItem
+                            required property var modelData
+                            required property int index
+                            readonly property bool cur: index === panel.index
+                            readonly property var buttons: panel.buttonsOf(modelData)
+                            width: col.width; height: 92; radius: 16
+                            color: cur ? theme.glass : "transparent"
+                            Column {
+                                x: 20; anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width - 40 - (btns.width > 0 ? btns.width + 24 : 0); spacing: 10
+                                Row {
+                                    width: parent.width
+                                    Text { width: parent.width * 0.55; text: rowItem.modelData.name; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontFamily; pixelSize: 20; weight: Font.DemiBold } }
+                                    Text {
+                                        width: parent.width * 0.45; horizontalAlignment: Text.AlignRight
+                                        text: panel.stateLabel(rowItem.modelData) + (rowItem.modelData.total > 0 && (rowItem.modelData.state === "downloading" || rowItem.modelData.state === "paused") ? " · " + panel.fmt(rowItem.modelData.received) + " / " + panel.fmt(rowItem.modelData.total) : "")
+                                        color: rowItem.modelData.state === "failed" ? theme.bad : theme.fgMuted
+                                        font { family: theme.fontFamily; pixelSize: 18 }
+                                    }
+                                }
+                                Rectangle {
+                                    visible: rowItem.modelData.state !== "failed"
+                                    width: parent.width; height: 4; radius: 2; color: Qt.rgba(1, 1, 1, 0.16)
+                                    Rectangle {
+                                        height: parent.height; radius: 2
+                                        color: rowItem.modelData.state === "paused" ? theme.fgMuted : theme.fg
+                                        width: parent.width * (rowItem.modelData.state === "done" ? 1 : rowItem.modelData.total > 0 ? Math.min(1, rowItem.modelData.received / rowItem.modelData.total) : 0)
+                                    }
+                                }
+                                Text { visible: rowItem.modelData.state === "failed"; width: parent.width; elide: Text.ElideRight; text: CoreText.tr(rowItem.modelData.error || ""); color: theme.bad; font { family: theme.fontFamily; pixelSize: 18 } }
+                            }
+                            Row {
+                                id: btns
+                                anchors { right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
+                                spacing: 10
+                                Repeater {
+                                    model: rowItem.buttons
+                                    PageButton {
+                                        required property var modelData
+                                        required property int index
+                                        implicitHeight: 48
+                                        theme: panel.theme
+                                        text: modelData.label
+                                        primary: index === 0
+                                        focused: rowItem.cur && panel.pick === index
+                                    }
+                                }
                             }
                         }
-                        Text { visible: rowItem.modelData.state === "failed"; width: parent.width; elide: Text.ElideRight; text: CoreText.tr(rowItem.modelData.error || ""); color: theme.bad; font { family: theme.fontFamily; pixelSize: 18 } }
                     }
-                    Row {
-                        id: btns
-                        anchors { right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
-                        spacing: 10
-                        Repeater {
-                            model: rowItem.buttons
-                            PageButton {
-                                required property var modelData
-                                required property int index
-                                implicitHeight: 48
-                                theme: panel.theme
-                                text: modelData.label
-                                primary: index === 0
-                                focused: rowItem.cur && panel.pick === index
-                            }
-                        }
-                    }
+            }
+        }
+        Item {
+            id: hints
+            x: 36; width: parent.width - 72; height: hintBar.height
+            anchors.bottom: parent.bottom; anchors.bottomMargin: 30
+                HintBar {
+                    id: hintBar
+                    theme: panel.theme
+                    hints: (panel.downloads.length ? [["A", qsTr("Choose"), "a"], ["◀ ▶", qsTr("Pause or cancel"), "right"]] : [])
+                           .concat(panel.finishedAny ? [["X", qsTr("Clear finished"), "x"]] : []).concat([["B", qsTr("Close"), "b"]])
                 }
-            }
-            HintBar {
-                theme: panel.theme
-                hints: (panel.downloads.length ? [["A", qsTr("Choose"), "a"], ["◀ ▶", qsTr("Pause or cancel"), "right"]] : [])
-                       .concat(panel.finishedAny ? [["X", qsTr("Clear finished"), "x"]] : []).concat([["B", qsTr("Close"), "b"]])
-            }
         }
     }
 }
