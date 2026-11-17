@@ -28,9 +28,11 @@ Item {
     }
 
     // The logo on top of the screen Borne opens on.
-    Brand { anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 80 } size: 52 }
+    Brand { id: brand; anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: picker.height < 900 ? 48 : 80 } size: 52 }
+    // Centred, below the logo on a short screen (a large interface size).
     Column {
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: Math.max((parent.height - height) / 2, brand.y + brand.height + 40)
         spacing: 40
         Text { anchors.horizontalCenter: parent.horizontalCenter; text: qsTr("Who's playing?"); color: theme.fg; font { family: theme.displayFont; pixelSize: 64; weight: Font.ExtraBold; letterSpacing: -1.5 } }
         Row {

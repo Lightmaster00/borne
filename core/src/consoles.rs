@@ -10,6 +10,8 @@ use serde_json::{json, Value};
 
 const HIDDEN: &str = "consoles.hidden";
 const CHOSEN: &str = "consoles.chosen";
+/// Consoles whose missing needs the player has seen before playing (asked once per console).
+const SEEN: &str = "consoles.needs_seen";
 
 pub fn hidden(app: &Shared) -> Vec<String> {
     app.db.setting(HIDDEN).unwrap_or_default().split(',').filter(|s| !s.is_empty()).map(String::from).collect()
@@ -76,6 +78,29 @@ pub fn warnings(slug: &str, hw: &Hardware) -> Vec<Value> {
             w
         })
         .collect()
+}
+
+/// Before a game: the needs of its console this machine lacks, when the player has not seen them
+/// yet ({running: false, needs: [...], console}); None to play. Power is told on the game's page,
+/// not asked: a game may run well enough.
+pub fn before_play(app: &Shared, rom_id: i64, anyway: bool) -> Option<Value> {
+    let g = app.db.game(rom_id)?;
+    let slug = g.platform_slug.clone();
+    let mut seen: Vec<String> = app.db.setting(SEEN).unwrap_or_default().split(',').filter(|s| !s.is_empty()).map(String::from).collect();
+    if seen.contains(&slug) {
+        return None;
+    }
+    let missing: Vec<Value> =
+        warnings(&slug, &hardware(app)).into_iter().filter(|w| w["missing"] == true && w["code"] != "power").collect();
+    if missing.is_empty() {
+        return None;
+    }
+    if anyway {
+        seen.push(slug);
+        app.db.set_setting(SEEN, &seen.join(","));
+        return None;
+    }
+    Some(json!({ "running": false, "needs": missing, "console": g.platform_name, "rom_id": rom_id }))
 }
 
 pub fn hardware(app: &Shared) -> Hardware {

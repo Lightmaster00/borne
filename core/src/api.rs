@@ -835,10 +835,18 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Post, ["api", "v1", "games", id, "play"]) => match id.parse::<i64>() {
-            Ok(rom_id) => match crate::emulators::play(app, rom_id) {
-                Ok(s) => ok(req, s),
-                Err(e) => err(req, 400, &e),
-            },
+            Ok(rom_id) => {
+                // What this console's games need that this machine lacks is asked about before the
+                // first game of the console ({anyway: true} once the player has seen it).
+                let anyway = body_json(&mut req)["anyway"] == true;
+                match crate::consoles::before_play(app, rom_id, anyway) {
+                    Some(ask) => ok(req, ask),
+                    None => match crate::emulators::play(app, rom_id) {
+                        Ok(s) => ok(req, s),
+                        Err(e) => err(req, 400, &e),
+                    },
+                }
+            }
             Err(_) => err(req, 400, "invalid identifier"),
         },
         (Method::Get, ["api", "v1", "games", id, "cheats"]) => match id.parse::<i64>() {

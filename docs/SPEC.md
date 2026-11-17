@@ -685,6 +685,27 @@ blocks a launch just because a game was not tested or a community database rates
 - A game stored as a zip or 7z on RomM is extracted on download (arcade sets excepted, read zipped
   by their emulators). It cannot be played from the network: linking it, or playing it, downloads
   it instead, and Play starts it once it is ready.
+- A game waiting for its file or its emulator (download, installation) is remembered alone: the
+  last game the player pressed Play on. Pressing Play on another game, a game starting, or ten
+  minutes forget it, so that no game starts by itself later or instead of another. When it cannot
+  start (a game is running), a `play_failed` event says so; it is never sent as a session's end,
+  which would take the interface out of game mode while a game runs. The launch screen shows the
+  game that actually runs (by its id).
+- Before the first game of a console whose games need what this computer lacks (touch screen,
+  Wii Remote, motion sensors, Joy-Con; not power), `POST /games/<id>/play` answers
+  `{running: false, needs, console}` and the interface asks "Play anyway" / "Not now"; Play anyway
+  sends `{anyway: true}`, remembered per console (`consoles.needs_seen`).
+- Dolphin binds a pad by its name, and its SDL may name it otherwise than Borne (the system's name,
+  SDL's own for a known pad, "Steam Virtual Gamepad" under Steam): every binding names each
+  possible name (`` `SDL/0/A:Button S` | `SDL/0/B:Button S` ``). Dolphin hears the pad in the
+  background too (`[Input] BackgroundInput`), so a focus taken elsewhere never leaves it deaf.
+- Switch packages (.nsp, .nsz) are read (PFS0, the ticket's title ID): an update or a DLC given as
+  the game is replaced by the base game beside it, or refused with what is missing. "Missing a
+  program-type NCA" on a base game means keys and firmware older than the game.
+- Wii U disc images (.wud, .wux): the disc key beside them (.key) is added to Cemu's keys.txt.
+- Closed by the system (Steam's "Exit game": SIGTERM, SIGINT, SIGHUP), the core closes the
+  interface (two seconds, then stopped), the running game and the virtual mount (two seconds at
+  most), and quits; an interface ended by such a signal is never started again as after a crash.
 - Per-game controls, for every emulator Borne sets up: player 1's controller, A/B and X/Y swapped,
   what each pad button acts as, and (RetroArch) the left stick as the D-pad. RetroArch gets the
   game's remap file (`profiles/<id>/remaps/<core library>/<game>.rmp`); Dolphin, PCSX2,
@@ -1018,7 +1039,9 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Settings → Interface (Qt preferences, `prefs` in Main.qml): Videos — video behind the library on/off
   (`bgVideo`), video in full screen after 5 s / 15 s / 30 s / 1 min / never (`attractDelay`), its length
   1 / 3 / 10 min or no limit (`attractRest`), videos on the game page (`pageVideo`); Look — interface
-  size 90–120 % (`uiScale`: the 1080-unit scene scaled, never below 1600 units wide; on the shorter scene the
+  size 100 / 115 / 130 / 145 %, 130 % by default to be read from a sofa (`uiScale`: the 1080-unit scene
+  scaled, never below 1360 units wide; older settings at 100 % are moved to 130 % once, `scaleVersion`;
+  on the shorter scene the logo of the profile screen and the settings' version step aside, the
   shelf, its cases and the settings' section list shrink to keep clear of the hints, and a console
   tab only partly in view is dimmed), animations
   normal or reduced (`motion`: Theme durations and the attract fades × 0.4), clock shown or hidden; Sounds — interface

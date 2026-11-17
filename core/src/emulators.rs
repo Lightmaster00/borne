@@ -1155,6 +1155,109 @@ fn cia_installed(app: &Shared, profile: &str, found: &Found, cia: &Path) -> Resu
     })
 }
 
+/// The one game waiting to start once its file is downloaded or its emulator installed: the last
+/// game the player pressed Play on. Any other Play, a game starting, or ten minutes, forget it, so
+/// that a game never starts by itself long after it was asked, or instead of another.
+static WAITING: Mutex<Option<(i64, Instant)>> = Mutex::new(None);
+const WAIT_FOR: Duration = Duration::from_secs(600);
+
+fn wait_for(rom_id: i64) {
+    *WAITING.lock().unwrap_or_else(|e| e.into_inner()) = Some((rom_id, Instant::now()));
+}
+
+/// The game waiting to start, when it is `rom_id` (or any, with None) and still wanted: taken.
+pub fn take_waiting(rom_id: Option<i64>) -> Option<i64> {
+    let mut w = WAITING.lock().unwrap_or_else(|e| e.into_inner());
+    match *w {
+        Some((id, at)) if rom_id.map(|r| r == id).unwrap_or(true) => {
+            *w = None;
+            (at.elapsed() < WAIT_FOR && !playing()).then_some(id)
+        }
+        _ => None,
+    }
+}
+
+/// Forgets the game waiting to start (the player changed their mind: B on the launch screen).
+pub fn forget_waiting() {
+    *WAITING.lock().unwrap_or_else(|e| e.into_inner()) = None;
+}
+
+/// Starts the game that was waiting (its download or its emulator's installation over). Its
+/// failure is told as a notice, never as the end of a session: a game may be running.
+pub fn play_waiting(app: &Shared, rom_id: Option<i64>) {
+    let Some(id) = take_waiting(rom_id) else { return };
+    if let Err(e) = play(app, id) {
+        app.emit(json!({ "type": "play_failed", "rom_id": id, "error": e }));
+    }
+}
+
+/// A Switch package that holds an update or a DLC is not the game: the base game beside it is
+/// started instead (an emulator given an update says "missing a program-type NCA"); with none
+/// beside it, the player is told what is missing.
+fn switch_base(rom: &Path) -> Result<PathBuf, String> {
+    let is_pkg = |p: &Path| p.extension().map(|e| e.eq_ignore_ascii_case("nsp") || e.eq_ignore_ascii_case("nsz")).unwrap_or(false);
+    if !is_pkg(rom) {
+        return Ok(rom.to_path_buf());
+    }
+    let kind = crate::downloads::switch_kind(rom);
+    if kind.is_none() || kind == Some("base") {
+        return Ok(rom.to_path_buf());
+    }
+    if let Some(dir) = rom.parent() {
+        if let Ok(rd) = std::fs::read_dir(dir) {
+            for e in rd.flatten() {
+                let p = e.path();
+                if p != rom && is_pkg(&p) && crate::downloads::switch_kind(&p) == Some("base") {
+                    return Ok(p);
+                }
+            }
+        }
+    }
+    Err(if kind == Some("update") {
+        "this file is an update of the game, not the game: add the base game to this game on RomM".to_string()
+    } else {
+        "this file is a DLC of the game, not the game: add the base game to this game on RomM".to_string()
+    })
+}
+
+/// A Wii U disc image (.wud, .wux) comes with its disc key beside it (a 16-byte .key file): Cemu
+/// reads disc keys from its keys.txt only, where the key is added (once).
+fn cemu_disc_keys(data: &Path, rom: &Path) {
+    let disc = rom.extension().map(|e| e.eq_ignore_ascii_case("wud") || e.eq_ignore_ascii_case("wux")).unwrap_or(false);
+    let Some(dir) = rom.parent().filter(|_| disc) else { return };
+    let keys = data.join("keys.txt");
+    let mut text = std::fs::read_to_string(&keys).unwrap_or_default();
+    let before = text.len();
+    for e in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let path = e.path();
+        if !path.extension().map(|x| x.eq_ignore_ascii_case("key")).unwrap_or(false) {
+            continue;
+        }
+        let Ok(bytes) = std::fs::read(&path) else { continue };
+        // Raw 16 bytes, or already written as 32 hex digits.
+        let hex = if bytes.len() == 16 {
+            bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()
+        } else {
+            let t = String::from_utf8_lossy(&bytes).trim().to_lowercase();
+            if t.len() == 32 && t.chars().all(|c| c.is_ascii_hexdigit()) {
+                t
+            } else {
+                continue;
+            }
+        };
+        if !text.to_lowercase().contains(&hex) {
+            if !text.is_empty() && !text.ends_with('\n') {
+                text.push('\n');
+            }
+            text.push_str(&format!("{hex} # {}\n", rom.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default()));
+        }
+    }
+    if text.len() != before {
+        let _ = std::fs::create_dir_all(data);
+        let _ = std::fs::write(&keys, text);
+    }
+}
+
 /// Held while a finished game's save is sent to RomM.
 static SAVING: Mutex<()> = Mutex::new(());
 
@@ -1178,6 +1281,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         }
     }
     let _started = Started;
+    forget_waiting();
     let g = app.db.game(rom_id).ok_or("unknown game")?;
     let system = g.platform_slug.clone();
     let e = chosen_for_game(app, &system, &g.group_key).ok_or_else(|| {
@@ -1199,7 +1303,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     };
     let rom = match game_file(app, &g) {
         Err(e) if e == crate::stream::COMPRESSED || (g.local_state != "local" && downloading()) => {
-            crate::downloads::play_after(rom_id);
+            wait_for(rom_id);
             if !downloading() {
                 crate::downloads::enqueue(app, rom_id)?;
             }
@@ -1218,7 +1322,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         }
         // Installed first; the game starts by itself once it is ready.
         rom?;
-        crate::emuinstall::play_after(rom_id);
+        wait_for(rom_id);
         if !crate::emuinstall::busy() {
             crate::emuinstall::start(app, &p.id, e.core.clone().into_iter().collect())?;
         }
@@ -1226,6 +1330,12 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     }
     let found = found.unwrap();
     let mut rom = rom?;
+    if system == "switch" {
+        rom = switch_base(&rom)?;
+    }
+    if p.id == "cemu" {
+        cemu_disc_keys(&data_dir(app, &app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into()), "cemu"), &rom);
+    }
     // A .cia is installed into Azahar once, then its installed program is what starts.
     if p.id == "azahar" && rom.extension().map(|x| x.eq_ignore_ascii_case("cia")).unwrap_or(false) {
         let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
@@ -1323,7 +1433,7 @@ fn failure_line(text: &str, fails: &[String]) -> Option<String> {
 fn explain(line: &str) -> String {
     let l = line.to_lowercase();
     let known = if l.contains("(error 52)") || l.contains("missing a program-type nca") {
-        "the file holds no playable program: the Switch keys (prod.keys) are older than the game, or the file is an update or a DLC"
+        "the game cannot be read: the Switch keys (prod.keys) and firmware are older than the game; take them again from an up-to-date Switch"
     } else if l.contains("(error 13)") || l.contains("missing production key") {
         "the Switch keys (prod.keys) are missing"
     } else if l.contains("fatal error type") || l.contains("system archive not found") || l.contains("shared font") {
@@ -1546,6 +1656,31 @@ pub fn stop() -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_wii_u_discs_key_goes_into_cemus_keys() {
+        let d = tempfile::tempdir().unwrap();
+        let game = d.path().join("game");
+        std::fs::create_dir_all(&game).unwrap();
+        std::fs::write(game.join("Game.wud"), b"x").unwrap();
+        std::fs::write(game.join("Game.key"), [0xabu8; 16]).unwrap();
+        let data = d.path().join("cemu");
+        super::cemu_disc_keys(&data, &game.join("Game.wud"));
+        super::cemu_disc_keys(&data, &game.join("Game.wud"));
+        let t = std::fs::read_to_string(data.join("keys.txt")).unwrap();
+        assert_eq!(t.matches("abababababababababababababababab").count(), 1, "{t}");
+    }
+
+    #[test]
+    fn a_waiting_game_starts_once_and_only_itself() {
+        super::wait_for(5);
+        assert_eq!(super::take_waiting(Some(6)), None, "another game's download does not start it");
+        assert_eq!(super::take_waiting(Some(5)), Some(5));
+        assert_eq!(super::take_waiting(Some(5)), None, "started once");
+        super::wait_for(7);
+        super::forget_waiting();
+        assert_eq!(super::take_waiting(None), None, "forgotten by another Play");
+    }
+
     use super::*;
 
     #[test]

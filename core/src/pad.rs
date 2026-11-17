@@ -36,6 +36,49 @@ pub struct PadState {
 
 pub type SharedPadState = Arc<Mutex<PadState>>;
 
+/// Each connected pad: its name (gilrs, from SDL_GameControllerDB), the system's name, its ids.
+/// (name, system name, (vendor, product)).
+type Known = (String, String, (u16, u16));
+static KNOWN: Mutex<Vec<Known>> = Mutex::new(Vec::new());
+
+/// The names an emulator built on SDL may give the pad Borne calls `name`: Borne's, the system's,
+/// and SDL's own for well-known pads (SDL names those by their ids, whatever the system says).
+/// Emulators that bind a pad by its name (Dolphin) are given every one.
+pub fn sdl_names(name: &str) -> Vec<String> {
+    let known = KNOWN.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let mut out = vec![name.to_string()];
+    if let Some((_, os, ids)) = known.iter().find(|(n, _, _)| n == name) {
+        out.push(os.clone());
+        out.extend(sdl_known_name(*ids).map(String::from));
+    }
+    let mut seen = std::collections::HashSet::new();
+    out.retain(|n| !n.is_empty() && seen.insert(n.clone()));
+    out
+}
+
+#[cfg(test)]
+pub fn set_known(pads: Vec<Known>) {
+    *KNOWN.lock().unwrap_or_else(|e| e.into_inner()) = pads;
+}
+
+/// SDL's own names of well-known pads (SDL's controller list), by USB vendor and product.
+fn sdl_known_name(ids: (u16, u16)) -> Option<&'static str> {
+    Some(match ids {
+        (0x28de, 0x11ff) => "Steam Virtual Gamepad",
+        (0x28de, 0x1205) => "Steam Deck",
+        (0x057e, 0x2009) => "Nintendo Switch Pro Controller",
+        (0x057e, 0x2006) => "Nintendo Switch Joy-Con (L)",
+        (0x057e, 0x2007) => "Nintendo Switch Joy-Con (R)",
+        (0x054c, 0x05c4) | (0x054c, 0x09cc) | (0x054c, 0x0ba0) => "PS4 Controller",
+        (0x054c, 0x0ce6) | (0x054c, 0x0df2) => "PS5 Controller",
+        (0x054c, 0x0268) => "PS3 Controller",
+        (0x045e, 0x028e) | (0x045e, 0x028f) => "Xbox 360 Controller",
+        (0x045e, 0x02d1) | (0x045e, 0x02dd) | (0x045e, 0x02e3) | (0x045e, 0x02ea) | (0x045e, 0x02fd) => "Xbox One Controller",
+        (0x045e, 0x0b12) | (0x045e, 0x0b13) => "Xbox Series X Controller",
+        _ => return None,
+    })
+}
+
 const FIRST_REPEAT: Duration = Duration::from_millis(380);
 const NEXT_REPEAT: Duration = Duration::from_millis(85);
 const STICK_THRESHOLD: f32 = 0.6;
@@ -135,6 +178,8 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                     s.guids = gilrs.gamepads().map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect()).collect();
                     s.ids = gilrs.gamepads().map(|(_, g)| (g.vendor_id().unwrap_or(0), g.product_id().unwrap_or(0))).collect();
                     s.os_names = gilrs.gamepads().map(|(_, g)| g.os_name().to_string()).collect();
+                    *KNOWN.lock().unwrap_or_else(|e| e.into_inner()) =
+                        s.pads.iter().zip(&s.os_names).zip(&s.ids).map(|((n, o), i)| (n.clone(), o.clone(), *i)).collect();
                 }
                 // Started from Steam with Steam Input: the pads Steam hides from games also send
                 // their presses here, besides Steam's virtual pad; only the virtual pad is heard,

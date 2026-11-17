@@ -12,6 +12,7 @@ import Borne.Theme
 import "components"
 import "components/Display.js" as Display
 import "components/Cases.js" as Cases
+import "components/ConsoleNeeds.js" as ConsoleNeeds
 import "components/CoreText.js" as CoreText
 
 Window {
@@ -426,12 +427,21 @@ Window {
     property var launchGame: null
     property string launchPhase: ""
     property string launchNote: ""
-    function play(g) {
+    function play(g, anyway) {
         if (session && session.running) return
         sfx.play("accept")
         launchGame = g; launchNote = ""; launchPhase = "starting"
-        api("POST", "/api/v1/games/" + g.rom_id + "/play", {}, function (r, err) {
+        api("POST", "/api/v1/games/" + g.rom_id + "/play", anyway ? { anyway: true } : {}, function (r, err) {
             if (err) { launchPhase = ""; toasts.show(err, "error"); return }
+            // This console's games need what this computer lacks: said before its first game.
+            if (r && r.needs) {
+                launchPhase = ""
+                needsAsk.game = g
+                needsAsk.title = qsTr("Before playing %1").arg(r.console)
+                needsAsk.body = ConsoleNeeds.warnings(r.needs).join("\n\n")
+                needsAsk.shown = true
+                return
+            }
             if (r && r.downloading) {
                 launchPhase = ""
                 toasts.show(qsTr("%1 is compressed on RomM: it is downloaded first and starts as soon as it is ready.").arg(r.downloading), "info")
@@ -454,10 +464,16 @@ Window {
         else win.api("POST", "/api/v1/session/ask", {}, function () {})
     }
     function onSession(s) {
+        // The end of another game than the one running is not this one's end.
+        if (s && !s.running && session && session.running && s.rom_id !== undefined && s.rom_id !== session.rom_id) return
         session = s
         if (typeof quitKey !== "undefined" && quitKey) quitKey.active = !!(s && s.running)
         if (s && s.running) {
-            if (!launchGame || launchGame.rom_id !== s.rom_id) launchGame = pageGame && pageGame.rom_id === s.rom_id ? pageGame : launchGame
+            // The launch screen shows the game that runs, whichever started it.
+            if (!launchGame || launchGame.rom_id !== s.rom_id) {
+                const i = indexByRom[s.rom_id]
+                launchGame = pageGame && pageGame.rom_id === s.rom_id ? pageGame : i !== undefined ? libModel.get(i) : { rom_id: s.rom_id, name: s.name }
+            }
             gameMode = true
             launchPhase = "starting"; launchStarted.restart()
         } else {
@@ -1026,6 +1042,7 @@ Window {
         if (touch() && screen === "library" && overlay === "") return
         // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs);
         // the question it raises is answered here.
+        if (needsAsk.shown) return needsAsk.handle(a)
         if (session && session.running) return session.paused ? quitAsk.handle(a) : undefined
         if (bench.running && a !== "start") return
         if (consolePicker.visible) { if (a !== "a" && a !== "start") sfx.play("move"); else sfx.play("accept"); return consolePicker.handle(a) }
@@ -1094,6 +1111,8 @@ Window {
                 libReload.restart(); if (win.page && win.overlay === "game") pageMediaReload.restart() }
             else if (m.type === "platforms") win.loadPlatforms()
             else if (m.type === "session") win.onSession(m.session)
+            // A game that waited for its file or its emulator could not start: told, nothing else.
+            else if (m.type === "play_failed") { if (!win.gameMode) toasts.show(CoreText.tr(m.error), "error") }
             // The save of the game just ended, sent after it (another game can start meanwhile).
             else if (m.type === "saves") win.onSaves(m.note)
             else if (m.type === "emulators" || m.type === "systemfiles") { if (win.overlay === "settings") loadSettings() }
@@ -1264,11 +1283,11 @@ Window {
     Item {
         id: scene
         // 1080 logical pixels high; the width follows the screen's shape (16:10, 21:9…) so there
-        // are no bars, never narrower than 1600.
+        // are no bars, never narrower than 1360.
         // Inside the console's frame (ConsoleFrame).
-        // Interface size (prefs.uiScale, %) enlarges everything, never below 1600 wide.
+        // Interface size (prefs.uiScale, %) enlarges everything, never below 1360 wide.
         readonly property real k: Math.min(Math.min((win.height - 2 * win.frameMargin) / 1080, (win.width - 2 * win.frameMargin) / 1600) * prefs.uiScale / 100,
-                                           (win.width - 2 * win.frameMargin) / 1600)
+                                           (win.width - 2 * win.frameMargin) / 1360)
         width: (win.width - 2 * win.frameMargin) / k
         height: (win.height - 2 * win.frameMargin) / k
         anchors.centerIn: parent
@@ -1771,6 +1790,22 @@ Window {
             })
         }
     }
+    // Before the first game of a console whose games need what this computer lacks.
+    QuitConfirm {
+        id: needsAsk
+        property var game: null
+        anchors.fill: parent
+        z: 33
+        theme: win.theme
+        stayText: qsTr("Not now")
+        goText: qsTr("Play anyway")
+        footer: qsTr("Asked once for this console.")
+        onAnswered: function (go) {
+            shown = false
+            sfx.play(go ? "accept" : "back")
+            if (go && game) win.play(game, true)
+        }
+    }
     // Quitting a game: asked when the core paused it on the quit chord or on Escape.
     QuitConfirm {
         id: quitAsk
@@ -2034,7 +2069,8 @@ Window {
         property bool pageVideo: true         // videos on the game page
         property int attractDelay: 5          // s without input before the video fills the screen; 0: never
         property int attractRest: 60          // s of full-screen video before the games come back; 0: never
-        property int uiScale: 100             // interface size, %
+        property int uiScale: 130             // interface size, %: read from a sofa by default
+        property int scaleVersion: 0          // 1: the larger default given once to older settings
         property string language: "auto"      // interface language: "auto" (the system's) | "en" | "fr"
         // Switched at once (the launcher reloads the translation); the library comes back in it.
         onLanguageChanged: {
@@ -2059,6 +2095,8 @@ Window {
             if (h.api !== 1) { fatal = qsTr("Incompatible API version: core %1, UI 1").arg(h.api); return }
             coreVersion = h.core || ""
             // Safe mode: no video and no sound, the likeliest causes of repeated crashes.
+            // Older settings kept the small 100 % of earlier builds: the larger default, once.
+            if (prefs.scaleVersion < 1) { if (prefs.uiScale <= 100) prefs.uiScale = 130; prefs.scaleVersion = 1 }
             if (!prefs.videosSplit) { prefs.bgVideo = prefs.trailers; prefs.pageVideo = prefs.trailers; prefs.videosSplit = true }
             if (safeMode) { prefs.bgVideo = false; prefs.pageVideo = false; prefs.sounds = false }
             refreshStatus(function (s) {

@@ -9,6 +9,11 @@ function entries() {
     return [
         // Games and playing
         ["a game is already running", qsTr("a game is already running")],
+        ["the game cannot be read: the Switch keys (prod.keys) and firmware are older than the game; take them again from an up-to-date Switch", qsTr("the game cannot be read: the Switch keys (prod.keys) and firmware are older than the game; take them again from an up-to-date Switch")],
+        ["the game stopped on a 3DS error: it needs the 3DS system files (in Azahar: File → Set Up System Files, from a 3DS), or the game file is damaged or still encrypted", qsTr("the game stopped on a 3DS error: it needs the 3DS system files (in Azahar: File → Set Up System Files, from a 3DS), or the game file is damaged or still encrypted")],
+        ["the Switch firmware is missing: add it in Settings → Consoles → Switch", qsTr("the Switch firmware is missing: add it in Settings → Consoles → Switch")],
+        ["this file is an update of the game, not the game: add the base game to this game on RomM", qsTr("this file is an update of the game, not the game: add the base game to this game on RomM")],
+        ["this file is a DLC of the game, not the game: add the base game to this game on RomM", qsTr("this file is a DLC of the game, not the game: add the base game to this game on RomM")],
         ["the game is compressed on RomM: it is downloaded to be played", qsTr("the game is compressed on RomM: it is downloaded to be played")],
         ["a game is running: quit it first", qsTr("a game is running: quit it first")],
         ["the downloaded copy is missing: download the game again", qsTr("the downloaded copy is missing: download the game again")],

@@ -1,5 +1,7 @@
 // Asked when Select and Start are pressed together during a game: the game is paused (its
 // processes stopped by the core) until the player answers. Keep playing is chosen first.
+// Its words can be another question's (before playing a console whose games need what this
+// computer lacks): title, body, stayText, goText, footer.
 import QtQuick
 
 Item {
@@ -8,6 +10,11 @@ Item {
     property string game: ""
     property bool shown: false
     property int choice: 0           // 0 keep playing, 1 quit
+    property string title: qsTr("Quit %1?").arg(ask.game)
+    property string body: qsTr("The game is paused. What was not saved in the game is lost when you quit.")
+    property string stayText: qsTr("Keep playing")
+    property string goText: qsTr("Quit the game")
+    property string footer: qsTr("Select + Start again: quit at once")
     signal answered(bool quit)
 
     function handle(a) {
@@ -42,14 +49,14 @@ Item {
             spacing: 14
             Text {
                 width: parent.width
-                text: qsTr("Quit %1?").arg(ask.game)
+                text: ask.title
                 wrapMode: Text.WordWrap
                 color: theme ? theme.fg : "white"
                 font { family: theme ? theme.displayFont : "Fredoka"; pixelSize: 34; weight: Font.Bold }
             }
             Text {
                 width: parent.width
-                text: qsTr("The game is paused. What was not saved in the game is lost when you quit.")
+                text: ask.body
                 wrapMode: Text.WordWrap
                 color: theme ? theme.fgSoft : "#ccc"
                 font { family: theme ? theme.fontFamily : "Manrope"; pixelSize: 17 }
@@ -59,19 +66,20 @@ Item {
                 spacing: 14
                 PageButton {
                     theme: ask.theme
-                    text: qsTr("Keep playing")
+                    text: ask.stayText
                     key: "B"
                     focused: ask.choice === 0
                 }
                 PageButton {
                     theme: ask.theme
-                    text: qsTr("Quit the game")
+                    text: ask.goText
                     primary: true
                     focused: ask.choice === 1
                 }
             }
             Text {
-                text: qsTr("Select + Start again: quit at once")
+                visible: ask.footer !== ""
+                text: ask.footer
                 color: theme ? theme.fgSoft : "#ccc"
                 opacity: 0.8
                 font { family: theme ? theme.fontFamily : "Manrope"; pixelSize: 16 }

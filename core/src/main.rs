@@ -249,10 +249,17 @@ fn main() {
             .env("BORNE_WS", &ws_url)
             .env("BORNE_SAFE_MODE", if safe_mode { "1" } else { "0" })
             .env("BORNE_UI_RESTARTS", crashes.len().to_string())
-            .status();
+            .spawn()
+            .and_then(|mut ui| wait_ui(&mut ui));
         match status {
-            Ok(s) if s.success() => {
-                stream::stop();
+            // Closed by the system (Steam's "Exit game", a log-out): Borne quits with it, never
+            // starting its interface again behind the one closing it.
+            Ok(s) if s.success() || stopped_by_system(&s) => {
+                if !s.success() {
+                    logfile::write("main", &format!("closed by the system ({s})"));
+                }
+                emulators::stop();
+                stop_stream_quickly();
                 if update::RESTART.load(std::sync::atomic::Ordering::SeqCst) {
                     update::exec_new_core();
                 }
@@ -275,4 +282,59 @@ fn main() {
         }
         std::thread::sleep(Duration::from_millis(500));
     }
+}
+
+/// Set when the system asks Borne to quit (SIGTERM, SIGINT, SIGHUP).
+static QUIT_ASKED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+extern "C" fn on_quit_signal(_: libc::c_int) {
+    QUIT_ASKED.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
+/// Waits for the interface; when the system asks Borne to quit meanwhile, the interface is closed
+/// (it is given two seconds, then stopped) and its end returned.
+fn wait_ui(ui: &mut std::process::Child) -> std::io::Result<std::process::ExitStatus> {
+    static HANDLERS: std::sync::Once = std::sync::Once::new();
+    HANDLERS.call_once(|| unsafe {
+        for sig in [libc::SIGTERM, libc::SIGINT, libc::SIGHUP] {
+            libc::signal(sig, on_quit_signal as *const () as libc::sighandler_t);
+        }
+    });
+    let mut asked_at: Option<Instant> = None;
+    loop {
+        if let Some(s) = ui.try_wait()? {
+            return Ok(s);
+        }
+        if QUIT_ASKED.load(std::sync::atomic::Ordering::SeqCst) {
+            match asked_at {
+                None => {
+                    asked_at = Some(Instant::now());
+                    unsafe { libc::kill(ui.id() as i32, libc::SIGTERM) };
+                }
+                Some(t) if t.elapsed() > Duration::from_secs(2) => {
+                    let _ = ui.kill();
+                }
+                _ => {}
+            }
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// The interface ended by the system's request (a signal to quit), not by a crash.
+fn stopped_by_system(s: &std::process::ExitStatus) -> bool {
+    use std::os::unix::process::ExitStatusExt;
+    QUIT_ASKED.load(std::sync::atomic::Ordering::SeqCst)
+        || matches!(s.signal(), Some(libc::SIGTERM) | Some(libc::SIGINT) | Some(libc::SIGHUP) | Some(libc::SIGKILL))
+}
+
+/// The virtual mount stopped, without waiting more than two seconds for a read still under way
+/// (a busy mount is left to the system, which drops it with the process).
+fn stop_stream_quickly() {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        stream::stop();
+        let _ = tx.send(());
+    });
+    let _ = rx.recv_timeout(Duration::from_secs(2));
 }

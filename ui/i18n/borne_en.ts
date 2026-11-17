@@ -795,6 +795,26 @@
         <source>no Steam account on this computer yet: open Steam and sign in once</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>the game cannot be read: the Switch keys (prod.keys) and firmware are older than the game; take them again from an up-to-date Switch</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the game stopped on a 3DS error: it needs the 3DS system files (in Azahar: File → Set Up System Files, from a 3DS), or the game file is damaged or still encrypted</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the Switch firmware is missing: add it in Settings → Consoles → Switch</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file is an update of the game, not the game: add the base game to this game on RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file is a DLC of the game, not the game: add the base game to this game on RomM</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2706,6 +2726,22 @@
     </message>
     <message>
         <source>A: see it now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Before playing %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not now</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Play anyway</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Asked once for this console.</source>
         <translation type="unfinished" />
     </message>
 </context>

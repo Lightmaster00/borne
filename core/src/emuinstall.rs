@@ -225,7 +225,6 @@ pub fn installed(app: &Shared, id: &str) -> Option<Value> {
 }
 
 static TASK: Mutex<Option<Value>> = Mutex::new(None);
-static PENDING_PLAY: Mutex<Option<i64>> = Mutex::new(None);
 
 pub fn task() -> Value {
     TASK.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or(Value::Null)
@@ -236,11 +235,6 @@ fn set_task(app: &Shared, v: Value) {
 }
 pub fn busy() -> bool {
     TASK.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|t| t["running"] == true).unwrap_or(false)
-}
-
-/// Plays this game once the installation under way ends well.
-pub fn play_after(rom_id: i64) {
-    *PENDING_PLAY.lock().unwrap_or_else(|e| e.into_inner()) = Some(rom_id);
 }
 
 fn root(app: &Shared) -> PathBuf {
@@ -322,11 +316,12 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
             app.db.log("emulators", &format!("{program}: {e}"));
         }
         set_task(&app, json!({ "id": program, "running": false, "error": error }));
-        let pending = PENDING_PLAY.lock().unwrap_or_else(|e| e.into_inner()).take();
-        if let (None, Some(rom_id)) = (&error, pending) {
-            if let Err(e) = crate::emulators::play(&app, rom_id) {
-                app.emit(json!({ "type": "session", "session": { "running": false, "error": e } }));
-            }
+        // The game waiting for this emulator starts now; after a failure it is forgotten (the
+        // error is shown with the installation).
+        if error.is_none() {
+            crate::emulators::play_waiting(&app, None);
+        } else {
+            crate::emulators::forget_waiting();
         }
     });
     Ok(())

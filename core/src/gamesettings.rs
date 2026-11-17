@@ -200,6 +200,9 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
                     ("Interface", "ShowFPS", if fps { "True" } else { "False" }),
                     ("Interface", "ConfirmStop", "False"),
                     ("Display", "Fullscreen", "True"),
+                    // The pad heard even when Dolphin's window is not the focused one (gamescope,
+                    // a desktop that gave the focus elsewhere): a game never deaf to its pad.
+                    ("Input", "BackgroundInput", "True"),
                 ],
             )
         }
@@ -917,6 +920,30 @@ fn rpcs3_player(slot: usize, p: &PadRef, src: &dyn Fn(&str) -> Option<&'static s
     )
 }
 
+/// Dolphin binds a pad by its name, and its SDL may name it otherwise than Borne (the system's
+/// name, SDL's own for a known pad, Steam's virtual pad): every binding names each of the pad's
+/// possible names ("`SDL/0/Name:Button S` | `SDL/0/Other:Button S`"), so the pad works whichever
+/// name Dolphin sees.
+fn dolphin_any_name(pairs: Vec<(String, String)>, index: usize, pad: &str) -> Vec<(String, String)> {
+    let names = crate::pad::sdl_names(pad);
+    if names.len() < 2 {
+        return pairs;
+    }
+    pairs
+        .into_iter()
+        .map(|(k, v)| {
+            let control = v.strip_prefix('`').and_then(|x| x.strip_suffix('`'));
+            match control {
+                Some(c) if k != "Device" && !c.is_empty() && !c.contains('`') => {
+                    let any: Vec<String> = names.iter().map(|n| format!("`SDL/{index}/{n}:{c}`")).collect();
+                    (k, any.join(" | "))
+                }
+                _ => (k, v),
+            }
+        })
+        .collect()
+}
+
 /// One player's pad (`slot`, 0 for player 1) in a standalone emulator's settings.
 #[allow(clippy::too_many_arguments)]
 fn player(
@@ -981,6 +1008,7 @@ fn player(
                 ("D-Pad/Left".into(), q("Pad W")),
                 ("D-Pad/Right".into(), q("Pad E")),
             ];
+            let pairs = dolphin_any_name(pairs, index, pad);
             let section = format!("GCPad{n1}");
             let v: Vec<(&str, &str, &str)> = pairs.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
             ini(&path, &v)?;
@@ -1018,6 +1046,7 @@ fn player(
                 ("Nunchuk/Shake/Y".into(), bind("r", &n)),
                 ("Nunchuk/Shake/Z".into(), bind("r", &n)),
             ];
+            let wii = dolphin_any_name(wii, index, pad);
             let section = format!("Wiimote{n1}");
             let mut v: Vec<(&str, &str, &str)> = wii.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
             // Player 1 turns the others off; each further player turns its own on after.
@@ -1451,6 +1480,24 @@ mod tests {
         let e = std::fs::read_to_string(d.join("config/eden/qt-config.ini")).unwrap();
         assert!(e.contains("player_1_connected = true") && e.contains("port:1"));
         let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn dolphin_finds_the_pad_under_any_of_its_names() {
+        let d = std::env::temp_dir().join(format!("borne-dolphin-names-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        crate::pad::set_known(vec![("Steam Pad".into(), "Microsoft X-Box 360 pad 0".into(), (0x28de, 0x11ff))]);
+        controllers("dolphin", &d, &d, &[PadRef { index: 0, name: "Steam Pad".to_string(), guid: None, rank: 1 }], &same).unwrap();
+        let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
+        assert!(t.contains("Device = SDL/0/Steam Pad"), "{t}");
+        assert!(
+            t.contains("`SDL/0/Steam Pad:Button S` | `SDL/0/Microsoft X-Box 360 pad 0:Button S` | `SDL/0/Steam Virtual Gamepad:Button S`"),
+            "{t}"
+        );
+        let w = std::fs::read_to_string(d.join("Config/WiimoteNew.ini")).unwrap();
+        assert!(w.contains("`SDL/0/Steam Virtual Gamepad:Right Y+`"), "{w}");
+        crate::pad::set_known(vec![]);
+        let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]

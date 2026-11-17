@@ -11,7 +11,7 @@ use crate::state::Shared;
 use std::io::{BufWriter, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 /// "Main" file extensions in order of preference, to choose what to launch.
@@ -93,13 +93,6 @@ fn extract_external(archive: &Path, out: &Path, none: &str) -> Result<(), String
         }
     }
     Err(last)
-}
-
-/// Games to start once their download ends (a compressed game asked to play from the network).
-static PLAY_AFTER: Mutex<Vec<i64>> = Mutex::new(Vec::new());
-
-pub fn play_after(rom_id: i64) {
-    PLAY_AFTER.lock().unwrap_or_else(|e| e.into_inner()).push(rom_id);
 }
 
 enum Outcome {
@@ -209,21 +202,12 @@ fn run(app: &Shared, id: i64, rom_id: i64) {
     match result {
         Ok(Outcome::Done) => {
             let _ = std::fs::remove_dir_all(&staging);
-            let wanted = {
-                let mut l = PLAY_AFTER.lock().unwrap_or_else(|e| e.into_inner());
-                let w = l.contains(&rom_id);
-                l.retain(|r| *r != rom_id);
-                w
-            };
             if crate::stream::is_temporary(app, rom_id) {
                 crate::stream::mark_temporary(app, rom_id);
                 crate::stream::evict_temporary(app, rom_id);
             }
-            if wanted {
-                if let Err(e) = crate::emulators::play(app, rom_id) {
-                    app.emit(serde_json::json!({ "type": "session", "session": { "running": false, "error": e } }));
-                }
-            }
+            // Started now if it was the game waiting for its file.
+            crate::emulators::play_waiting(app, Some(rom_id));
         }
         Ok(Outcome::Cancelled) if app.dl_pause.lock().unwrap_or_else(|e| e.into_inner()).remove(&id) => {
             // Paused: the partial files stay for resuming.
@@ -590,6 +574,48 @@ pub fn pick_main_of(mut files: Vec<(u64, PathBuf)>) -> Option<PathBuf> {
     files.into_iter().max_by_key(|(size, p)| (!is_extra(p), *size)).map(|(_, p)| p)
 }
 
+/// What a Switch package (.nsp, .nsz: a PFS0 archive) holds, read from its ticket's name (the
+/// rights ID starts with the title ID): "base", "update" or "dlc". None when it cannot tell (no
+/// ticket, another format).
+pub fn switch_kind(path: &Path) -> Option<&'static str> {
+    use std::io::Read;
+    let mut f = std::fs::File::open(path).ok()?;
+    let mut head = [0u8; 16];
+    f.read_exact(&mut head).ok()?;
+    if &head[..4] != b"PFS0" {
+        return None;
+    }
+    let count = u32::from_le_bytes(head[4..8].try_into().ok()?) as usize;
+    let strings = u32::from_le_bytes(head[8..12].try_into().ok()?) as usize;
+    if count == 0 || count > 4096 || strings > 1 << 20 {
+        return None;
+    }
+    let mut rest = vec![0u8; count * 24 + strings];
+    f.read_exact(&mut rest).ok()?;
+    let table = &rest[count * 24..];
+    let names = (0..count).filter_map(|i| {
+        let at = u32::from_le_bytes(rest[i * 24 + 16..i * 24 + 20].try_into().ok()?) as usize;
+        let end = table.get(at..)?.iter().position(|b| *b == 0)? + at;
+        std::str::from_utf8(&table[at..end]).ok()
+    });
+    let mut kind = None;
+    for n in names {
+        let Some(id) = n.strip_suffix(".tik").filter(|i| i.len() >= 16) else { continue };
+        let tid = u64::from_str_radix(&id[..16], 16).ok()?;
+        let k = match tid & 0xfff {
+            0x000 => "base",
+            0x800 => "update",
+            _ => "dlc",
+        };
+        // A package holding a base game is the game, whatever else it carries.
+        if k == "base" {
+            return Some("base");
+        }
+        kind = Some(k);
+    }
+    kind
+}
+
 /// An update, a DLC or a patch rather than the game itself, by its name: the words, a version tag
 /// other than v0, or a Switch title ID that is not a base game's (those end in 000).
 pub fn is_extra(p: &Path) -> bool {
@@ -696,6 +722,42 @@ mod tests {
         let out2 = dir.path().join("out2");
         assert!(extract_zip(&bad, &out2, &AtomicBool::new(false)).is_err());
         assert!(!dir.path().join("evil.txt").exists());
+    }
+
+    #[test]
+    fn a_switch_package_says_what_it_holds() {
+        fn pfs0(names: &[&str]) -> Vec<u8> {
+            let mut table = vec![];
+            let mut offs = vec![];
+            for n in names {
+                offs.push(table.len() as u32);
+                table.extend_from_slice(n.as_bytes());
+                table.push(0);
+            }
+            let mut v = b"PFS0".to_vec();
+            v.extend((names.len() as u32).to_le_bytes());
+            v.extend((table.len() as u32).to_le_bytes());
+            v.extend(0u32.to_le_bytes());
+            for o in offs {
+                v.extend([0u8; 16]);
+                v.extend(o.to_le_bytes());
+                v.extend(0u32.to_le_bytes());
+            }
+            v.extend(table);
+            v
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let w = |name: &str, files: &[&str]| {
+            let p = dir.path().join(name);
+            std::fs::write(&p, pfs0(files)).unwrap();
+            p
+        };
+        assert_eq!(switch_kind(&w("a.nsp", &["0100abcd12340000000000000000000a.tik", "x.nca"])), Some("base"));
+        assert_eq!(switch_kind(&w("b.nsp", &["0100abcd12340800000000000000000a.tik"])), Some("update"));
+        assert_eq!(switch_kind(&w("c.nsp", &["0100abcd12341001000000000000000a.tik"])), Some("dlc"));
+        assert_eq!(switch_kind(&w("d.nsp", &["only.nca"])), None);
+        std::fs::write(dir.path().join("e.xci"), b"HEAD....").unwrap();
+        assert_eq!(switch_kind(&dir.path().join("e.xci")), None);
     }
 
     #[test]
