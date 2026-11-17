@@ -57,6 +57,11 @@ fn dir(app: &Shared, console: &str, item: &str) -> PathBuf {
     app.paths.root.join("system").join(console).join(item)
 }
 
+/// The first file the player gave for this item (prod.keys, a BIOS…), if any.
+pub fn first_file(app: &Shared, console: &str, item: &str) -> Option<PathBuf> {
+    files(app, console, item).into_iter().next()
+}
+
 fn files(app: &Shared, console: &str, item: &str) -> Vec<PathBuf> {
     let mut v: Vec<PathBuf> = std::fs::read_dir(dir(app, console, item))
         .into_iter()

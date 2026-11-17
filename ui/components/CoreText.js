@@ -9,6 +9,11 @@ function entries() {
     return [
         // Games and playing
         ["a game is already running", qsTr("a game is already running")],
+        ["the Switch keys (prod.keys) cannot read this game: their header_key is wrong or damaged; take prod.keys again from your Switch", qsTr("the Switch keys (prod.keys) cannot read this game: their header_key is wrong or damaged; take prod.keys again from your Switch")],
+        ["this game needs newer Switch keys (master key {}; yours stop at {}): take prod.keys and the firmware again from a Switch updated since the game came out", qsTr("this game needs newer Switch keys (master key %1; yours stop at %2): take prod.keys and the firmware again from a Switch updated since the game came out")],
+        ["this file holds an update, not the game itself: add the base game to this game on RomM", qsTr("this file holds an update, not the game itself: add the base game to this game on RomM")],
+        ["this file holds a DLC, not the game itself: add the base game to this game on RomM", qsTr("this file holds a DLC, not the game itself: add the base game to this game on RomM")],
+        ["this file holds no game, not the game itself: add the base game to this game on RomM", qsTr("this file holds no game, not the game itself: add the base game to this game on RomM")],
         ["the game cannot be read: the Switch keys (prod.keys) and firmware are older than the game; take them again from an up-to-date Switch", qsTr("the game cannot be read: the Switch keys (prod.keys) and firmware are older than the game; take them again from an up-to-date Switch")],
         ["the game stopped on a 3DS error: it needs the 3DS system files (in Azahar: File → Set Up System Files, from a 3DS), or the game file is damaged or still encrypted", qsTr("the game stopped on a 3DS error: it needs the 3DS system files (in Azahar: File → Set Up System Files, from a 3DS), or the game file is damaged or still encrypted")],
         ["the Switch firmware is missing: add it in Settings → Consoles → Switch", qsTr("the Switch firmware is missing: add it in Settings → Consoles → Switch")],

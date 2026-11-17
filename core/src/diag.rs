@@ -327,6 +327,17 @@ fn switch_report(app: &crate::state::Shared) -> String {
             if keys.join("title.keys").is_file() { "present" } else { "absent" },
         );
     }
+    // The keys the player gave Borne, and what each package holds when read with them.
+    let given = crate::systemfiles::first_file(app, "switch", "prod-keys");
+    let keys_text = given.as_deref().and_then(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
+    let k = crate::switchcheck::keys(&keys_text);
+    let _ = writeln!(
+        r,
+        "prod.keys given to Borne: {} · header_key {} · newest master key {:?}",
+        given.as_deref().map(|p| p.display().to_string()).unwrap_or_else(|| "none".into()),
+        if k.get("header_key").map(|v| v.len() == 32).unwrap_or(false) { "present" } else { "MISSING" },
+        crate::switchcheck::newest_master_key(&k)
+    );
     for g in games.iter().take(12) {
         let main = if g.local_state == "local" {
             g.local_main.clone().map(std::path::PathBuf::from)
@@ -368,6 +379,12 @@ fn switch_report(app: &crate::state::Shared) -> String {
                     None => "kind unknown (no ticket)".to_string(),
                 }
             );
+            if inner.is_some() && !keys_text.is_empty() {
+                let _ = writeln!(r, "    read with the keys: {}", crate::switchcheck::describe(f, &keys_text));
+                if let Some(p) = crate::switchcheck::problem(f, &keys_text) {
+                    let _ = writeln!(r, "    problem: {p}");
+                }
+            }
         }
     }
     r

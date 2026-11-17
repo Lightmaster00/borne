@@ -22,6 +22,9 @@ rand = "0.10"
 sha1_smol = "1"
 sha2 = "0.11"
 md-5 = "0.11"
+# Switch packages read before a game starts (their NCA headers, AES-XTS with the keys of the player).
+aes = "0.8"
+xts-mode = "0.5"
 zip = { version = "9", default-features = false, features = ["deflate", "deflate64"] }
 sevenz-rust2 = { version = "0.25", default-features = false, features = ["util"] }
 quick-xml = "0.42"

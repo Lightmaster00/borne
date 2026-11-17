@@ -1444,6 +1444,14 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     let mut rom = rom?;
     if system == "switch" {
         rom = switch_base(&rom)?;
+        // The package read with the player's keys first: what the emulator would only call
+        // "missing a Program-type NCA" is said here by its cause.
+        if let Some(keys) = crate::systemfiles::first_file(app, "switch", "prod-keys").and_then(|k| std::fs::read_to_string(k).ok()) {
+            app.db.log("play", &format!("{}: {}", g.name, crate::switchcheck::describe(&rom, &keys)));
+            if let Some(problem) = crate::switchcheck::problem(&rom, &keys) {
+                return Err(problem);
+            }
+        }
     }
     if p.id == "cemu" {
         cemu_disc_keys(&data_dir(app, &app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into()), "cemu"), &rom);

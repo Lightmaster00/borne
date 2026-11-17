@@ -962,6 +962,26 @@
         <source>this file is a DLC of the game, not the game: add the base game to this game on RomM</source>
         <translation>ce fichier est un DLC du jeu, pas le jeu : ajoute le jeu de base à ce jeu sur RomM</translation>
     </message>
+    <message>
+        <source>the Switch keys (prod.keys) cannot read this game: their header_key is wrong or damaged; take prod.keys again from your Switch</source>
+        <translation>les clés Switch (prod.keys) ne peuvent pas lire ce jeu : leur header_key est faux ou abîmé ; reprends prod.keys sur ta Switch</translation>
+    </message>
+    <message>
+        <source>this game needs newer Switch keys (master key %1; yours stop at %2): take prod.keys and the firmware again from a Switch updated since the game came out</source>
+        <translation>ce jeu demande des clés Switch plus récentes (master key %1 ; les tiennes s’arrêtent à %2) : reprends prod.keys et le firmware sur une Switch mise à jour depuis la sortie du jeu</translation>
+    </message>
+    <message>
+        <source>this file holds an update, not the game itself: add the base game to this game on RomM</source>
+        <translation>ce fichier contient une mise à jour, pas le jeu lui-même : ajoute le jeu de base à ce jeu sur RomM</translation>
+    </message>
+    <message>
+        <source>this file holds a DLC, not the game itself: add the base game to this game on RomM</source>
+        <translation>ce fichier contient un DLC, pas le jeu lui-même : ajoute le jeu de base à ce jeu sur RomM</translation>
+    </message>
+    <message>
+        <source>this file holds no game, not the game itself: add the base game to this game on RomM</source>
+        <translation>ce fichier ne contient aucun jeu : ajoute le jeu de base à ce jeu sur RomM</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>

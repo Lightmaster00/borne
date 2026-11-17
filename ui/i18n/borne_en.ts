@@ -962,6 +962,26 @@
         <source>this file is a DLC of the game, not the game: add the base game to this game on RomM</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>the Switch keys (prod.keys) cannot read this game: their header_key is wrong or damaged; take prod.keys again from your Switch</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this game needs newer Switch keys (master key %1; yours stop at %2): take prod.keys and the firmware again from a Switch updated since the game came out</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file holds an update, not the game itself: add the base game to this game on RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file holds a DLC, not the game itself: add the base game to this game on RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this file holds no game, not the game itself: add the base game to this game on RomM</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>

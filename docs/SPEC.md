@@ -737,6 +737,13 @@ blocks a launch just because a game was not tested or a community database rates
   Saturn refuses a game without its region's BIOS).
 - Library navigation: the left stick counts as released only below 0.35 once past 0.6, so a stick
   resting near the threshold sends no stream of moves.
+- Before a Switch game starts, its package is read with the player's prod.keys
+  (`switchcheck.rs`): each NCA header decrypted (header_key, AES-128-XTS, Nintendo's big-endian
+  sector tweak) gives its kind (program, meta, control, data…), title ID and master key. The game
+  is refused with the cause the emulator would only call "missing a Program-type NCA": keys that
+  read none of it (a wrong header_key), keys older than the game (its master key above the
+  newest in prod.keys), or a package holding an update, a DLC or no program. What was read is
+  written to the log and the diagnostic report.
 - Diagnostic report, Switch: each Switch emulator's keys (present, newest master key), title keys
   and firmware files, and each Switch game on this device or on the network with its files and
   what each package holds (PFS0 header: files, tickets, base game, update or DLC).
