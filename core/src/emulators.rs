@@ -545,6 +545,28 @@ struct Session {
     bundle: Option<PathBuf>,
     /// The Flatpak the emulator runs in: its sandbox lives apart from the process group.
     flatpak: Option<String>,
+    /// Started by `open` (macOS): the emulator's processes are found by their bundle.
+    via_open: bool,
+}
+
+/// Sends a signal to the game: its process group, and with `open`, the emulator's own processes.
+fn signal_session(s: &Session, sig: i32) {
+    unsafe {
+        libc::kill(-(s.child.id() as i32), sig);
+    }
+    if s.via_open {
+        if let Some(b) = &s.bundle {
+            let exe_dir = b.join("Contents/MacOS");
+            let out = Command::new("pgrep").arg("-f").arg(exe_dir.as_os_str()).output();
+            for pid in out.map(|o| String::from_utf8_lossy(&o.stdout).to_string()).unwrap_or_default().split_whitespace() {
+                if let Ok(pid) = pid.parse::<i32>() {
+                    unsafe {
+                        libc::kill(pid, sig);
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Ends every sandbox of this Flatpak application.
@@ -1158,6 +1180,96 @@ fn vita_content(rom: &Path) -> Option<PathBuf> {
     None
 }
 
+/// A zip holding a PS Vita .pkg (as the store sells games): the .pkg entry, the title ID in its
+/// header (content ID "EP1024-PCSB01061_00-…"), and a license (zRIF) found beside it in the zip.
+fn vita_pkg_of(zip_path: &Path) -> Option<(String, String, Option<String>)> {
+    if !zip_path.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false) {
+        return None;
+    }
+    let f = std::fs::File::open(zip_path).ok()?;
+    let mut z = zip::ZipArchive::new(f).ok()?;
+    let names: Vec<String> = z.file_names().filter_map(|n| n.ok().map(|n| n.into_owned())).collect();
+    if names.iter().any(|n| n.ends_with("sce_sys/param.sfo")) {
+        return None; // a dumped game: installed by Vita3K as it is
+    }
+    let pkg = names.iter().find(|n| n.to_lowercase().ends_with(".pkg"))?.clone();
+    let mut head = [0u8; 0x60];
+    std::io::Read::read_exact(&mut z.by_name(&pkg).ok()?, &mut head).ok()?;
+    if &head[..4] != b"\x7fPKG" {
+        return None;
+    }
+    let content = String::from_utf8_lossy(&head[0x30..0x54]).to_string();
+    let tid = content.get(7..16)?.to_string();
+    if !(tid.len() == 9 && tid.chars().all(|c| c.is_ascii_alphanumeric())) {
+        return None;
+    }
+    // A zRIF: base64 starting "KO5i", in a small text file of the zip (or the .zrif one).
+    let mut zrif = None;
+    for n in names.iter().filter(|n| {
+        let l = n.to_lowercase();
+        [".zrif", ".txt", ".tsv", ".json", ".nfo"].iter().any(|e| l.ends_with(e))
+    }) {
+        let Ok(mut e) = z.by_name(n) else { continue };
+        if e.size() > 1 << 20 {
+            continue;
+        }
+        let mut text = String::new();
+        if std::io::Read::read_to_string(&mut e, &mut text).is_err() {
+            continue;
+        }
+        zrif = text
+            .split(|c: char| !(c.is_ascii_alphanumeric() || c == '+' || c == '/' || c == '='))
+            .find(|w| w.starts_with("KO5i") && w.len() >= 40)
+            .map(String::from);
+        if zrif.is_some() {
+            break;
+        }
+    }
+    Some((pkg, tid, zrif))
+}
+
+/// The installed folder of a PS Vita .pkg game (`ux0/app/<ID>`), installed first with its zRIF
+/// (`--pkg … --zrif …`). None for another kind of file.
+fn vita_pkg_installed(app: &Shared, found: &Found, rom: &Path) -> Result<Option<PathBuf>, String> {
+    let Some((entry, tid, zrif)) = vita_pkg_of(rom) else { return Ok(None) };
+    let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+    let installed = data_dir(app, &profile, "vita3k").join("ux0/app").join(&tid);
+    if installed.join("sce_sys/param.sfo").is_file() {
+        return Ok(Some(installed));
+    }
+    let Some(zrif) = zrif else {
+        return Err("this PS Vita game is a .pkg without its license (zRIF): Vita3K cannot install it. Put on RomM a zip of the dumped game (NoNpDrm) or a .vpk, or add its zRIF in a text file inside the zip".into());
+    };
+    let Found::Program(exe) = found else { return Ok(None) };
+    // The .pkg out of the zip, beside it, for the installation only.
+    let pkg = rom.with_extension("pkg");
+    let r = (|| {
+        let f = std::fs::File::open(rom).map_err(|e| e.to_string())?;
+        let mut z = zip::ZipArchive::new(f).map_err(|e| e.to_string())?;
+        let mut src = z.by_name(&entry).map_err(|e| e.to_string())?;
+        let mut out = std::fs::File::create(&pkg).map_err(|e| e.to_string())?;
+        std::io::copy(&mut src, &mut out).map_err(|e| format!("the .pkg could not be taken out of the zip: {e}"))?;
+        app.db.log("play", &format!("Vita3K: installing {tid} from its .pkg"));
+        let out = Command::new(exe)
+            .arg("--pkg")
+            .arg(&pkg)
+            .args(["--zrif", &zrif, "--frontend", "sdl"])
+            .stdin(Stdio::null())
+            .output()
+            .map_err(|e| format!("Vita3K could not start: {e}"))?;
+        let text = String::from_utf8_lossy(&out.stdout).to_string() + &String::from_utf8_lossy(&out.stderr);
+        crate::logfile::write("play", &format!("Vita3K --pkg: {}", text.lines().rev().take(15).collect::<Vec<_>>().join(" | ")));
+        Ok::<(), String>(())
+    })();
+    let _ = std::fs::remove_file(&pkg);
+    r?;
+    if installed.join("sce_sys/param.sfo").is_file() {
+        Ok(Some(installed))
+    } else {
+        Err("Vita3K could not install this .pkg with its license (zRIF): its log is in the diagnostic report".into())
+    }
+}
+
 /// A PS Vita game's title ID (PCSE00001…), from the param.sfo of its .vpk (a zip), when Vita3K
 /// has it installed already (`ux0/app/<ID>` in its file system).
 fn vita_installed(data: &Path, vpk: &Path) -> Option<String> {
@@ -1685,6 +1797,24 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
             }
         }
     }
+    // A PS Vita game sold on the store comes as a .pkg (in a zip): Vita3K installs it only with
+    // its license (zRIF), then it starts as an installed game.
+    if p.id == "vita3k" {
+        // Vita3K's Discord presence crashes it on quitting (macOS shows "quit unexpectedly"):
+        // turned off in its config.yml once it has one.
+        let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+        let data = data_dir(app, &profile, "vita3k");
+        for cfg in [data.join("config.yml"), data.parent().map(|d| d.join("config.yml")).unwrap_or_default()] {
+            if let Ok(text) = std::fs::read_to_string(&cfg) {
+                if text.contains("discord-rich-presence: true") {
+                    let _ = std::fs::write(&cfg, text.replace("discord-rich-presence: true", "discord-rich-presence: false"));
+                }
+            }
+        }
+        if let Some(dir) = vita_pkg_installed(app, &found, &rom)? {
+            rom = dir;
+        }
+    }
     if p.id == "cemu" {
         cemu_disc_keys(&data_dir(app, &app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into()), "cemu"), &rom);
     }
@@ -1720,6 +1850,24 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         Err(err) => app.db.log("saves", &format!("{}: no sync before playing ({err})", g.name)),
     }
     let mut cmd = command(app, &p, &e, &found, &system, &rom, &lang, rom_id)?;
+    // Azahar on macOS warns with a window to close by hand (a mouse, no pad) when its parent is
+    // not launchd: started through `open -W`, which waits for it to end. Its own processes are
+    // then outside the group, so they are signalled by their bundle (`via_open`).
+    let mut via_open = false;
+    if cfg!(target_os = "macos") && p.id == "azahar" {
+        if let Some(app_dir) = Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)) {
+            let mut o = Command::new("/usr/bin/open");
+            o.args(["-W", "-n", "-a"]).arg(app_dir);
+            for (k, v) in cmd.get_envs() {
+                if let Some(v) = v {
+                    o.arg("--env").arg(format!("{}={}", k.to_string_lossy(), v.to_string_lossy()));
+                }
+            }
+            o.arg("--args").args(cmd.get_args());
+            cmd = o;
+            via_open = true;
+        }
+    }
     let log = emulator_log(app);
     let _ = std::fs::create_dir_all(log.parent().unwrap());
     let out = std::fs::File::create(&log).map_err(|e| e.to_string())?;
@@ -1728,8 +1876,11 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     // Its own process group, so that stopping the game also stops what the emulator started
     // (Flatpak's sandbox, helper processes).
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
-    let bundle =
-        Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)).map(Path::to_path_buf);
+    let bundle = if via_open {
+        cmd.get_args().nth(3).map(PathBuf::from)
+    } else {
+        Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)).map(Path::to_path_buf)
+    };
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
     *SESSION.lock().unwrap_or_else(|e| e.into_inner()) = Some(Session {
@@ -1744,6 +1895,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         failure: None,
         paused: false,
         bundle,
+        via_open,
         flatpak: match &found {
             Found::Flatpak(id) => Some(id.clone()),
             _ => None,
@@ -1807,6 +1959,8 @@ fn explain(line: &str) -> String {
         "the emulator does not take this file (a .cia must be installed first: a .3ds or .cci copy starts directly)"
     } else if (l.contains("crc") || l.contains("rom")) && (l.contains("required") || l.contains("missing") || l.contains("not found")) {
         "this arcade game is not in the version the emulator expects (a ROM is missing or different): use a set made for FinalBurn Neo"
+    } else if l.contains("needs an installed app to run") {
+        "Vita3K could not install the game from this file (its log is in the diagnostic report). A PS Vita game must be a .vpk, a zip of the dumped game, or a .pkg with its license"
     } else if l.contains("encrypted") {
         "the game file is encrypted: the emulator needs a decrypted copy"
     } else {
@@ -1869,6 +2023,10 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                 // Only then is the session over, so that a second game cannot start beside it.
                 #[cfg(unix)]
                 {
+                    // Started by `open`: the emulator is gone with it, or made to go.
+                    if s.via_open && s.stopping {
+                        signal_session(s, libc::SIGKILL);
+                    }
                     let pgid = s.child.id() as i32;
                     if unsafe { libc::kill(-pgid, 0) } == 0 {
                         if s.stopping {
@@ -1974,9 +2132,7 @@ pub fn ask_quit(app: &Shared) {
         return;
     }
     let pid = s.child.id() as i32;
-    unsafe {
-        libc::kill(-pid, libc::SIGSTOP);
-    }
+    signal_session(s, libc::SIGSTOP);
     s.paused = true;
     drop(g);
     crate::quitkey::hide_game(pid);
@@ -2000,9 +2156,7 @@ pub fn resume(app: &Shared) {
     if !s.paused {
         return;
     }
-    unsafe {
-        libc::kill(-(s.child.id() as i32), libc::SIGCONT);
-    }
+    signal_session(s, libc::SIGCONT);
     s.paused = false;
     let bundle = s.bundle.clone();
     drop(g);
@@ -2022,21 +2176,17 @@ pub fn stop() -> bool {
     if let Some(id) = s.flatpak.clone() {
         std::thread::spawn(move || flatpak_kill(&id));
     }
-    unsafe {
-        libc::kill(-pid, libc::SIGTERM);
-        // A game paused by the quit question runs again to receive it.
-        if s.paused {
-            libc::kill(-pid, libc::SIGCONT);
-        }
+    signal_session(s, libc::SIGTERM);
+    // A game paused by the quit question runs again to receive it.
+    if s.paused {
+        signal_session(s, libc::SIGCONT);
     }
     drop(g);
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_secs(5));
         if let Some(s) = SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_mut() {
             if s.child.id() as i32 == pid {
-                unsafe {
-                    libc::kill(-pid, libc::SIGKILL);
-                }
+                signal_session(s, libc::SIGKILL);
             }
         }
     });
@@ -2118,6 +2268,34 @@ mod tests {
                 assert!(!programs.contains(&id), "{console}: {id} is a program, written without its '!'");
             }
         }
+    }
+
+    #[test]
+    fn a_vita_pkg_in_a_zip_is_found_with_its_license() {
+        use std::io::Write;
+        let d = std::env::temp_dir().join(format!("borne-vpkg-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        let mut head = vec![0u8; 0x100];
+        head[..4].copy_from_slice(b"\x7fPKG");
+        head[0x30..0x54].copy_from_slice(b"EP1024-PCSB01061_00-COLLARMALICE0000");
+        let make = |name: &str, zrif: Option<&str>| {
+            let p = d.join(name);
+            let mut z = zip::ZipWriter::new(std::fs::File::create(&p).unwrap());
+            let o = zip::write::SimpleFileOptions::default();
+            z.start_file("EP1024-PCSB01061_00-COLLARMALICE0000.pkg", o).unwrap();
+            z.write_all(&head).unwrap();
+            if let Some(k) = zrif {
+                z.start_file("license.txt", o).unwrap();
+                z.write_all(format!("zRIF: {k}\n").as_bytes()).unwrap();
+            }
+            z.finish().unwrap();
+            p
+        };
+        let key = "KO5ifR1dQ+eHBlGnZWTTRRpeS0xIUnFj8tJRqlMaRgcdQY0lBXVNqTI2AAAA";
+        let (pkg, tid, zrif) = vita_pkg_of(&make("a.zip", Some(key))).unwrap();
+        assert_eq!((pkg.as_str(), tid.as_str(), zrif.as_deref()), ("EP1024-PCSB01061_00-COLLARMALICE0000.pkg", "PCSB01061", Some(key)));
+        assert_eq!(vita_pkg_of(&make("b.zip", None)).unwrap().2, None);
+        let _ = std::fs::remove_dir_all(d);
     }
 
     #[test]

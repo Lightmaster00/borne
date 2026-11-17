@@ -483,7 +483,9 @@ The RomM account provides identity and remote scope; the local profile provides 
 > memory fault) is said to have crashed, with what to do (Eden/Citron on a Mac: choose Ryubing;
 > Cemu: its log, in the diagnostic report with the other emulators' own logs). Ryujinx is started
 > once without a game when it has no Config.json yet, so Borne can write the pad into it. A RetroArch
-> core missing on the buildbot leaves the others installed; a failed installation names its
+> core missing on the buildbot leaves the others installed; an installation that panics or stays
+> silent for ten minutes no longer blocks the others; Ryubing is looked for on its Forgejo
+> (several repositories), then its former GitLab; a failed installation names its
 > emulator and can be put away (`POST /api/v1/emulators/task/dismiss`); a game waiting for its
 > emulator is started or told even when another installation failed. The update state carries a
 > `seq` so an older answer never brings "Checking…" back. Sources also include Forgejo (Eden) and GitLab
@@ -664,6 +666,10 @@ blocks a launch just because a game was not tested or a community database rates
 - After the game, the session's end is told at once and the save is sent to RomM after it (a
   "saves" event gives the outcome), so another game can be chosen straight away; a game started
   meanwhile waits for that save before taking its own.
+- PS Vita: a zip holding a store .pkg is installed with its license (a zRIF found in a text
+  file of the zip: `--pkg … --zrif …`), then started as an installed game (`-r <ID>`); without
+  a zRIF the player is told what to put on RomM. Vita3K's Discord presence (which crashes it on
+  quitting) is turned off in its config.yml, and its log is in the diagnostic report.
 - PS Vita: a .vpk or .zip is kept as downloaded (never deleted and downloaded again) and given to
   Vita3K as it is when the game is at the zip's root; a zip with the game in a folder (NoNpDrm's
   app/<TITLE ID>/) is extracted once next to it at the first launch, and that folder given. A .7z
@@ -694,6 +700,9 @@ blocks a launch just because a game was not tested or a community database rates
   ID; its firmware and fonts (PSVUPDAT.PUP, PSP2UPDAT.PUP) are installed by Vita3K once.
 - macOS has no virtual mount: playing from the network downloads a temporary copy; past the cache
   size the least recently played copies are removed (never the one in play).
+- On macOS Azahar is started through `open -W -n -a Azahar.app --args …` (run directly, it
+  opens a warning window only a mouse can close); its processes are signalled by their bundle
+  for pausing and quitting.
 - A .cia is installed into Azahar once (`azahar -i`), then its installed program is started. An
   encrypted .3ds/.cci/.cxi (no NoCrypto flag in its NCCH header) is refused before the launch:
   Azahar plays decrypted dumps only.

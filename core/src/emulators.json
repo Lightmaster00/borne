@@ -39,7 +39,11 @@
           ],
           "ends": ".dmg"
         }
-      }
+      },
+      "logs": [
+        "vita3k.log",
+        "../vita3k.log"
+      ]
     },
     {
       "id": "retroarch",
@@ -328,33 +332,73 @@
       ],
       "install": {
         "linux": {
-          "type": "gitlab",
+          "type": "gitea",
           "base": "https://git.ryujinx.app",
-          "project": "ryubing/ryujinx",
-          "has": [
-            "linux"
+          "repos": [
+            "Ryubing/Ryujinx",
+            "Ryubing/Stable",
+            "Ryubing/Stable-Releases",
+            "Ryubing/Canary"
           ],
+          "prerelease": true,
           "not": [
             "arm64",
-            "aarch64"
+            "aarch64",
+            "macos",
+            "win"
           ],
           "ends": [
             ".appimage",
             ".tar.gz"
           ],
-          "exe": "Ryujinx"
+          "exe": "Ryujinx",
+          "fallback": {
+            "type": "gitlab",
+            "base": "https://git.ryujinx.app",
+            "project": "ryubing/ryujinx",
+            "has": [],
+            "not": [
+              "arm64",
+              "aarch64",
+              "macos",
+              "win"
+            ],
+            "ends": [
+              ".appimage",
+              ".tar.gz"
+            ],
+            "exe": "Ryujinx"
+          }
         },
         "macos": {
-          "type": "gitlab",
+          "type": "gitea",
           "base": "https://git.ryujinx.app",
-          "project": "ryubing/ryujinx",
+          "repos": [
+            "Ryubing/Ryujinx",
+            "Ryubing/Stable",
+            "Ryubing/Stable-Releases",
+            "Ryubing/Canary"
+          ],
+          "prerelease": true,
           "has": [
             "macos"
           ],
           "ends": [
             ".tar.gz",
             ".zip"
-          ]
+          ],
+          "fallback": {
+            "type": "gitlab",
+            "base": "https://git.ryujinx.app",
+            "project": "ryubing/ryujinx",
+            "has": [
+              "macos"
+            ],
+            "ends": [
+              ".tar.gz",
+              ".zip"
+            ]
+          }
         }
       },
       "fails": [

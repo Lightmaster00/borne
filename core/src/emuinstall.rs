@@ -90,8 +90,20 @@ fn get_text(url: &str) -> Result<String, String> {
     Ok(body)
 }
 
-/// The latest version offered for this system: (version, download address, sha256).
+/// The latest version offered for this system: (version, download address, sha256). A source
+/// that moved or refuses (Ryubing left GitLab for Forgejo) falls back on the next one given
+/// (`fallback`).
 pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> {
+    match latest_from(spec) {
+        Ok(v) => Ok(v),
+        Err(e) => match spec.get("fallback").filter(|f| f.is_object()) {
+            Some(f) => latest(f).map_err(|e2| format!("{e}; {e2}")),
+            None => Err(e),
+        },
+    }
+}
+
+fn latest_from(spec: &Value) -> Result<(String, String, Option<String>), String> {
     match spec["type"].as_str() {
         Some("github") => {
             let repo = spec["repo"].as_str().ok_or("no repository")?;
@@ -121,20 +133,37 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
             Err(format!("no build for this system in {repo}'s releases"))
         }
         // Forgejo / Gitea (Eden): same shape as GitHub's API.
+        // `repos`: several places the releases may be, tried in turn.
         Some("gitea") => {
             let base = spec["base"].as_str().ok_or("no server")?;
-            let repo = spec["repo"].as_str().ok_or("no repository")?;
-            let t = get_text(&format!("{base}/api/v1/repos/{repo}/releases?limit=10"))?;
-            let releases: Vec<Value> = serde_json::from_str::<Value>(&t).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
-            for r in releases.iter().filter(|r| spec["prerelease"].as_bool().unwrap_or(false) || r["prerelease"] != true) {
-                if let Some(a) =
-                    r["assets"].as_array().into_iter().flatten().find(|a| a["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false))
-                {
-                    let url = a["browser_download_url"].as_str().ok_or("no download address")?.to_string();
-                    return Ok((r["tag_name"].as_str().unwrap_or("?").to_string(), url, None));
+            let repos: Vec<&str> = match spec["repos"].as_array() {
+                Some(a) => a.iter().filter_map(|v| v.as_str()).collect(),
+                None => vec![spec["repo"].as_str().ok_or("no repository")?],
+            };
+            let mut last = String::from("no repository");
+            for repo in repos {
+                let t = match get_text(&format!("{base}/api/v1/repos/{repo}/releases?limit=10")) {
+                    Ok(t) => t,
+                    Err(e) => {
+                        last = e;
+                        continue;
+                    }
+                };
+                let releases: Vec<Value> = serde_json::from_str::<Value>(&t).ok().and_then(|v| v.as_array().cloned()).unwrap_or_default();
+                for r in releases.iter().filter(|r| spec["prerelease"].as_bool().unwrap_or(false) || r["prerelease"] != true) {
+                    if let Some(a) = r["assets"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .find(|a| a["name"].as_str().map(|n| asset_fits(spec, n)).unwrap_or(false))
+                    {
+                        let url = a["browser_download_url"].as_str().ok_or("no download address")?.to_string();
+                        return Ok((r["tag_name"].as_str().unwrap_or("?").to_string(), url, None));
+                    }
                 }
+                last = format!("no build for this system in {repo}'s releases");
             }
-            Err(format!("no build for this system in {repo}'s releases"))
+            Err(last)
         }
         // GitLab (Ryubing): the latest release's links.
         Some("gitlab") => {
@@ -240,7 +269,17 @@ static TASK: Mutex<Option<Value>> = Mutex::new(None);
 pub fn task() -> Value {
     TASK.lock().unwrap_or_else(|e| e.into_inner()).clone().unwrap_or(Value::Null)
 }
+/// When the installation last moved (seconds since the epoch): one silent for ten minutes is
+/// stuck (a server that stopped answering) and no longer blocks the others.
+static MOVED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+const STUCK_AFTER: u64 = 600;
+
+fn now_secs() -> u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+}
+
 fn set_task(app: &Shared, v: Value) {
+    MOVED.store(now_secs(), std::sync::atomic::Ordering::SeqCst);
     *TASK.lock().unwrap_or_else(|e| e.into_inner()) = Some(v);
     app.emit(json!({ "type": "emulators" }));
 }
@@ -255,7 +294,8 @@ pub fn dismiss(app: &Shared) {
 }
 
 pub fn busy() -> bool {
-    TASK.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|t| t["running"] == true).unwrap_or(false)
+    let running = TASK.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|t| t["running"] == true).unwrap_or(false);
+    running && now_secs().saturating_sub(MOVED.load(std::sync::atomic::Ordering::SeqCst)) < STUCK_AFTER
 }
 
 fn root(app: &Shared) -> PathBuf {
@@ -329,16 +369,23 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
     }
     {
         let mut t = TASK.lock().unwrap_or_else(|e| e.into_inner());
-        if t.as_ref().map(|t| t["running"] == true).unwrap_or(false) {
+        let stuck = now_secs().saturating_sub(MOVED.load(std::sync::atomic::Ordering::SeqCst)) >= STUCK_AFTER;
+        if t.as_ref().map(|t| t["running"] == true).unwrap_or(false) && !stuck {
             return Err("an installation is already running".into());
         }
         *t = Some(json!({ "id": program, "running": true, "step": "check", "received": 0, "total": 0, "error": null }));
+        MOVED.store(now_secs(), std::sync::atomic::Ordering::SeqCst);
     }
     app.emit(json!({ "type": "emulators" }));
     let app = app.clone();
     let program = program.to_string();
     std::thread::spawn(move || {
-        let r = run(&app, &program, &cores);
+        // A panic in the installation (an unexpected archive…) must not leave it "running"
+        // forever: every later installation, and the games waiting for one, would be blocked.
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(&app, &program, &cores))).unwrap_or_else(|p| {
+            let what = p.downcast_ref::<String>().cloned().or_else(|| p.downcast_ref::<&str>().map(|s| s.to_string()));
+            Err(format!("the installation stopped on an internal error ({})", what.unwrap_or_default()))
+        });
         let error = r.err();
         if let Some(e) = &error {
             app.db.log("emulators", &format!("{program}: {e}"));

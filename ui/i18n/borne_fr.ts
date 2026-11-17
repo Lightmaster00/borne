@@ -1026,6 +1026,22 @@
         <source>%1 crashed (signal %2)</source>
         <translation>%1 a planté (signal %2)</translation>
     </message>
+    <message>
+        <source>this PS Vita game is a .pkg without its license (zRIF): Vita3K cannot install it. Put on RomM a zip of the dumped game (NoNpDrm) or a .vpk, or add its zRIF in a text file inside the zip</source>
+        <translation>ce jeu PS Vita est un .pkg sans sa licence (zRIF) : Vita3K ne peut pas l’installer. Mettez sur RomM un zip du jeu dumpé (NoNpDrm) ou un .vpk, ou ajoutez son zRIF dans un fichier texte du zip</translation>
+    </message>
+    <message>
+        <source>Vita3K could not install this .pkg with its license (zRIF): its log is in the diagnostic report</source>
+        <translation>Vita3K n’a pas pu installer ce .pkg avec sa licence (zRIF) : son journal est dans le rapport de diagnostic</translation>
+    </message>
+    <message>
+        <source>Vita3K could not install the game from this file (its log is in the diagnostic report). A PS Vita game must be a .vpk, a zip of the dumped game, or a .pkg with its license</source>
+        <translation>Vita3K n’a pas pu installer le jeu depuis ce fichier (son journal est dans le rapport de diagnostic). Un jeu PS Vita doit être un .vpk, un zip du jeu dumpé, ou un .pkg avec sa licence</translation>
+    </message>
+    <message>
+        <source>the installation stopped on an internal error (%1)</source>
+        <translation>l’installation s’est arrêtée sur une erreur interne (%1)</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>
