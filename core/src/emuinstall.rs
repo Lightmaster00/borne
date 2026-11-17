@@ -215,13 +215,17 @@ fn latest_from(spec: &Value) -> Result<(String, String, Option<String>), String>
             let html = get_text(spec["url"].as_str().ok_or("no page")?)?;
             let link = spec["link"].as_str().ok_or("no link")?;
             let ends = spec["ends"].as_str().unwrap_or("");
-            let start = html.find(link).ok_or("no download link on the page")?;
-            let rest = &html[start..];
-            let end = rest.find(ends).ok_or("no download link on the page")? + ends.len();
-            let url = rest[..end].to_string();
-            if url.contains(['"', '<', ' ']) {
-                return Err("unexpected download link".into());
-            }
+            // Every link under that address, each up to its closing quote: the first that ends
+            // as wanted (the page also lists the Windows and Linux builds before it).
+            let url = html
+                .match_indices(link)
+                .map(|(i, _)| {
+                    let rest = &html[i..];
+                    let end = rest.find(['"', '\'', '<', ' ', '>']).unwrap_or(rest.len());
+                    rest[..end].to_string()
+                })
+                .find(|u| u.ends_with(ends))
+                .ok_or("no download link on the page")?;
             let version = url[link.len()..].split('/').next().unwrap_or("?").to_string();
             Ok((version, url, None))
         }

@@ -106,7 +106,7 @@ fn read_ncz(f: &mut std::fs::File, e: &Entry) -> Result<Ncz, String> {
         return Err(bad("not an NCZ (its section list is missing)"));
     }
     let count = u64le(&h[8..]);
-    if count == 0 || count > 64 {
+    if count == 0 || count > 1 << 16 {
         return Err(bad("its section list is damaged"));
     }
     let mut sections = vec![];

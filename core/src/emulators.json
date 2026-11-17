@@ -563,8 +563,7 @@
         "Failed to obtain loader",
         "Failed to determine system mode",
         "Fatal error type",
-        "System archive not found",
-        "shared font file missing"
+        "System archive not found"
       ],
       "logs": [
         "log/azahar_log.txt"

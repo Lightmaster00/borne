@@ -265,6 +265,17 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
             }
         }
     }
+    // Each emulator's output from its last run.
+    for e in std::fs::read_dir(app.paths.reports()).into_iter().flatten().flatten() {
+        let p = e.path();
+        let n = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        if n.starts_with("emulator-") && n.ends_with(".log") {
+            let t = e.metadata().ok().and_then(|m| m.modified().ok());
+            if t.and_then(|t| t.elapsed().ok()).map(|a| a.as_secs() < 2 * 86400).unwrap_or(false) {
+                logs.push((t, p));
+            }
+        }
+    }
     // The emulators' own logs where they keep them outside Borne's folders (Cemu on macOS,
     // under ~/Library/Application Support/Cemu): a crash's stack trace is there.
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
@@ -291,7 +302,7 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
         }
     }
     logs.sort_by_key(|l| std::cmp::Reverse(l.0));
-    for (_, p) in logs.into_iter().take(8) {
+    for (_, p) in logs.into_iter().take(12) {
         let _ = writeln!(r, "\n--- {} ---", p.strip_prefix(&app.paths.root).unwrap_or(&p).display());
         r.push_str(&tail(&p, 48 * 1024));
     }

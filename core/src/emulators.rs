@@ -832,6 +832,10 @@ fn command(
     let rom = vita_dir.as_deref().unwrap_or(rom);
     let vita = if p.id == "vita3k" { vita_installed(&data_dir(app, &profile, &p.id), rom) } else { None };
     for a in &p.args {
+        // Cemu on macOS: no fullscreen at start (see gamesettings::cemu_settings's caller).
+        if cfg!(target_os = "macos") && p.id == "cemu" && a == "-f" {
+            continue;
+        }
         if a == "{rom}" {
             if let Some(tid) = &vita {
                 args.extend(["-r".to_string(), tid.clone()]);
@@ -1226,6 +1230,45 @@ fn vita_pkg_of(zip_path: &Path) -> Option<(String, String, Option<String>)> {
         }
     }
     Some((pkg, tid, zrif))
+}
+
+/// A zip holding a dumped PS Vita game (sce_sys/param.sfo somewhere in it).
+fn vita_zip_to_extract(rom: &Path) -> bool {
+    if !rom.is_file() || !rom.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false) {
+        return false;
+    }
+    let Ok(f) = std::fs::File::open(rom) else { return false };
+    let Ok(z) = zip::ZipArchive::new(f) else { return false };
+    let has = z.file_names().any(|n| n.ok().map(|n| n.ends_with("sce_sys/param.sfo")).unwrap_or(false));
+    has
+}
+
+/// Extracts a dumped PS Vita game's zip next to it, then keeps the folder only: the game's
+/// file becomes its param.sfo (the folder holding it is what Vita3K installs).
+fn vita_extract(app: &Shared, rom_id: i64, zip_path: &Path) -> Result<(), String> {
+    let out = zip_path.with_extension("");
+    let tmp = zip_path.with_extension("extracting");
+    let _ = std::fs::remove_dir_all(&tmp);
+    let flag = std::sync::atomic::AtomicBool::new(false);
+    let started = Instant::now();
+    if let Err(e) = crate::downloads::extract_zip(zip_path, &tmp, &flag) {
+        let _ = std::fs::remove_dir_all(&tmp);
+        return Err(format!("the PS Vita game could not be extracted: {e}"));
+    }
+    let _ = std::fs::remove_dir_all(&out);
+    std::fs::rename(&tmp, &out).map_err(|e| e.to_string())?;
+    let game = vita_content(&out.join("x")).or_else(|| out.join("sce_sys/param.sfo").is_file().then(|| out.clone()));
+    let Some(game) = game else {
+        return Err("no PS Vita game (sce_sys/param.sfo) in this zip".into());
+    };
+    let _ = std::fs::remove_file(zip_path);
+    if let Some(g) = app.db.game(rom_id) {
+        let dir = g.local_dir.clone().unwrap_or_else(|| out.to_string_lossy().into_owned());
+        let size = crate::downloads::dir_size(Path::new(&dir)) as i64;
+        app.db.set_local(rom_id, &dir, &game.join("sce_sys/param.sfo").to_string_lossy(), size);
+    }
+    app.db.log("play", &format!("{}: extracted in {:.0} s", zip_path.display(), started.elapsed().as_secs_f64()));
+    Ok(())
 }
 
 /// The installed folder of a PS Vita .pkg game (`ux0/app/<ID>`), installed first with its zRIF
@@ -1813,6 +1856,21 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         }
         if let Some(dir) = vita_pkg_installed(app, &found, &rom)? {
             rom = dir;
+        } else if vita_zip_to_extract(&rom) && g.local_state == "local" {
+            // A zip of the dumped game: Vita3K's own zip reader fails on large ones ("failed
+            // finding central directory" past 4 GB): extracted once, in the background, and
+            // the folder given from then on.
+            wait_for(rom_id);
+            let (app2, rom2) = (app.clone(), rom.clone());
+            std::thread::spawn(move || match vita_extract(&app2, rom_id, &rom2) {
+                Ok(()) => play_waiting(&app2, Some(rom_id)),
+                Err(e) => {
+                    let _ = take_waiting(Some(rom_id));
+                    app2.db.log("play", &format!("game {rom_id}: {e}"));
+                    app2.emit(json!({ "type": "play_failed", "rom_id": rom_id, "error": e }));
+                }
+            });
+            return Ok(json!({ "running": false, "preparing": g.name }));
         }
     }
     if p.id == "cemu" {
@@ -2074,6 +2132,9 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                             }
                         })
                     });
+                // This emulator's output kept apart (the diagnostic report shows each emulator's
+                // last run, not only the last game's).
+                let _ = std::fs::copy(&log, log.with_file_name(format!("emulator-{}.log", s.program)));
                 let played = s.started.elapsed().as_secs();
                 let (rom_id, name, sync) = (s.rom_id, s.name.clone(), s.sync.clone());
                 // The save is sent while the player already moves on: held by SAVING until done,
@@ -2370,6 +2431,20 @@ mod tests {
         std::fs::write(&p, &b).unwrap();
         assert_eq!(cia_title_id(&p), Some(0x0004_0000_0019_3a00));
         let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn harmless_warnings_never_stop_a_game() {
+        // Azahar loads its own replacements for these: the game goes on (stopping it there
+        // killed Pokémon X a few seconds in).
+        let fails: Vec<String> = program("azahar").unwrap().fails.iter().map(|f| f.to_lowercase()).collect();
+        for line in [
+            "[   2.700898] Service.FS <Warning> core/file_sys/archive_ncch.cpp:OpenFile:187: Shared Font file missing. Loading open source replacement from memory",
+            "[   3.219994] Service.FS <Warning> core/file_sys/archive_ncch.cpp:OpenFile:200: Bad Word List file missing. Loading open source replacement from memory",
+            "[   4.221461] Service.FS <Warning> core/file_sys/archive_ncch.cpp:OpenFile:181: Country list file missing. Loading open source replacement from memory",
+        ] {
+            assert_eq!(failure_line(line, &fails), None, "{line}");
+        }
     }
 
     #[test]

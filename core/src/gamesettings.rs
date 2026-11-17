@@ -807,7 +807,10 @@ pub fn controllers(
     // Cemu: the GamePad on player 1's pad, Pro Controllers for the others (their GUIDs as SDL 3
     // gives them, emulators.rs). The settings that skip its first-start wizard come with it.
     if program == "cemu" {
-        cemu_settings(data, &[])?;
+        // On macOS Cemu crashes when fullscreen comes while its shaders are still being compiled
+        // (cemu-project/Cemu#658): it starts in a window there.
+        let fs: &[(&str, &str)] = if cfg!(target_os = "macos") { &[("fullscreen", "false")] } else { &[] };
+        cemu_settings(data, fs)?;
         for (slot, p) in players.iter().take(4).enumerate() {
             if let Some(g) = p.guid.as_deref() {
                 cemu_controller(data, slot, p.rank.max(1), g, &p.name)?;

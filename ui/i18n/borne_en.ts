@@ -1042,6 +1042,14 @@
         <source>the installation stopped on an internal error (%1)</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>the PS Vita game could not be extracted: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>no PS Vita game (sce_sys/param.sfo) in this zip</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Display</name>

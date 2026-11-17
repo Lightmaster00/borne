@@ -145,6 +145,8 @@ function entries() {
         ["Vita3K could not install this .pkg with its license (zRIF): its log is in the diagnostic report", qsTr("Vita3K could not install this .pkg with its license (zRIF): its log is in the diagnostic report")],
         ["Vita3K could not install the game from this file (its log is in the diagnostic report). A PS Vita game must be a .vpk, a zip of the dumped game, or a .pkg with its license", qsTr("Vita3K could not install the game from this file (its log is in the diagnostic report). A PS Vita game must be a .vpk, a zip of the dumped game, or a .pkg with its license")],
         ["the installation stopped on an internal error ({})", qsTr("the installation stopped on an internal error (%1)")],
+        ["the PS Vita game could not be extracted: {}", qsTr("the PS Vita game could not be extracted: %1")],
+        ["no PS Vita game (sce_sys/param.sfo) in this zip", qsTr("no PS Vita game (sce_sys/param.sfo) in this zip")],
         ["this is not a keys file (text expected)", qsTr("this is not a keys file (text expected)")],
         ["this is not a .zip archive of the firmware", qsTr("this is not a .zip archive of the firmware")],
         ["no .nca file in this archive: it is not a Switch firmware", qsTr("no .nca file in this archive: it is not a Switch firmware")],

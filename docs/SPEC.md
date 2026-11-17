@@ -670,6 +670,9 @@ blocks a launch just because a game was not tested or a community database rates
   file of the zip: `--pkg … --zrif …`), then started as an installed game (`-r <ID>`); without
   a zRIF the player is told what to put on RomM. Vita3K's Discord presence (which crashes it on
   quitting) is turned off in its config.yml, and its log is in the diagnostic report.
+- PS Vita: a zip of a dumped game is extracted once at its first launch (in the background, the
+  game starting once done; Vita3K's own zip reader fails on large zip64 files), the zip removed
+  and the folder given from then on.
 - PS Vita: a .vpk or .zip is kept as downloaded (never deleted and downloaded again) and given to
   Vita3K as it is when the game is at the zip's root; a zip with the game in a folder (NoNpDrm's
   app/<TITLE ID>/) is extracted once next to it at the first launch, and that folder given. A .7z
@@ -700,6 +703,10 @@ blocks a launch just because a game was not tested or a community database rates
   ID; its firmware and fonts (PSVUPDAT.PUP, PSP2UPDAT.PUP) are installed by Vita3K once.
 - macOS has no virtual mount: playing from the network downloads a temporary copy; past the cache
   size the least recently played copies are removed (never the one in play).
+- Emulator lines that are only warnings never stop a game (Azahar's "Shared Font file missing.
+  Loading open source replacement" stopped Pokémon X a few seconds in). Cemu starts in a window
+  on macOS (fullscreen while shaders compile crashes it, cemu-project/Cemu#658). Each emulator's
+  output from its last run is kept (`reports/emulator-<id>.log`) for the diagnostic report.
 - On macOS Azahar is started through `open -W -n -a Azahar.app --args …` (run directly, it
   opens a warning window only a mouse can close); its processes are signalled by their bundle
   for pausing and quitting.
