@@ -1475,6 +1475,21 @@ pub fn forget_waiting() {
     *WAITING.lock().unwrap_or_else(|e| e.into_inner()) = None;
 }
 
+/// The emulator the waiting game needed could not be installed: a console with a stand-in
+/// (Switch: Eden ↔ Ryubing) starts it there instead; true when it did.
+pub fn install_failed(app: &Shared, program_id: &str) -> bool {
+    let Some((id, _)) = *WAITING.lock().unwrap_or_else(|e| e.into_inner()) else { return false };
+    let Some(g) = app.db.game(id) else { return false };
+    let others = partners(&g.platform_slug, program_id);
+    if others.iter().all(|o| failed_on(app, &g.group_key, &o.program)) {
+        return false;
+    }
+    app.db.set_setting(&failed_key(&g.group_key, program_id), "1");
+    app.db.log("play", &format!("{}: {program_id} could not be installed; started on {} instead", g.name, others[0].name));
+    play_waiting(app, Some(id));
+    true
+}
+
 /// Starts the game that was waiting (its download or its emulator's installation over). Its
 /// failure is told as a notice, never as the end of a session: a game may be running.
 pub fn play_waiting(app: &Shared, rom_id: Option<i64>) {

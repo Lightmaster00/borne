@@ -403,7 +403,7 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
         let wanted = WANTED.lock().unwrap_or_else(|e| e.into_inner()).clone();
         if error.is_none() || wanted.as_deref().is_some_and(|w| w != program) {
             crate::emulators::play_waiting(&app, None);
-        } else {
+        } else if !crate::emulators::install_failed(&app, &program) {
             crate::emulators::forget_waiting();
         }
     });
