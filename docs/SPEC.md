@@ -99,7 +99,7 @@ the final decision to the user. Compatibility checks inform and recommend; they 
 | Mega Drive / Genesis | V1 — stage 3 | RetroArch (pinned core) | ROM variants and common formats. |
 | GameCube | V1 — stage 4 | Dolphin (standalone) | First 3D system; per-game and per-controller profiles; per-profile memory cards. |
 | PlayStation 2 | V1 — stage 4 | PCSX2 (standalone) | User-provided BIOS; per-profile memory cards. |
-| Nintendo Switch | V1 — stage 4 | Eden ("Yuzu family" adapter, Citron-compatible) | Reference game: Zelda TotK. Keys and firmware from the user's console; emulator binary provided by the user. See section 9. |
+| Nintendo Switch | V1 — stage 4 | Eden ("Yuzu family" adapter, Citron-compatible); on macOS Ryubing first (Eden's ARM64 recompiler crashes there mid-game; a console left on Eden moves to Ryubing once) | Reference game: Zelda TotK. Keys and firmware from the user's console; emulator binary provided by the user. See section 9. |
 | Game Boy | V1.x | RetroArch | Battery saves and states depending on the emulator. |
 | Game Boy Advance | V1.x | RetroArch | Standard controls; per-game profiles if needed. |
 | Dreamcast | V1.x | Flycast | Graphics dependencies and BIOS to check. |
@@ -390,6 +390,11 @@ reports the offline state and syncs on reconnection according to section 6.4.
 ### 6.6 Library and downloads
 
 - Local cached catalog with stable RomM identifiers, systems, names, covers and local presence state.
+- Two libraries, switched with L3 (I on the keyboard), the pill at the top or Sort and filter: *All
+  games* (everything on RomM) and *Installed only* (`prefs.libraryMode = "ready"`): each console tab
+  then shows only the games ready here, downloaded or played from RomM through the mount
+  (`/api/v1/library?ready=1`), and consoles without any are left out (`ready_count` in
+  `/api/v1/platforms`).
 - On-demand downloads with resume, size/hash verification and error handling.
 - Downloads panel (R3 / Tab): per download a Pause (Resume when paused, Retry when failed) and a Cancel
   button; X or the button at the top clears finished and cancelled ones (`DELETE /api/v1/downloads`).
@@ -474,7 +479,14 @@ The RomM account provides identity and remote scope; the local profile provides 
 > is told so, and its own emulator is installed next, even when that other installation fails. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
 > messages, no hotkeys, profile saves and states, Borne's cores and BIOS folders); Dolphin with
 > its own user folder per profile (`-u`). Sessions: one at a time, own process group, output in
-> `reports/emulator.log`, `session` events. Sources also include Forgejo (Eden) and GitLab
+> `reports/emulator.log`, `session` events. An emulator killed by a signal it raised (abort,
+> memory fault) is said to have crashed, with what to do (Eden/Citron on a Mac: choose Ryubing;
+> Cemu: its log, in the diagnostic report with the other emulators' own logs). Ryujinx is started
+> once without a game when it has no Config.json yet, so Borne can write the pad into it. A RetroArch
+> core missing on the buildbot leaves the others installed; a failed installation names its
+> emulator and can be put away (`POST /api/v1/emulators/task/dismiss`); a game waiting for its
+> emulator is started or told even when another installation failed. The update state carries a
+> `seq` so an older answer never brings "Checking…" back. Sources also include Forgejo (Eden) and GitLab
 > (Ryubing) releases. Switch: Eden, Citron Neo, Ryubing; PS3: RPCS3; PS4: shadPS4; Xbox 360: Xenia
 > Canary (Linux only); Xbox One: no usable emulator exists, the console is listed as unsupported.
 

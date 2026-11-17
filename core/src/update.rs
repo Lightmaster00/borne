@@ -165,6 +165,9 @@ pub struct UpdateState {
     pub parts: Vec<String>,
     pub error: Option<String>,
     pub checked_at: Option<i64>,
+    /// Grows with each change: a client keeps the newest state it saw (an answer computed
+    /// before an event may arrive after it).
+    pub seq: u64,
 }
 
 static STATE: Mutex<Option<UpdateState>> = Mutex::new(None);
@@ -188,6 +191,7 @@ fn set_state(app: &Shared, f: impl FnOnce(&mut UpdateState)) {
     let mut guard = STATE.lock().unwrap_or_else(|e| e.into_inner());
     let mut s = guard.clone().unwrap_or_else(|| UpdateState { state: "idle".into(), ..Default::default() });
     f(&mut s);
+    s.seq += 1;
     *guard = Some(s.clone());
     drop(guard);
     app.emit(json!({ "type": "update", "update": s }));

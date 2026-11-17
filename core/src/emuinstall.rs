@@ -244,6 +244,16 @@ fn set_task(app: &Shared, v: Value) {
     *TASK.lock().unwrap_or_else(|e| e.into_inner()) = Some(v);
     app.emit(json!({ "type": "emulators" }));
 }
+/// The failed installation's notice put away by the player.
+pub fn dismiss(app: &Shared) {
+    let mut t = TASK.lock().unwrap_or_else(|e| e.into_inner());
+    if t.as_ref().map(|t| t["running"] != true).unwrap_or(false) {
+        *t = None;
+    }
+    drop(t);
+    app.emit(json!({ "type": "emulators" }));
+}
+
 pub fn busy() -> bool {
     TASK.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|t| t["running"] == true).unwrap_or(false)
 }
@@ -333,7 +343,8 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
         if let Some(e) = &error {
             app.db.log("emulators", &format!("{program}: {e}"));
         }
-        set_task(&app, json!({ "id": program, "running": false, "error": error }));
+        let name = crate::emulators::program(&program).map(|p| p.name).unwrap_or_else(|| program.clone());
+        set_task(&app, json!({ "id": program, "name": name, "running": false, "error": error }));
         // The game waiting for this emulator starts now; after a failure it is forgotten (the
         // error is shown with the installation).
         // A game waiting for another emulator (this one was installed for the library) is not
@@ -361,24 +372,35 @@ fn run(app: &Shared, program: &str, cores: &[String]) -> Result<(), String> {
     }
     if !cores.is_empty() {
         let pattern = p.cores_url().ok_or("this emulator has no cores")?;
+        // Each core on its own: one missing on the server leaves the others installed.
+        let mut failed = vec![];
         for c in cores {
             let dest = core_path(app, c);
             if dest.is_file() {
                 continue;
             }
             set_task(app, json!({ "id": program, "running": true, "step": "core", "core": c, "received": 0, "total": 0 }));
-            let tmp = root(app).join(format!("{c}.zip.part"));
-            download(app, program, &pattern.replace("{core}", c), &tmp, None)?;
-            let out = root(app).join(format!("{c}.unpack"));
-            let _ = std::fs::remove_dir_all(&out);
-            unzip(&tmp, &out)?;
-            let _ = std::fs::remove_file(&tmp);
-            let name = dest.file_name().unwrap().to_owned();
-            let found =
-                walk(&out).into_iter().find(|f| f.file_name() == Some(&name)).ok_or_else(|| format!("{c}: no core in the archive"))?;
-            std::fs::create_dir_all(cores_dir(app)).map_err(|e| e.to_string())?;
-            std::fs::rename(&found, &dest).map_err(|e| e.to_string())?;
-            let _ = std::fs::remove_dir_all(&out);
+            let r = (|| {
+                let tmp = root(app).join(format!("{c}.zip.part"));
+                download(app, program, &pattern.replace("{core}", c), &tmp, None)?;
+                let out = root(app).join(format!("{c}.unpack"));
+                let _ = std::fs::remove_dir_all(&out);
+                unzip(&tmp, &out)?;
+                let _ = std::fs::remove_file(&tmp);
+                let name = dest.file_name().unwrap().to_owned();
+                let found = walk(&out).into_iter().find(|f| f.file_name() == Some(&name)).ok_or("no core in the archive")?;
+                std::fs::create_dir_all(cores_dir(app)).map_err(|e| e.to_string())?;
+                std::fs::rename(&found, &dest).map_err(|e| e.to_string())?;
+                let _ = std::fs::remove_dir_all(&out);
+                Ok::<(), String>(())
+            })();
+            if let Err(e) = r {
+                app.db.log("emulators", &format!("core {c}: {e}"));
+                failed.push(format!("{c} ({e})"));
+            }
+        }
+        if !failed.is_empty() {
+            return Err(format!("RetroArch core not installed: {}", failed.join(", ")));
         }
     }
     Ok(())
@@ -415,7 +437,12 @@ fn download(app: &Shared, program: &str, url: &str, dest: &Path, sha256: Option<
         .call()
         .map_err(|e| format!("download failed: {e}"))?;
     if r.status().as_u16() != 200 {
-        return Err(format!("download answered {}", r.status().as_u16()));
+        let file = url.rsplit('/').next().unwrap_or(url);
+        return Err(if r.status().as_u16() == 404 {
+            format!("{file} is not on the download server (404)")
+        } else {
+            format!("the download of {file} answered {}", r.status().as_u16())
+        });
     }
     let total: u64 = r.headers().get("content-length").and_then(|v| v.to_str().ok()).and_then(|v| v.parse().ok()).unwrap_or(0);
     if let Some(p) = dest.parent() {

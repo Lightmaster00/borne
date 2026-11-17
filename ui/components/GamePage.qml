@@ -8,6 +8,7 @@
 // left/right inside a row, A to activate, B to go back.
 import QtQuick
 import "ConsoleNeeds.js" as Needs
+import "CoreText.js" as CoreText
 import QtQuick.Effects
 import QtMultimedia
 
@@ -17,6 +18,7 @@ Item {
     property var game: null            // shown version, as a library row (cover, trailer, states…)
     property var versions: []          // every version of the game (raw API rows)
     property var needs: []             // what its console's games need that is missing here
+    property var fileNote: null        // { ok, text }: what the downloaded file says of itself
     property string emuLanguage: "auto"
     property var gameLanguages: []     // [{ code, version }]: the game's real languages
     property string uiLang: "en"
@@ -465,6 +467,14 @@ Item {
                             color: theme.badSoft
                             font { family: theme.fontFamily; pixelSize: 17 }
                         }
+                    }
+                    Text {
+                        visible: !!page.fileNote
+                        width: info.width
+                        wrapMode: Text.WordWrap
+                        text: page.fileNote ? (page.fileNote.ok ? "✓ " : "⚠ ") + CoreText.tr(page.fileNote.text) : ""
+                        color: page.fileNote && !page.fileNote.ok ? theme.badSoft : theme.fgSoft
+                        font { family: theme.fontFamily; pixelSize: 17 }
                     }
                     Text {
                         visible: !page.streamAvailable && page.streamError !== "" && page.actions.some(a => a.id === "link")

@@ -76,6 +76,7 @@ fn extract_external(archive: &Path, out: &Path, none: &str) -> Result<(), String
         match std::process::Command::new(tool).args(&args).stdin(std::process::Stdio::null()).output() {
             Ok(r) if r.status.success() => {
                 let mut stack = vec![out.to_path_buf()];
+                let mut files = 0;
                 while let Some(d) = stack.pop() {
                     for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
                         match e.file_type() {
@@ -83,11 +84,16 @@ fn extract_external(archive: &Path, out: &Path, none: &str) -> Result<(), String
                                 let _ = std::fs::remove_file(e.path());
                             }
                             Ok(t) if t.is_dir() => stack.push(e.path()),
-                            _ => {}
+                            _ => files += 1,
                         }
                     }
                 }
-                return Ok(());
+                // A damaged archive can be "extracted" into nothing (bsdtar reading a zip whose
+                // end is missing): not a success.
+                if files > 0 {
+                    return Ok(());
+                }
+                last = none.to_string();
             }
             Ok(r) => last = format!("the archive could not be extracted: {}", String::from_utf8_lossy(&r.stderr).trim()),
             Err(_) => continue,

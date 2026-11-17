@@ -994,6 +994,38 @@
         <source>no RetroArch build for this computer on the buildbot</source>
         <translation>aucune version de RetroArch pour cet ordinateur sur le buildbot</translation>
     </message>
+    <message>
+        <source>this copy is encrypted: Azahar cannot play it. Put a decrypted copy of the game on RomM</source>
+        <translation>cette copie est chiffrée : Azahar ne peut pas la lire. Mettez une copie déchiffrée du jeu sur RomM</translation>
+    </message>
+    <message>
+        <source>decrypted copy: Azahar can play it</source>
+        <translation>copie déchiffrée : Azahar peut la lire</translation>
+    </message>
+    <message>
+        <source>%1 is not on the download server (404)</source>
+        <translation>%1 n’est pas sur le serveur de téléchargement (404)</translation>
+    </message>
+    <message>
+        <source>the download of %1 answered %2</source>
+        <translation>le téléchargement de %1 a répondu %2</translation>
+    </message>
+    <message>
+        <source>RetroArch core not installed: %1</source>
+        <translation>cœur RetroArch non installé : %1</translation>
+    </message>
+    <message>
+        <source>%1 crashed (signal %2): a known problem of this emulator on Mac. Choose Ryubing for this game or for the Switch (Game settings → Emulator)</source>
+        <translation>%1 a planté (signal %2) : un problème connu de cet émulateur sur Mac. Choisissez Ryubing pour ce jeu ou pour la Switch (Réglages du jeu → Émulateur)</translation>
+    </message>
+    <message>
+        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Diagnostics)</source>
+        <translation>%1 a planté (signal %2) : son journal est dans le rapport de diagnostic (Réglages → Diagnostic)</translation>
+    </message>
+    <message>
+        <source>%1 crashed (signal %2)</source>
+        <translation>%1 a planté (signal %2)</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2879,6 +2911,38 @@
         <source>%1 is installed after %2, which is being installed now. The game starts as soon as it is ready.</source>
         <translation>%1 sera installé après %2, en cours d’installation. Le jeu se lance dès qu’il est prêt.</translation>
     </message>
+    <message>
+        <source>Installed games only</source>
+        <translation>Jeux installés uniquement</translation>
+    </message>
+    <message>
+        <source>All games</source>
+        <translation>Tous les jeux</translation>
+    </message>
+    <message>
+        <source>Show all games</source>
+        <translation>Afficher tous les jeux</translation>
+    </message>
+    <message>
+        <source>Show installed games only</source>
+        <translation>Afficher uniquement les jeux installés</translation>
+    </message>
+    <message>
+        <source>Now: installed only</source>
+        <translation>Actuellement : installés uniquement</translation>
+    </message>
+    <message>
+        <source>Now: all games</source>
+        <translation>Actuellement : tous les jeux</translation>
+    </message>
+    <message>
+        <source>No game installed yet. Press %1 to see all games, then download one.</source>
+        <translation>Aucun jeu installé pour l’instant. Appuyez sur %1 pour voir tous les jeux, puis téléchargez-en un.</translation>
+    </message>
+    <message>
+        <source>Installed only</source>
+        <translation>Installés seulement</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3957,10 +4021,6 @@
         <translation>À régler</translation>
     </message>
     <message>
-        <source>Emulator installation</source>
-        <translation>Installation d'un émulateur</translation>
-    </message>
-    <message>
         <source>Failed</source>
         <translation>Échec</translation>
     </message>
@@ -4327,6 +4387,14 @@
     <message>
         <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its settings). Applied the next time a game starts.</source>
         <translation>Chaque console peut avoir les siennes (Paramètres → Consoles → la console), et chaque jeu les siennes (ses réglages). Appliqué au prochain lancement d’un jeu.</translation>
+    </message>
+    <message>
+        <source>Installing %1 failed</source>
+        <translation>L’installation de %1 a échoué</translation>
+    </message>
+    <message>
+        <source>Press to put this notice away</source>
+        <translation>Appuyez pour masquer ce message</translation>
     </message>
 </context>
 <context>

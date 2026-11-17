@@ -37,7 +37,7 @@
 //! Library
 //!   POST   /api/v1/sync                          syncs the catalog
 //!   GET    /api/v1/platforms
-//!   GET    /api/v1/library?platform=&q=&local=1&fav=1&recent=1&genre=&sort=name|played|added|time&lang=fr
+//!   GET    /api/v1/library?platform=&q=&local=1&ready=1&fav=1&recent=1&genre=&sort=name|played|added|time&lang=fr
 //!                                                 one entry per game, versions grouped
 //!   GET    /api/v1/games/<rom_id>?lang=fr        game page: shown version, all versions, choices
 //!   GET    /api/v1/games/<rom_id>/facts?lang=fr  credits, studios, series, screenshots (RomM)
@@ -68,6 +68,7 @@
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
 //!   POST   /api/v1/emulators/<id>/path {path}     the user's own program for an emulator ("" to forget)
 //!   POST   /api/v1/emulators/<id>/install         installs or updates it (Borne's own copy)
+//!   POST   /api/v1/emulators/task/dismiss         puts away a failed installation's notice
 //!   POST   /api/v1/consoles/<slug>/emulator {engine}  the emulator chosen for a console
 //!   POST   /api/v1/emulators/auto-update {on}     updates installed by themselves (default on)
 //!   POST   /api/v1/games/<rom_id>/gameplay        gameplay video: ScreenScraper's, else the trailer → {path}
@@ -657,11 +658,25 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 }
             }
             let ratios = crate::media::case_ratios(app);
+            // Games ready to play here (downloaded, or played from RomM through the mount), per
+            // console tab: the library's "Installed" mode shows only the consoles that have some.
+            let mut ready: std::collections::HashMap<String, std::collections::HashSet<String>> = Default::default();
+            for g in app.db.games(None, None, false).into_iter().filter(|g| g.local_state == "local" || g.linked) {
+                let tab = library::JOINED
+                    .iter()
+                    .find(|(_, parts)| parts.contains(&g.platform_slug.as_str()))
+                    .map(|(main, _)| main.to_string())
+                    .unwrap_or_else(|| g.platform_slug.clone());
+                ready.entry(tab).or_default().insert(g.group_key.clone());
+            }
             let list: Vec<Value> = platforms
                 .into_iter()
                 .map(|p| {
                     let mut v = json!(p);
                     v["case_ar"] = json!(ratios.get(&p.slug));
+                    let joined = library::JOINED.iter().find(|(main, parts)| *main == p.slug || parts.contains(&p.slug.as_str()));
+                    let tab = joined.map(|(main, _)| main.to_string()).unwrap_or_else(|| p.slug.clone());
+                    v["ready_count"] = json!(ready.get(&tab).map(|s| s.len()).unwrap_or(0));
                     let kinds: Vec<String> = app
                         .db
                         .media_of(&format!("system:{}", p.slug))
@@ -703,7 +718,13 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 None => app.db.games(platform.as_deref(), search.as_deref(), local),
             };
             let hidden = crate::consoles::hidden(app);
-            let rows: Vec<_> = rows.into_iter().filter(|g| !hidden.contains(&g.platform_slug)).collect();
+            // "Installed" mode: only the versions ready to play here (downloaded, or played from
+            // RomM through the mount).
+            let ready = query(&q, "ready").as_deref() == Some("1");
+            let rows: Vec<_> = rows
+                .into_iter()
+                .filter(|g| !hidden.contains(&g.platform_slug) && (!ready || g.local_state == "local" || g.linked))
+                .collect();
             let prefs = app.active_profile().map(|p| app.db.game_prefs(&p.id)).unwrap_or_default();
             crate::screenscraper::set_ui_lang(app, &lang);
             let mut list = library::groups(rows, &prefs, &lang);
@@ -814,6 +835,9 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         "languages": library::game_languages(&all),
                         "install_mode": install_mode(app),
                         "stream": stream::status(app),
+                        // What the downloaded files say about themselves (a 3DS dump encrypted or
+                        // not), per version: known before pressing Play.
+                        "file_notes": all.iter().filter_map(|v| crate::emulators::file_note(v).map(|n| (v.rom_id.to_string(), n))).collect::<serde_json::Map<_, _>>(),
                     }),
                 )
             }
@@ -1096,6 +1120,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(()) => ok(req, crate::emulators::list(app)),
                 Err(e) => err(req, 400, &e),
             }
+        }
+        (Method::Post, ["api", "v1", "emulators", "task", "dismiss"]) => {
+            crate::emuinstall::dismiss(app);
+            ok(req, crate::emulators::list(app))
         }
         (Method::Post, ["api", "v1", "emulators", id, "install"]) => match crate::emuinstall::start(app, id, vec![]) {
             Ok(()) => ok(req, json!({ "started": true })),
@@ -1381,7 +1409,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             ok(req, json!({ "ok": true }))
         }
         (Method::Post, ["api", "v1", "debug", "pad"]) if app.debug_input => {
-            const OK: [&str; 15] = ["up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "lb", "rb", "lt", "rt", "r3"];
+            const OK: [&str; 16] =
+                ["up", "down", "left", "right", "a", "b", "x", "y", "start", "select", "lb", "rb", "lt", "rt", "r3", "l3"];
             match query(&q, "action") {
                 Some(a) if OK.contains(&a.as_str()) => {
                     app.emit(json!({ "type": "pad", "action": a, "pad": "test", "repeat": false }));

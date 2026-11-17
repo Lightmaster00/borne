@@ -102,7 +102,41 @@ pub fn known_consoles() -> Vec<String> {
 }
 
 pub fn engines(system: &str) -> Vec<Engine> {
-    manifest().consoles.get(system).map(|v| v.iter().map(|(i, n)| engine(i, n)).collect()).unwrap_or_default()
+    let mut list: Vec<Engine> = manifest().consoles.get(system).map(|v| v.iter().map(|(i, n)| engine(i, n)).collect()).unwrap_or_default();
+    // On a Mac, Ryujinx (Ryubing) comes first for the Switch: Eden's ARM64 recompiler crashes
+    // there in the middle of games (Dynarmic, freed memory), Ryujinx runs natively.
+    if system == "switch" && cfg!(target_os = "macos") {
+        if let Some(i) = list.iter().position(|e| e.program == "ryubing") {
+            let r = list.remove(i);
+            list.insert(0, r);
+        }
+    }
+    list
+}
+
+/// Changes made once to the player's choices when a default proved wrong.
+pub fn migrate(app: &Shared) {
+    // On a Mac, Eden crashes in the middle of Switch games (its ARM64 recompiler): a console
+    // left on Eden moves to Ryujinx (Ryubing) once. A choice made after that stays.
+    if cfg!(target_os = "macos") && app.db.setting("migrated.mac_switch_ryubing").is_none() {
+        if app.db.setting("emu_for.switch").as_deref().is_some_and(|e| e == "!eden" || e == "!citron") {
+            app.db.set_setting("emu_for.switch", "!ryubing");
+            app.db.log("emulators", "Switch: Eden replaced by Ryubing on this Mac (Eden crashes there)");
+        }
+        app.db.set_setting("migrated.mac_switch_ryubing", "1");
+    }
+}
+
+/// What is said when an emulator crashed (killed by a signal it raised).
+fn crash_message(emulator: &str, program: &str, signal: i32) -> String {
+    let hint = match program {
+        "eden" | "citron" if cfg!(target_os = "macos") => {
+            ": a known problem of this emulator on Mac. Choose Ryubing for this game or for the Switch (Game settings → Emulator)"
+        }
+        "cemu" => ": its log is in the diagnostic report (Settings → Diagnostics)",
+        _ => "",
+    };
+    format!("{emulator} crashed (signal {signal}){hint}")
 }
 
 /// The engine chosen for a console (the user's choice, else the first one).
@@ -496,6 +530,8 @@ struct Session {
     rom_id: i64,
     name: String,
     emulator: String,
+    /// Its program's id (eden, cemu…).
+    program: String,
     /// What to send to RomM afterwards: (profile, console, program, game file, emulator name).
     sync: Option<(String, String, String, PathBuf, String)>,
     started: Instant,
@@ -1275,6 +1311,24 @@ fn switch_base(rom: &Path) -> Result<PathBuf, String> {
     })
 }
 
+/// A note on a downloaded game's file, shown on its page: a 3DS dump said encrypted (Azahar
+/// cannot play it) or decrypted.
+pub fn file_note(g: &crate::db::GameRow) -> Option<Value> {
+    if g.platform_slug != "3ds" || g.local_state != "local" {
+        return None;
+    }
+    let rom = PathBuf::from(g.local_main.as_deref()?);
+    let ext = rom.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if !["3ds", "cci", "cxi"].contains(&ext.as_str()) {
+        return None;
+    }
+    Some(if n3ds_encrypted(&rom) {
+        json!({ "ok": false, "text": "this copy is encrypted: Azahar cannot play it. Put a decrypted copy of the game on RomM" })
+    } else {
+        json!({ "ok": true, "text": "decrypted copy: Azahar can play it" })
+    })
+}
+
 /// Whether a 3DS game file (.3ds/.cci: an NCSD image; .cxi: an NCCH) is encrypted: its first
 /// partition's NCCH header lacks the NoCrypto flag (bit 2 of flags[7], at 0x18F).
 fn n3ds_encrypted(rom: &Path) -> bool {
@@ -1610,6 +1664,27 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
             }
         }
     }
+    // Ryujinx writes its Config.json at its first start only: until then Borne has nowhere to
+    // put the pad, fullscreen and the game folders, and the pad would do nothing. Started once
+    // without a game, for that file, then closed.
+    if p.id == "ryubing" {
+        if let Found::Program(exe) = &found {
+            let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+            let config = data_dir(app, &profile, "ryubing").join("Config.json");
+            if !config.is_file() {
+                app.db.log("play", "Ryujinx: first start, for its Config.json");
+                if let Ok(mut child) = Command::new(exe).stdout(Stdio::null()).stderr(Stdio::null()).spawn() {
+                    let t = Instant::now();
+                    while !config.is_file() && t.elapsed() < Duration::from_secs(30) {
+                        std::thread::sleep(Duration::from_millis(300));
+                    }
+                    std::thread::sleep(Duration::from_millis(800));
+                    let _ = child.kill();
+                    let _ = child.wait();
+                }
+            }
+        }
+    }
     if p.id == "cemu" {
         cemu_disc_keys(&data_dir(app, &app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into()), "cemu"), &rom);
     }
@@ -1661,6 +1736,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         rom_id,
         name: g.name.clone(),
         emulator: e.name.clone(),
+        program: p.id.clone(),
         started: Instant::now(),
         child,
         stopping: false,
@@ -1818,16 +1894,28 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                     let text = std::fs::read_to_string(&log).unwrap_or_default();
                     (!s.stopping && s.started.elapsed() < WATCH_START).then(|| failure_line(&text, &fails)).flatten()
                 });
-                let error = failure.map(|l| format!("{} could not start the game: {}", s.emulator, explain(&l))).or_else(|| {
-                    (!status.success() && quick).then(|| {
-                        let t = log_tail(&log);
-                        if t.is_empty() {
-                            format!("{} stopped at once ({status})", s.emulator)
-                        } else {
-                            format!("{} stopped at once: {}", s.emulator, explain(&t))
-                        }
+                // Killed by a signal it raised itself (abort, segmentation fault): a crash of the
+                // emulator, at any time, said as such rather than by its last log line.
+                let crashed = {
+                    use std::os::unix::process::ExitStatusExt;
+                    status.signal().filter(|n| {
+                        !s.stopping && [libc::SIGABRT, libc::SIGSEGV, libc::SIGBUS, libc::SIGILL, libc::SIGFPE, libc::SIGTRAP].contains(n)
                     })
-                });
+                };
+                let program_id = s.program.clone();
+                let error = failure
+                    .map(|l| format!("{} could not start the game: {}", s.emulator, explain(&l)))
+                    .or_else(|| crashed.map(|n| crash_message(&s.emulator, &program_id, n)))
+                    .or_else(|| {
+                        (!status.success() && quick).then(|| {
+                            let t = log_tail(&log);
+                            if t.is_empty() {
+                                format!("{} stopped at once ({status})", s.emulator)
+                            } else {
+                                format!("{} stopped at once: {}", s.emulator, explain(&t))
+                            }
+                        })
+                    });
                 let played = s.started.elapsed().as_secs();
                 let (rom_id, name, sync) = (s.rom_id, s.name.clone(), s.sync.clone());
                 // The save is sent while the player already moves on: held by SAVING until done,
@@ -2018,6 +2106,18 @@ mod tests {
         assert_eq!(user_appimage_in(&dirs, "duckstation", &n(&["DuckStation"])), None, "not an AppImage");
         assert_eq!(user_appimage_in(&dirs, "dolphin", &n(&["Dolphin"])), None);
         let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn a_program_is_never_taken_for_a_retroarch_core() {
+        // "vita3k" without its "!" made PS Vita games wait for a RetroArch core that does not
+        // exist (404) instead of starting Vita3K.
+        let programs: Vec<String> = programs().into_iter().map(|p| p.id).collect();
+        for (console, list) in manifest().consoles {
+            for (id, _) in list {
+                assert!(!programs.contains(&id), "{console}: {id} is a program, written without its '!'");
+            }
+        }
     }
 
     #[test]

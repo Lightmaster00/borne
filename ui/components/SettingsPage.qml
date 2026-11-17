@@ -197,7 +197,7 @@ Item {
         consoles.forEach(c => consoleIssues(c).filter(i => i.tone === "bad").forEach(i =>
             out.push({ id: "go:console:" + c.slug, title: c.name, desc: i.text, badge: qsTr("To fix"), tone: "bad" })))
         const t = emus ? emus.task : null
-        if (t && !t.running && t.error) out.push({ id: "go:programs", title: qsTr("Emulator installation"), desc: CoreText.tr(t.error), badge: qsTr("Failed"), tone: "bad" })
+        if (t && !t.running && t.error) out.push({ id: "emu-dismiss", title: qsTr("Installing %1 failed").arg(t.name || t.id), desc: CoreText.tr(t.error) + " · " + qsTr("Press to put this notice away"), badge: qsTr("Failed"), tone: "bad" })
         if (status && status.server_url && !status.online) out.push({ id: "go:library", title: qsTr("RomM"), desc: qsTr("The server cannot be reached: games already here still play"), badge: qsTr("Offline"), tone: "bad" })
         if (status && status.sync && status.sync.error) out.push({ id: "go:library", title: qsTr("Library"), desc: qsTr("Last sync failed: %1").arg(CoreText.tr(status.sync.error)), badge: qsTr("To fix"), tone: "bad" })
         if (updState && (updState.state === "available" || updState.state === "ready") && updState.available && upd && updState.available.build > upd.current.build)
@@ -559,6 +559,7 @@ Item {
         else if (r.id.startsWith("console:")) openConsole(r.id.substring(8))
         else if (r.id.startsWith("go:")) go(r.id.substring(3))
         else if (r.id === "pick-consoles") page.action("pick-consoles", null)
+        else if (r.id === "emu-dismiss") page.action("emu-dismiss", null)
         else if (r.id.startsWith("emu-choice:")) page.action("console-emu", { slug: r.id.substring(11), engine: item.id })
         else if (r.id.startsWith("opt:")) { const k = r.id.split(":"); page.action("emu-option", { program: k[1], key: k[2], value: item.id }) }
         else if (r.id.startsWith("opt-reset:")) page.action("emu-options-reset", { program: r.id.substring(10) })

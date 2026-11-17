@@ -123,6 +123,7 @@ and the emulators' releases).
 | LT / RT | R / C, Home / End | Previous / next letter |
 | Right stick | W A S D (held) | Turn the selected case to see its spine |
 | R3 | Tab | Downloads |
+| L3 | I | All games / installed games only |
 | Start | M or F1 | Settings |
 | Select | F2 | Sort and filter |
 | Select + Start, together | Escape | Pause and ask whether to quit (any emulator) |

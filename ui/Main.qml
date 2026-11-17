@@ -161,7 +161,8 @@ Window {
             const current = systems[systemIndex] ? systems[systemIndex].id : ""
             // The player's own tabs, only when they hold something; then one tab per console.
             const sys = []
-            if (tabs && tabs.local > 0) sys.push({ id: "local", name: qsTr("Installed", "systems bar") })
+            // "Installed" mode: every tab holds only games ready here, so no tab of its own.
+            if (!readyOnly && tabs && tabs.local > 0) sys.push({ id: "local", name: qsTr("Installed", "systems bar") })
             if (tabs && tabs.fav > 0) sys.push({ id: "fav", name: qsTr("Favourites") })
             if (tabs && tabs.recent > 0) sys.push({ id: "recent", name: qsTr("Recent") })
             // Short names for the systems bar (RomM returns full names).
@@ -171,6 +172,7 @@ Window {
                             "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "dc": "Dreamcast", "saturn": "Saturn", "arcade": "Arcade" }
             const frames = {}, shapes = {}
             for (const p of list) {
+                if (readyOnly && !(p.ready_count > 0)) continue
                 sys.push({ id: p.slug, name: shortNames[p.slug] || p.name })
                 if (p.case_ar) shapes[p.slug] = p.case_ar   // the cases' shapes from their scans
                 if (p.art_kinds && p.art_kinds.indexOf("frame") >= 0) frames[p.slug] = apiBase + "/api/v1/systems/" + p.slug + "/art/frame"
@@ -213,6 +215,7 @@ Window {
         // The Recent tab is always newest first; the others follow the chosen order and genre.
         const order = s.id === "recent" ? "played" : prefs.librarySort
         const q = "?lang=" + uiLang + tab + "&sort=" + order + (prefs.libraryGenre ? "&genre=" + encodeURIComponent(prefs.libraryGenre) : "")
+                + (readyOnly ? "&ready=1" : "")
         const t0 = Date.now()
         // Tabs switched quickly: only the latest request's answer is shown (answers can cross).
         const seq = ++libSeq
@@ -646,7 +649,15 @@ Window {
             }, qsTr("Password"), true)
         }, qsTr("User name"))
     }
-    function loadSettings() { api("GET", "/api/v1/settings", null, function (r) { if (r) settings = r }) }
+    // The newest update state seen: a settings answer computed before an "update" event can
+    // arrive after it, and must not bring "Checking…" back (it then stayed forever).
+    property var lastUpd: null
+    function freshUpd(r) {
+        if (r && r.update && r.update.update && lastUpd && (r.update.update.seq || 0) < (lastUpd.seq || 0))
+            r.update = Object.assign({}, r.update, { update: lastUpd })
+        return r
+    }
+    function loadSettings() { api("GET", "/api/v1/settings", null, function (r) { if (r) settings = freshUpd(r) }) }
     function settingsMenu() {
         loadSettings()
         refreshStatus()
@@ -662,7 +673,7 @@ Window {
     }
     function settingsAction(id, payload) {
         const post = function (body) {
-            api("POST", "/api/v1/settings", body, function (r, err) { if (err) toasts.show(err, "error"); else settings = r })
+            api("POST", "/api/v1/settings", body, function (r, err) { if (err) toasts.show(err, "error"); else settings = freshUpd(r) })
         }
         if (id === "back") { sfx.play("back"); overlay = ""; return }
         sfx.play("accept")
@@ -752,13 +763,14 @@ Window {
             if (err) toasts.show(CoreText.tr(err), "error")
             api("GET", "/api/v1/settings", null, function (r2) {
                 if (!r2) return
-                settings = r2
+                settings = freshUpd(r2)
                 // The console's page shows the options of the emulator now chosen.
                 const c = (r2.emulators.consoles || []).find(x => x.slug === payload.slug)
                 const ch = c ? c.choices.find(x => x.id === c.chosen) : null
                 if (settingsPage.consoleSlug === payload.slug) loadEmuOptions(ch ? ch.program : "")
             })
         })
+        else if (id === "emu-dismiss") api("POST", "/api/v1/emulators/task/dismiss", {}, function () { loadSettings() })
         else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-forget:")) api("POST", "/api/v1/emulators/" + id.substring(11) + "/path", { path: "" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
@@ -813,6 +825,8 @@ Window {
     // The core restarts on the new version once the UI has quit.
     Timer { id: quitForUpdate; interval: 800; onTriggered: Qt.quit() }
     function onUpdateEvent(u) {
+        if (!lastUpd || (u.seq || 0) >= (lastUpd.seq || 0)) lastUpd = u
+        else return
         if (settings && settings.update) {
             const s = Object.assign({}, settings)
             s.update = Object.assign({}, s.update, { update: u })
@@ -872,18 +886,30 @@ Window {
             libReload.restart()
         })
     }
+    // Two libraries: every game of RomM, or only those ready to play here (downloaded, or played
+    // from RomM through the mount), console by console. L3 (I on the keyboard) switches.
+    readonly property bool readyOnly: prefs.libraryMode === "ready"
+    function toggleLibraryMode() {
+        prefs.libraryMode = readyOnly ? "all" : "ready"
+        toasts.show(readyOnly ? qsTr("Installed games only") : qsTr("All games"), "info")
+        loadPlatforms()
+        loadLibrary(true)
+    }
     // Order and genre of the library (kept between sessions).
     function sortMenu() {
         const sorts = [["name", qsTr("By name")], ["played", qsTr("Recently played")], ["added", qsTr("Recently added")], ["time", qsTr("Most played")]]
         const genres = {}
         for (let i = 0; i < libModel.count; i++)
             for (const x of (libModel.get(i).genres || "").split(", ")) if (x) genres[x] = (genres[x] || 0) + 1
-        const items = sorts.map(s => ({ id: "sort:" + s[0], label: s[1], detail: prefs.librarySort === s[0] ? qsTr("Current") : "" }))
+        const items = [{ id: "mode", label: readyOnly ? qsTr("Show all games") : qsTr("Show installed games only"),
+                         detail: readyOnly ? qsTr("Now: installed only") : qsTr("Now: all games") }]
+        sorts.forEach(s => items.push({ id: "sort:" + s[0], label: s[1], detail: prefs.librarySort === s[0] ? qsTr("Current") : "" }))
         items.push({ id: "genre:", label: qsTr("Every genre"), detail: prefs.libraryGenre === "" ? qsTr("Current") : "" })
         for (const k of Object.keys(genres).sort())
             items.push({ id: "genre:" + k, label: k, detail: prefs.libraryGenre === k ? qsTr("Current") : qsTr("%n game(s)", "", genres[k]) })
         if (prefs.libraryGenre && !genres[prefs.libraryGenre]) items.push({ id: "genre:" + prefs.libraryGenre, label: prefs.libraryGenre, detail: qsTr("Current") })
         menu.open(qsTr("Sort and filter"), qsTr("Order of the games, and one genre"), items, function (c) {
+            if (c === "mode") { toggleLibraryMode(); return }
             if (c.indexOf("sort:") === 0) prefs.librarySort = c.slice(5)
             else if (c.indexOf("genre:") === 0) prefs.libraryGenre = c.slice(6)
             else return
@@ -1102,6 +1128,7 @@ Window {
         else if (a === "lb") setSystem(-1)
         else if (a === "rb") setSystem(1)
         else if (a === "r3") openDownloads()
+        else if (a === "l3") toggleLibraryMode()
         else if (a === "lt") jumpLetter(-1)
         else if (a === "rt") jumpLetter(1)
         else move(a)
@@ -1116,6 +1143,8 @@ Window {
         if (tabId === "fav") return qsTr("No favourites yet. On a game's page, choose “Add to favourites”.")
         if (tabId === "recent") return qsTr("No game played yet on this profile.")
         if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre with %2 (Sort and filter).").arg(prefs.libraryGenre).arg(graphite.key("select"))
+        if (win.readyOnly && win.systems.length === 0)
+            return qsTr("No game installed yet. Press %1 to see all games, then download one.").arg(graphite.key("l3"))
         if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
             return qsTr("No game installed yet. Open a game in its console’s tab to download it or play it from the network.")
         return qsTr("No games here.")
@@ -1392,7 +1421,7 @@ Window {
             map[Qt.Key_Escape] = "b"; map[Qt.Key_Backspace] = "b"
             map[Qt.Key_X] = "x"; map[Qt.Key_T] = "y"; map[Qt.Key_Y] = "y"; map[Qt.Key_F1] = "start"; map[Qt.Key_M] = "start"; map[Qt.Key_F2] = "select"
             map[Qt.Key_PageUp] = "lb"; map[Qt.Key_Q] = "lb"; map[Qt.Key_PageDown] = "rb"; map[Qt.Key_E] = "rb"
-            map[Qt.Key_R] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Tab] = "r3"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
+            map[Qt.Key_R] = "lt"; map[Qt.Key_C] = "rt"; map[Qt.Key_Tab] = "r3"; map[Qt.Key_I] = "l3"; map[Qt.Key_Home] = "lt"; map[Qt.Key_End] = "rt"
             const a = map[e.key]
             if (a) { e.accepted = true; dispatch(a, "keyboard") }
         }
@@ -1477,6 +1506,41 @@ Window {
             id: rightGroup
             anchors { right: parent.right; rightMargin: 96; verticalCenter: parent.verticalCenter }
             spacing: 20
+            // The library's mode, always in view: all of RomM, or only what is ready here.
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: modeRow.implicitWidth + 28; height: 44; radius: 22
+                color: win.readyOnly ? theme.accent : theme.glass
+                border { width: 1; color: win.readyOnly ? "transparent" : theme.glassEdge }
+                Accessible.role: Accessible.Button
+                Accessible.name: modeText.text
+                Row {
+                    id: modeRow
+                    anchors.centerIn: parent
+                    spacing: 10
+                    // Its button (L3, I on the keyboard), as on the downloads pill.
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: modeKey.implicitWidth + 16; height: 28; radius: 14
+                        color: win.readyOnly ? Qt.rgba(1, 1, 1, 0.25) : theme.fg
+                        Text {
+                            id: modeKey
+                            anchors.centerIn: parent
+                            text: graphite.key("l3")
+                            color: win.readyOnly ? theme.accentFg : theme.bg
+                            font { family: theme.fontFamily; pixelSize: 14; weight: Font.Black }
+                        }
+                    }
+                    Text {
+                        id: modeText
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: win.readyOnly ? qsTr("Installed only") : qsTr("All games")
+                        color: win.readyOnly ? theme.accentFg : theme.fgSoft
+                        font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
+                    }
+                }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.toggleLibraryMode() }
+            }
             // Sync or downloads in progress: a pill that opens the downloads panel.
             Rectangle {
                 readonly property var s: win.status ? win.status.sync : null
@@ -1914,6 +1978,7 @@ Window {
         game: win.pageGame
         versions: win.page ? win.page.versions : []
         needs: win.page && win.page.warnings ? win.page.warnings : []
+        fileNote: win.page && win.page.file_notes && win.pageGame ? (win.page.file_notes[String(win.pageGame.rom_id)] || null) : null
         emuLanguage: win.page ? win.page.emu_language : "auto"
         gameLanguages: win.page && win.page.languages ? win.page.languages : []
         boxYaw: win.boxYaw
@@ -2147,6 +2212,7 @@ Window {
         property bool showClock: true
         property string librarySort: "name"
         property string libraryGenre: ""
+        property string libraryMode: "all"
         property int notifiedBuild: 0
     }
 
