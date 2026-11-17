@@ -251,7 +251,9 @@ Item {
         rows.push(group(qsTr("Emulator")))
         // A choice only when there is one to make.
         if (c.choices.length > 1)
-            rows.push({ id: "emu-choice:" + c.slug, kind: "chips", title: qsTr("Plays these games"), desc: qsTr("A game can use another one, from its page"),
+            rows.push({ id: "emu-choice:" + c.slug, kind: "chips", title: qsTr("Plays these games"),
+                        desc: c.slug === "switch" ? qsTr("Your favourite. A game that does not run on it starts on the other one by itself")
+                                                  : qsTr("A game can use another one, from its page"),
                         selected: c.chosen, items: c.choices.map(x => ({ id: x.id, label: x.name })) })
         const ch = chosenOf(c), p = ch ? programOf(ch.program) : null
         if (p) rows.push({ id: "prog:" + p.id, kind: "buttons", title: c.choices.length > 1 ? p.name : qsTr("%1 plays these games").arg(ch.name),

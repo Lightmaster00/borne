@@ -823,23 +823,39 @@ pub fn install_for_library(app: &Shared) {
     // What is missing, per program: (program, cores to add).
     let mut todo: Vec<(String, Vec<String>)> = vec![];
     for slug in app.db.platforms().into_iter().map(|p| p.slug).filter(|s| !crate::consoles::is_hidden(app, s)) {
-        let Some(e) = crate::emulators::chosen(app, &slug) else { continue };
-        let Some(p) = crate::emulators::program(&e.program) else { continue };
-        let have = crate::emulators::find(app, &p.id).is_some();
-        if !have && p.install_spec().is_none() {
-            continue; // a program the player points to by hand
-        }
-        let core = e.core.filter(|c| !core_path(app, c).is_file());
-        if have && core.is_none() {
-            continue;
-        }
-        match todo.iter_mut().find(|(id, _)| *id == p.id) {
-            Some((_, cores)) => {
-                if let Some(c) = core.filter(|c| !cores.contains(c)) {
-                    cores.push(c);
-                }
+        let Some(mut chosen) = crate::emulators::chosen(app, &slug) else { continue };
+        // One that can no longer be installed (Citron): the console's next one.
+        let usable = |e: &crate::emulators::Engine| {
+            crate::emulators::find(app, &e.program).is_some()
+                || crate::emulators::program(&e.program).map(|p| p.install_spec().is_some()).unwrap_or(false)
+        };
+        if !usable(&chosen) {
+            if let Some(other) = crate::emulators::engines(&slug).into_iter().find(|e| usable(e)) {
+                chosen = other;
             }
-            None => todo.push((p.id.clone(), core.into_iter().collect())),
+        }
+        // A console whose games may need the other emulator (the Switch: Eden and Ryubing) gets
+        // both, so switching for a game never waits for an installation.
+        let mut engines = vec![chosen];
+        engines.extend(crate::emulators::partners(&slug, &engines[0].program));
+        for e in engines {
+            let Some(p) = crate::emulators::program(&e.program) else { continue };
+            let have = crate::emulators::find(app, &p.id).is_some();
+            if !have && p.install_spec().is_none() {
+                continue; // a program the player points to by hand
+            }
+            let core = e.core.filter(|c| !core_path(app, c).is_file());
+            if have && core.is_none() {
+                continue;
+            }
+            match todo.iter_mut().find(|(id, _)| *id == p.id) {
+                Some((_, cores)) => {
+                    if let Some(c) = core.filter(|c| !cores.contains(c)) {
+                        cores.push(c);
+                    }
+                }
+                None => todo.push((p.id.clone(), core.into_iter().collect())),
+            }
         }
     }
     for (program, cores) in todo {

@@ -4420,6 +4420,10 @@
         <source>Press to put this notice away</source>
         <translation>Appuyez pour masquer ce message</translation>
     </message>
+    <message>
+        <source>Your favourite. A game that does not run on it starts on the other one by itself</source>
+        <translation>Votre préféré. Un jeu qui ne fonctionne pas dessus démarre tout seul sur l’autre</translation>
+    </message>
 </context>
 <context>
     <name>Theme</name>

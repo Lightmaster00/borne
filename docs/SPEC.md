@@ -99,7 +99,7 @@ the final decision to the user. Compatibility checks inform and recommend; they 
 | Mega Drive / Genesis | V1 — stage 3 | RetroArch (pinned core) | ROM variants and common formats. |
 | GameCube | V1 — stage 4 | Dolphin (standalone) | First 3D system; per-game and per-controller profiles; per-profile memory cards. |
 | PlayStation 2 | V1 — stage 4 | PCSX2 (standalone) | User-provided BIOS; per-profile memory cards. |
-| Nintendo Switch | V1 — stage 4 | Eden ("Yuzu family" adapter, Citron-compatible); on macOS Ryubing first (Eden's ARM64 recompiler crashes there mid-game; a console left on Eden moves to Ryubing once) | Reference game: Zelda TotK. Keys and firmware from the user's console; emulator binary provided by the user. See section 9. |
+| Nintendo Switch | V1 — stage 4 | Eden and Ryubing, both installed; the player's favourite first (Ryubing on macOS, where Eden's ARM64 recompiler crashes mid-game). A game that crashes or does not start on one within 3 minutes is started on the other at once, without a word, and noted per game (`emu_failed.<group>.<program>`) so it starts there directly next time; a run of 3 minutes clears the note. Citron, taken down, is no longer installed: a console left on it uses the next emulator | Reference game: Zelda TotK. Keys and firmware from the user's console; emulator binary provided by the user. See section 9. |
 | Game Boy | V1.x | RetroArch | Battery saves and states depending on the emulator. |
 | Game Boy Advance | V1.x | RetroArch | Standard controls; per-game profiles if needed. |
 | Dreamcast | V1.x | Flycast | Graphics dependencies and BIOS to check. |

@@ -4420,6 +4420,10 @@
         <source>Press to put this notice away</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Your favourite. A game that does not run on it starts on the other one by itself</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Theme</name>

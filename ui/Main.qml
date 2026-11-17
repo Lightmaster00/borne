@@ -521,6 +521,14 @@ Window {
             launchPhase = "starting"; launchStarted.restart()
         } else {
             gameMode = false
+            // The game moves to the other emulator, which must be installed or prepared first.
+            if (s && s.waiting) {
+                launchPhase = ""
+                const w = s.waiting
+                if (w.installing) toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(w.installing), "info")
+                else if (w.preparing) toasts.show(qsTr("Preparing %1: its compressed package (.nsz) is unpacked once for the emulator. The game starts as soon as it is ready.").arg(w.preparing), "info")
+                return
+            }
             if (s && s.error) { launchPhase = ""; toasts.show(CoreText.tr(s.error), "error") }
             else {
                 launchNote = s && s.saving ? qsTr("Sending the save to RomM…") : ""

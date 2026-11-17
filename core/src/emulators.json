@@ -294,21 +294,6 @@
       "mac_apps": [
         "Citron.app/Contents/MacOS/citron"
       ],
-      "install": {
-        "linux": {
-          "type": "github",
-          "repo": "citron-neo/emulator",
-          "ends": "-linux-x86_64.appimage"
-        },
-        "macos": {
-          "type": "github",
-          "repo": "citron-neo/emulator",
-          "has": [
-            "macos"
-          ],
-          "ends": ".dmg"
-        }
-      },
       "fails": [
         "Failed to load ROM",
         "Failed to obtain loader"

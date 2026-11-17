@@ -149,8 +149,52 @@ pub fn chosen(app: &Shared, system: &str) -> Option<Engine> {
 /// The engine for one game: its own choice (game settings), else its console's.
 pub fn chosen_for_game(app: &Shared, system: &str, group_key: &str) -> Option<Engine> {
     let own = app.db.setting(&format!("emu_for_game.{group_key}"));
-    engines(system).into_iter().find(|e| Some(&e.id) == own.as_ref()).or_else(|| chosen(app, system))
+    let mut first = engines(system).into_iter().find(|e| Some(&e.id) == own.as_ref()).or_else(|| chosen(app, system))?;
+    // One Borne can neither find nor install any more (Citron, taken down): the console's next one.
+    let usable = |e: &Engine| find(app, &e.program).is_some() || program(&e.program).map(|p| p.install_spec().is_some()).unwrap_or(false);
+    if !usable(&first) {
+        if let Some(other) = engines(system).into_iter().find(|e| usable(e)) {
+            first = other;
+        }
+    }
+    // A game that did not run on it goes to its partner (Eden ↔ Ryubing), without a word: the
+    // player keeps the preferred one for every other game.
+    if failed_on(app, group_key, &first.program) {
+        if let Some(other) = partners(system, &first.program).into_iter().find(|o| !failed_on(app, group_key, &o.program)) {
+            return Some(other);
+        }
+    }
+    Some(first)
 }
+
+/// Emulators that can stand in for each other, per console: a game that crashes or does not start
+/// on one is started on the other.
+const PARTNERS: &[(&str, &[&str])] = &[("switch", &["eden", "ryubing"])];
+
+/// The engines that stand in for `program` on `system` (available on this computer).
+pub fn partners(system: &str, program: &str) -> Vec<Engine> {
+    let Some((_, group)) = PARTNERS.iter().find(|(s, _)| *s == system) else { return vec![] };
+    if !group.contains(&program) {
+        return vec![];
+    }
+    engines(system)
+        .into_iter()
+        .filter(|e| e.program != program && group.contains(&e.program.as_str()))
+        .filter(|e| self::program(&e.program).map(|p| p.install_spec().is_some()).unwrap_or(false))
+        .collect()
+}
+
+fn failed_key(group_key: &str, program: &str) -> String {
+    format!("emu_failed.{group_key}.{program}")
+}
+
+/// Whether this game already failed on this emulator (it crashed or did not start).
+fn failed_on(app: &Shared, group_key: &str, program: &str) -> bool {
+    app.db.setting(&failed_key(group_key, program)).is_some()
+}
+
+/// How long a game must run before a crash no longer counts as "this game does not run here".
+const RUNS_AFTER: Duration = Duration::from_secs(180);
 
 /// Sets (or, with None, clears) the engine of one game; installed at once like a console's.
 pub fn choose_for_game(app: &Shared, system: &str, group_key: &str, engine_id: Option<&str>) -> Result<(), String> {
@@ -532,6 +576,9 @@ struct Session {
     emulator: String,
     /// Its program's id (eden, cemu…).
     program: String,
+    /// The game's group (its versions together) and console, for the emulator stand-in.
+    group_key: String,
+    system: String,
     /// What to send to RomM afterwards: (profile, console, program, game file, emulator name).
     sync: Option<(String, String, String, PathBuf, String)>,
     started: Instant,
@@ -1946,6 +1993,8 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         name: g.name.clone(),
         emulator: e.name.clone(),
         program: p.id.clone(),
+        group_key: g.group_key.clone(),
+        system: system.clone(),
         started: Instant::now(),
         child,
         stopping: false,
@@ -2137,6 +2186,47 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                 let _ = std::fs::copy(&log, log.with_file_name(format!("emulator-{}.log", s.program)));
                 let played = s.started.elapsed().as_secs();
                 let (rom_id, name, sync) = (s.rom_id, s.name.clone(), s.sync.clone());
+                let (group_key, system) = (s.group_key.clone(), s.system.clone());
+                // A game that does not run on this emulator (it crashed or refused it early)
+                // goes on its partner at once, the player seeing only the game start; noted per
+                // game, so the next time starts there directly. One that ran is noted as running.
+                if error.is_some() && s.started.elapsed() < RUNS_AFTER {
+                    app.db.set_setting(&failed_key(&group_key, &program_id), "1");
+                } else if error.is_none() && s.started.elapsed() >= RUNS_AFTER {
+                    app.db.delete_setting(&failed_key(&group_key, &program_id));
+                }
+                let switch_to = error
+                    .as_ref()
+                    .filter(|_| s.started.elapsed() < RUNS_AFTER)
+                    .and_then(|_| partners(&system, &program_id).into_iter().find(|o| !failed_on(&app, &group_key, &o.program)));
+                if let Some(other) = switch_to {
+                    let _ = std::fs::copy(&log, log.with_file_name(format!("emulator-{}.log", s.program)));
+                    let saving = SAVING.lock().unwrap_or_else(|e| e.into_inner());
+                    *g = None;
+                    drop(g);
+                    app.db.log(
+                        "play",
+                        &format!(
+                            "{name}: {} did not run it ({}); started on {} instead",
+                            program_id,
+                            error.as_deref().unwrap_or(""),
+                            other.name
+                        ),
+                    );
+                    drop(saving);
+                    let app = app.clone();
+                    std::thread::spawn(move || match play(&app, rom_id) {
+                        Ok(r) if r["running"] == true => {}
+                        Ok(r) => {
+                            // Installing or preparing first: it starts by itself once ready.
+                            app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": rom_id, "seconds": played, "error": null, "waiting": r } }));
+                        }
+                        Err(e) => {
+                            app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": rom_id, "seconds": played, "error": e } }));
+                        }
+                    });
+                    return;
+                }
                 // The save is sent while the player already moves on: held by SAVING until done,
                 // so that a game started meanwhile waits for it before taking its saves.
                 let saving = SAVING.lock().unwrap_or_else(|e| e.into_inner());
@@ -2431,6 +2521,15 @@ mod tests {
         std::fs::write(&p, &b).unwrap();
         assert_eq!(cia_title_id(&p), Some(0x0004_0000_0019_3a00));
         let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn switch_emulators_stand_in_for_each_other() {
+        let names = |v: Vec<Engine>| v.into_iter().map(|e| e.program).collect::<Vec<_>>();
+        assert_eq!(names(partners("switch", "eden")), ["ryubing"]);
+        assert_eq!(names(partners("switch", "ryubing")), ["eden"]);
+        assert!(partners("switch", "citron").is_empty());
+        assert!(partners("gc", "dolphin").is_empty());
     }
 
     #[test]
