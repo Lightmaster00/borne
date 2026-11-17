@@ -422,6 +422,39 @@ Window {
             reloadGame(); libReload.restart()
         })
     }
+    // Controls, at one of three levels ("all", "console:<slug>", "game:<rom id>"): a setting
+    // changed, or a console button given to the pad button pressed next.
+    function controlsUrl(scope) {
+        if (scope.startsWith("console:")) return "/api/v1/consoles/" + encodeURIComponent(scope.substring(8)) + "/controls"
+        if (scope.startsWith("game:")) return "/api/v1/games/" + scope.substring(5) + "/controls"
+        return "/api/v1/controls"
+    }
+    function controlsShow(scope, r) {
+        if (scope.startsWith("console:")) { if (settingsPage.consoleSlug === scope.substring(8)) settingsPage.consoleControls = r }
+        else if (scope.startsWith("game:")) { if (pageGame && "game:" + pageGame.rom_id === scope) gameSettingsPage.controls = r }
+        else settingsPage.controlsAll = r
+    }
+    function controlsChange(scope, body) {
+        api("POST", controlsUrl(scope), body, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); else controlsShow(scope, r) })
+    }
+    // "Press the button for…": the core sends the next pad button pressed (a "capture" event)
+    // instead of moving in Borne; ten seconds, else nothing changes.
+    property var capture: null
+    function startCapture(scope, button, name) {
+        capture = { scope: scope, button: button, name: name }
+        api("POST", "/api/v1/controls/capture", { on: true }, function () {})
+        captureTimer.restart()
+    }
+    function endCapture(pad) {
+        const c = capture
+        capture = null
+        captureTimer.stop()
+        if (!c) return
+        if (pad) { sfx.play("accept"); controlsChange(c.scope, { button: c.button, pad: pad }) }
+        else api("POST", "/api/v1/controls/capture", { on: false }, function () {})
+    }
+    Timer { id: captureTimer; interval: 10000; onTriggered: { win.endCapture(""); toasts.show(qsTr("No button pressed: nothing changed."), "info") } }
+
     // Playing: the core starts the emulator; Borne steps aside (game mode) until it quits. The
     // launch screen covers the passage both ways (LaunchScreen.qml).
     property var session: null
@@ -535,15 +568,8 @@ Window {
             })
         }
         else if (id === "display") api("POST", base + "display", payload, function (r, err) { if (!failed(err)) gameSettingsPage.display = r })
-        else if (id === "controls") api("POST", base + "controls", payload, function (r, err) { if (!failed(err)) gameSettingsPage.controls = r })
-        else if (id === "ctl-reset") {
-            const own = gameSettingsPage.controls.options.filter(o => o.own)
-            let left = own.length
-            for (const o of own) api("POST", base + "controls", { key: o.key, value: "default" }, function (r, err) {
-                failed(err)
-                if (--left === 0) loadGameSettings(g, ["controls"])
-            })
-        }
+        else if (id === "controls") controlsChange("game:" + g.rom_id, payload)
+        else if (id === "controls-capture") startCapture("game:" + g.rom_id, payload.button, payload.name)
         else if (id === "cheat" || id === "cheats-off") {
             const list = gameSettingsPage.cheats.cheats
             const on = id === "cheats-off" ? [] : list.filter((x, i) => i === payload.index ? payload.on : x.on).map(x => x.name)
@@ -697,6 +723,7 @@ Window {
         // A console's page: its picture, and its emulator's options for all games.
         else if (id === "console-open") {
             api("GET", "/api/v1/display?console=" + encodeURIComponent(payload.slug), null, function (r) { if (r && settingsPage.consoleSlug === payload.slug) settingsPage.consoleDisplay = r })
+            api("GET", "/api/v1/consoles/" + encodeURIComponent(payload.slug) + "/controls", null, function (r) { if (r && settingsPage.consoleSlug === payload.slug) settingsPage.consoleControls = r })
             loadEmuOptions(payload.program)
         }
         else if (id === "emu-option") api("POST", "/api/v1/emulators/" + payload.program + "/options", { key: payload.key, value: payload.value }, function (r, err) {
@@ -713,11 +740,8 @@ Window {
             toasts.show(r.chimera ? qsTr("Borne shows in Steam after the next Steam session start.") : qsTr("Borne shows in Steam the next time it starts."), "ok")
         })
         else if (id === "steam-remove") api("DELETE", "/api/v1/steam", null, function (r) { if (r) settingsPage.steam = r })
-        else if (id === "controls-all") api("POST", "/api/v1/controls", payload, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); else settingsPage.controlsAll = r })
-        else if (id === "controls-all-reset") {
-            const own = settingsPage.controlsAll ? settingsPage.controlsAll.options.filter(o => o.own) : []
-            for (const o of own) api("POST", "/api/v1/controls", { key: o.key, value: "default" }, function (r) { if (r) settingsPage.controlsAll = r })
-        }
+        else if (id === "controls") controlsChange(payload.scope, { key: payload.key, value: payload.value })
+        else if (id === "controls-capture") startCapture(payload.scope, payload.button, payload.name)
         else if (id === "console-emu") api("POST", "/api/v1/consoles/" + payload.slug + "/emulator", { engine: payload.engine }, function (r, err) {
             if (err) toasts.show(CoreText.tr(err), "error")
             api("GET", "/api/v1/settings", null, function (r2) {
@@ -1043,6 +1067,8 @@ Window {
         if (touch() && screen === "library" && overlay === "") return
         // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs);
         // the question it raises is answered here.
+        // Waiting for a pad button: only the keyboard's Escape (B) gives up.
+        if (capture) { if (a === "b" && source !== "pad") endCapture(""); return }
         if (needsAsk.shown) return needsAsk.handle(a)
         if (session && session.running) return session.paused ? quitAsk.handle(a) : undefined
         if (bench.running && a !== "start") return
@@ -1112,6 +1138,7 @@ Window {
                 libReload.restart(); if (win.page && win.overlay === "game") pageMediaReload.restart() }
             else if (m.type === "platforms") win.loadPlatforms()
             else if (m.type === "session") win.onSession(m.session)
+            else if (m.type === "capture") win.endCapture(m.button)
             // A game that waited for its file or its emulator could not start: told, nothing else.
             else if (m.type === "play_failed") { if (!win.gameMode) toasts.show(CoreText.tr(m.error), "error") }
             // The save of the game just ended, sent after it (another game can start meanwhile).
@@ -1791,6 +1818,34 @@ Window {
             })
         }
     }
+    // Waiting for the pad button that is to do one of the console's buttons.
+    Rectangle {
+        anchors.fill: parent
+        z: 70
+        visible: !!win.capture
+        color: Qt.rgba(0.02, 0.024, 0.04, 0.82)
+        Column {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - 160, 900)
+            spacing: 22
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: win.capture ? qsTr("Press the button that should do “%1”").arg(win.capture.name) : ""
+                color: theme.fg
+                font { family: theme.displayFont; pixelSize: 44; weight: Font.Bold }
+            }
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                text: qsTr("On your controller. The button it replaces takes the old place. Nothing pressed in ten seconds: nothing changes.")
+                color: theme.fgMuted
+                font { family: theme.fontFamily; pixelSize: 22 }
+            }
+        }
+    }
     // Before the first game of a console whose games need what this computer lacks.
     QuitConfirm {
         id: needsAsk
@@ -1877,6 +1932,7 @@ Window {
         anchors.fill: parent
         z: 24
         theme: win.theme
+        advanced: prefs.controlsAdvanced
         game: win.pageGame
         languages: gamePage.gameLanguages
         currentLang: gamePage.currentLang
@@ -2071,6 +2127,7 @@ Window {
         property int attractDelay: 5          // s without input before the video fills the screen; 0: never
         property int attractRest: 60          // s of full-screen video before the games come back; 0: never
         property int uiScale: 130             // interface size, %: read from a sofa by default
+        property bool controlsAdvanced: false // controls: each button shown and set by pressing it
         property int scaleVersion: 0          // 1: the larger default given once to older settings
         property string language: "auto"      // interface language: "auto" (the system's) | "en" | "fr"
         // Switched at once (the launcher reloads the translation); the library comes back in it.

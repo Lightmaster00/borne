@@ -21,7 +21,9 @@
 //!   GET    /api/v1/games/<id>/emuoptions                  the emulator's own options for this game
 //!   GET    /api/v1/emulators/<program>/options            the same for every game it runs
 //!   POST   /api/v1/emulators/<program>/options            { key, value | "default" }
-//!   GET    /api/v1/controls  ·  POST {key, value|"default"}   controls for every game
+//!   GET    /api/v1/controls  ·  POST {key, value|"default"} | {button, pad}   controls for every game
+//!   GET    /api/v1/consoles/<slug>/controls  ·  POST (same)   a console's controls
+//!   POST   /api/v1/controls/capture {on}     next pad button pressed sent as a "capture" event
 //!   GET    /api/v1/consoles  ·  POST /consoles/chosen {shown?}  ·  POST /consoles/<slug>/shown {shown}
 //!   GET    /api/v1/server/discover                       RomM servers on the local network
 //!   GET    /api/v1/steam  ·  POST (adds Borne to Steam)  ·  DELETE (ChimeraOS: removes it)
@@ -147,6 +149,15 @@ fn percent_decode(s: &str) -> String {
 
 fn query(q: &str, key: &str) -> Option<String> {
     q.split('&').find_map(|kv| kv.strip_prefix(key).and_then(|r| r.strip_prefix('=')).map(percent_decode))
+}
+
+/// A change of controls: {key, value} (a setting), or {button, pad} (the pad button pressed for
+/// one of the console's buttons).
+fn controls_change(app: &Shared, group: &str, b: &Value) -> Result<(), String> {
+    match (b["button"].as_str(), b["pad"].as_str()) {
+        (Some(button), Some(pad)) => crate::controls::assign(app, group, button, pad),
+        _ => crate::controls::set(app, group, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")),
+    }
 }
 
 fn body_json(req: &mut Request) -> Value {
@@ -960,7 +971,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             Some(g) => {
                 let b = body_json(&mut req);
                 let program = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key).map(|e| e.program).unwrap_or_default();
-                match crate::controls::set(app, &g.group_key, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+                match controls_change(app, &g.group_key, &b) {
                     Ok(()) => ok(req, crate::controls::view(app, &g.group_key, &program)),
                     Err(x) => err(req, 400, &x),
                 }
@@ -1007,10 +1018,28 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         (Method::Post, ["api", "v1", "controls"]) => {
             let b = body_json(&mut req);
             let all = crate::controls::ALL_GAMES;
-            match crate::controls::set(app, all, b["key"].as_str().unwrap_or(""), b["value"].as_str().unwrap_or("")) {
+            match controls_change(app, all, &b) {
                 Ok(()) => ok(req, crate::controls::view(app, all, "")),
                 Err(x) => err(req, 400, &x),
             }
+        }
+        // A console's controls (between every game's and a game's own).
+        (Method::Get, ["api", "v1", "consoles", slug, "controls"]) => {
+            ok(req, crate::controls::view(app, &crate::controls::console_group(slug), ""))
+        }
+        (Method::Post, ["api", "v1", "consoles", slug, "controls"]) => {
+            let b = body_json(&mut req);
+            let group = crate::controls::console_group(slug);
+            match controls_change(app, &group, &b) {
+                Ok(()) => ok(req, crate::controls::view(app, &group, "")),
+                Err(x) => err(req, 400, &x),
+            }
+        }
+        // Waiting for a pad button ({on: true}): the next one pressed comes as a "capture" event.
+        (Method::Post, ["api", "v1", "controls", "capture"]) => {
+            let on = body_json(&mut req)["on"].as_bool().unwrap_or(false);
+            crate::pad::capture(on);
+            ok(req, json!({ "on": on }))
         }
         // The consoles shown in Borne, and what their games need of this machine (consoles.rs).
         (Method::Get, ["api", "v1", "consoles"]) => ok(req, crate::consoles::list(app)),
@@ -1356,6 +1385,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             match query(&q, "action") {
                 Some(a) if OK.contains(&a.as_str()) => {
                     app.emit(json!({ "type": "pad", "action": a, "pad": "test", "repeat": false }));
+                    ok(req, json!({ "ok": true }))
+                }
+                // A pad button pressed while the controls wait for one ("capture:x").
+                Some(a) if a.starts_with("capture:") => {
+                    app.emit(json!({ "type": "capture", "button": a.trim_start_matches("capture:"), "pad": "test", "vendor": 0 }));
                     ok(req, json!({ "ok": true }))
                 }
                 _ => err(req, 400, "unknown action"),

@@ -722,9 +722,25 @@ blocks a launch just because a game was not tested or a community database rates
   unchanged, the catalog is kept as it is (`sync.fingerprint.<server>`); "Sync now" and a refresh
   of the images read everything again. The first-import screen shows only for a catalog without
   any game (`status.games`).
+- Update checks: a minute at most, whole answer included; checking again while a check or a
+  download runs says the current state; the check or download frees its lock however it ends.
+  "Up to date" names the version and the time of the check.
 - Closed by the system (Steam's "Exit game": SIGTERM, SIGINT, SIGHUP), the core closes the
   interface (two seconds, then stopped), the running game and the virtual mount (two seconds at
   most), and quits; an interface ended by such a signal is never started again as after a crash.
+- Controls on three levels, each taking the one above until changed: every game (Settings →
+  Controllers), a console (its page in Settings → Consoles), a game (its settings); keys
+  `controls.game.<group>.<key>` with the groups `@all`, `@console:<slug>` and the game's.
+  Settings: player 1's controller (games only), the layout (as on the controller, or A↔B and X↔Y
+  swapped), the left stick as the D-pad, and which pad button does each of the console's buttons.
+  Display simple (layout, stick) or advanced (also each button, `prefs.controlsAdvanced`). In the
+  advanced display each of the console's own buttons (GameCube A, B, X, Y, Z…, PlayStation ✕ ○ □
+  △…, named in `ui/components/Controls.js`) shows the pad button doing it, named as printed on
+  the player's pad (Xbox, PlayStation, Nintendo); "Press to change" waits for the next pad
+  button pressed (`POST /api/v1/controls/capture`, a "capture" event by the button's place, ten
+  seconds), and the two pad buttons concerned trade what they do (`{button, pad}`), the level's
+  buttons first written out as they are. `{key: "map.*"}` gives a level's buttons back to the
+  level above, `{key: "*"}` everything.
 - Per-game controls, for every emulator Borne sets up: player 1's controller, A/B and X/Y swapped,
   what each pad button acts as, and (RetroArch) the left stick as the D-pad. RetroArch gets the
   game's remap file (`profiles/<id>/remaps/<core library>/<game>.rmp`); Dolphin, PCSX2,

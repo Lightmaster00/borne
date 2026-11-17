@@ -169,6 +169,14 @@ pub struct UpdateState {
 
 static STATE: Mutex<Option<UpdateState>> = Mutex::new(None);
 static BUSY: AtomicBool = AtomicBool::new(false);
+
+/// Frees BUSY when dropped: at the end of a check or a download, whatever happened.
+struct Free;
+impl Drop for Free {
+    fn drop(&mut self) {
+        BUSY.store(false, Ordering::SeqCst);
+    }
+}
 /// Set when an update was applied: the supervisor restarts on the new core instead of exiting.
 pub static RESTART: AtomicBool = AtomicBool::new(false);
 
@@ -274,7 +282,15 @@ fn agent() -> ureq::Agent {
 fn fetch_manifest(channel: &str) -> Result<Manifest, String> {
     let url =
         if channel == "dev" { format!("{}/download/dev/latest.json", base()) } else { format!("{}/latest/download/latest.json", base()) };
-    let mut resp = agent().get(&url).call().map_err(|e| format!("update server unreachable ({e})"))?;
+    // A minute at most, whole answer included: a check never stays "checking".
+    let quick: ureq::Agent = ureq::Agent::config_builder()
+        .http_status_as_error(false)
+        .tls_config(crate::romm::tls())
+        .timeout_global(Some(Duration::from_secs(60)))
+        .user_agent(format!("Borne/{VERSION}"))
+        .build()
+        .into();
+    let mut resp = quick.get(&url).call().map_err(|e| format!("update server unreachable ({e})"))?;
     if resp.status().as_u16() == 404 {
         return Err(if channel == "dev" {
             "no version published on this channel yet".into()
@@ -328,10 +344,14 @@ pub fn release_page(app: &Shared) -> String {
 /// Works even where Borne cannot install itself: the build is then offered as a manual download.
 pub fn check(app: &Shared, force: bool) {
     if BUSY.swap(true, Ordering::SeqCst) {
+        // Already at work (a check or a download): its state is said again, never nothing.
+        set_state(app, |_| {});
         return;
     }
     let app = app.clone();
     std::thread::spawn(move || {
+        // BUSY freed however the check ends (an error, a panic).
+        let _free = Free;
         set_state(&app, |s| {
             s.state = "checking".into();
             s.error = None;
@@ -357,7 +377,6 @@ pub fn check(app: &Shared, force: bool) {
                 }
             }
         });
-        BUSY.store(false, Ordering::SeqCst);
     });
 }
 
@@ -393,6 +412,7 @@ pub fn download(app: &Shared) -> Result<(), String> {
     }
     let app = app.clone();
     std::thread::spawn(move || {
+        let _free = Free;
         let r = fetch_and_extract(&app, &manifest, &asset, &pkg);
         set_state(&app, |s| match r {
             Ok(()) => {
@@ -404,7 +424,6 @@ pub fn download(app: &Shared) -> Result<(), String> {
                 s.error = Some(e);
             }
         });
-        BUSY.store(false, Ordering::SeqCst);
     });
     Ok(())
 }

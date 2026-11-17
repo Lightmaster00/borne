@@ -126,6 +126,153 @@
     </message>
 </context>
 <context>
+    <name>Controls</name>
+    <message>
+        <source>C (Nunchuk)</source>
+        <translation>C (Nunchuk)</translation>
+    </message>
+    <message>
+        <source>Z (Nunchuk)</source>
+        <translation>Z (Nunchuk)</translation>
+    </message>
+    <message>
+        <source>Shake</source>
+        <translation>Secouer</translation>
+    </message>
+    <message>
+        <source>Bottom button</source>
+        <translation>Bouton du bas</translation>
+    </message>
+    <message>
+        <source>Right button</source>
+        <translation>Bouton de droite</translation>
+    </message>
+    <message>
+        <source>Left button</source>
+        <translation>Bouton de gauche</translation>
+    </message>
+    <message>
+        <source>Top button</source>
+        <translation>Bouton du haut</translation>
+    </message>
+    <message>
+        <source>Left shoulder</source>
+        <translation>Tranche gauche</translation>
+    </message>
+    <message>
+        <source>Right shoulder</source>
+        <translation>Tranche droite</translation>
+    </message>
+    <message>
+        <source>Left trigger</source>
+        <translation>Gâchette gauche</translation>
+    </message>
+    <message>
+        <source>Right trigger</source>
+        <translation>Gâchette droite</translation>
+    </message>
+    <message>
+        <source>as for %1</source>
+        <translation>comme pour %1</translation>
+    </message>
+    <message>
+        <source>Player 1</source>
+        <translation>Joueur 1</translation>
+    </message>
+    <message>
+        <source>The controller that plays</source>
+        <translation>La manette qui joue</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Automatique</translation>
+    </message>
+    <message>
+        <source>Controller %1</source>
+        <translation>Manette %1</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Disposition</translation>
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation>Stick gauche</translation>
+    </message>
+    <message>
+        <source>Also moves as the D-pad, for games made for a D-pad</source>
+        <translation>Fait aussi la croix, pour les jeux faits pour la croix</translation>
+    </message>
+    <message>
+        <source>Also the D-pad</source>
+        <translation>Aussi la croix</translation>
+    </message>
+    <message>
+        <source>Stick only</source>
+        <translation>Stick seulement</translation>
+    </message>
+    <message>
+        <source>Buttons</source>
+        <translation>Boutons</translation>
+    </message>
+    <message>
+        <source>On your controller: %1</source>
+        <translation>Sur ta manette : %1</translation>
+    </message>
+    <message>
+        <source>On no button</source>
+        <translation>Sur aucun bouton</translation>
+    </message>
+    <message>
+        <source>Press to change</source>
+        <translation>Appuyer pour changer</translation>
+    </message>
+    <message>
+        <source>Buttons back as they were</source>
+        <translation>Boutons comme avant</translation>
+    </message>
+    <message>
+        <source>As for %1</source>
+        <translation>Comme pour %1</translation>
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation>Réinitialiser</translation>
+    </message>
+    <message>
+        <source>This game's controls</source>
+        <translation>Les commandes de ce jeu</translation>
+    </message>
+    <message>
+        <source>This console's controls</source>
+        <translation>Commandes de cette console</translation>
+    </message>
+    <message>
+        <source>Back to the controller as it is</source>
+        <translation>Revenir à la manette telle quelle</translation>
+    </message>
+    <message>
+        <source>Back to the controls of %1</source>
+        <translation>Revenir aux commandes de %1</translation>
+    </message>
+    <message>
+        <source>Swapped: A and B, X and Y trade places, for a Nintendo layout (A on the right) on another controller, or the other way round</source>
+        <translation>Échangés : A et B, X et Y changent de place, pour la disposition Nintendo (A à droite) sur une autre manette, ou l’inverse</translation>
+    </message>
+    <message>
+        <source>A↔B, X↔Y swapped</source>
+        <translation>A↔B, X↔Y échangés</translation>
+    </message>
+    <message>
+        <source>As on the controller</source>
+        <translation>Comme sur la manette</translation>
+    </message>
+    <message>
+        <source>Every button doing its own</source>
+        <translation>Chaque bouton fait le sien</translation>
+    </message>
+</context>
+<context>
     <name>CoreText</name>
     <message>
         <source>a game is already running</source>
@@ -1663,70 +1810,6 @@
         <translation>Aucun émulateur ne lance encore ce jeu.</translation>
     </message>
     <message>
-        <source>Player 1</source>
-        <translation>Joueur 1</translation>
-    </message>
-    <message>
-        <source>The controller that plays</source>
-        <translation>La manette qui joue</translation>
-    </message>
-    <message>
-        <source>Controller %1</source>
-        <translation>Manette %1</translation>
-    </message>
-    <message>
-        <source>Face buttons</source>
-        <translation>Boutons de façade</translation>
-    </message>
-    <message>
-        <source>A and B, X and Y, as on the controller or swapped</source>
-        <translation>A et B, X et Y, comme sur la manette ou inversés</translation>
-    </message>
-    <message>
-        <source>Swapped</source>
-        <translation>Inversés</translation>
-    </message>
-    <message>
-        <source>As on the controller</source>
-        <translation>Comme sur la manette</translation>
-    </message>
-    <message>
-        <source>Left stick</source>
-        <translation>Stick gauche</translation>
-    </message>
-    <message>
-        <source>Also moves as the D-pad, for games without analog control</source>
-        <translation>Sert aussi de croix directionnelle, pour les jeux sans contrôle analogique</translation>
-    </message>
-    <message>
-        <source>Also the D-pad</source>
-        <translation>Aussi la croix</translation>
-    </message>
-    <message>
-        <source>Stick only</source>
-        <translation>Stick seulement</translation>
-    </message>
-    <message>
-        <source>Buttons</source>
-        <translation>Boutons</translation>
-    </message>
-    <message>
-        <source>Button %1</source>
-        <translation>Bouton %1</translation>
-    </message>
-    <message>
-        <source>What it presses in the game</source>
-        <translation>Ce qu’il appuie dans le jeu</translation>
-    </message>
-    <message>
-        <source>Itself</source>
-        <translation>Lui-même</translation>
-    </message>
-    <message>
-        <source>This game's controls</source>
-        <translation>Les commandes de ce jeu</translation>
-    </message>
-    <message>
         <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
         <translation>L’émulateur de ce jeu lit la manette tout seul, les boutons à la place de ceux de la console.</translation>
     </message>
@@ -1739,8 +1822,8 @@
         <translation>Revenir aux options de l'émulateur pour tous ses jeux (Paramètres → Consoles)</translation>
     </message>
     <message>
-        <source>Back to the controls for every game (Settings → Controllers)</source>
-        <translation>Revenir aux commandes de tous les jeux (Paramètres → Manettes)</translation>
+        <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
+        <translation>Appliqué au prochain lancement du jeu. Affichage simple ou avancé : Paramètres → Manettes.</translation>
     </message>
 </context>
 <context>
@@ -2744,6 +2827,18 @@
         <source>Asked once for this console.</source>
         <translation>Demandé une seule fois pour cette console.</translation>
     </message>
+    <message>
+        <source>No button pressed: nothing changed.</source>
+        <translation>Aucun bouton pressé : rien n’a changé.</translation>
+    </message>
+    <message>
+        <source>Press the button that should do “%1”</source>
+        <translation>Appuie sur le bouton qui doit faire « %1 »</translation>
+    </message>
+    <message>
+        <source>On your controller. The button it replaces takes the old place. Nothing pressed in ten seconds: nothing changes.</source>
+        <translation>Sur ta manette. Le bouton qu’il remplace prend son ancienne place. Rien pendant dix secondes : rien ne change.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3040,10 +3135,6 @@
     <message>
         <source>Checking…</source>
         <translation>Recherche…</translation>
-    </message>
-    <message>
-        <source>Borne is up to date.</source>
-        <translation>Borne est à jour.</translation>
     </message>
     <message>
         <source>Update failed: %1</source>
@@ -3998,62 +4089,6 @@
         <translation>Pour tous les jeux</translation>
     </message>
     <message>
-        <source>Face buttons</source>
-        <translation>Boutons de façade</translation>
-    </message>
-    <message>
-        <source>A and B, X and Y, as on the controller or swapped (Nintendo layout)</source>
-        <translation>A et B, X et Y, comme sur la manette ou inversés (disposition Nintendo)</translation>
-    </message>
-    <message>
-        <source>Swapped</source>
-        <translation>Inversés</translation>
-    </message>
-    <message>
-        <source>As on the controller</source>
-        <translation>Comme sur la manette</translation>
-    </message>
-    <message>
-        <source>Left stick</source>
-        <translation>Stick gauche</translation>
-    </message>
-    <message>
-        <source>Also moves as the D-pad, for games without analog control (RetroArch)</source>
-        <translation>Agit aussi comme la croix, pour les jeux sans contrôle analogique (RetroArch)</translation>
-    </message>
-    <message>
-        <source>Also the D-pad</source>
-        <translation>Aussi la croix</translation>
-    </message>
-    <message>
-        <source>Stick only</source>
-        <translation>Stick seulement</translation>
-    </message>
-    <message>
-        <source>Buttons</source>
-        <translation>Boutons</translation>
-    </message>
-    <message>
-        <source>Button %1</source>
-        <translation>Bouton %1</translation>
-    </message>
-    <message>
-        <source>What it presses in the game</source>
-        <translation>Ce qu’il appuie dans le jeu</translation>
-    </message>
-    <message>
-        <source>Itself</source>
-        <translation>Lui-même</translation>
-    </message>
-    <message>
-        <source>Back to the controller as it is</source>
-        <translation>Revenir à la manette telle quelle</translation>
-    </message>
-    <message>
-        <source>Applied the next time a game starts, by the emulators Borne sets up. A game can have its own, from its page.</source>
-        <translation>Appliqué au prochain lancement d'un jeu, par les émulateurs que Borne configure. Un jeu peut avoir les siens, depuis sa page.</translation>
-    </message>
-    <message>
         <source>Overview</source>
         <translation>Aperçu</translation>
     </message>
@@ -4216,6 +4251,42 @@
     <message>
         <source>Add or leave out consoles of your RomM library; what their games need of this computer is said for each</source>
         <translation>Ajoute ou retire des consoles de ta bibliothèque RomM ; ce que leurs jeux demandent à cet ordinateur est indiqué pour chacune</translation>
+    </message>
+    <message>
+        <source>Borne is up to date: version %1 is the latest of this channel.</source>
+        <translation>Borne est à jour : la version %1 est la dernière de ce canal.</translation>
+    </message>
+    <message>
+        <source>Checked at %1.</source>
+        <translation>Vérifié à %1.</translation>
+    </message>
+    <message>
+        <source>Not checked yet: Borne looks by itself shortly after it starts, or press Check now.</source>
+        <translation>Pas encore vérifié : Borne cherche tout seul peu après son démarrage, ou appuie sur Vérifier maintenant.</translation>
+    </message>
+    <message>
+        <source>every game</source>
+        <translation>tous les jeux</translation>
+    </message>
+    <message>
+        <source>Display</source>
+        <translation>Affichage</translation>
+    </message>
+    <message>
+        <source>Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller</source>
+        <translation>Simple : la disposition et le stick. Avancé : aussi chaque bouton, réglé en l’appuyant sur ta manette</translation>
+    </message>
+    <message>
+        <source>Simple</source>
+        <translation>Simple</translation>
+    </message>
+    <message>
+        <source>Advanced</source>
+        <translation>Avancé</translation>
+    </message>
+    <message>
+        <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its settings). Applied the next time a game starts.</source>
+        <translation>Chaque console peut avoir les siennes (Paramètres → Consoles → la console), et chaque jeu les siennes (ses réglages). Appliqué au prochain lancement d’un jeu.</translation>
     </message>
 </context>
 <context>

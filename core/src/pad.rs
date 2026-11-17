@@ -36,6 +36,32 @@ pub struct PadState {
 
 pub type SharedPadState = Arc<Mutex<PadState>>;
 
+/// Set while the controls settings wait for a button ("press the button for…"): the next button
+/// pressed is sent as a "capture" event, by its place on the pad as the emulators see it (the
+/// bottom one is "a"), instead of moving in Borne.
+static CAPTURE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn capture(on: bool) {
+    CAPTURE.store(on, std::sync::atomic::Ordering::SeqCst);
+}
+
+/// A pad button by its place, in the controls' names (controls::BUTTONS).
+fn place_name(b: Button) -> Option<&'static str> {
+    Some(match b {
+        Button::South => "a",
+        Button::East => "b",
+        Button::West => "x",
+        Button::North => "y",
+        Button::LeftTrigger => "l",
+        Button::RightTrigger => "r",
+        Button::LeftTrigger2 => "l2",
+        Button::RightTrigger2 => "r2",
+        Button::Start => "start",
+        Button::Select => "select",
+        _ => return None,
+    })
+}
+
 /// Each connected pad: its name (gilrs, from SDL_GameControllerDB), the system's name, its ids.
 /// (name, system name, (vendor, product)).
 type Known = (String, String, (u16, u16));
@@ -198,6 +224,11 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                     let pad = gp.name().to_string();
                     let pad_key = usize::from(ev.id);
                     match ev.event {
+                        EventType::ButtonPressed(b, _) if place_name(b).is_some() && CAPTURE.load(std::sync::atomic::Ordering::SeqCst) => {
+                            CAPTURE.store(false, std::sync::atomic::Ordering::SeqCst);
+                            let ev = serde_json::json!({ "type": "capture", "button": place_name(b), "pad": pad, "vendor": ids.0 });
+                            emit_json(ev.to_string());
+                        }
                         EventType::ButtonPressed(b, _) => {
                             let now = Instant::now();
                             let place = gilrs.gamepads().position(|(id, _)| id == ev.id);

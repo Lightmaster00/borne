@@ -8,6 +8,7 @@ import QtQuick
 import "CoreText.js" as CoreText
 import "Display.js" as Display
 import "EmuOptions.js" as EmuOptions
+import "Controls.js" as Controls
 import "ConsoleNeeds.js" as Needs
 
 Item {
@@ -31,6 +32,7 @@ Item {
     property var consoleDisplay: null    // GET /api/v1/display?console=…
     property var consoleOpts: null       // GET /api/v1/emulators/<program>/options
     property var controlsAll: null       // GET /api/v1/controls
+    property var consoleControls: null   // GET /api/v1/consoles/<slug>/controls (the console open)
     property var steam: null             // GET /api/v1/steam
     property int consoleRow: 0           // the list's row to come back to
 
@@ -119,9 +121,10 @@ Item {
         if (st === "downloading") return qsTr("Downloading the update… %1 of %2").arg(page.fmtSize(updState.received)).arg(page.fmtSize(updState.total))
         if (st === "ready") return qsTr("Downloaded and verified. Borne restarts to install it.")
         if (st === "checking") return qsTr("Checking…")
-        if (st === "uptodate") return qsTr("Borne is up to date.")
+        if (st === "uptodate") return qsTr("Borne is up to date: version %1 is the latest of this channel.").arg(upd.current.version)
+                                      + (updState.checked_at ? " " + qsTr("Checked at %1.").arg(new Date(updState.checked_at * 1000).toLocaleTimeString(Qt.locale(), "HH:mm")) : "")
         if (st === "error") return qsTr("Update failed: %1").arg(CoreText.tr(updState.error || ""))
-        return manual
+        return manual || qsTr("Not checked yet: Borne looks by itself shortly after it starts, or press Check now.")
     }
     readonly property var ss: settings && settings.screenscraper ? settings.screenscraper : null
     readonly property var emus: settings && settings.emulators ? settings.emulators : null
@@ -177,6 +180,11 @@ Item {
         const ch = chosenOf(c), p = ch ? programOf(ch.program) : null
         const parts = []
         if (ch) parts.push(ch.name + (p && p.managed && p.version && p.version !== "flatpak" ? " " + p.version : ""))
+        // Controls: this console's own over those for every game.
+        if (consoleControls && consoleControls.console === c.slug) {
+            rows.push(group(qsTr("Controls")))
+            Controls.rows(consoleControls, prefs && prefs.controlsAdvanced, qsTr("every game")).forEach(r => rows.push(r))
+        }
         const sf = sysOf(c.slug)
         if (sf && sf.items.length) {
             const req = sf.items.filter(i => i.required)
@@ -271,6 +279,11 @@ Item {
                 rows.push({ id: "cdisp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k), selected: own !== undefined ? own : "default", items: items })
             })
         }
+        // Controls: this console's own over those for every game.
+        if (consoleControls && consoleControls.console === c.slug) {
+            rows.push(group(qsTr("Controls")))
+            Controls.rows(consoleControls, prefs && prefs.controlsAdvanced, qsTr("every game")).forEach(r => rows.push(r))
+        }
         const sf = sysOf(c.slug)
         if (sf && sf.items.length) {
             rows.push(group(qsTr("System files")))
@@ -296,27 +309,15 @@ Item {
     }
     function controlsRows() {
         if (!controlsAll) return [note("loading", qsTr("Loading…"))]
-        const opt = k => controlsAll.options.find(o => o.key === k)
-        const names = { a: "A", b: "B", x: "X", y: "Y", l: "L", r: "R", l2: "L2", r2: "R2", start: "Start", select: "Select" }
-        const chips = function (k, title, desc, labels) {
-            const o = opt(k)
-            return { id: "ctl:" + k, kind: "chips", title: title, desc: desc, selected: o.value, items: o.values.map(v => ({ id: v, label: labels(v) })) }
-        }
         const pads = controlsAll.pads || []
         const rows = [group(qsTr("Connected")),
                       note("pads", pads.length ? pads.map((n, i) => qsTr("Player %1: %2").arg(i + 1).arg(n)).join("\n")
-                                               : qsTr("No controller connected: the keyboard plays."))]
-        rows.push(group(qsTr("For every game")))
-        rows.push(chips("face", qsTr("Face buttons"), qsTr("A and B, X and Y, as on the controller or swapped (Nintendo layout)"),
-                        v => v === "swap" ? qsTr("Swapped") : qsTr("As on the controller")))
-        rows.push(chips("stick", qsTr("Left stick"), qsTr("Also moves as the D-pad, for games without analog control (RetroArch)"),
-                        v => v === "dpad" ? qsTr("Also the D-pad") : qsTr("Stick only")))
-        rows.push(group(qsTr("Buttons")))
-        for (const b of ["a", "b", "x", "y", "l", "r", "l2", "r2", "start", "select"])
-            rows.push(chips("map." + b, qsTr("Button %1").arg(names[b]), qsTr("What it presses in the game"), v => v === "same" ? qsTr("Itself") : names[v]))
-        if (controlsAll.options.some(o => o.own))
-            rows.push({ id: "ctl-reset", kind: "buttons", title: qsTr("Back to the controller as it is"), desc: "", items: [{ id: "ctl-reset", label: qsTr("Reset") }] })
-        rows.push(note("ctl-note", qsTr("Applied the next time a game starts, by the emulators Borne sets up. A game can have its own, from its page.")))
+                                               : qsTr("No controller connected: the keyboard plays.")),
+                      pref("controlsAdvanced", qsTr("Display"), qsTr("Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller"),
+                           [[false, qsTr("Simple")], [true, qsTr("Advanced")]]),
+                      group(qsTr("For every game"))]
+        Controls.rows(controlsAll, prefs && prefs.controlsAdvanced, qsTr("every game")).forEach(r => rows.push(r))
+        rows.push(note("ctl-note", qsTr("Each console can have its own (Settings → Consoles → the console), and each game its own (its settings). Applied the next time a game starts.")))
         return rows
     }
 
@@ -530,7 +531,7 @@ Item {
     }
     function openConsole(slug) {
         consoleRow = row
-        consoleDisplay = null; consoleOpts = null
+        consoleDisplay = null; consoleOpts = null; consoleControls = null
         consoleSlug = slug
         const ch = chosenOf(consoleOf(slug))
         page.action("console-open", { slug: slug, program: ch ? ch.program : "" })
@@ -540,7 +541,7 @@ Item {
     function closeConsole() {
         if (!consoleSlug) return
         const slug = consoleSlug
-        consoleSlug = ""; consoleDisplay = null; consoleOpts = null
+        consoleSlug = ""; consoleDisplay = null; consoleOpts = null; consoleControls = null
         const i = rows.findIndex(r => r.id === "console:" + slug)
         row = i >= 0 ? i : firstRow()
     }
@@ -561,12 +562,16 @@ Item {
         else if (r.id.startsWith("emu-choice:")) page.action("console-emu", { slug: r.id.substring(11), engine: item.id })
         else if (r.id.startsWith("opt:")) { const k = r.id.split(":"); page.action("emu-option", { program: k[1], key: k[2], value: item.id }) }
         else if (r.id.startsWith("opt-reset:")) page.action("emu-options-reset", { program: r.id.substring(10) })
-        else if (r.id.startsWith("ctl:")) page.action("controls-all", { key: r.id.substring(4), value: item.id })
-        else if (r.id === "ctl-reset") page.action("controls-all-reset", null)
+        else if (r.id.startsWith("ctl:")) page.action("controls", { scope: ctlScope(), key: r.id.substring(4), value: item.id })
+        else if (r.id.startsWith("ctl-btn:")) page.action("controls-capture", { scope: ctlScope(), button: r.id.substring(8), name: r.title })
+        else if (r.id === "ctl-reset-buttons") page.action("controls", { scope: ctlScope(), key: "map.*", value: "default" })
+        else if (r.id === "ctl-reset") page.action("controls", { scope: ctlScope(), key: "*", value: "default" })
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
         else page.action(item.id, null)
     }
+    // Whose controls the rows change: the console open, else every game.
+    function ctlScope() { return consoleSlug ? "console:" + consoleSlug : "all" }
     function handle(a) {
         if (a === "b" || a === "start") {
             if (inRows && a === "b" && consoleSlug) { closeConsole(); return }
@@ -710,6 +715,8 @@ Item {
                 required property int index
                 readonly property bool current: page.row === index
                 onCurrentChanged: if (current) rowsView.ensure(rowItem)
+                // Rows made again (a value changed): the selected one kept in view.
+                Component.onCompleted: if (current) Qt.callLater(function () { if (rowItem && rowItem.current && rowItem.parent && rowsView) rowsView.ensure(rowItem) })
                 width: parent.width
                 height: modelData.kind === "cards" ? cards.height : modelData.kind === "header" ? 58
                         : modelData.kind === "note" ? noteText.height + 8 : Math.max(modelData.kind === "link" ? 84 : 96, line.height + 44)

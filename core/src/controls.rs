@@ -129,16 +129,43 @@ fn keys() -> Vec<String> {
 /// The group under which the controls for every game are kept.
 pub const ALL_GAMES: &str = "@all";
 
+/// The group under which a console's controls are kept (between every game's and a game's own).
+pub fn console_group(slug: &str) -> String {
+    format!("@console:{slug}")
+}
+
+/// The console a game's group belongs to.
+fn console_of(app: &Shared, group: &str) -> Option<String> {
+    app.db.group(group).into_iter().next().map(|g| g.platform_slug)
+}
+
 fn own(app: &Shared, group: &str, k: &str) -> Option<String> {
     let vals = values(k);
     app.db.setting(&key(group, k)).filter(|v| vals.contains(v))
 }
 
-/// What a game gets without a value of its own: the one for all games (the pad is always
-/// chosen per game), else the default.
+/// The level above this one: a game's console, then every game.
+fn parent(app: &Shared, group: &str) -> Option<String> {
+    if group == ALL_GAMES {
+        None
+    } else if group.starts_with("@console:") {
+        Some(ALL_GAMES.to_string())
+    } else {
+        Some(console_of(app, group).map(|c| console_group(&c)).unwrap_or_else(|| ALL_GAMES.to_string()))
+    }
+}
+
+/// What a level gets without a value of its own: its console's, else every game's (the pad is
+/// always chosen per game), else the default.
 fn inherited(app: &Shared, group: &str, k: &str) -> String {
-    let global = if group == ALL_GAMES || k == "pad" { None } else { own(app, ALL_GAMES, k) };
-    global.unwrap_or_else(|| values(k)[0].clone())
+    let mut up = if k == "pad" { None } else { parent(app, group) };
+    while let Some(g) = up {
+        if let Some(v) = own(app, &g, k) {
+            return v;
+        }
+        up = parent(app, &g);
+    }
+    values(k)[0].clone()
 }
 
 fn get(app: &Shared, group: &str, k: &str) -> (String, bool) {
@@ -151,21 +178,72 @@ fn get(app: &Shared, group: &str, k: &str) -> (String, bool) {
 /// The game's controls: each setting with its values and whether the game has its own, the
 /// connected controllers, and whether the game's emulator takes them (RetroArch).
 pub fn view(app: &Shared, group: &str, program: &str) -> Value {
-    let pads = app.pads.lock().unwrap_or_else(|e| e.into_inner()).pads.clone();
+    let (pads, ids) = {
+        let p = app.pads.lock().unwrap_or_else(|e| e.into_inner());
+        (p.pads.clone(), p.ids.clone())
+    };
+    // The kind of pad in the player's hands, to name its buttons as printed on it.
+    let vendor = players(app, if group.starts_with('@') { "" } else { group })
+        .first()
+        .and_then(|p| pads.iter().position(|n| *n == p.name))
+        .and_then(|i| ids.get(i))
+        .map(|x| x.0)
+        .unwrap_or(0);
+    let family = match vendor {
+        0x057e => "nintendo",
+        0x054c => "playstation",
+        _ => "xbox",
+    };
+    // Which pad button gives each of the console's buttons now.
+    let buttons: Vec<Value> = sources(app, group).iter().map(|(l, p)| json!({ "button": l, "pad": p })).collect();
+    let level = if group == ALL_GAMES {
+        "all"
+    } else if group.starts_with("@console:") {
+        "console"
+    } else {
+        "game"
+    };
+    let console =
+        if level == "console" { group.trim_start_matches("@console:").to_string() } else { console_of(app, group).unwrap_or_default() };
     let options: Vec<Value> = keys()
         .iter()
-        .filter(|k| group != ALL_GAMES || k.as_str() != "pad")
+        .filter(|k| level == "game" || k.as_str() != "pad")
         .map(|k| {
             let (value, own) = get(app, group, k);
             json!({ "key": k, "value": value, "own": own, "inherited": inherited(app, group, k), "values": values(k) })
         })
         .collect();
-    json!({ "applies": APPLIES.contains(&program), "stick": program == "retroarch", "program": program, "pads": pads, "options": options })
+    json!({
+        "applies": level != "game" || APPLIES.contains(&program),
+        "stick": level != "game" || program == "retroarch",
+        "program": program,
+        "pads": pads,
+        "options": options,
+        "level": level,
+        "console": console,
+        "family": family,
+        "buttons": buttons,
+    })
 }
 
 pub fn set(app: &Shared, group: &str, k: &str, value: &str) -> Result<(), String> {
+    // Everything of this level back to the level above.
+    if k == "*" {
+        for k in keys() {
+            app.db.set_setting(&key(group, &k), "");
+        }
+        app.db.set_setting(&key(group, "pad.id"), "");
+        return Ok(());
+    }
+    // The buttons only (the layout and the stick kept).
+    if k == "map.*" {
+        for (b, _) in BUTTONS {
+            app.db.set_setting(&key(group, &format!("map.{b}")), "");
+        }
+        return Ok(());
+    }
     let vals = values(k);
-    if vals.is_empty() || (group == ALL_GAMES && k == "pad") {
+    if vals.is_empty() || (group.starts_with('@') && k == "pad") {
         return Err("unknown setting".into());
     }
     // A game set back to what it would get anyway keeps nothing of its own.
@@ -188,6 +266,32 @@ pub fn set(app: &Shared, group: &str, k: &str, value: &str) -> Result<(), String
         app.db.set_setting(&key(group, "pad.id"), &id);
     }
     Ok(())
+}
+
+/// "Press the button for…": the pad button `pad` now gives the console's button `button` (both in
+/// the controls' names), at this level. The level's buttons are first written out as they are
+/// now (so nothing else moves), then the two pad buttons concerned trade what they give.
+pub fn assign(app: &Shared, group: &str, button: &str, pad: &str) -> Result<(), String> {
+    let name = |id: u8| BUTTONS.iter().find(|b| b.1 == id).map(|b| b.0);
+    if name_ok(button).is_none() || name_ok(pad).is_none() {
+        return Err("unknown button".into());
+    }
+    let now: Vec<(&'static str, &'static str)> = mapping(app, group).into_iter().filter_map(|(p, id)| Some((p, name(id)?))).collect();
+    let mut gives: std::collections::HashMap<&str, &str> = now.iter().copied().collect();
+    let before = gives.get(pad).copied().unwrap_or(pad);
+    // The pad button that gave `button` until now takes what `pad` gave.
+    if let Some((other, _)) = now.iter().find(|(p, b)| *b == button && *p != pad) {
+        gives.insert(other, before);
+    }
+    gives.insert(pad, button);
+    for (p, b) in gives {
+        app.db.set_setting(&key(group, &format!("map.{p}")), b);
+    }
+    Ok(())
+}
+
+fn name_ok(b: &str) -> Option<&'static str> {
+    BUTTONS.iter().find(|x| x.0 == b).map(|x| x.0)
 }
 
 /// Which RetroPad button each pad button presses for this game (by RetroPad id).
@@ -261,7 +365,8 @@ const DIGITAL_CORES: &[&str] = &[
 /// Whether the left stick also moves as the D-pad: as chosen for the game, else for every game,
 /// else on consoles without analog stick.
 fn stick_moves_dpad(app: &Shared, group: &str, core: &str) -> bool {
-    match own(app, group, "stick").or_else(|| own(app, ALL_GAMES, "stick")) {
+    let console = console_of(app, group).map(|c| console_group(&c)).unwrap_or_default();
+    match own(app, group, "stick").or_else(|| own(app, &console, "stick")).or_else(|| own(app, ALL_GAMES, "stick")) {
         Some(v) => v == "dpad",
         None => DIGITAL_CORES.contains(&core),
     }

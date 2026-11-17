@@ -126,6 +126,153 @@
     </message>
 </context>
 <context>
+    <name>Controls</name>
+    <message>
+        <source>C (Nunchuk)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Z (Nunchuk)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shake</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Bottom button</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Right button</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Left button</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Top button</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Left shoulder</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Right shoulder</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Left trigger</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Right trigger</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>as for %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Player 1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The controller that plays</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also moves as the D-pad, for games made for a D-pad</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Also the D-pad</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Stick only</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On your controller: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On no button</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Press to change</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons back as they were</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As for %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Reset</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game's controls</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This console's controls</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the controller as it is</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the controls of %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Swapped: A and B, X and Y trade places, for a Nintendo layout (A on the right) on another controller, or the other way round</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A↔B, X↔Y swapped</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As on the controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Every button doing its own</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>CoreText</name>
     <message>
         <source>a game is already running</source>
@@ -1663,70 +1810,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Player 1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The controller that plays</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Controller %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Face buttons</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>A and B, X and Y, as on the controller or swapped</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Swapped</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>As on the controller</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Left stick</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Also moves as the D-pad, for games without analog control</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Also the D-pad</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Stick only</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Buttons</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Button %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>What it presses in the game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Itself</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>This game's controls</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
         <translation type="unfinished" />
     </message>
@@ -1739,7 +1822,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Back to the controls for every game (Settings → Controllers)</source>
+        <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2744,6 +2827,18 @@
         <source>Asked once for this console.</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>No button pressed: nothing changed.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Press the button that should do “%1”</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On your controller. The button it replaces takes the old place. Nothing pressed in ten seconds: nothing changes.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3039,10 +3134,6 @@
     </message>
     <message>
         <source>Checking…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne is up to date.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3998,62 +4089,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Face buttons</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>A and B, X and Y, as on the controller or swapped (Nintendo layout)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Swapped</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>As on the controller</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Left stick</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Also moves as the D-pad, for games without analog control (RetroArch)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Also the D-pad</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Stick only</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Buttons</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Button %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>What it presses in the game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Itself</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Back to the controller as it is</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Applied the next time a game starts, by the emulators Borne sets up. A game can have its own, from its page.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Overview</source>
         <translation type="unfinished" />
     </message>
@@ -4215,6 +4250,42 @@
     </message>
     <message>
         <source>Add or leave out consoles of your RomM library; what their games need of this computer is said for each</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne is up to date: version %1 is the latest of this channel.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Checked at %1.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not checked yet: Borne looks by itself shortly after it starts, or press Check now.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>every game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Display</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Simple</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Advanced</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its settings). Applied the next time a game starts.</source>
         <translation type="unfinished" />
     </message>
 </context>
