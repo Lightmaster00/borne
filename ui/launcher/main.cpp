@@ -2,9 +2,12 @@
 // Deliberately minimal: no business logic here or in QML. The UI talks
 // to the Rust core only through the local API (BORNE_API, BORNE_WS), provided by
 // the core, which launches and supervises this process.
+#include <QCryptographicHash>
 #include <QCursor>
 #include <QDir>
+#include <QDirIterator>
 #include <QEvent>
+#include <QFile>
 #include <QFont>
 #include <QFontDatabase>
 #include <QGuiApplication>
@@ -12,6 +15,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QTranslator>
 #include <QUrl>
 #include <QVariantMap>
@@ -141,6 +145,34 @@ private:
     QString m_dir;
 };
 
+// Qt keeps the interface's compiled QML (~/.cache/Borne/qmlcache) and trusts it while a source
+// file keeps its date. Updates used to give every file the same date in every version: the old
+// interface kept running over a new core. The cache is dropped whenever the interface's files
+// change (a hash of their names and contents).
+static void dropStaleQmlCache(const QString &ui)
+{
+    QCryptographicHash h(QCryptographicHash::Sha1);
+    QDirIterator it(ui, {QStringLiteral("*.qml"), QStringLiteral("*.js"), QStringLiteral("*.mjs"), QStringLiteral("qmldir")},
+                    QDir::Files, QDirIterator::Subdirectories);
+    QStringList files;
+    while (it.hasNext())
+        files << it.next();
+    files.sort();
+    for (const QString &f : files) {
+        QFile file(f);
+        if (!file.open(QIODevice::ReadOnly))
+            continue;
+        h.addData(f.toUtf8());
+        h.addData(file.readAll());
+    }
+    const QString stamp = QString::fromLatin1(h.result().toHex());
+    QSettings settings;
+    if (settings.value(QStringLiteral("ui/qmlStamp")).toString() == stamp)
+        return;
+    QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/qmlcache")).removeRecursively();
+    settings.setValue(QStringLiteral("ui/qmlStamp"), stamp);
+}
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
@@ -180,6 +212,8 @@ int main(int argc, char *argv[])
 
     NoPointer noPointer;
     app.installEventFilter(&noPointer);
+
+    dropStaleQmlCache(ui);
 
     QQmlApplicationEngine engine;
     QuitKey quitKey;

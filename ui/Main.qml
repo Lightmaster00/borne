@@ -192,7 +192,8 @@ Window {
     function checkImport() {
         const s = status && status.sync ? status.sync : null
         if (!s) return
-        if (!importing && s.running && libModel.count === 0 && screen === "library") {
+        // Only a library truly empty (its list loaded, no game), not one still being read at start.
+        if (!importing && s.running && status.games === 0 && libModel.count === 0 && screen === "library") {
             importing = true; importCovers = 0; importCap.restart()
         }
         if (importing) {

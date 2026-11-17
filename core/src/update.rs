@@ -459,7 +459,9 @@ fn extract(archive: &Path, dir: &Path) -> Result<(), String> {
     let status = if zip {
         std::process::Command::new("ditto").arg("-x").arg("-k").arg(archive).arg(dir).status()
     } else {
-        std::process::Command::new("tar").arg("--no-same-owner").arg("-xzf").arg(archive).arg("-C").arg(dir).status()
+        // -m: the files dated now, not the fixed date of the archives (every version has the same):
+        // Qt's compiled-QML cache, checked by date, would otherwise keep running the old interface.
+        std::process::Command::new("tar").arg("--no-same-owner").arg("-m").arg("-xzf").arg(archive).arg("-C").arg(dir).status()
     };
     match status {
         Ok(s) if s.success() => Ok(()),

@@ -220,8 +220,55 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
         let _ =
             writeln!(r, "{} game {} '{}': {} {}/{} {}", d.id, d.rom_id, d.name, d.state, d.received, d.total, d.error.unwrap_or_default());
     }
+    {
+        let p = app.pads.lock().unwrap_or_else(|e| e.into_inner());
+        let _ = writeln!(r, "\n--- pads ---");
+        for i in 0..p.pads.len() {
+            let ids = p.ids.get(i).copied().unwrap_or((0, 0));
+            let _ = writeln!(
+                r,
+                "{i}: {} | system: {} | {:04x}:{:04x} | guid {}",
+                p.pads[i],
+                p.os_names.get(i).map(String::as_str).unwrap_or(""),
+                ids.0,
+                ids.1,
+                p.guids.get(i).map(String::as_str).unwrap_or("")
+            );
+        }
+        let _ = writeln!(r, "steam hides: {:?}", crate::pad::steam_hidden());
+    }
+    let _ = writeln!(r, "hardware: {}", crate::hardware::to_json(&crate::consoles::hardware(app)));
     let _ = writeln!(r, "\n--- log ---");
     r.push_str(&crate::logfile::tail(512 * 1024));
+    // The last game's emulator output, and the emulators' own logs of the last two days.
+    let tail = |path: &std::path::Path, max: usize| {
+        let b = std::fs::read(path).unwrap_or_default();
+        String::from_utf8_lossy(&b[b.len().saturating_sub(max)..]).to_string()
+    };
+    let _ = writeln!(r, "\n--- emulator output (last game) ---");
+    r.push_str(&tail(&app.paths.reports().join("emulator.log"), 64 * 1024));
+    let mut logs = vec![];
+    let mut stack = vec![(app.paths.profiles(), 0)];
+    while let Some((dir, depth)) = stack.pop() {
+        for e in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+            let p = e.path();
+            let Ok(m) = e.metadata() else { continue };
+            if m.is_dir() && depth < 7 {
+                stack.push((p, depth + 1));
+            } else if m.is_file() {
+                let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+                let recent = m.modified().ok().and_then(|t| t.elapsed().ok()).map(|a| a.as_secs() < 2 * 86400).unwrap_or(false);
+                if recent && (n.ends_with(".log") || n.ends_with("log.txt")) {
+                    logs.push((m.modified().ok(), p));
+                }
+            }
+        }
+    }
+    logs.sort_by_key(|l| std::cmp::Reverse(l.0));
+    for (_, p) in logs.into_iter().take(6) {
+        let _ = writeln!(r, "\n--- {} ---", p.strip_prefix(&app.paths.root).unwrap_or(&p).display());
+        r.push_str(&tail(&p, 48 * 1024));
+    }
 
     let name = format!("borne-report-{}.txt", crate::db::now());
     let main = app.paths.reports().join(&name);

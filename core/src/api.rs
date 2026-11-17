@@ -619,7 +619,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 return err(req, 400, "no paired profile");
             }
             if !too_soon("sync", 3) {
-                catalog::start_sync(app);
+                catalog::sync_everything(app);
             }
             ok(req, json!(*app.sync.lock().unwrap_or_else(|e| e.into_inner())))
         }
@@ -1160,7 +1160,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             for p in app.db.clear_media() {
                 let _ = std::fs::remove_file(p);
             }
-            catalog::start_sync(app);
+            catalog::sync_everything(app);
             ok(req, json!({ "refreshing": true }))
         }
         // With a revision segment (ignored) so the interface can ask again after a correction.

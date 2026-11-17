@@ -578,6 +578,11 @@ impl Db {
         st.query_map(rusqlite::params_from_iter(args.iter()), game_from_row).unwrap().filter_map(Result::ok).collect()
     }
 
+    /// The games of the catalog (every console).
+    pub fn game_count(&self) -> i64 {
+        self.c().query_row("SELECT COUNT(*) FROM games", [], |r| r.get(0)).unwrap_or(0)
+    }
+
     pub fn game(&self, rom_id: i64) -> Option<GameRow> {
         let c = self.c();
         c.query_row(&format!("{GAME_SELECT} WHERE g.rom_id = ?1"), [rom_id], game_from_row).optional().ok().flatten()

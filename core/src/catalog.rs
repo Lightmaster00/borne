@@ -146,6 +146,12 @@ pub fn art_of(v: &Value) -> Value {
 }
 
 /// Starts a background sync (no effect if one is already running).
+/// The next sync reads every game again (asked for by the player: "Sync now", images refreshed).
+pub fn sync_everything(app: &Shared) {
+    app.db.set_setting(&format!("sync.fingerprint.{}", app.server_url().unwrap_or_default()), "");
+    start_sync(app);
+}
+
 pub fn start_sync(app: &Shared) {
     // LaunchBox's index from an earlier version (that source was removed).
     let _ = std::fs::remove_file(app.paths.art().join("launchbox-metadata.zip"));
@@ -220,6 +226,30 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         platforms.iter().filter_map(|p| Some((safe_slug(p["slug"].as_str()?), json!(p["ss_id"].as_i64()?)))).collect();
     app.db.set_setting("ss_systems", &Value::Object(ss_systems).to_string());
 
+    // Nothing changed on RomM since the last full listing (same consoles, same number of games,
+    // same last change): the catalog Borne has is kept as it is, without reading every game again.
+    let fingerprint = client.roms_fingerprint().ok().map(|f| {
+        let consoles: Vec<String> = list.iter().map(|(id, slug, _, name, count)| format!("{id}:{slug}:{name}:{count}")).collect();
+        format!("{f}|{}", consoles.join(","))
+    });
+    let key = format!("sync.fingerprint.{}", app.server_url().unwrap_or_default());
+    if fingerprint.is_some() && fingerprint == app.db.setting(&key) && app.db.game_count() > 0 {
+        app.db.log("sync", "nothing changed on RomM: the library is kept");
+        {
+            let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
+            s.total = app.db.game_count() as usize;
+            s.done = s.total;
+        }
+        // The rest of a sync still runs: covers and media missing, system files, emulators.
+        let a = app.clone();
+        std::thread::spawn(move || {
+            crate::systemfiles::fill_from_romm(&a);
+            crate::emuinstall::install_for_library(&a);
+        });
+        crate::media::prefetch(app, &client);
+        crate::screenscraper::start(app, false);
+        return Ok(());
+    }
     let sync_id = crate::db::now();
     let mut offset = 0;
     let mut covers = vec![];
@@ -246,6 +276,9 @@ fn sync(app: &Shared) -> Result<(), RommError> {
         }
     }
     let removed = app.db.prune_games(sync_id);
+    if let Some(f) = &fingerprint {
+        app.db.set_setting(&key, f);
+    }
     merge_groups(app);
     app.db.log("sync", &format!("{offset} games synced, {removed} removed"));
     app.emit(serde_json::json!({ "type": "library" }));

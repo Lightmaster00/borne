@@ -642,6 +642,16 @@ fn command(
     crate::gamesettings::emu_apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &options)?;
     crate::gamesettings::language_apply(&p.id, &data_dir(app, &profile, &p.id), &userdir, &language)?;
     app.db.log("play", &format!("game {rom_id} played in {language}"));
+    if system == "switch" {
+        // The game's update and DLC, wherever they are: beside it, in its folders, or stored by
+        // RomM as games of their own in its group. The base game is what starts; the emulator
+        // reads the others from these folders without installing them.
+        let dirs = switch_content_dirs(app, rom_id, rom);
+        if !dirs.is_empty() {
+            app.db.log("play", &format!("update and DLC read from {} folder(s)", dirs.len()));
+        }
+        crate::gamesettings::switch_content(&p.id, &data_dir(app, &profile, &p.id), &userdir, &dirs)?;
+    }
     if p.id == "melonds" {
         if let Err(e) = crate::cheats::melonds_settings(app, rom_id, &data_dir(app, &profile, &p.id), rom) {
             app.db.log("cheats", &format!("melonDS: {e}"));
@@ -1258,6 +1268,70 @@ fn cemu_disc_keys(data: &Path, rom: &Path) {
     }
 }
 
+/// The folders holding a Switch game's update and DLC packages: its own folder and those below it
+/// (RomM's update/ and dlc/), and the folders of the updates and DLC RomM keeps as games of their
+/// own in the game's group (linked through the virtual mount, or downloaded).
+fn switch_content_dirs(app: &Shared, rom_id: i64, rom: &Path) -> Vec<PathBuf> {
+    let is_pkg = |p: &Path| p.extension().map(|e| ["nsp", "nsz", "xci", "xcz"].iter().any(|x| e.eq_ignore_ascii_case(x))).unwrap_or(false);
+    let holds_extra = |dir: &Path| {
+        std::fs::read_dir(dir).into_iter().flatten().flatten().map(|e| e.path()).any(|p| {
+            p != rom
+                && is_pkg(&p)
+                && crate::downloads::switch_kind(&p).map(|k| k != "base").unwrap_or_else(|| crate::downloads::is_extra(&p))
+        })
+    };
+    let mut dirs: Vec<PathBuf> = vec![];
+    let add = |d: PathBuf, dirs: &mut Vec<PathBuf>| {
+        if !dirs.contains(&d) {
+            dirs.push(d);
+        }
+    };
+    if let Some(top) = rom.parent() {
+        let mut stack = vec![(top.to_path_buf(), 0)];
+        while let Some((d, depth)) = stack.pop() {
+            if holds_extra(&d) {
+                add(d.clone(), &mut dirs);
+            }
+            if depth < 2 {
+                for e in std::fs::read_dir(&d).into_iter().flatten().flatten() {
+                    if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                        stack.push((e.path(), depth + 1));
+                    }
+                }
+            }
+        }
+    }
+    let group = app.db.game(rom_id).map(|g| g.group_key).unwrap_or_default();
+    for g in app.db.group(&group) {
+        if g.rom_id == rom_id || !crate::library::is_extra(&g) {
+            continue;
+        }
+        let file = match (&g.local_main, g.local_state.as_str()) {
+            (Some(m), "local") => Some(PathBuf::from(m)),
+            _ => crate::stream::link(app, g.rom_id).ok(),
+        };
+        if let Some(d) = file.as_deref().and_then(Path::parent) {
+            add(d.to_path_buf(), &mut dirs);
+        }
+    }
+    dirs
+}
+
+/// A Switch update or DLC chosen as the game's version: the group's base game is played instead.
+fn switch_base_version(app: &Shared, rom_id: i64) -> i64 {
+    let Some(g) = app.db.game(rom_id) else { return rom_id };
+    if g.platform_slug != "switch" || !crate::library::is_extra(&g) {
+        return rom_id;
+    }
+    app.db
+        .group(&g.group_key)
+        .into_iter()
+        .filter(|x| !crate::library::is_extra(x))
+        .max_by_key(|x| (x.local_state == "local" || x.linked, -x.rom_id))
+        .map(|x| x.rom_id)
+        .unwrap_or(rom_id)
+}
+
 /// Held while a finished game's save is sent to RomM.
 static SAVING: Mutex<()> = Mutex::new(());
 
@@ -1282,6 +1356,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     }
     let _started = Started;
     forget_waiting();
+    let rom_id = switch_base_version(app, rom_id);
     let g = app.db.game(rom_id).ok_or("unknown game")?;
     let system = g.platform_slug.clone();
     let e = chosen_for_game(app, &system, &g.group_key).ok_or_else(|| {

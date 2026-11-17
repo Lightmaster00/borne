@@ -703,6 +703,25 @@ blocks a launch just because a game was not tested or a community database rates
   the game is replaced by the base game beside it, or refused with what is missing. "Missing a
   program-type NCA" on a base game means keys and firmware older than the game.
 - Wii U disc images (.wud, .wux): the disc key beside them (.key) is added to Cemu's keys.txt.
+- A Switch game plays with its update and DLC: the base game starts (a version chosen that is an
+  update or a DLC gives way to the group's base game), and the folders holding its updates and DLC
+  (its own folder and those below it, RomM's update/ and dlc/, and the updates and DLC RomM keeps
+  as games of their own in its group, linked through the virtual mount or downloaded) are given to
+  the emulator, which reads them without installing them: Eden's external content folders
+  (`[UI] Paths\external_content_dirs\N\path`), Ryubing's `autoload_dirs`.
+- Dolphin writes the pads it finds in its log (`Config/Logger.ini`: ControllerInterface, to a
+  file); the next game binds a lone player's pad under those names too ("Added device: SDL/0/…").
+- The diagnostic report holds the pads (names, system names, ids, GUIDs), the machine's hardware,
+  the last game's emulator output and the emulators' own logs of the last two days.
+- An update's files are dated at their extraction (`tar -m`): the archives give every file one
+  fixed date, and Qt's compiled-QML cache, checked by date, kept running the previous interface
+  over a new core. The launcher also drops that cache (`qmlcache`) whenever the interface's files
+  change (a hash of their names and contents, `ui/qmlStamp`).
+- Sync: before reading every game, the core asks RomM for its number of games and its last
+  changed one, and compares them (with the consoles and their counts) with the last full sync's:
+  unchanged, the catalog is kept as it is (`sync.fingerprint.<server>`); "Sync now" and a refresh
+  of the images read everything again. The first-import screen shows only for a catalog without
+  any game (`status.games`).
 - Closed by the system (Steam's "Exit game": SIGTERM, SIGINT, SIGHUP), the core closes the
   interface (two seconds, then stopped), the running game and the virtual mount (two seconds at
   most), and quits; an interface ended by such a signal is never started again as after a crash.

@@ -13,7 +13,7 @@
 
 use crate::state::Shared;
 use serde_json::{json, Map, Value};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub const KEYS: [(&str, &[&str], &str); 5] = [
     ("aspect", &["auto", "4:3", "16:9", "stretch"], "auto"),
@@ -824,7 +824,7 @@ pub fn controllers(
         // PCSX2 and DuckStation number pads in SDL's list ("SDL-1"); Dolphin, the yuzu family,
         // Azahar and Ryujinx count among the pads of the same kind ("SDL/0/<name>", "port:0").
         let number = if matches!(program, "pcsx2" | "duckstation") { p.index } else { p.rank.max(1) - 1 };
-        player(program, data, userdir, slot, number, Some(p.name.as_str()), p.guid.as_deref(), s)?;
+        player(program, data, userdir, slot, number, Some(p.name.as_str()), p.guid.as_deref(), s, players.len() == 1)?;
     }
     Ok(())
 }
@@ -920,13 +920,45 @@ fn rpcs3_player(slot: usize, p: &PadRef, src: &dyn Fn(&str) -> Option<&'static s
     )
 }
 
+/// Where a Switch emulator reads updates and DLC without installing them: Eden's external
+/// content folders ([UI] Paths\\external_content_dirs, a Qt list), Ryubing's autoload_dirs. Set to
+/// this game's folders before each game (Borne owns these emulators' settings).
+pub fn switch_content(program: &str, data: &Path, userdir: &Path, dirs: &[PathBuf]) -> Result<(), String> {
+    let slash = |d: &PathBuf| d.to_string_lossy().replace('\\', "/");
+    match program {
+        "eden" | "citron" => {
+            let path = if cfg!(target_os = "macos") {
+                data.join("config/qt-config.ini")
+            } else {
+                userdir.join("config").join(program).join("qt-config.ini")
+            };
+            let keys: Vec<(String, String)> = dirs
+                .iter()
+                .enumerate()
+                .map(|(i, d)| (format!("Paths\\external_content_dirs\\{}\\path", i + 1), format!("\"{}\"", slash(d))))
+                .chain(std::iter::once(("Paths\\external_content_dirs\\size".to_string(), dirs.len().to_string())))
+                .collect();
+            let v: Vec<(&str, &str, &str)> = keys.iter().map(|(k, x)| ("UI", k.as_str(), x.as_str())).collect();
+            crate::emulators::ini_set(&path, &v)
+        }
+        "ryubing" => json_patch(&data.join("Config.json"), &[("autoload_dirs", json!(dirs.iter().map(slash).collect::<Vec<_>>()))]),
+        _ => Ok(()),
+    }
+}
+
 /// Dolphin binds a pad by its name, and its SDL may name it otherwise than Borne (the system's
 /// name, SDL's own for a known pad, Steam's virtual pad): every binding names each of the pad's
 /// possible names ("`SDL/0/Name:Button S` | `SDL/0/Other:Button S`"), so the pad works whichever
 /// name Dolphin sees.
-fn dolphin_any_name(pairs: Vec<(String, String)>, index: usize, pad: &str) -> Vec<(String, String)> {
-    let names = crate::pad::sdl_names(pad);
-    if names.len() < 2 {
+fn dolphin_any_name(pairs: Vec<(String, String)>, index: usize, pad: &str, seen: &[String]) -> Vec<(String, String)> {
+    // Qualified device names: Borne's guesses, then the pads Dolphin itself listed last time.
+    let mut devices: Vec<String> = crate::pad::sdl_names(pad).iter().map(|n| format!("SDL/{index}/{n}")).collect();
+    for d in seen {
+        if !devices.contains(d) {
+            devices.push(d.clone());
+        }
+    }
+    if devices.len() < 2 {
         return pairs;
     }
     pairs
@@ -935,13 +967,42 @@ fn dolphin_any_name(pairs: Vec<(String, String)>, index: usize, pad: &str) -> Ve
             let control = v.strip_prefix('`').and_then(|x| x.strip_suffix('`'));
             match control {
                 Some(c) if k != "Device" && !c.is_empty() && !c.contains('`') => {
-                    let any: Vec<String> = names.iter().map(|n| format!("`SDL/{index}/{n}:{c}`")).collect();
+                    let any: Vec<String> = devices.iter().map(|d| format!("`{d}:{c}`")).collect();
                     (k, any.join(" | "))
                 }
                 _ => (k, v),
             }
         })
         .collect()
+}
+
+/// The pads Dolphin found when it last ran ("Added device: SDL/0/Name" in its log, which Borne
+/// turns on), as Dolphin names them.
+fn dolphin_seen_pads(userdir: &Path) -> Vec<String> {
+    let log = std::fs::read_to_string(userdir.join("Logs/dolphin.log")).unwrap_or_default();
+    let mut out: Vec<String> = vec![];
+    for l in log.lines() {
+        if let Some(d) = l.split("Added device: ").nth(1).map(str::trim) {
+            if d.starts_with("SDL/") && !out.iter().any(|x| x == d) {
+                out.push(d.to_string());
+            }
+        }
+    }
+    out
+}
+
+/// Dolphin's log of the pads it finds, read by the next game (`dolphin_seen_pads`) and kept in
+/// the diagnostic report.
+pub fn dolphin_logging(userdir: &Path) -> Result<(), String> {
+    crate::emulators::ini_set(
+        &userdir.join("Config/Logger.ini"),
+        &[
+            ("Options", "Verbosity", "4"),
+            ("Options", "WriteToFile", "True"),
+            ("Options", "WriteToConsole", "False"),
+            ("Logs", "ControllerInterface", "True"),
+        ],
+    )
 }
 
 /// One player's pad (`slot`, 0 for player 1) in a standalone emulator's settings.
@@ -955,6 +1016,7 @@ fn player(
     pad: Option<&str>,
     guid: Option<&str>,
     src: &dyn Fn(&str) -> Option<&'static str>,
+    single: bool,
 ) -> Result<(), String> {
     let ini = crate::emulators::ini_set;
     let n1 = slot + 1;
@@ -963,6 +1025,9 @@ fn player(
     let bind = |logical: &str, names: &dyn Fn(&str) -> String| src(logical).map(names).unwrap_or_default();
     match program {
         "dolphin" => {
+            if slot == 0 {
+                dolphin_logging(userdir)?;
+            }
             let Some(pad) = pad else { return Ok(()) };
             let path = userdir.join("Config/GCPadNew.ini");
             let n = |b: &str| {
@@ -1008,7 +1073,10 @@ fn player(
                 ("D-Pad/Left".into(), q("Pad W")),
                 ("D-Pad/Right".into(), q("Pad E")),
             ];
-            let pairs = dolphin_any_name(pairs, index, pad);
+            // The pads Dolphin listed in its log last time (only for a lone player: with several
+            // pads, each player keeps their own).
+            let seen = if slot == 0 && single { dolphin_seen_pads(userdir) } else { vec![] };
+            let pairs = dolphin_any_name(pairs, index, pad, &seen);
             let section = format!("GCPad{n1}");
             let v: Vec<(&str, &str, &str)> = pairs.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
             ini(&path, &v)?;
@@ -1046,7 +1114,7 @@ fn player(
                 ("Nunchuk/Shake/Y".into(), bind("r", &n)),
                 ("Nunchuk/Shake/Z".into(), bind("r", &n)),
             ];
-            let wii = dolphin_any_name(wii, index, pad);
+            let wii = dolphin_any_name(wii, index, pad, &seen);
             let section = format!("Wiimote{n1}");
             let mut v: Vec<(&str, &str, &str)> = wii.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
             // Player 1 turns the others off; each further player turns its own on after.
@@ -1480,6 +1548,45 @@ mod tests {
         let e = std::fs::read_to_string(d.join("config/eden/qt-config.ini")).unwrap();
         assert!(e.contains("player_1_connected = true") && e.contains("port:1"));
         let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn switch_update_and_dlc_folders_are_given_to_the_emulator() {
+        let d = std::env::temp_dir().join(format!("borne-switch-content-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        let dirs = [PathBuf::from("/games/Zelda"), PathBuf::from("/games/Zelda/update")];
+        switch_content("eden", &d, &d, &dirs).unwrap();
+        let ini = if cfg!(target_os = "macos") { d.join("config/qt-config.ini") } else { d.join("config/eden/qt-config.ini") };
+        let t = std::fs::read_to_string(ini).unwrap();
+        assert!(t.contains("[UI]"), "{t}");
+        assert!(t.contains("Paths\\external_content_dirs\\1\\path = \"/games/Zelda\""), "{t}");
+        assert!(t.contains("Paths\\external_content_dirs\\2\\path = \"/games/Zelda/update\""), "{t}");
+        assert!(t.contains("Paths\\external_content_dirs\\size = 2"), "{t}");
+        std::fs::write(d.join("Config.json"), "{\"res_scale\": 2}").unwrap();
+        switch_content("ryubing", &d, &d, &dirs[..1]).unwrap();
+        let j: Value = serde_json::from_str(&std::fs::read_to_string(d.join("Config.json")).unwrap()).unwrap();
+        assert_eq!(j["autoload_dirs"], json!(["/games/Zelda"]));
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn dolphin_learns_the_pads_it_listed() {
+        let d = std::env::temp_dir().join(format!("borne-dolphin-seen-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(d.join("Logs")).unwrap();
+        std::fs::write(
+            d.join("Logs/dolphin.log"),
+            "12:00:01:000 ControllerInterface.cpp:333 N[ControllerInterface]: Added device: XInput2/0/Virtual core pointer\n\
+             12:00:01:001 ControllerInterface.cpp:333 N[ControllerInterface]: Added device: SDL/0/Some SDL Name\n",
+        )
+        .unwrap();
+        controllers("dolphin", &d, &d, &[PadRef { index: 0, name: "Lone Pad".to_string(), guid: None, rank: 1 }], &same).unwrap();
+        let t = std::fs::read_to_string(d.join("Config/GCPadNew.ini")).unwrap();
+        assert!(t.contains("`SDL/0/Lone Pad:Button S` | `SDL/0/Some SDL Name:Button S`"), "{t}");
+        assert!(!t.contains("XInput2"), "{t}");
+        let l = std::fs::read_to_string(d.join("Config/Logger.ini")).unwrap();
+        assert!(l.contains("ControllerInterface = True") && l.contains("WriteToFile = True"), "{l}");
+        let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]

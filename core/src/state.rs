@@ -99,6 +99,8 @@ impl App {
             "profiles": self.db.profiles(),
             "pairing": *self.pairing.lock().unwrap_or_else(|e| e.into_inner()),
             "sync": *self.sync.lock().unwrap_or_else(|e| e.into_inner()),
+            // Games already in the catalog: a library being filled for the first time has none.
+            "games": self.db.game_count(),
             "free_space": crate::paths::free_space(&self.paths.root),
             "data_dir": self.paths.root,
         })

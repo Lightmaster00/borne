@@ -407,6 +407,15 @@ impl Client {
         parse_roms_page(v, offset, limit)
     }
 
+    /// What RomM's library looks like now, cheaply: how many games, and the last one changed
+    /// (one game asked for). Equal to the last sync's, nothing changed since.
+    pub fn roms_fingerprint(&self) -> Result<String> {
+        let v = self.get_json_with(&self.list, "/api/roms?limit=1&offset=0&order_by=updated_at&order_dir=desc")?;
+        let (items, total) = parse_roms_page(v, 0, 1)?;
+        let last = items.first().map(|r| format!("{}@{}", r["id"], r["updated_at"].as_str().unwrap_or(""))).unwrap_or_default();
+        Ok(format!("{total}|{last}"))
+    }
+
     pub fn rom(&self, id: i64) -> Result<RomDetail> {
         let v = self.get_json(&format!("/api/roms/{id}"))?;
         serde_json::from_value(v).map_err(|e| RommError::Parse(e.to_string()))

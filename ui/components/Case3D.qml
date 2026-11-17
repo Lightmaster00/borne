@@ -188,16 +188,23 @@ Node {
                 }
             }
         }
-        // The same spine on both sides.
-        Repeater3D {
-            model: ["left", "right"]
-            Face {
-                required property string modelData
-                side: modelData
-                materials: Flat {
-                    baseColorMap: Texture { generateMipmaps: true; mipFilter: Texture.Linear; tilingModeHorizontal: Texture.ClampToEdge; tilingModeVertical: Texture.ClampToEdge; sourceItem: Spine { width: Math.max(24, Math.round(800 * box.bd / box.bh)); height: 800 } }
-                }
-            }
+        // The same spine on both sides: one print, one texture, given to both faces (a print made
+        // in each of a Repeater3D's delegates left one side bare).
+        Texture {
+            id: spineTexture
+            generateMipmaps: true
+            mipFilter: Texture.Linear
+            tilingModeHorizontal: Texture.ClampToEdge
+            tilingModeVertical: Texture.ClampToEdge
+            sourceItem: Spine { width: Math.max(24, Math.round(800 * box.bd / box.bh)); height: 800 }
+        }
+        Face {
+            side: "left"
+            materials: Flat { baseColorMap: spineTexture }
+        }
+        Face {
+            side: "right"
+            materials: Flat { baseColorMap: spineTexture }
         }
         // Back: never seen whole (the case turns 60° at most), only the curve of its edges beside
         // the spines: plain, in the spines' colour, like the top and bottom. The back scan's own
