@@ -151,18 +151,10 @@ fn plain<'a>(f: &'a mut std::fs::File, e: &Entry, z: &Ncz) -> Result<Box<dyn Rea
     let left = e.start + e.size - z.data;
     let part = Part { f, left };
     match &z.blocks {
-        None => Ok(Box::new(
-            ruzstd::decoding::StreamingDecoder::new(part).map_err(|x| format!("{}: unreadable zstd data: {x}", e.name))?,
-        )),
-        Some((block, sizes)) => Ok(Box::new(Blocks {
-            part,
-            sizes: sizes.clone(),
-            next: 0,
-            block: *block,
-            left: z.size - HEADER,
-            buf: vec![],
-            at: 0,
-        })),
+        None => Ok(Box::new(ruzstd::decoding::StreamingDecoder::new(part).map_err(|x| format!("{}: unreadable zstd data: {x}", e.name))?)),
+        Some((block, sizes)) => {
+            Ok(Box::new(Blocks { part, sizes: sizes.clone(), next: 0, block: *block, left: z.size - HEADER, buf: vec![], at: 0 }))
+        }
     }
 }
 
@@ -192,9 +184,7 @@ impl Read for Blocks<'_> {
                 raw
             } else {
                 let mut d = vec![];
-                ruzstd::decoding::StreamingDecoder::new(&raw[..])
-                    .map_err(|e| std::io::Error::other(e.to_string()))?
-                    .read_to_end(&mut d)?;
+                ruzstd::decoding::StreamingDecoder::new(&raw[..]).map_err(|e| std::io::Error::other(e.to_string()))?.read_to_end(&mut d)?;
                 d.truncate(want as usize);
                 d
             };

@@ -1399,7 +1399,8 @@ fn switch_unpack(app: &Shared, rom: &Path, dirs: &[PathBuf]) -> Result<(), Strin
         let started = std::time::Instant::now();
         if in_library(app, &d) {
             for (from, to) in crate::nsz::unpack_in_place(&d, &flag)? {
-                app.db.log("play", &format!("{}: unpacked to {} in {:.0} s", from.display(), to.display(), started.elapsed().as_secs_f64()));
+                app.db
+                    .log("play", &format!("{}: unpacked to {} in {:.0} s", from.display(), to.display(), started.elapsed().as_secs_f64()));
                 // The game whose file it was (this one, or its update or DLC) now has the .nsp.
                 for (id, dir, main, _) in app.db.local_games() {
                     if Path::new(&main) == from {
