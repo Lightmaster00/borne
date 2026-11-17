@@ -265,8 +265,33 @@ pub fn export_report(app: &crate::state::Shared) -> Result<Vec<PathBuf>, String>
             }
         }
     }
+    // The emulators' own logs where they keep them outside Borne's folders (Cemu on macOS,
+    // under ~/Library/Application Support/Cemu): a crash's stack trace is there.
+    let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+    for prog in crate::emulators::programs() {
+        let data = crate::emulators::data_dir(app, &profile, &prog.id);
+        for l in &prog.logs {
+            let path = data.join(l);
+            let file = if path.is_dir() {
+                std::fs::read_dir(&path)
+                    .into_iter()
+                    .flatten()
+                    .flatten()
+                    .filter_map(|e| e.metadata().ok().filter(|m| m.is_file()).map(|m| (m.modified().ok(), e.path())))
+                    .max_by_key(|x| x.0)
+            } else {
+                path.metadata().ok().filter(|m| m.is_file()).map(|m| (m.modified().ok(), path.clone()))
+            };
+            if let Some((t, p)) = file {
+                let recent = t.and_then(|t| t.elapsed().ok()).map(|a| a.as_secs() < 2 * 86400).unwrap_or(false);
+                if recent && !logs.iter().any(|(_, q)| *q == p) {
+                    logs.push((t, p));
+                }
+            }
+        }
+    }
     logs.sort_by_key(|l| std::cmp::Reverse(l.0));
-    for (_, p) in logs.into_iter().take(6) {
+    for (_, p) in logs.into_iter().take(8) {
         let _ = writeln!(r, "\n--- {} ---", p.strip_prefix(&app.paths.root).unwrap_or(&p).display());
         r.push_str(&tail(&p, 48 * 1024));
     }

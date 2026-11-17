@@ -26,7 +26,7 @@ md-5 = "0.11"
 aes = "0.8"
 xts-mode = "0.5"
 ctr = "0.9"
-ruzstd = "0.8"
+zstd = "0.13"
 zip = { version = "9", default-features = false, features = ["deflate", "deflate64"] }
 sevenz-rust2 = { version = "0.25", default-features = false, features = ["util"] }
 quick-xml = "0.42"

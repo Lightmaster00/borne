@@ -151,7 +151,13 @@ fn plain<'a>(f: &'a mut std::fs::File, e: &Entry, z: &Ncz) -> Result<Box<dyn Rea
     let left = e.start + e.size - z.data;
     let part = Part { f, left };
     match &z.blocks {
-        None => Ok(Box::new(ruzstd::decoding::StreamingDecoder::new(part).map_err(|x| format!("{}: unreadable zstd data: {x}", e.name))?)),
+        // libzstd itself: nsz compresses with large windows (up to 2 GiB with --long) and may
+        // write several frames, which it reads one after the other.
+        None => {
+            let mut d = zstd::stream::read::Decoder::new(part).map_err(|x| format!("{}: unreadable zstd data: {x}", e.name))?;
+            d.window_log_max(31).map_err(|x| format!("{}: {x}", e.name))?;
+            Ok(Box::new(d))
+        }
         Some((block, sizes)) => {
             Ok(Box::new(Blocks { part, sizes: sizes.clone(), next: 0, block: *block, left: z.size - HEADER, buf: vec![], at: 0 }))
         }
@@ -184,7 +190,9 @@ impl Read for Blocks<'_> {
                 raw
             } else {
                 let mut d = vec![];
-                ruzstd::decoding::StreamingDecoder::new(&raw[..]).map_err(|e| std::io::Error::other(e.to_string()))?.read_to_end(&mut d)?;
+                let mut z = zstd::stream::read::Decoder::new(&raw[..])?;
+                z.window_log_max(31)?;
+                z.read_to_end(&mut d)?;
                 d.truncate(want as usize);
                 d
             };
@@ -213,7 +221,7 @@ fn copy(
             return Err(CANCELLED.into());
         }
         let n = (buf.len() as u64).min(len) as usize;
-        src.read_exact(&mut buf[..n]).map_err(|e| format!("{name}: its data ends too early ({e})"))?;
+        src.read_exact(&mut buf[..n]).map_err(|e| format!("{name}: its compressed data cannot be read ({e})"))?;
         if let Some(c) = cipher.as_deref_mut() {
             c.apply_keystream(&mut buf[..n]);
         }
@@ -387,6 +395,7 @@ pub fn unpack_into(dir: &Path, cache: &Path, flag: &AtomicBool) -> Result<PathBu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
 
     fn pfs0(files: &[(&str, Vec<u8>)]) -> Vec<u8> {
         let mut strings = vec![];
@@ -456,14 +465,36 @@ mod tests {
             ncz.extend_from_slice(&key);
             ncz.extend_from_slice(&counter);
         }
-        ncz.extend_from_slice(&zstd_raw(&plain[0x4000..]));
+        // As nsz writes it: real zstd, here in two frames, one with a long window.
+        let body = &plain[0x4000..];
+        let mut long = zstd::stream::Encoder::new(vec![], 19).unwrap();
+        long.long_distance_matching(true).unwrap();
+        long.window_log(27).unwrap();
+        long.write_all(&body[..0x1800]).unwrap();
+        let mut ncz_block = ncz.clone();
+        ncz.extend_from_slice(&long.finish().unwrap());
+        ncz.extend_from_slice(&zstd::encode_all(&body[0x1800..], 3).unwrap());
+        // The same NCA in blocks of 0x4000 bytes: the first compressed, the last kept raw.
+        let blocks: Vec<Vec<u8>> =
+            body.chunks(0x4000).enumerate().map(|(i, c)| if i == 0 { zstd::encode_all(c, 3).unwrap() } else { c.to_vec() }).collect();
+        ncz_block.extend_from_slice(b"NCZBLOCK");
+        ncz_block.extend_from_slice(&[2, 1, 0, 14]);
+        ncz_block.extend_from_slice(&(blocks.len() as u32).to_le_bytes());
+        ncz_block.extend_from_slice(&(body.len() as u64).to_le_bytes());
+        for b in &blocks {
+            ncz_block.extend_from_slice(&(b.len() as u32).to_le_bytes());
+        }
+        for b in &blocks {
+            ncz_block.extend_from_slice(b);
+        }
+        let _ = zstd_raw;
 
         let d = std::env::temp_dir().join(format!("borne-nsz-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(d.join("update")).unwrap();
         let tik = vec![9u8; 0x2C0];
         std::fs::write(d.join("Game.nsz"), pfs0(&[("abcd.ncz", ncz.clone()), ("x.tik", tik.clone())])).unwrap();
-        std::fs::write(d.join("update/Up.nsz"), pfs0(&[("ef01.ncz", ncz)])).unwrap();
+        std::fs::write(d.join("update/Up.nsz"), pfs0(&[("ef01.ncz", ncz_block)])).unwrap();
 
         let made = unpack_in_place(&d, &AtomicBool::new(false)).unwrap();
         assert_eq!(made.len(), 2);
@@ -476,7 +507,11 @@ mod tests {
         let body = &got[es[0].start as usize..(es[0].start + es[0].size) as usize];
         assert!(body == &nca[..], "the NCA comes back byte for byte");
         assert_eq!(&got[got.len() - 0x2C0..], &want[want.len() - 0x2C0..]);
-        assert!(!d.join("Game.nsz").exists() && d.join("update/Up.nsp").is_file());
+        assert!(!d.join("Game.nsz").exists());
+        let up = std::fs::read(d.join("update/Up.nsp")).unwrap();
+        let mut f = std::fs::File::open(d.join("update/Up.nsp")).unwrap();
+        let es = entries(&mut f).unwrap();
+        assert!(&up[es[0].start as usize..] == &nca[..], "block compression too");
         let _ = std::fs::remove_dir_all(d);
     }
 }

@@ -168,10 +168,19 @@ pub fn latest(spec: &Value) -> Result<(String, String, Option<String>), String> 
                 })
                 .collect();
             versions.sort();
-            let v = versions.pop().ok_or("no RetroArch version on the buildbot")?;
-            let v = v.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(".");
+            versions.dedup();
             let file = spec["file"].as_str().ok_or("no file")?;
-            Ok((v.clone(), format!("https://buildbot.libretro.com/stable/{v}/{file}"), None))
+            let (dir, name) = file.rsplit_once('/').unwrap_or(("", file));
+            // The newest version whose folder holds this system's build: a version is listed
+            // before every build of it is uploaded (the newest had no macOS build: 404).
+            for v in versions.iter().rev().take(5) {
+                let v = v.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(".");
+                let listing = get_text(&format!("https://buildbot.libretro.com/stable/{v}/{dir}/")).unwrap_or_default();
+                if listing.contains(&format!("{name}\"")) || listing.contains(&format!("/{name}")) {
+                    return Ok((v.clone(), format!("https://buildbot.libretro.com/stable/{v}/{file}"), None));
+                }
+            }
+            Err("no RetroArch build for this computer on the buildbot".into())
         }
         Some("page") => {
             let html = get_text(spec["url"].as_str().ok_or("no page")?)?;
@@ -292,6 +301,13 @@ pub fn crt_shader(app: &Shared) -> Option<PathBuf> {
 }
 
 /// Installs (or updates) a program, and the RetroArch cores in `cores`, in the background.
+/// The emulator the game waiting to start needs (set by `play` when it waits on an installation).
+static WANTED: Mutex<Option<String>> = Mutex::new(None);
+
+pub fn want(program: Option<&str>) {
+    *WANTED.lock().unwrap_or_else(|e| e.into_inner()) = program.map(String::from);
+}
+
 pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), String> {
     let p = crate::emulators::program(program).ok_or("unknown emulator")?;
     if p.install_spec().is_none() && cores.is_empty() {
@@ -320,7 +336,10 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
         set_task(&app, json!({ "id": program, "running": false, "error": error }));
         // The game waiting for this emulator starts now; after a failure it is forgotten (the
         // error is shown with the installation).
-        if error.is_none() {
+        // A game waiting for another emulator (this one was installed for the library) is not
+        // the one that failed: its own emulator's installation starts now.
+        let wanted = WANTED.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        if error.is_none() || wanted.as_deref().is_some_and(|w| w != program) {
             crate::emulators::play_waiting(&app, None);
         } else {
             crate::emulators::forget_waiting();

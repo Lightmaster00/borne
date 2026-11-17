@@ -131,6 +131,8 @@ function entries() {
         ["this file is {} bytes, {} expected: is it the right file?", qsTr("this file is %1 bytes, %2 expected: is it the right file?")],
         ["this is not a keys file (lines of name = key, or of 32-digit keys, expected)", qsTr("this is not a keys file (lines of name = key, or of 32-digit keys, expected)")],
         ["the .nsz package could not be unpacked: {}", qsTr("the .nsz package could not be unpacked: %1")],
+        ["this 3DS game file is encrypted: Azahar plays decrypted game files only. Put a decrypted copy of the game on RomM", qsTr("this 3DS game file is encrypted: Azahar plays decrypted game files only. Put a decrypted copy of the game on RomM")],
+        ["no RetroArch build for this computer on the buildbot", qsTr("no RetroArch build for this computer on the buildbot")],
         ["this is not a keys file (text expected)", qsTr("this is not a keys file (text expected)")],
         ["this is not a .zip archive of the firmware", qsTr("this is not a .zip archive of the firmware")],
         ["no .nca file in this archive: it is not a Switch firmware", qsTr("no .nca file in this archive: it is not a Switch firmware")],

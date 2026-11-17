@@ -51,7 +51,7 @@ pub struct Program {
     /// The emulator's own log files, inside its data folder (a folder: its newest file). Many
     /// write their errors there rather than to their output; watched like the output.
     #[serde(default)]
-    logs: Vec<String>,
+    pub logs: Vec<String>,
 }
 
 impl Program {
@@ -1275,6 +1275,31 @@ fn switch_base(rom: &Path) -> Result<PathBuf, String> {
     })
 }
 
+/// Whether a 3DS game file (.3ds/.cci: an NCSD image; .cxi: an NCCH) is encrypted: its first
+/// partition's NCCH header lacks the NoCrypto flag (bit 2 of flags[7], at 0x18F).
+fn n3ds_encrypted(rom: &Path) -> bool {
+    use std::io::{Read, Seek, SeekFrom};
+    let ext = rom.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if !["3ds", "cci", "cxi"].contains(&ext.as_str()) {
+        return false;
+    }
+    let Ok(mut f) = std::fs::File::open(rom) else { return false };
+    let mut head = [0u8; 0x200];
+    if f.read_exact(&mut head).is_err() {
+        return false;
+    }
+    let ncch = match &head[0x100..0x104] {
+        b"NCSD" => u32::from_le_bytes(head[0x120..0x124].try_into().unwrap()) as u64 * 0x200,
+        b"NCCH" => 0,
+        _ => return false,
+    };
+    let mut h = [0u8; 0x200];
+    if f.seek(SeekFrom::Start(ncch)).is_err() || f.read_exact(&mut h).is_err() || &h[0x100..0x104] != b"NCCH" {
+        return false;
+    }
+    h[0x18F] & 0x04 == 0
+}
+
 /// A Wii U disc image (.wud, .wux) comes with its disc key beside it (a 16-byte .key file): Cemu
 /// reads disc keys from its keys.txt only, where the key is added (once).
 fn cemu_disc_keys(data: &Path, rom: &Path) {
@@ -1545,10 +1570,15 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         // Installed first; the game starts by itself once it is ready.
         rom?;
         wait_for(rom_id);
+        crate::emuinstall::want(Some(&p.id));
         if !crate::emuinstall::busy() {
             crate::emuinstall::start(app, &p.id, e.core.clone().into_iter().collect())?;
         }
-        return Ok(json!({ "running": false, "installing": p.name }));
+        // Another emulator being installed (for the library) goes first: said, so the player
+        // knows why nothing seems to happen.
+        let task = crate::emuinstall::task();
+        let after = task["id"].as_str().filter(|id| task["running"] == true && *id != p.id).and_then(program).map(|o| o.name);
+        return Ok(json!({ "running": false, "installing": p.name, "after": after }));
     }
     let found = found.unwrap();
     let mut rom = rom?;
@@ -1582,6 +1612,12 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     }
     if p.id == "cemu" {
         cemu_disc_keys(&data_dir(app, &app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into()), "cemu"), &rom);
+    }
+    // An encrypted 3DS dump stops Azahar at once on a "3DS error": said before, by its cause.
+    if p.id == "azahar" && n3ds_encrypted(&rom) {
+        return Err(
+            "this 3DS game file is encrypted: Azahar plays decrypted game files only. Put a decrypted copy of the game on RomM".into()
+        );
     }
     // A .cia is installed into Azahar once, then its installed program is what starts.
     if p.id == "azahar" && rom.extension().map(|x| x.eq_ignore_ascii_case("cia")).unwrap_or(false) {
@@ -1981,6 +2017,26 @@ mod tests {
         assert_eq!(user_appimage_in(&dirs, "rpcs3", &n(&["RPCS3"])), Some(d.join("rpcs3-v0.0.34.AppImage")));
         assert_eq!(user_appimage_in(&dirs, "duckstation", &n(&["DuckStation"])), None, "not an AppImage");
         assert_eq!(user_appimage_in(&dirs, "dolphin", &n(&["Dolphin"])), None);
+        let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn encrypted_3ds_files_are_told() {
+        let d = std::env::temp_dir().join(format!("borne-3ds-{}", std::process::id()));
+        std::fs::create_dir_all(&d).unwrap();
+        let image = |flags7: u8| {
+            let mut v = vec![0u8; 0x4200];
+            v[0x100..0x104].copy_from_slice(b"NCSD");
+            v[0x120..0x124].copy_from_slice(&0x20u32.to_le_bytes()); // partition 0 at 0x4000
+            v[0x4100..0x4104].copy_from_slice(b"NCCH");
+            v[0x418F] = flags7;
+            v
+        };
+        std::fs::write(d.join("enc.3ds"), image(0)).unwrap();
+        std::fs::write(d.join("dec.cci"), image(4)).unwrap();
+        assert!(n3ds_encrypted(&d.join("enc.3ds")));
+        assert!(!n3ds_encrypted(&d.join("dec.cci")));
+        assert!(!n3ds_encrypted(&d.join("missing.3ds")));
         let _ = std::fs::remove_dir_all(d);
     }
 

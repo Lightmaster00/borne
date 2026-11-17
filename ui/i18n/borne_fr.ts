@@ -986,6 +986,14 @@
         <source>the .nsz package could not be unpacked: %1</source>
         <translation>le paquet .nsz n’a pas pu être décompressé : %1</translation>
     </message>
+    <message>
+        <source>this 3DS game file is encrypted: Azahar plays decrypted game files only. Put a decrypted copy of the game on RomM</source>
+        <translation>ce fichier de jeu 3DS est chiffré : Azahar ne lit que les fichiers déchiffrés. Mettez une copie déchiffrée du jeu sur RomM</translation>
+    </message>
+    <message>
+        <source>no RetroArch build for this computer on the buildbot</source>
+        <translation>aucune version de RetroArch pour cet ordinateur sur le buildbot</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>
@@ -2866,6 +2874,10 @@
     <message>
         <source>Preparing %1: its compressed package (.nsz) is unpacked once for the emulator. The game starts as soon as it is ready.</source>
         <translation>Préparation de %1 : son paquet compressé (.nsz) est décompressé une fois pour l’émulateur. Le jeu se lance dès qu’il est prêt.</translation>
+    </message>
+    <message>
+        <source>%1 is installed after %2, which is being installed now. The game starts as soon as it is ready.</source>
+        <translation>%1 sera installé après %2, en cours d’installation. Le jeu se lance dès qu’il est prêt.</translation>
     </message>
 </context>
 <context>

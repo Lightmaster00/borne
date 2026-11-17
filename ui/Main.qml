@@ -488,7 +488,8 @@ Window {
             }
             if (r && r.installing) {
                 launchPhase = ""
-                toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(r.installing), "info")
+                if (r.after) toasts.show(qsTr("%1 is installed after %2, which is being installed now. The game starts as soon as it is ready.").arg(r.installing).arg(r.after), "info")
+                else toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(r.installing), "info")
                 return
             }
             onSession(r)

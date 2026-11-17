@@ -466,11 +466,12 @@ The RomM account provides identity and remote scope; the local profile provides 
 > `core/src/emuinstall.rs` downloads it into `emulators/<id>/<version>/` (GitHub release assets
 > checked against their published SHA-256, RetroArch from the libretro buildbot with cores one by
 > one, Dolphin's macOS image from its download page, Flathub on Linux where that is the only
-> source), unpacks .zip/.7z/.tar.xz/.dmg (never taking a shared library, such as Azahar's
+> source; RetroArch from the newest stable version whose folder holds this system's build), unpacks .zip/.7z/.tar.xz/.dmg (never taking a shared library, such as Azahar's
 > libretro build, for the program: one installed that way is installed again), extracts AppImages once (no FUSE), replaces the old
 > version only when the new one is complete, and checks for updates every 6 hours (installed when
 > no game runs; Settings → Emulators → Install and update by themselves). *Play* installs what is missing then
-> starts the game. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
+> starts the game; a game waiting for its emulator while another one is installed for the library
+> is told so, and its own emulator is installed next, even when that other installation fails. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
 > messages, no hotkeys, profile saves and states, Borne's cores and BIOS folders); Dolphin with
 > its own user folder per profile (`-u`). Sessions: one at a time, own process group, output in
 > `reports/emulator.log`, `session` events. Sources also include Forgejo (Eden) and GitLab
@@ -681,7 +682,9 @@ blocks a launch just because a game was not tested or a community database rates
   ID; its firmware and fonts (PSVUPDAT.PUP, PSP2UPDAT.PUP) are installed by Vita3K once.
 - macOS has no virtual mount: playing from the network downloads a temporary copy; past the cache
   size the least recently played copies are removed (never the one in play).
-- A .cia is installed into Azahar once (`azahar -i`), then its installed program is started.
+- A .cia is installed into Azahar once (`azahar -i`), then its installed program is started. An
+  encrypted .3ds/.cci/.cxi (no NoCrypto flag in its NCCH header) is refused before the launch:
+  Azahar plays decrypted dumps only.
 - A .rar is extracted by the system's bsdtar, unrar or 7z. Emulator installations check the
   free space first. Release lists are asked with their ETag (cached), not to spend GitHub's hourly
   limit, and the copy kept is used when that limit is reached.
