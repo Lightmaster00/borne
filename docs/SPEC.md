@@ -99,7 +99,7 @@ the final decision to the user. Compatibility checks inform and recommend; they 
 | Mega Drive / Genesis | V1 — stage 3 | RetroArch (pinned core) | ROM variants and common formats. |
 | GameCube | V1 — stage 4 | Dolphin (standalone) | First 3D system; per-game and per-controller profiles; per-profile memory cards. |
 | PlayStation 2 | V1 — stage 4 | PCSX2 (standalone) | User-provided BIOS; per-profile memory cards. |
-| Nintendo Switch | V1 — stage 4 | Eden and Ryubing, both installed; the player's favourite first (Ryubing on macOS, where Eden's ARM64 recompiler crashes mid-game). A game that crashes or does not start on one within 3 minutes is started on the other at once, without a word, and noted per game (`emu_failed.<group>.<program>`) so it starts there directly next time; a run of 3 minutes clears the note. A favourite that cannot be installed (its server down) also hands the waiting game to the other. Citron, taken down, is no longer installed: a console left on it uses the next emulator | Reference game: Zelda TotK. Keys and firmware from the user's console; emulator binary provided by the user. See section 9. |
+| Nintendo Switch | V1 — stage 4 | Eden and Ryubing, both installed; the player's favourite first (Ryubing on macOS, where Eden's ARM64 recompiler crashes mid-game). A game that crashes or does not start on one within 3 minutes is started on the other at once, without a word, and noted per game (`emu_failed.<group>.<program>`) so it starts there directly next time; a run of 3 minutes clears the note. A favourite that cannot be installed (its server down) also hands the waiting game to the other. One that failed on two games of this computer, more than its partner, is no longer tried first on a new game (its crash would show before each). On macOS Eden runs on one core in its accurate CPU mode (its ARM64 recompiler crashes otherwise), and Ryujinx's firmware folder holds only the firmware given to Borne (an older one beside it is moved to `registered-before-borne`; two contents for one title made Ryujinx stop on \"BuiltInSystem\"). Citron, taken down, is no longer installed: a console left on it uses the next emulator | Reference game: Zelda TotK. Keys and firmware from the user's console; emulator binary provided by the user. See section 9. |
 | Game Boy | V1.x | RetroArch | Battery saves and states depending on the emulator. |
 | Game Boy Advance | V1.x | RetroArch | Standard controls; per-game profiles if needed. |
 | Dreamcast | V1.x | Flycast | Graphics dependencies and BIOS to check. |
@@ -670,7 +670,7 @@ blocks a launch just because a game was not tested or a community database rates
   file of the zip: `--pkg … --zrif …`), then started as an installed game (`-r <ID>`); without
   a zRIF the player is told what to put on RomM. Vita3K's Discord presence (which crashes it on
   quitting) is turned off in its config.yml, and its log is in the diagnostic report.
-- PS Vita: a zip of a dumped game is extracted once at its first launch (in the background, the
+- PS Vita: a zip of a dumped game (any zip but a .pkg's) is extracted once at its first launch, with the system's tools when the zip has no readable central directory (the zip then kept) (in the background, the
   game starting once done; Vita3K's own zip reader fails on large zip64 files), the zip removed
   and the folder given from then on.
 - PS Vita: a .vpk or .zip is kept as downloaded (never deleted and downloaded again) and given to
@@ -704,8 +704,8 @@ blocks a launch just because a game was not tested or a community database rates
 - macOS has no virtual mount: playing from the network downloads a temporary copy; past the cache
   size the least recently played copies are removed (never the one in play).
 - Emulator lines that are only warnings never stop a game (Azahar's "Shared Font file missing.
-  Loading open source replacement" stopped Pokémon X a few seconds in). Cemu starts in a window
-  on macOS (fullscreen while shaders compile crashes it, cemu-project/Cemu#658). Each emulator's
+  Loading open source replacement" stopped Pokémon X a few seconds in). Cemu starts in a window, on Vulkan,
+  on macOS (a settings.xml without `<Graphic><api>` left it on OpenGL, which macOS does not run) (fullscreen while shaders compile crashes it, cemu-project/Cemu#658). Each emulator's
   output from its last run is kept (`reports/emulator-<id>.log`) for the diagnostic report.
 - On macOS Azahar is started through `open -W -n -a Azahar.app --args …` (run directly, it
   opens a warning window only a mouse can close); its processes are signalled by their bundle

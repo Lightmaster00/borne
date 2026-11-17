@@ -54,7 +54,7 @@ fn extract_rar(archive: &Path, out: &Path) -> Result<(), String> {
 
 /// An archive by the system's own tools (bsdtar, unrar, 7z, unzip): for RAR, and for the zips the
 /// built-in reader does not take (some large or unusual ones).
-fn extract_external(archive: &Path, out: &Path, none: &str) -> Result<(), String> {
+pub fn extract_external(archive: &Path, out: &Path, none: &str) -> Result<(), String> {
     std::fs::create_dir_all(out).map_err(|e| e.to_string())?;
     let o = out.to_string_lossy().into_owned();
     let a = archive.to_string_lossy().into_owned();

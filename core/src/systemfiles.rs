@@ -648,8 +648,19 @@ pub fn prepare(
                 }
             }
             // Ryujinx keeps each firmware NCA as a folder of that name holding a file "00".
+            // Only this firmware there: an older one left beside it (installed earlier in
+            // Ryujinx) gives two contents for the same title, Ryujinx then lists none and stops
+            // on "The given key 'BuiltInSystem' was not present". Others are moved aside, kept.
             ("firmware-nca", "ryubing") => {
                 let reg = data.join("bis/system/Contents/registered");
+                let names: std::collections::HashSet<_> = fs.iter().filter_map(|f| f.file_name().map(|n| n.to_os_string())).collect();
+                let aside = data.join("bis/system/Contents/registered-before-borne");
+                for e in std::fs::read_dir(&reg).into_iter().flatten().flatten() {
+                    if !names.contains(&e.file_name()) {
+                        let _ = std::fs::create_dir_all(&aside);
+                        let _ = std::fs::rename(e.path(), aside.join(e.file_name()));
+                    }
+                }
                 for f in &fs {
                     copy_if_changed(f, &reg.join(f.file_name().unwrap()).join("00"))?;
                 }

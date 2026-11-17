@@ -283,7 +283,22 @@ pub fn apply(program: &str, data: &Path, userdir: &Path, m: &Map<String, Value>)
                     ("UI", "confirmClose\\default", "false"),
                     ("UI", "confirmClose", "false"),
                 ],
-            )
+            )?;
+            // On a Mac, Eden's ARM64 recompiler crashes on several cores and with its unsafe
+            // shortcuts (macOS crash reports: Dynarmic, EmitWriteMemory, RegAlloc): one core, and
+            // the accurate CPU mode, there.
+            if cfg!(target_os = "macos") {
+                ini(
+                    &path,
+                    &[
+                        ("Core", "use_multi_core\\default", "false"),
+                        ("Core", "use_multi_core", "false"),
+                        ("Cpu", "cpu_accuracy\\default", "false"),
+                        ("Cpu", "cpu_accuracy", "1"),
+                    ],
+                )?;
+            }
+            Ok(())
         }
         "ryubing" => {
             let aspect = match s(m, "aspect") {
@@ -475,6 +490,31 @@ pub fn cemu_config(data: &Path) -> std::path::PathBuf {
 
 /// Cemu's settings.xml with these values (`<content><key>value</key>…`): written whole the first
 /// time (its presence also skips Cemu's first-start wizard), else each value replaced or added.
+/// Cemu's graphics API (`<Graphic><api>`: 0 OpenGL, 1 Vulkan). A settings.xml Borne made
+/// without it leaves Cemu on OpenGL, which macOS does not run: Cemu dies at once in
+/// OpenGLRenderer::Initialize ("Illegal instruction"). Vulkan (MoltenVK) there.
+pub fn cemu_graphic_api(data: &Path, api: &str) -> Result<(), String> {
+    let file = cemu_config(data).join("settings.xml");
+    let mut text =
+        std::fs::read_to_string(&file).unwrap_or_else(|_| "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<content>\n</content>\n".into());
+    match (text.find("<Graphic>"), text.find("</Graphic>")) {
+        (Some(a), Some(b)) if b > a => {
+            let section = &text[a..b];
+            match (section.find("<api>"), section.find("</api>")) {
+                (Some(x), Some(y)) if y > x => text.replace_range(a + x + 5..a + y, api),
+                _ => text.insert_str(b, &format!("    <api>{api}</api>\n    ")),
+            }
+        }
+        _ => {
+            if let Some(end) = text.rfind("</content>") {
+                text.insert_str(end, &format!("    <Graphic>\n        <api>{api}</api>\n    </Graphic>\n"));
+            }
+        }
+    }
+    std::fs::create_dir_all(file.parent().unwrap()).map_err(|e| e.to_string())?;
+    std::fs::write(&file, text).map_err(|e| e.to_string())
+}
+
 pub fn cemu_settings(data: &Path, values: &[(&str, &str)]) -> Result<(), String> {
     let file = cemu_config(data).join("settings.xml");
     let defaults: &[(&str, &str)] = &[
@@ -811,6 +851,9 @@ pub fn controllers(
         // (cemu-project/Cemu#658): it starts in a window there.
         let fs: &[(&str, &str)] = if cfg!(target_os = "macos") { &[("fullscreen", "false")] } else { &[] };
         cemu_settings(data, fs)?;
+        if cfg!(target_os = "macos") {
+            cemu_graphic_api(data, "1")?;
+        }
         for (slot, p) in players.iter().take(4).enumerate() {
             if let Some(g) = p.guid.as_deref() {
                 cemu_controller(data, slot, p.rank.max(1), g, &p.name)?;
@@ -1367,6 +1410,23 @@ fn dotnet_guid(sdl: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn cemu_is_set_on_vulkan() {
+        let d = std::env::temp_dir().join(format!("borne-cemu-api-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        cemu_settings(&d, &[]).unwrap();
+        cemu_graphic_api(&d, "1").unwrap();
+        let file = cemu_config(&d).join("settings.xml");
+        let t = std::fs::read_to_string(&file).unwrap();
+        assert!(t.contains("<Graphic>") && t.contains("<api>1</api>"), "{t}");
+        // A section of its own kept, its api changed.
+        std::fs::write(&file, t.replace("<api>1</api>", "<api>0</api><VSync>1</VSync>")).unwrap();
+        cemu_graphic_api(&d, "1").unwrap();
+        let t = std::fs::read_to_string(&file).unwrap();
+        assert!(t.contains("<api>1</api>") && t.contains("<VSync>1</VSync>") && t.matches("<Graphic>").count() == 1, "{t}");
+        let _ = std::fs::remove_dir_all(d);
+    }
+
     #[test]
     fn emu_options_for_retroarch() {
         let mut m = Map::new();

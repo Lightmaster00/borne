@@ -353,7 +353,8 @@ fn switch_report(app: &crate::state::Shared) -> String {
                 l.trim().strip_prefix("master_key_").and_then(|x| x.split_whitespace().next()).and_then(|h| u32::from_str_radix(h, 16).ok())
             })
             .max();
-        let firmware = std::fs::read_dir(data.join("nand/system/Contents/registered")).map(|d| d.count()).unwrap_or(0);
+        let reg = if emu == "ryubing" { "bis/system/Contents/registered" } else { "nand/system/Contents/registered" };
+        let firmware = std::fs::read_dir(data.join(reg)).map(|d| d.count()).unwrap_or(0);
         let _ = writeln!(
             r,
             "{emu}: prod.keys {} ({} lines, newest master key {:?}), title.keys {}, firmware files {firmware}",

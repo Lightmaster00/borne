@@ -164,7 +164,24 @@ pub fn chosen_for_game(app: &Shared, system: &str, group_key: &str) -> Option<En
             return Some(other);
         }
     }
+    // An emulator that failed on several games of this computer, and more than its partner, is
+    // not tried first on a new game any more: its crash would be seen before every game.
+    let fails = |program: &str| failed_games(app, program);
+    if own.is_none() && fails(&first.program) >= 2 {
+        if let Some(other) = partners(system, &first.program)
+            .into_iter()
+            .find(|o| fails(&o.program) < fails(&first.program) && !failed_on(app, group_key, &o.program))
+        {
+            return Some(other);
+        }
+    }
     Some(first)
+}
+
+/// How many games failed on this emulator on this computer.
+fn failed_games(app: &Shared, program: &str) -> usize {
+    let suffix = format!(".{program}");
+    app.db.settings_with_prefix("emu_failed.").iter().filter(|(k, _)| k.ends_with(&suffix)).count()
 }
 
 /// Emulators that can stand in for each other, per console: a game that crashes or does not start
@@ -1279,15 +1296,11 @@ fn vita_pkg_of(zip_path: &Path) -> Option<(String, String, Option<String>)> {
     Some((pkg, tid, zrif))
 }
 
-/// A zip holding a dumped PS Vita game (sce_sys/param.sfo somewhere in it).
+/// A zip of a PS Vita game to extract (any zip but one holding a store .pkg): Vita3K's own zip
+/// reader fails on large ones and on zips whose central directory is missing or past 4 GB,
+/// which Borne's readers (or the system's) still extract.
 fn vita_zip_to_extract(rom: &Path) -> bool {
-    if !rom.is_file() || !rom.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false) {
-        return false;
-    }
-    let Ok(f) = std::fs::File::open(rom) else { return false };
-    let Ok(z) = zip::ZipArchive::new(f) else { return false };
-    let has = z.file_names().any(|n| n.ok().map(|n| n.ends_with("sce_sys/param.sfo")).unwrap_or(false));
-    has
+    rom.is_file() && rom.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false) && vita_pkg_of(rom).is_none()
 }
 
 /// Extracts a dumped PS Vita game's zip next to it, then keeps the folder only: the game's
@@ -1298,9 +1311,17 @@ fn vita_extract(app: &Shared, rom_id: i64, zip_path: &Path) -> Result<(), String
     let _ = std::fs::remove_dir_all(&tmp);
     let flag = std::sync::atomic::AtomicBool::new(false);
     let started = Instant::now();
+    let mut strict = true;
     if let Err(e) = crate::downloads::extract_zip(zip_path, &tmp, &flag) {
+        strict = false;
+        // The built-in reader refused it (no central directory): the system's tools read the
+        // zip entry by entry.
+        app.db.log("play", &format!("{}: {e}; trying the system's tools", zip_path.display()));
         let _ = std::fs::remove_dir_all(&tmp);
-        return Err(format!("the PS Vita game could not be extracted: {e}"));
+        if let Err(x) = crate::downloads::extract_external(zip_path, &tmp, &e) {
+            let _ = std::fs::remove_dir_all(&tmp);
+            return Err(format!("the PS Vita game could not be extracted: {x}"));
+        }
     }
     let _ = std::fs::remove_dir_all(&out);
     std::fs::rename(&tmp, &out).map_err(|e| e.to_string())?;
@@ -1308,7 +1329,11 @@ fn vita_extract(app: &Shared, rom_id: i64, zip_path: &Path) -> Result<(), String
     let Some(game) = game else {
         return Err("no PS Vita game (sce_sys/param.sfo) in this zip".into());
     };
-    let _ = std::fs::remove_file(zip_path);
+    // The zip goes once read whole and checked; one read by the system's tools (damaged) stays,
+    // in case a file came out short.
+    if strict {
+        let _ = std::fs::remove_file(zip_path);
+    }
     if let Some(g) = app.db.game(rom_id) {
         let dir = g.local_dir.clone().unwrap_or_else(|| out.to_string_lossy().into_owned());
         let size = crate::downloads::dir_size(Path::new(&dir)) as i64;
