@@ -488,8 +488,6 @@ pub fn cemu_config(data: &Path) -> std::path::PathBuf {
     data.parent().and_then(|d| d.parent()).map(|b| b.join("config").join("Cemu")).unwrap_or_else(|| data.to_path_buf())
 }
 
-/// Cemu's settings.xml with these values (`<content><key>value</key>…`): written whole the first
-/// time (its presence also skips Cemu's first-start wizard), else each value replaced or added.
 /// Cemu's graphics API (`<Graphic><api>`: 0 OpenGL, 1 Vulkan). A settings.xml Borne made
 /// without it leaves Cemu on OpenGL, which macOS does not run: Cemu dies at once in
 /// OpenGLRenderer::Initialize ("Illegal instruction"). Vulkan (MoltenVK) there.
@@ -515,6 +513,8 @@ pub fn cemu_graphic_api(data: &Path, api: &str) -> Result<(), String> {
     std::fs::write(&file, text).map_err(|e| e.to_string())
 }
 
+/// Cemu's settings.xml with these values (`<content><key>value</key>…`): written whole the first
+/// time (its presence also skips Cemu's first-start wizard), else each value replaced or added.
 pub fn cemu_settings(data: &Path, values: &[(&str, &str)]) -> Result<(), String> {
     let file = cemu_config(data).join("settings.xml");
     let defaults: &[(&str, &str)] = &[
@@ -1412,8 +1412,9 @@ fn dotnet_guid(sdl: &str) -> Option<String> {
 mod tests {
     #[test]
     fn cemu_is_set_on_vulkan() {
-        let d = std::env::temp_dir().join(format!("borne-cemu-api-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&d);
+        let root = std::env::temp_dir().join(format!("borne-cemu-api-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let d = root.join("cemu/data/Cemu");
         cemu_settings(&d, &[]).unwrap();
         cemu_graphic_api(&d, "1").unwrap();
         let file = cemu_config(&d).join("settings.xml");
@@ -1424,7 +1425,7 @@ mod tests {
         cemu_graphic_api(&d, "1").unwrap();
         let t = std::fs::read_to_string(&file).unwrap();
         assert!(t.contains("<api>1</api>") && t.contains("<VSync>1</VSync>") && t.matches("<Graphic>").count() == 1, "{t}");
-        let _ = std::fs::remove_dir_all(d);
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]
