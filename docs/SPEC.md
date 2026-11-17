@@ -466,7 +466,8 @@ The RomM account provides identity and remote scope; the local profile provides 
 > `core/src/emuinstall.rs` downloads it into `emulators/<id>/<version>/` (GitHub release assets
 > checked against their published SHA-256, RetroArch from the libretro buildbot with cores one by
 > one, Dolphin's macOS image from its download page, Flathub on Linux where that is the only
-> source), unpacks .zip/.7z/.tar.xz/.dmg, extracts AppImages once (no FUSE), replaces the old
+> source), unpacks .zip/.7z/.tar.xz/.dmg (never taking a shared library, such as Azahar's
+> libretro build, for the program: one installed that way is installed again), extracts AppImages once (no FUSE), replaces the old
 > version only when the new one is complete, and checks for updates every 6 hours (installed when
 > no game runs; Settings → Emulators → Install and update by themselves). *Play* installs what is missing then
 > starts the game. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
@@ -650,8 +651,12 @@ blocks a launch just because a game was not tested or a community database rates
 - After the game, the session's end is told at once and the save is sent to RomM after it (a
   "saves" event gives the outcome), so another game can be chosen straight away; a game started
   meanwhile waits for that save before taking its own.
-- PS Vita: a .vpk or .zip is given to Vita3K as it is (a .7z or .rar is extracted); a game dumped
-  as files is given as its folder (the one holding sce_sys/param.sfo).
+- PS Vita: a .vpk or .zip is kept as downloaded (never deleted and downloaded again) and given to
+  Vita3K as it is when the game is at the zip's root; a zip with the game in a folder (NoNpDrm's
+  app/<TITLE ID>/) is extracted once next to it at the first launch, and that folder given. A .7z
+  or .rar is extracted; a game dumped as files is given as its folder (the one holding
+  sce_sys/param.sfo). Any other archive found compressed in the library is downloaded again once
+  at most, then given as it is.
 - The emulator's output, and its own log files (`logs` in emulators.json, inside its data folder;
   a folder stands for its newest file), are watched every 250 ms for 90 s for lines that mean the
   game did not start (`fails`): the emulator is then closed and the line shown, instead of leaving
@@ -699,6 +704,12 @@ blocks a launch just because a game was not tested or a community database rates
   SDL's own for a known pad, "Steam Virtual Gamepad" under Steam): every binding names each
   possible name (`` `SDL/0/A:Button S` | `SDL/0/B:Button S` ``). Dolphin hears the pad in the
   background too (`[Input] BackgroundInput`), so a focus taken elsewhere never leaves it deaf.
+- Switch packages compressed with nsz (.nsz, whose NCAs are .ncz files no emulator reads) are
+  unpacked to the .nsp they were made from: after the download (state "extracting"), and at the
+  first launch of a game downloaded earlier or played from RomM (in the background, the game
+  starting once done; packages played from RomM are unpacked into `cache/nsp/`). Each .ncz gives
+  back its NCA byte for byte: its first 0x4000 bytes, then the zstd data (one stream or NCZBLOCK
+  blocks) with each section encrypted again (AES-128-CTR, its own key and counter).
 - Switch packages (.nsp, .nsz) are read (PFS0, the ticket's title ID): an update or a DLC given as
   the game is replaced by the base game beside it, or refused with what is missing. "Missing a
   program-type NCA" on a base game means keys and firmware older than the game.
@@ -774,7 +785,8 @@ blocks a launch just because a game was not tested or a community database rates
   check, Vulkan warning, graphic packs download, macOS notice off; fullscreen) and with the game's
   console language; a `controllerProfiles/controller<n>.xml` per player, the pad named by its SDL3
   GUID (gilrs' GUID with the CRC-16 of the device name in bytes 2-3). The user's `keys.txt` goes into
-  Cemu's data folder. Formats: .wua, .wud, .wux, .rpx.
+  Cemu's data folder; it is accepted in Cemu's own format (one 32-digit key a line, `# comment`
+  after it) as well as `name = key`. Formats: .wua, .wud, .wux, .rpx.
 - Saturn BIOS files are also copied under the names the Beetle Saturn core looks for (recognised
   by md5): `sega_101.bin` (Japan), `mpr-17933.bin` (US/Europe).
 - Failures read from the emulator's output are named: Azahar's fatal errors and missing system

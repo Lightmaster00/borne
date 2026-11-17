@@ -556,7 +556,15 @@ fn game_file(app: &Shared, g: &GameRow) -> Result<PathBuf, String> {
         if let Some(m) = &g.local_main {
             let p = PathBuf::from(m);
             // Downloaded compressed by an earlier Borne: downloaded again, now extracted.
-            if p.is_file() && crate::downloads::extractable(&p) && !crate::downloads::keeps_archive(&g.platform_slug, &p) {
+            // Once only: an archive that is still there after the download again (several files,
+            // extraction not needed) is given as it is rather than downloaded in a loop.
+            let again = format!("redownloaded.{}", g.rom_id);
+            if p.is_file()
+                && crate::downloads::extractable(&p)
+                && !crate::downloads::keeps_archive(&g.platform_slug, &p)
+                && app.db.setting(&again).is_none()
+            {
+                app.db.set_setting(&again, "1");
                 crate::downloads::delete_local(app, g.rom_id)?;
                 return Err(crate::stream::COMPRESSED.into());
             }
@@ -1309,6 +1317,107 @@ fn cemu_disc_keys(data: &Path, rom: &Path) {
 /// (RomM's update/ and dlc/), and the folders of the updates and DLC RomM keeps as games of their
 /// own in the game's group (linked through the virtual mount, or downloaded).
 fn switch_content_dirs(app: &Shared, rom_id: i64, rom: &Path) -> Vec<PathBuf> {
+    switch_content_dirs_raw(app, rom_id, rom).iter().map(|d| switch_unpacked_dir(app, d)).collect()
+}
+
+/// Where the .nsp unpacked from the .nsz of a folder Borne cannot write (a game played from
+/// RomM through the mount) are kept.
+fn nsp_cache(app: &Shared, dir: &Path) -> PathBuf {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    dir.hash(&mut h);
+    app.paths.root.join("cache").join("nsp").join(format!("{:016x}", h.finish()))
+}
+
+fn in_library(app: &Shared, p: &Path) -> bool {
+    p.starts_with(app.paths.library())
+}
+
+fn top_nsz(dir: &Path) -> Vec<PathBuf> {
+    std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_file() && p.extension().map(|e| e.eq_ignore_ascii_case("nsz")).unwrap_or(false))
+        .collect()
+}
+
+/// A folder of packages as the emulator gets it: one Borne cannot write is given as its
+/// unpacked copy once there is one.
+fn switch_unpacked_dir(app: &Shared, dir: &Path) -> PathBuf {
+    let cache = nsp_cache(app, dir);
+    if !in_library(app, dir) && cache.is_dir() && !top_nsz(dir).is_empty() {
+        cache
+    } else {
+        dir.to_path_buf()
+    }
+}
+
+/// The game's package as the emulator gets it (its .nsp, for an .nsz played from RomM).
+fn switch_unpacked(app: &Shared, rom: &Path) -> PathBuf {
+    let is_nsz = rom.extension().map(|e| e.eq_ignore_ascii_case("nsz")).unwrap_or(false);
+    let Some(dir) = rom.parent().filter(|_| is_nsz) else { return rom.to_path_buf() };
+    let nsp = nsp_cache(app, dir).join(Path::new(rom.file_name().unwrap_or_default()).with_extension("nsp"));
+    if nsp.is_file() {
+        nsp
+    } else {
+        rom.to_path_buf()
+    }
+}
+
+/// Whether a Switch game or its update/DLC folders still hold .nsz packages to unpack.
+fn switch_needs_unpack(app: &Shared, rom: &Path, dirs: &[PathBuf]) -> bool {
+    let mut all: Vec<PathBuf> = dirs.to_vec();
+    if let Some(d) = rom.parent() {
+        all.push(d.to_path_buf());
+    }
+    all.iter().any(|d| {
+        if in_library(app, d) {
+            !crate::nsz::found(d).is_empty()
+        } else {
+            let cache = nsp_cache(app, d);
+            top_nsz(d).iter().any(|z| !cache.join(Path::new(z.file_name().unwrap_or_default()).with_extension("nsp")).is_file())
+        }
+    })
+}
+
+/// Unpacks a Switch game's .nsz packages: in place for downloaded games (their file in the
+/// library updated), into the cache for those played from RomM.
+fn switch_unpack(app: &Shared, rom: &Path, dirs: &[PathBuf]) -> Result<(), String> {
+    let flag = std::sync::atomic::AtomicBool::new(false);
+    let mut all: Vec<PathBuf> = vec![];
+    if let Some(d) = rom.parent() {
+        all.push(d.to_path_buf());
+    }
+    all.extend(dirs.iter().cloned());
+    let mut seen: Vec<PathBuf> = vec![];
+    for d in all {
+        if seen.iter().any(|s| d.starts_with(s)) {
+            continue;
+        }
+        let started = std::time::Instant::now();
+        if in_library(app, &d) {
+            for (from, to) in crate::nsz::unpack_in_place(&d, &flag)? {
+                app.db.log("play", &format!("{}: unpacked to {} in {:.0} s", from.display(), to.display(), started.elapsed().as_secs_f64()));
+                // The game whose file it was (this one, or its update or DLC) now has the .nsp.
+                for (id, dir, main, _) in app.db.local_games() {
+                    if Path::new(&main) == from {
+                        let size = crate::downloads::dir_size(Path::new(&dir)) as i64;
+                        app.db.set_local(id, &dir, &to.to_string_lossy(), size);
+                    }
+                }
+            }
+            seen.push(d);
+        } else {
+            crate::nsz::unpack_into(&d, &nsp_cache(app, &d), &flag)?;
+            app.db.log("play", &format!("{}: unpacked into the cache in {:.0} s", d.display(), started.elapsed().as_secs_f64()));
+        }
+    }
+    Ok(())
+}
+
+fn switch_content_dirs_raw(app: &Shared, rom_id: i64, rom: &Path) -> Vec<PathBuf> {
     let is_pkg = |p: &Path| p.extension().map(|e| ["nsp", "nsz", "xci", "xcz"].iter().any(|x| e.eq_ignore_ascii_case(x))).unwrap_or(false);
     let holds_extra = |dir: &Path| {
         std::fs::read_dir(dir).into_iter().flatten().flatten().map(|e| e.path()).any(|p| {
@@ -1443,6 +1552,23 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     let found = found.unwrap();
     let mut rom = rom?;
     if system == "switch" {
+        // Packages compressed with nsz are unpacked to .nsp first (once, in the background):
+        // no emulator reads an .nsz's NCZ files.
+        let dirs = switch_content_dirs_raw(app, rom_id, &rom);
+        if switch_needs_unpack(app, &rom, &dirs) {
+            wait_for(rom_id);
+            let (app2, rom2) = (app.clone(), rom.clone());
+            std::thread::spawn(move || match switch_unpack(&app2, &rom2, &dirs) {
+                Ok(()) => play_waiting(&app2, Some(rom_id)),
+                Err(e) => {
+                    let _ = take_waiting(Some(rom_id));
+                    app2.db.log("play", &format!("game {rom_id}: {e}"));
+                    app2.emit(json!({ "type": "play_failed", "rom_id": rom_id, "error": e }));
+                }
+            });
+            return Ok(json!({ "running": false, "preparing": g.name }));
+        }
+        rom = switch_unpacked(app, &rom);
         rom = switch_base(&rom)?;
         // The package read with the player's keys first: what the emulator would only call
         // "missing a Program-type NCA" is said here by its cause.

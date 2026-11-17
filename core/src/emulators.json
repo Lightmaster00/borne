@@ -534,7 +534,8 @@
           ],
           "not": [
             "wayland",
-            "room"
+            "room",
+            "libretro"
           ],
           "ends": ".appimage"
         },
@@ -543,6 +544,10 @@
           "repo": "azahar-emu/azahar",
           "has": [
             "macos"
+          ],
+          "not": [
+            "libretro",
+            "room"
           ],
           "ends": [
             ".zip",

@@ -43,6 +43,7 @@ mod secrets;
 mod state;
 mod steam;
 mod stream;
+mod nsz;
 mod switchcheck;
 mod systemfiles;
 mod update;

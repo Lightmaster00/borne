@@ -511,10 +511,6 @@
         <translation>ce fichier fait %1 octets, %2 attendus : est-ce le bon fichier ?</translation>
     </message>
     <message>
-        <source>this is not a keys file (lines of name = key expected)</source>
-        <translation>ce n’est pas un fichier de clés (lignes nom = clé attendues)</translation>
-    </message>
-    <message>
         <source>this is not a keys file (text expected)</source>
         <translation>ce n’est pas un fichier de clés (texte attendu)</translation>
     </message>
@@ -981,6 +977,14 @@
     <message>
         <source>this file holds no game, not the game itself: add the base game to this game on RomM</source>
         <translation>ce fichier ne contient aucun jeu : ajoute le jeu de base à ce jeu sur RomM</translation>
+    </message>
+    <message>
+        <source>this is not a keys file (lines of name = key, or of 32-digit keys, expected)</source>
+        <translation>ce n’est pas un fichier de clés (lignes nom = clé, ou clés de 32 chiffres, attendues)</translation>
+    </message>
+    <message>
+        <source>the .nsz package could not be unpacked: %1</source>
+        <translation>le paquet .nsz n’a pas pu être décompressé : %1</translation>
     </message>
 </context>
 <context>
@@ -2858,6 +2862,10 @@
     <message>
         <source>On your controller. The button it replaces takes the old place. Nothing pressed in ten seconds: nothing changes.</source>
         <translation>Sur ta manette. Le bouton qu’il remplace prend son ancienne place. Rien pendant dix secondes : rien ne change.</translation>
+    </message>
+    <message>
+        <source>Preparing %1: its compressed package (.nsz) is unpacked once for the emulator. The game starts as soon as it is ready.</source>
+        <translation>Préparation de %1 : son paquet compressé (.nsz) est décompressé une fois pour l’émulateur. Le jeu se lance dès qu’il est prêt.</translation>
     </message>
 </context>
 <context>

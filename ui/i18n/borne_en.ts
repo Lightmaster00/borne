@@ -511,10 +511,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>this is not a keys file (lines of name = key expected)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>this is not a keys file (text expected)</source>
         <translation type="unfinished" />
     </message>
@@ -980,6 +976,14 @@
     </message>
     <message>
         <source>this file holds no game, not the game itself: add the base game to this game on RomM</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>this is not a keys file (lines of name = key, or of 32-digit keys, expected)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the .nsz package could not be unpacked: %1</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2857,6 +2861,10 @@
     </message>
     <message>
         <source>On your controller. The button it replaces takes the old place. Nothing pressed in ten seconds: nothing changes.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Preparing %1: its compressed package (.nsz) is unpacked once for the emulator. The game starts as soon as it is ready.</source>
         <translation type="unfinished" />
     </message>
 </context>

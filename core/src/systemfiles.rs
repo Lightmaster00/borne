@@ -306,6 +306,18 @@ fn store(app: &Shared, console: &str, it: &Item, name: &str, mut src: impl Read)
     r
 }
 
+/// A line of a keys file: `name = hex` (Switch prod.keys, title.keys) or, as Cemu's keys.txt
+/// has them, a 32-digit hex key with an optional `# comment` after it.
+fn key_line(l: &str) -> bool {
+    let l = l.trim_start_matches('\u{feff}').trim();
+    let hex = |v: &str| !v.is_empty() && v.chars().all(|c| c.is_ascii_hexdigit());
+    if let Some((_, v)) = l.split_once('=') {
+        return hex(v.trim());
+    }
+    let key = l.split(['#', ';', ' ', '\t']).next().unwrap_or("");
+    key.len() == 32 && hex(key)
+}
+
 fn check_and_place(d: &Path, it: &Item, name: &str, tmp: &Path, size: u64) -> Result<(), String> {
     let lower = name.to_lowercase();
     match it.kind.as_str() {
@@ -356,11 +368,8 @@ fn check_and_place(d: &Path, it: &Item, name: &str, tmp: &Path, size: u64) -> Re
                 return Err("this file is too large for a keys file".into());
             }
             let text = std::fs::read_to_string(tmp).map_err(|_| "this is not a keys file (text expected)".to_string())?;
-            if !text.lines().any(|l| {
-                l.contains('=')
-                    && l.split('=').nth(1).map(|v| v.trim().chars().all(|c| c.is_ascii_hexdigit()) && !v.trim().is_empty()).unwrap_or(false)
-            }) {
-                return Err("this is not a keys file (lines of name = key expected)".into());
+            if !text.lines().any(key_line) {
+                return Err("this is not a keys file (lines of name = key, or of 32-digit keys, expected)".into());
             }
             replace(d, tmp, &it.names[0])
         }
@@ -774,6 +783,11 @@ mod tests {
         std::fs::write(d.join("k.part"), "header_key = 0123abcd\n").unwrap();
         check_and_place(&d, &keys, "mykeys.txt", &d.join("k.part"), 22).unwrap();
         assert!(d.join("prod.keys").is_file());
+        // Cemu's keys.txt: one 32-digit key a line, a comment after it.
+        assert!(key_line("\u{feff}0123456789abcdef0123456789ABCDEF # Mario Kart 8 (EUR)"));
+        assert!(key_line("0123456789abcdef0123456789abcdef"));
+        assert!(!key_line("# just a comment"));
+        assert!(!key_line("0123456789abcdef"));
         let pup = item("pup", &["PS3UPDAT.PUP"], None, false);
         std::fs::write(d.join("p.part"), b"NOTPUP").unwrap();
         assert!(check_and_place(&d, &pup, "f.pup", &d.join("p.part"), 6).is_err());

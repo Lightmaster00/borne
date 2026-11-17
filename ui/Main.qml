@@ -481,6 +481,11 @@ Window {
                 toasts.show(qsTr("%1 is compressed on RomM: it is downloaded first and starts as soon as it is ready.").arg(r.downloading), "info")
                 return
             }
+            if (r && r.preparing) {
+                launchPhase = ""
+                toasts.show(qsTr("Preparing %1: its compressed package (.nsz) is unpacked once for the emulator. The game starts as soon as it is ready.").arg(r.preparing), "info")
+                return
+            }
             if (r && r.installing) {
                 launchPhase = ""
                 toasts.show(qsTr("Installing %1… the game starts as soon as it is ready.").arg(r.installing), "info")

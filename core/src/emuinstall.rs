@@ -217,7 +217,9 @@ fn asset_fits(spec: &Value, name: &str) -> bool {
 pub fn installed(app: &Shared, id: &str) -> Option<Value> {
     let v: Value = serde_json::from_str(&app.db.setting(&format!("emu_install.{id}"))?).ok()?;
     if let Some(exe) = v["exe"].as_str() {
-        if !Path::new(exe).exists() {
+        // A library picked by an earlier Borne (Azahar's libretro build) is no program:
+        // installed again.
+        if !Path::new(exe).exists() || is_library(Path::new(exe)) {
             return None;
         }
     }
@@ -631,8 +633,14 @@ fn undmg(_file: &Path, _out: &Path) -> Result<(), String> {
 
 /// The program to start in an unpacked release: an application bundle's executable (macOS), or
 /// an AppImage, extracted once so it runs without FUSE.
+/// A shared library (.dylib, .so, .so.1…), never a program to start.
+fn is_library(p: &Path) -> bool {
+    let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+    n.ends_with(".dylib") || n.ends_with(".so") || n.contains(".so.") || n.ends_with(".dll")
+}
+
 fn find_program(out: &Path, hint: Option<&str>) -> Result<PathBuf, String> {
-    let items = walk(out);
+    let items: Vec<PathBuf> = walk(out).into_iter().filter(|p| !is_library(p)).collect();
     if os() == "macos" {
         let Some(app) = items.iter().find(|p| p.extension().map(|x| x == "app").unwrap_or(false)) else {
             use std::os::unix::fs::PermissionsExt;

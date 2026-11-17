@@ -21,20 +21,21 @@ const MAIN_EXT: &[&str] = &[
     "gen", "smd", "bin", "sfc", "smc", "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce",
     "ws", "wsc", "ngp", "ngc", "a26", "lnx", "vb", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min", "cia", "vpk",
 ];
-/// Consoles whose games are archives by nature (arcade sets read zipped by MAME and FinalBurn):
-/// kept as they are. Every other console's zip or 7z is extracted, as the standalone emulators
-/// (Azahar, Eden, Dolphin…) do not read archives.
 /// The size of a folder's files (links not followed).
 pub fn dir_size(dir: &Path) -> u64 {
     walk_size(dir)
 }
 
-pub fn keeps_archive(platform: &str, _archive: &Path) -> bool {
+/// Consoles whose games are archives by nature (arcade sets read zipped by MAME and FinalBurn):
+/// kept as they are. Every other console's zip or 7z is extracted, as the standalone emulators
+/// (Azahar, Eden, Dolphin…) do not read archives.
+pub fn keeps_archive(platform: &str, archive: &Path) -> bool {
     match platform {
         "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave" => true,
-        // PS Vita: archives are extracted (Vita3K takes a .zip only when the game is at its
-        // root, and a folder always); a .vpk stays as it is.
-        "psvita" => false,
+        // PS Vita: a .zip stays as it was downloaded. At launch Vita3K gets it as it is when the
+        // game is at its root, else it is extracted once next to it (see `vita_content`); never
+        // deleted and downloaded again.
+        "psvita" => archive.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false),
         _ => false,
     }
 }
@@ -473,6 +474,16 @@ fn download(app: &Shared, id: i64, rom_id: i64, flag: &AtomicBool) -> Result<Out
         }
     }
 
+    // Switch packages compressed with nsz: unpacked to the .nsp the emulators read.
+    if game.platform_slug == "switch" && !crate::nsz::found(&install_root).is_empty() {
+        app.db.update_download(id, "extracting", total, total, None);
+        emit(app, id, rom_id, "extracting", total, total, None, 0.0);
+        match crate::nsz::unpack_in_place(&install_root, flag) {
+            Err(e) if e == crate::nsz::CANCELLED => return Ok(Outcome::Cancelled),
+            Err(e) => return Err(format!("the .nsz package could not be unpacked: {e}")),
+            Ok(made) => app.db.log("download", &format!("{}: {} package(s) unpacked from .nsz", game.name, made.len())),
+        }
+    }
     let main = pick_main(&install_root).ok_or("no game file found after install")?;
     let final_dir = app.paths.library().join(&game.platform_slug).join(rom_id.to_string());
     if final_dir.exists() {
