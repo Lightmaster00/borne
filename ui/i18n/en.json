@@ -47,6 +47,14 @@
   "%n game ready to play",
   "%n games ready to play"
  ],
+ "%n game(s) ready to play, the last played first": [
+  "%n game ready to play",
+  "%n games ready to play, the last played first"
+ ],
+ "%n game(s) to discover": [
+  "%n game to discover",
+  "%n games to discover"
+ ],
  "%n month(s) ago": [
   "%n month ago",
   "%n months ago"

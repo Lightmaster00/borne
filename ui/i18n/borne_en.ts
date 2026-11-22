@@ -1500,21 +1500,6 @@
     </message>
 </context>
 <context>
-    <name>FilterOverlay</name>
-    <message>
-        <source>installed · %1 in the store</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Consoles</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Order</source>
-        <translation type="unfinished" />
-    </message>
-</context>
-<context>
     <name>GamePage</name>
     <message>
         <source>%1 GB</source>
@@ -1665,14 +1650,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Playing from the network is unavailable here: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Select</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Studios</source>
         <translation type="unfinished" />
     </message>
@@ -1693,10 +1670,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>More about the game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>The trailer cannot be played: %1</source>
         <translation type="unfinished" />
     </message>
@@ -1706,10 +1679,6 @@
     </message>
     <message>
         <source>Loading the trailer…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Source: RomM</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1741,10 +1710,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Version</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Never</source>
         <translation type="unfinished" />
     </message>
@@ -1773,10 +1738,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>out of 100</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>%1 h</source>
         <translation type="unfinished" />
     </message>
@@ -1789,27 +1750,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>on this profile</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Not played yet</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Last played</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Installed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>From the network</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>On the server</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1842,6 +1787,106 @@
     </message>
     <message>
         <source>Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 / 100</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>In your favourites · A to remove it</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add to your favourites</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game settings · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Fact sheet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back to the summary</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 played · last time %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nothing stored on this device</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Screenshots</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Gallery</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sound off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sound on</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>View</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Actions</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Studio:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>rated %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Released:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Players:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A to turn the sound off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A to hear the trailer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Screenshot %1 of %2 · A to see it in large</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Screenshot %1</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2250,32 +2295,8 @@
 <context>
     <name>LibraryHome</name>
     <message>
-        <source>My library</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Store</source>
         <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Console: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>All</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Settings</source>
-        <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n game(s)</source>
-        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>%n already in your library</source>
@@ -2283,6 +2304,58 @@
     </message>
     <message>
         <source>None in your library yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recently played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>In progress</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>All your games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>In progress · %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 · played %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 · never played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>See all</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) ready to play, the last played first</source>
+        <translation><numerusform>%n game ready to play</numerusform><numerusform>%n games ready to play, the last played first</numerusform></translation>
+    </message>
+    <message>
+        <source>%1 h played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 min played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Collections</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) to discover</source>
+        <translation><numerusform>%n game to discover</numerusform><numerusform>%n games to discover</numerusform></translation>
+    </message>
+    <message>
+        <source>No favourite yet. On a game's page, the heart adds it here.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -3113,24 +3186,12 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No game matches this filter. Change it with %1 (Filter).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No game installed yet. Open the Store with %1 to download one.</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Every game of your server is installed here.</source>
         <translation type="unfinished" />
-    </message>
-    <message>
-        <source>every console</source>
-        <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n game(s) ready to play</source>
-        <translation><numerusform>%n game ready to play</numerusform><numerusform>%n games ready to play</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>%n game(s) of your server to discover</source>
@@ -3139,10 +3200,6 @@
     <message numerus="yes">
         <source>%n download(s)</source>
         <translation><numerusform>%n download</numerusform><numerusform>%n downloads</numerusform></translation>
-    </message>
-    <message>
-        <source>Console</source>
-        <translation type="unfinished" />
     </message>
     <message>
         <source>Apply</source>
@@ -3157,14 +3214,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>All your games, every console together</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1 installed · %2 in the store</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Order of the consoles</source>
         <translation type="unfinished" />
     </message>
@@ -3173,35 +3222,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Layout</source>
-        <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n filter(s)</source>
-        <translation><numerusform>%n filter</numerusform><numerusform>%n filters</numerusform></translation>
-    </message>
-    <message numerus="yes">
-        <source>%n console(s)</source>
-        <translation><numerusform>%n console</numerusform><numerusform>%n consoles</numerusform></translation>
-    </message>
-    <message>
         <source>Order</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Consoles</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Filter</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Turn on / off</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Show</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3213,11 +3234,83 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>My library</source>
+        <source>%1 · change profile</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Every console of your server, as large cards</source>
+        <source>Profiles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Home</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Store</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Downloads</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit Borne?</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Quit</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>All my games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No game for two players here yet.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Consoles: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) to discover</source>
+        <translation><numerusform>%n game to discover</numerusform><numerusform>%n games to discover</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
+    </message>
+    <message>
+        <source>Sort: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sort</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Home / Store</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recently played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Collections</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4626,35 +4719,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Covers</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Layout</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>How the games are shown in My library and the Store (also in the menu Y)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Grid</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Large row</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Two rows</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Order of the consoles</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>In the Consoles menu (X) and the Store; your own order is set there with LB and RB</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -4730,14 +4795,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Layout, consoles' order, videos</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>How your games are shown: the covers' layout, the order of the consoles and the videos.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Buttons, the consoles' controllers</source>
         <translation type="unfinished" />
     </message>
@@ -4763,6 +4820,22 @@
     </message>
     <message>
         <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Home</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>In the collections and the Store (also with Y); your own order: LT and RT on a console of the Store</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Consoles' order, videos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How your games are shown: the order of the consoles, the clock and the videos.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4945,7 +5018,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Move them with LB and RB in the Consoles menu</source>
+        <source>Move them with LT and RT in the Store</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Two players</source>
         <translation type="unfinished" />
     </message>
 </context>

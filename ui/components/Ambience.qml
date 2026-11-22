@@ -1,7 +1,8 @@
 // Background: a video of the selected game being played (ScreenScraper's gameplay capture, else
-// RomM's trailer), muted and looping once the selection rests, over the game's art without text
-// (ScreenScraper's blank Steam grid, else its blank marquee), else the game's cover, blurred,
-// enlarged and drifting slowly, which shows while the video loads or when a game has none.
+// RomM's trailer), muted and looping once the selection rests, over the game's art (its fan art,
+// else a screenshot, else ScreenScraper's blank Steam grid or marquee), blurred, else the game's
+// cover, blurred, enlarged and drifting slowly, which shows while the video loads or when a game
+// has none.
 // One dark filter over all of it keeps the cases and the text the subject; in attract mode (the
 // library faded out to show the video) it lightens.
 import QtQuick
@@ -23,6 +24,7 @@ Item {
     property real dim: 0              // extra darkening for pages drawn over it
     property bool scrims: true
     property bool attract: false      // the library has faded out: the video is the subject
+    property real blur: 1             // the art's blur, 0 to 1
     readonly property bool videoShown: gameplay.shown
     property int framesDecoded: 0
     readonly property string cover: game && game.cover ? game.cover : ""
@@ -39,11 +41,14 @@ Item {
 
     // ---------- the game's art without text (ScreenScraper's blank Steam grid or marquee) ----------
     function hasArt(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
-    readonly property string still: hasArt("steamgrid") ? game.art + "steamgrid" : hasArt("marquee") ? game.art + "marquee" : ""
+    readonly property string still: hasArt("backdrop") ? game.art + "backdrop" : hasArt("steamgrid") ? game.art + "steamgrid"
+                                  : hasArt("marquee") ? game.art + "marquee" : ""
     Item {
         id: stillLayer
         anchors.fill: parent
         visible: gameplay.opacity < 1 && amb.still !== ""
+        layer.enabled: amb.blur > 0 && visible
+        layer.effect: MultiEffect { autoPaddingEnabled: false; blurEnabled: true; blur: amb.blur; blurMax: 64; blurMultiplier: 0.6; saturation: 0.15 }
         property bool useA: true
         property string shown: ""
         Timer { id: stillDelay; interval: 350; onTriggered: stillLayer.swap() }
@@ -55,9 +60,9 @@ Item {
             if (useA) stillB.source = amb.still; else stillA.source = amb.still
             useA = !useA
         }
-        Image { id: stillA; anchors.fill: parent; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1920
+        Image { id: stillA; anchors { fill: parent; margins: -40 } fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1280
                 opacity: stillLayer.useA && status === Image.Ready ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 600 } } }
-        Image { id: stillB; anchors.fill: parent; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1920
+        Image { id: stillB; anchors { fill: parent; margins: -40 } fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1280
                 opacity: !stillLayer.useA && status === Image.Ready ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 600 } } }
     }
 
@@ -161,7 +166,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: "#07080a"
-        opacity: amb.attract ? 0.12 : 0.58
+        opacity: amb.attract ? 0.12 : amb.still !== "" ? 0.36 : 0.58
         Behavior on opacity { NumberAnimation { duration: amb.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
     }
     // Darker toward the floor, under the cases and the game's name.

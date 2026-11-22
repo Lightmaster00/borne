@@ -14,6 +14,8 @@ What is left to build or to check. Done work is described in [`SPEC.md`](SPEC.md
 - The library on real covers: the PlayStation hinge cut, regional N64 / Super Nintendo boxes, console
   logos from ScreenScraper on every console.
 - A 1 800-game library: 60 frames per second at 4K, library requests under 150 ms.
+- The new home on real art: the blurred fan art behind the home and the game's page (its cost on
+  the GPU), the Store's console logos on the slanted cards, the trailer in the game's window.
 - Updates by parts between two published builds, on Linux and macOS.
 
 ## To build

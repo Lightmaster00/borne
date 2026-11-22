@@ -17,7 +17,7 @@ const ctx = {
 vm.createContext(ctx)
 vm.runInContext("String.prototype.arg = function (a) { return this.replace(/%\\d/, a) }", ctx)
 vm.runInContext("var Cases = (function () {" + load("Cases.js") + "; return { of, tint, ratio, setRatios } })()", ctx)
-vm.runInContext(load("Shelf.js") + "; this.Shelf = { build, move, jumpGroup, sortsFor, quickFilters, tabOf, ready, orderConsoles, consoleOrders, layouts }", ctx)
+vm.runInContext(load("Shelf.js") + "; this.Shelf = { build, move, jumpGroup, sortsFor, quickFilters, tabOf, ready, orderConsoles, consoleOrders, layouts, recents, collections, storeCards }", ctx)
 const S = ctx.Shelf
 // Arrays made in the other context: compared by value.
 const same = (a, b) => assert.strictEqual(JSON.stringify(a), JSON.stringify(b))
@@ -132,5 +132,35 @@ const secs = s => rows.filter(g => S.tabOf(g.platform_slug) === s).reduce((a, g)
 for (let k = 1; k < playedOrder.length; k++) assert.ok(secs(playedOrder[k - 1]) >= secs(playedOrder[k]))
 assert.strictEqual(S.consoleOrders().length, 6)
 assert.strictEqual(S.layouts().length, 3)
+
+// The home: the row of recent games, the collections, the Store's console cards.
+{
+    const rec = S.recents(rows, 12)
+    assert.strictEqual(rec.length, 12)
+    const r0 = rows.find(g => g.rom_id === rec[0])
+    assert.ok(S.ready(r0) && r0.last_played > 0)
+    // Played first (latest first), then the others.
+    const lp = rec.map(id => rows.find(g => g.rom_id === id).last_played || 0)
+    for (let k = 1; k < lp.length; k++) assert.ok(lp[k] <= lp[k - 1])
+    assert.ok(rec.every(id => S.ready(rows.find(g => g.rom_id === id))))
+    const cols = S.collections(rows, consoles)
+    assert.strictEqual(cols[0].kind, "fav")
+    assert.strictEqual(cols[1].kind, "multi")
+    // Consoles with games ready here, in the consoles' order; gbc is in gb's.
+    same(cols.filter(c => c.kind === "console").map(c => c.slug), ["switch", "3ds", "psvita", "gba", "gb", "n64", "ngc"].filter(s => rows.some(g => S.ready(g) && S.tabOf(g.platform_slug) === s)))
+    assert.ok(cols.every(c => c.covers.length <= 4))
+    const fav = rows.filter(g => S.ready(g) && g.favourite).length
+    assert.strictEqual(cols[0].count, fav)
+    // Favourites stays even when empty.
+    assert.strictEqual(S.collections(rows.map(g => Object.assign({}, g, { favourite: false })), consoles)[0].count, 0)
+    const cards = S.storeCards(rows, consoles)
+    assert.ok(cards.length > 0 && cards.every(c => c.count > 0 && c.covers.length <= 3))
+    const sw = cards.find(c => c.slug === "switch")
+    assert.strictEqual(sw.count, rows.filter(g => !S.ready(g) && g.platform_slug === "switch").length)
+    assert.strictEqual(sw.first, Math.max(...rows.filter(g => !S.ready(g) && g.platform_slug === "switch").map(g => g.rom_id)))
+    // A fixed cover height for the folders' grid.
+    const l = S.build(rows, opt({ layout: "grid", tileH: 250 }))
+    assert.ok(l.tiles.every(t => t.h === 250))
+}
 
 console.log("shelf: ok")

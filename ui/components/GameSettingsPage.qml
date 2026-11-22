@@ -274,14 +274,12 @@ Item {
     }
     function focused(id, i) { return !!(inRows && rows[row] && rows[row].id === id && colOf(id) === i) }
 
-    Rectangle { anchors.fill: parent; color: theme.bg }
-
     // ---------- sections ----------
     Rectangle {
         id: side
-        width: 480
+        width: page.width >= 1500 ? 480 : 420
         height: parent.height
-        color: Qt.rgba(1, 1, 1, 0.05)
+        color: "transparent"
         Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.1) }
         Column {
             x: 64; y: 64
@@ -462,7 +460,7 @@ Item {
     Column {
         id: asidePanel
         anchors { right: parent.right; rightMargin: 72; top: parent.top; topMargin: 72 }
-        width: parent.width > 1700 ? 460 : 330
+        width: parent.width > 1700 ? 460 : 300
         spacing: 16
         Text { width: parent.width; wrapMode: Text.WordWrap; text: page.aside.title; color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.ExtraBold } }
         Text { width: parent.width; wrapMode: Text.WordWrap; text: page.aside.text; lineHeight: 1.3; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 17; weight: Font.DemiBold } }

@@ -140,7 +140,7 @@ function quickFilters(tab) {
 
 // The shelf. rows: the library (every game); opt: { tab: "home" | "store", console: tab slug or
 // "", quick: { id: true }, genre, sort, layout, width, height (of the shelf), consoles: [{ slug,
-// name }] in their order, now, fmtSize }.
+// name }] in their order, now, fmtSize, tileH (the covers' height, else from the shelf's size) }.
 // Returns { tiles: [{ idx, x, cx, y, w, h, row, sub, group, caption }], groups: [{ x, y, w, label,
 // count, slug }], total (width), totalH (height), vertical, count }. idx points into rows; row
 // counts the lines of covers from the top (grid) or 0 / 1 (two rows).
@@ -194,7 +194,7 @@ function build(rows, opt) {
     }
 
     const z = sizes(layout, opt.width, opt.height)
-    const H = z.tileH
+    const H = opt.tileH || z.tileH
     const sub = i => subOf(sort, rows[i], tab, !!opt.console, now, opt.fmtSize)
     const widthOf = i => Math.round(H * ratioOf(rows[i]))
     const tiles = [], groups = []
@@ -313,7 +313,7 @@ function consoleOrders() {
         { id: "year", label: qsTr("Release date"), hint: qsTr("Newest first") },
         { id: "name", label: qsTr("Name"), hint: qsTr("From A to Z") },
         { id: "maker", label: qsTr("Maker"), hint: qsTr("Nintendo, Sony, Sega… then by date") },
-        { id: "custom", label: qsTr("Your order"), hint: qsTr("Move them with LB and RB in the Consoles menu") }
+        { id: "custom", label: qsTr("Your order"), hint: qsTr("Move them with LT and RT in the Store") }
     ]
 }
 
@@ -340,4 +340,49 @@ function orderConsoles(consoles, order, rows, tab, custom) {
         }
     }
     return keep.sort(by[order] || by.played).map(x => x.c)
+}
+
+// ---------- the home (P11) ----------
+
+// The home's row: the games ready here, the last played first (those never played after them, by
+// name). Their rom ids, at most n.
+function recents(rows, n) {
+    const list = (rows || []).filter(ready).sort(compare("played"))
+    return list.slice(0, n).map(g => g.rom_id)
+}
+
+// The home's collections: Favourites (always, so it says how to fill it), Two players, then one
+// per console with games ready here, in `consoles`' order.
+// [{ id, kind: "fav" | "multi" | "console", slug, name, count, covers: [up to 4 cover URLs] }]
+function collections(rows, consoles) {
+    const home = (rows || []).filter(ready).sort(compare("played"))
+    const make = (id, kind, slug, name, list) => ({ id, kind, slug, name, count: list.length,
+                                                    covers: list.slice(0, 4).map(g => g.cover || "") })
+    const out = [make("fav", "fav", "", qsTr("Favourites"), home.filter(g => !!g.favourite))]
+    const multi = home.filter(g => maxPlayers(g) >= 2)
+    if (multi.length) out.push(make("multi", "multi", "", qsTr("Two players"), multi))
+    for (const c of consoles || []) {
+        const list = home.filter(g => tabOf(g.platform_slug) === c.slug)
+        if (list.length) out.push(make("c:" + c.slug, "console", c.slug, c.name, list))
+    }
+    return out
+}
+
+// The Store's consoles, as cards: those with games to discover, in `consoles`' order.
+// [{ slug, name, logo, count (to discover), installed, covers: [up to 3, the newest first], first (its
+// newest game's rom id), made ("Nintendo, 2017") }]
+function storeCards(rows, consoles) {
+    const store = {}, installed = {}
+    for (const g of rows || []) {
+        const c = tabOf(g.platform_slug)
+        if (ready(g)) installed[c] = (installed[c] || 0) + 1
+        else (store[c] = store[c] || []).push(g)
+    }
+    const newest = compare("added")
+    return (consoles || []).filter(c => store[c.slug] && store[c.slug].length).map(c => {
+        const list = store[c.slug].sort(newest)
+        return { slug: c.slug, name: c.name, logo: c.logo || "", count: list.length, installed: installed[c.slug] || 0,
+                 covers: list.slice(0, 3).map(g => g.cover || ""), first: list[0].rom_id,
+                 made: madeBy(c.slug) ? madeBy(c.slug) + (madeIn(c.slug) ? ", " + madeIn(c.slug) : "") : "" }
+    })
 }

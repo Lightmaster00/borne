@@ -1500,21 +1500,6 @@
     </message>
 </context>
 <context>
-    <name>FilterOverlay</name>
-    <message>
-        <source>installed · %1 in the store</source>
-        <translation>installés · %1 dans la boutique</translation>
-    </message>
-    <message>
-        <source>Consoles</source>
-        <translation>Consoles</translation>
-    </message>
-    <message>
-        <source>Order</source>
-        <translation>Ordre</translation>
-    </message>
-</context>
-<context>
     <name>GamePage</name>
     <message>
         <source>%1 GB</source>
@@ -1665,14 +1650,6 @@
         <translation>%1 joueurs</translation>
     </message>
     <message>
-        <source>Playing from the network is unavailable here: %1</source>
-        <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
-    </message>
-    <message>
-        <source>Select</source>
-        <translation>Sélectionner</translation>
-    </message>
-    <message>
         <source>Studios</source>
         <translation>Studios</translation>
     </message>
@@ -1693,10 +1670,6 @@
         <translation>Pas encore de résumé pour ce jeu.</translation>
     </message>
     <message>
-        <source>More about the game</source>
-        <translation>Plus sur le jeu</translation>
-    </message>
-    <message>
         <source>The trailer cannot be played: %1</source>
         <translation>La bande-annonce ne peut pas être lue : %1</translation>
     </message>
@@ -1707,10 +1680,6 @@
     <message>
         <source>Loading the trailer…</source>
         <translation>Chargement de la bande-annonce…</translation>
-    </message>
-    <message>
-        <source>Source: RomM</source>
-        <translation>Source : RomM</translation>
     </message>
     <message>
         <source>Remove from favourites</source>
@@ -1741,10 +1710,6 @@
         <translation>rév. %1</translation>
     </message>
     <message>
-        <source>Version</source>
-        <translation>Version</translation>
-    </message>
-    <message>
         <source>Never</source>
         <translation>Jamais</translation>
     </message>
@@ -1773,10 +1738,6 @@
         <translation>Note des joueurs</translation>
     </message>
     <message>
-        <source>out of 100</source>
-        <translation>sur 100</translation>
-    </message>
-    <message>
         <source>%1 h</source>
         <translation>%1 h</translation>
     </message>
@@ -1789,28 +1750,12 @@
         <translation>Ton temps de jeu</translation>
     </message>
     <message>
-        <source>on this profile</source>
-        <translation>sur ce profil</translation>
-    </message>
-    <message>
         <source>Not played yet</source>
         <translation>Pas encore joué</translation>
     </message>
     <message>
         <source>Last played</source>
         <translation>Dernière partie</translation>
-    </message>
-    <message>
-        <source>Installed</source>
-        <translation>Installé</translation>
-    </message>
-    <message>
-        <source>From the network</source>
-        <translation>Depuis le réseau</translation>
-    </message>
-    <message>
-        <source>On the server</source>
-        <translation>Sur le serveur</translation>
     </message>
     <message>
         <source>Modes</source>
@@ -1843,6 +1788,106 @@
     <message>
         <source>Controller</source>
         <translation>Manette</translation>
+    </message>
+    <message>
+        <source>%1 / 100</source>
+        <translation>%1 / 100</translation>
+    </message>
+    <message>
+        <source>In your favourites · A to remove it</source>
+        <translation>Dans tes favoris · A pour l’en retirer</translation>
+    </message>
+    <message>
+        <source>Add to your favourites</source>
+        <translation>Ajouter à tes favoris</translation>
+    </message>
+    <message>
+        <source>Game settings · %1</source>
+        <translation>Réglages du jeu · %1</translation>
+    </message>
+    <message>
+        <source>Fact sheet</source>
+        <translation>Fiche technique</translation>
+    </message>
+    <message>
+        <source>Back to the summary</source>
+        <translation>Revenir au résumé</translation>
+    </message>
+    <message>
+        <source>%1 played · last time %2</source>
+        <translation>%1 de jeu · dernière partie %2</translation>
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation>Jamais joué</translation>
+    </message>
+    <message>
+        <source>Nothing stored on this device</source>
+        <translation>Rien n’est stocké sur cette machine</translation>
+    </message>
+    <message>
+        <source>Screenshots</source>
+        <translation>Captures d'écran</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
+    <message>
+        <source>Gallery</source>
+        <translation>Galerie</translation>
+    </message>
+    <message>
+        <source>Sound off</source>
+        <translation>Couper le son</translation>
+    </message>
+    <message>
+        <source>Sound on</source>
+        <translation>Mettre le son</translation>
+    </message>
+    <message>
+        <source>View</source>
+        <translation>Voir</translation>
+    </message>
+    <message>
+        <source>Actions</source>
+        <translation>Actions</translation>
+    </message>
+    <message>
+        <source>Studio:</source>
+        <translation>Studio :</translation>
+    </message>
+    <message>
+        <source>rated %1</source>
+        <translation>note %1</translation>
+    </message>
+    <message>
+        <source>Released:</source>
+        <translation>Sortie :</translation>
+    </message>
+    <message>
+        <source>Players:</source>
+        <translation>Joueurs :</translation>
+    </message>
+    <message>
+        <source>A to turn the sound off</source>
+        <translation>A pour couper le son</translation>
+    </message>
+    <message>
+        <source>A to hear the trailer</source>
+        <translation>A pour entendre la bande-annonce</translation>
+    </message>
+    <message>
+        <source>Screenshot %1 of %2 · A to see it in large</source>
+        <translation>Capture %1 sur %2 · A pour la voir en grand</translation>
+    </message>
+    <message>
+        <source>Trailer</source>
+        <translation>Bande-annonce</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Capture %1</translation>
     </message>
 </context>
 <context>
@@ -2250,32 +2295,8 @@
 <context>
     <name>LibraryHome</name>
     <message>
-        <source>My library</source>
-        <translation>Ma ludothèque</translation>
-    </message>
-    <message>
         <source>Store</source>
         <translation>Boutique</translation>
-    </message>
-    <message>
-        <source>Console: %1</source>
-        <translation>Console : %1</translation>
-    </message>
-    <message>
-        <source>All</source>
-        <translation>Toutes</translation>
-    </message>
-    <message>
-        <source>Console</source>
-        <translation>Console</translation>
-    </message>
-    <message>
-        <source>Settings</source>
-        <translation>Paramètres</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n game(s)</source>
-        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>%n already in your library</source>
@@ -2284,6 +2305,58 @@
     <message>
         <source>None in your library yet</source>
         <translation>Aucun dans ta ludothèque pour l’instant</translation>
+    </message>
+    <message>
+        <source>Recently played</source>
+        <translation>Joués récemment</translation>
+    </message>
+    <message>
+        <source>In progress</source>
+        <translation>En cours</translation>
+    </message>
+    <message>
+        <source>All your games</source>
+        <translation>Tous tes jeux</translation>
+    </message>
+    <message>
+        <source>In progress · %1</source>
+        <translation>En cours · %1</translation>
+    </message>
+    <message>
+        <source>%1 · played %2</source>
+        <translation>%1 · joué %2</translation>
+    </message>
+    <message>
+        <source>%1 · never played</source>
+        <translation>%1 · jamais joué</translation>
+    </message>
+    <message>
+        <source>See all</source>
+        <translation>Tout voir</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) ready to play, the last played first</source>
+        <translation><numerusform>%n jeu prêt à jouer, le dernier joué d’abord</numerusform><numerusform>%n jeux prêts à jouer, les derniers joués d’abord</numerusform></translation>
+    </message>
+    <message>
+        <source>%1 h played</source>
+        <translation>%1 h de jeu</translation>
+    </message>
+    <message>
+        <source>%1 min played</source>
+        <translation>%1 min de jeu</translation>
+    </message>
+    <message>
+        <source>Collections</source>
+        <translation>Collections</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) to discover</source>
+        <translation><numerusform>%n jeu à découvrir</numerusform><numerusform>%n jeux à découvrir</numerusform></translation>
+    </message>
+    <message>
+        <source>No favourite yet. On a game's page, the heart adds it here.</source>
+        <translation>Pas encore de favori. Sur la fiche d’un jeu, le cœur l’ajoute ici.</translation>
     </message>
 </context>
 <context>
@@ -3113,24 +3186,12 @@
         <translation>Toutes les consoles</translation>
     </message>
     <message>
-        <source>No game matches this filter. Change it with %1 (Filter).</source>
-        <translation>Aucun jeu ne correspond à ce filtre. Change-le avec %1 (Filtrer).</translation>
-    </message>
-    <message>
         <source>No game installed yet. Open the Store with %1 to download one.</source>
         <translation>Aucun jeu installé pour l’instant. Ouvre la boutique avec %1 pour en télécharger un.</translation>
     </message>
     <message>
         <source>Every game of your server is installed here.</source>
         <translation>Tous les jeux de ton serveur sont installés ici.</translation>
-    </message>
-    <message>
-        <source>every console</source>
-        <translation>toutes consoles</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n game(s) ready to play</source>
-        <translation><numerusform>%n jeu prêt à jouer</numerusform><numerusform>%n jeux prêts à jouer</numerusform></translation>
     </message>
     <message numerus="yes">
         <source>%n game(s) of your server to discover</source>
@@ -3139,10 +3200,6 @@
     <message numerus="yes">
         <source>%n download(s)</source>
         <translation><numerusform>%n téléchargement</numerusform><numerusform>%n téléchargements</numerusform></translation>
-    </message>
-    <message>
-        <source>Console</source>
-        <translation>Console</translation>
     </message>
     <message>
         <source>Apply</source>
@@ -3157,14 +3214,6 @@
         <translation>Groupes</translation>
     </message>
     <message>
-        <source>All your games, every console together</source>
-        <translation>Tous tes jeux, toutes consoles confondues</translation>
-    </message>
-    <message>
-        <source>%1 installed · %2 in the store</source>
-        <translation>%1 installés · %2 dans la boutique</translation>
-    </message>
-    <message>
         <source>Order of the consoles</source>
         <translation>Ordre des consoles</translation>
     </message>
@@ -3173,36 +3222,8 @@
         <translation>Trier par</translation>
     </message>
     <message>
-        <source>Layout</source>
-        <translation>Disposition</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n filter(s)</source>
-        <translation><numerusform>%n filtre</numerusform><numerusform>%n filtres</numerusform></translation>
-    </message>
-    <message numerus="yes">
-        <source>%n console(s)</source>
-        <translation><numerusform>%n console</numerusform><numerusform>%n consoles</numerusform></translation>
-    </message>
-    <message>
         <source>Order</source>
         <translation>Ordre</translation>
-    </message>
-    <message>
-        <source>Consoles</source>
-        <translation>Consoles</translation>
-    </message>
-    <message>
-        <source>Filter</source>
-        <translation>Filtrer</translation>
-    </message>
-    <message>
-        <source>Turn on / off</source>
-        <translation>Activer / désactiver</translation>
-    </message>
-    <message>
-        <source>Show</source>
-        <translation>Afficher</translation>
     </message>
     <message>
         <source>Move</source>
@@ -3213,12 +3234,84 @@
         <translation>Voir ses jeux</translation>
     </message>
     <message>
-        <source>My library</source>
-        <translation>Ma ludothèque</translation>
+        <source>%1 · change profile</source>
+        <translation>%1 · changer de profil</translation>
     </message>
     <message>
-        <source>Every console of your server, as large cards</source>
-        <translation>Toutes les consoles de ton serveur, en grandes cartes</translation>
+        <source>Profiles</source>
+        <translation>Profils</translation>
+    </message>
+    <message>
+        <source>Home</source>
+        <translation>Accueil</translation>
+    </message>
+    <message>
+        <source>Store</source>
+        <translation>Boutique</translation>
+    </message>
+    <message>
+        <source>Downloads</source>
+        <translation>Téléchargements</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
+    </message>
+    <message>
+        <source>Quit Borne?</source>
+        <translation>Quitter Borne ?</translation>
+    </message>
+    <message>
+        <source>Quit</source>
+        <translation>Quitter</translation>
+    </message>
+    <message>
+        <source>All my games</source>
+        <translation>Tous mes jeux</translation>
+    </message>
+    <message>
+        <source>No game for two players here yet.</source>
+        <translation>Pas encore de jeu à deux ici.</translation>
+    </message>
+    <message>
+        <source>Consoles: %1</source>
+        <translation>Consoles : %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) to discover</source>
+        <translation><numerusform>%n jeu à découvrir</numerusform><numerusform>%n jeux à découvrir</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
+    </message>
+    <message>
+        <source>Sort: %1</source>
+        <translation>Tri : %1</translation>
+    </message>
+    <message>
+        <source>Sort</source>
+        <translation>Trier</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Retour</translation>
+    </message>
+    <message>
+        <source>Games</source>
+        <translation>Jeux</translation>
+    </message>
+    <message>
+        <source>Home / Store</source>
+        <translation>Accueil / Boutique</translation>
+    </message>
+    <message>
+        <source>Recently played</source>
+        <translation>Joués récemment</translation>
+    </message>
+    <message>
+        <source>Collections</source>
+        <translation>Collections</translation>
     </message>
 </context>
 <context>
@@ -4626,36 +4719,8 @@
         <translation>Votre préféré. Un jeu qui ne fonctionne pas dessus démarre tout seul sur l’autre</translation>
     </message>
     <message>
-        <source>Covers</source>
-        <translation>Jaquettes</translation>
-    </message>
-    <message>
-        <source>Layout</source>
-        <translation>Disposition</translation>
-    </message>
-    <message>
-        <source>How the games are shown in My library and the Store (also in the menu Y)</source>
-        <translation>Comment les jeux sont présentés dans Ma ludothèque et la Boutique (aussi dans le menu Y)</translation>
-    </message>
-    <message>
-        <source>Grid</source>
-        <translation>Grille</translation>
-    </message>
-    <message>
-        <source>Large row</source>
-        <translation>Grande rangée</translation>
-    </message>
-    <message>
-        <source>Two rows</source>
-        <translation>Deux rangées</translation>
-    </message>
-    <message>
         <source>Order of the consoles</source>
         <translation>Ordre des consoles</translation>
-    </message>
-    <message>
-        <source>In the Consoles menu (X) and the Store; your own order is set there with LB and RB</source>
-        <translation>Dans le menu Consoles (X) et la Boutique ; ton propre ordre se règle là, avec LB et RB</translation>
     </message>
     <message>
         <source>Most played</source>
@@ -4730,14 +4795,6 @@
         <translation>Chaque console peut avoir les siens (Réglages → Consoles → la console), et chaque jeu aussi (sa fiche, Y). Appliqué au prochain lancement d’un jeu.</translation>
     </message>
     <message>
-        <source>Layout, consoles' order, videos</source>
-        <translation>Disposition, ordre des consoles, vidéos</translation>
-    </message>
-    <message>
-        <source>How your games are shown: the covers' layout, the order of the consoles and the videos.</source>
-        <translation>Comment tes jeux sont présentés : la disposition des jaquettes, l’ordre des consoles et les vidéos.</translation>
-    </message>
-    <message>
         <source>Buttons, the consoles' controllers</source>
         <translation>Boutons, manettes des consoles</translation>
     </message>
@@ -4764,6 +4821,22 @@
     <message>
         <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
         <translation>Borne lui-même : sa taille, ses animations, ses sons et les boutons qu’il affiche.</translation>
+    </message>
+    <message>
+        <source>Home</source>
+        <translation>Accueil</translation>
+    </message>
+    <message>
+        <source>In the collections and the Store (also with Y); your own order: LT and RT on a console of the Store</source>
+        <translation>Dans les collections et la Boutique (aussi avec Y) ; ton propre ordre : LT et RT sur une console de la Boutique</translation>
+    </message>
+    <message>
+        <source>Consoles' order, videos</source>
+        <translation>Ordre des consoles, vidéos</translation>
+    </message>
+    <message>
+        <source>How your games are shown: the order of the consoles, the clock and the videos.</source>
+        <translation>Comment tes jeux sont présentés : l’ordre des consoles, l’heure et les vidéos.</translation>
     </message>
 </context>
 <context>
@@ -4945,8 +5018,12 @@
         <translation>Personnalisé</translation>
     </message>
     <message>
-        <source>Move them with LB and RB in the Consoles menu</source>
-        <translation>Déplace-les avec LB et RB dans le menu Consoles</translation>
+        <source>Move them with LT and RT in the Store</source>
+        <translation>Déplace-les avec LT et RT dans la Boutique</translation>
+    </message>
+    <message>
+        <source>Two players</source>
+        <translation>À deux</translation>
     </message>
 </context>
 <context>

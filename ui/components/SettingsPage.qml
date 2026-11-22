@@ -66,14 +66,12 @@ Item {
                  items: choices.map(c => ({ id: String(c[0]), label: c[1], value: c[0] })) }
     }
     function secs(n) { return n >= 60 ? qsTr("%1 min").arg(n / 60) : qsTr("%1 s").arg(n) }
-    // The library: how the games are laid out, the consoles' order, the videos.
+    // The library: the consoles' order, the clock, the videos.
     function libraryRows() {
         const on = [[true, qsTr("On")], [false, qsTr("Off")]]
         const rows = [
-            group(qsTr("Covers")),
-            pref("layout", qsTr("Layout"), qsTr("How the games are shown in My library and the Store (also in the menu Y)"),
-                 [["grid", qsTr("Grid")], ["row", qsTr("Large row")], ["rows2", qsTr("Two rows")]]),
-            pref("consoleOrder", qsTr("Order of the consoles"), qsTr("In the Consoles menu (X) and the Store; your own order is set there with LB and RB"),
+            group(qsTr("Home")),
+            pref("consoleOrder", qsTr("Order of the consoles"), qsTr("In the collections and the Store (also with Y); your own order: LT and RT on a console of the Store"),
                  [["played", qsTr("Most played")], ["count", qsTr("Most games")], ["year", qsTr("Release date")], ["name", qsTr("Name")], ["maker", qsTr("Maker")], ["custom", qsTr("Your order")]]),
             pref("showClock", qsTr("Clock"), qsTr("The time at the top of the library"), [[true, qsTr("Shown")], [false, qsTr("Hidden")]]),
             group(qsTr("Videos")),
@@ -412,8 +410,8 @@ Item {
         { id: "consoles", name: qsTr("Consoles"), warn: consoles.some(c => consoleIssues(c).some(i => i.tone === "bad")),
           hint: consoles.length ? qsTr("%n console(s)", "", consoles.length) : qsTr("Emulator, picture, BIOS"),
           intro: qsTr("Everything about each console of your library: the emulator that plays it, that emulator's options, the picture and the system files. A game can still have its own settings, from its page.") },
-        { id: "shelf", name: qsTr("Library"), hint: qsTr("Layout, consoles' order, videos"),
-          intro: qsTr("How your games are shown: the covers' layout, the order of the consoles and the videos.") },
+        { id: "shelf", name: qsTr("Library"), hint: qsTr("Consoles' order, videos"),
+          intro: qsTr("How your games are shown: the order of the consoles, the clock and the videos.") },
         { id: "controls", name: qsTr("Controllers"), hint: qsTr("Buttons, the consoles' controllers"),
           intro: qsTr("The controllers connected, how their buttons play in every game, and which controller each console's games see.") },
         { id: "language", name: qsTr("Language"), hint: prefs && prefs.language !== "auto" ? (prefs.language === "fr" ? "Français" : "English") : qsTr("As the system"),

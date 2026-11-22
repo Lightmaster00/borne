@@ -56,21 +56,22 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 
 - **Profiles** ("Who's playing?"), each bound to a RomM account; pairing without a keyboard (code or
   QR code approved from the phone). Tokens are kept outside the database, readable only by you.
-- **Your library, offline too**: *My library* holds the games ready to play here; the *Store* opens
-  on your server's consoles as large cards, and A shows a console's games. Large covers at their own
-  proportions, in the layout you choose: a grid scrolling down, one large row with the selected game
-  above it, or two rows. Games come in groups the order explains (This week, A – F, the 1990s…);
-  choose a console in the Consoles menu (cards fanned like a hand, ordered by play time, number of
-  games, release date, name, maker or your own order), filter favourites, never played, two players
-  or a genre, sort by last played, newest, name, play time or release date, search as you type, in
-  titles from every region.
+- **A console's home, offline too**: over the selected game's art, the games you played lately
+  in a row (the one selected large, its name under it), then your collections as folders:
+  Favourites, Two players, one per console. A rail on the left for your profile, the Store,
+  downloads and settings. "See all", a collection or a console opens a glass folder with its games,
+  sorted by last played, newest, name, play time or release date; search as you type, in titles
+  from every region.
+- **The Store**: your server's consoles as slanted cards in their colours, the one selected opening
+  wide on three of its games; ordered by play time, number of games, release date, name, maker or
+  your own order (LT / RT move a console).
 - **A border in your console's colours**: the screen is framed in the colour of the console of the
   game you are on, its logo large on top; a video of the selected game can play behind (off by
   default).
-- **Game page**: a sheet with the cover, Play, favourite and the game's own settings (Y); the
-  players' rating, your play time, the languages it really exists in, the summary, a table of facts
-  (studios, series, release, modes, age rating, file, emulator, controller), the screenshots, and the
-  trailer playing softly behind.
+- **Game page**: a glass window over the game's art, its trailer playing there; Play (or
+  Install), the heart for your favourites, the game's own settings (Y) and its fact sheet (players'
+  rating, your play time, studios, series, release, modes, age rating, languages, file, emulator,
+  controller); under it a gallery, the trailer then the screenshots.
 - **Each game its controller**: the version and the language, and the controller the console sees,
   per console or per game: a Switch Pro Controller, a pair of Joy-Con or the console in hand (the
   Pokémon Let's Go games get the Joy-Con by themselves); a Wii Remote with its Nunchuk, alone, held
@@ -126,13 +127,12 @@ and the emulators' releases).
 |---|---|---|
 | D-pad / left stick | Arrows | Move |
 | A | Enter | Open / choose |
-| B | Escape | Back (in the Store, back to its consoles) |
-| X | X | Consoles (choose one, their order, quick filters, genre) |
-| Y | T or Y | Sort and layout; on a game's page, its settings |
+| B | Escape | Back (from a folder, a game's page, the rail) |
+| Y | T or Y | In a folder its order; on the home and the Store, the consoles' order; on a game's page, its settings |
 | Select | F2, Ctrl+F or / | Search (on the profile screen, Y: profile options) |
 | — | Any letter or digit | Start a search with it |
-| LB / RB | Page Up / Page Down, Q / E | My library / Store; in the Consoles menu, move the console chosen |
-| LT / RT | R / C, Home / End | Previous / next group |
+| LB / RB | Page Up / Page Down, Q / E | Home / Store |
+| LT / RT | R / C, Home / End | In a folder, previous / next group; in the Store, move the console selected |
 | R3 | Tab | Downloads |
 | Start | M or F1 | Settings |
 | Select + Start, together | Escape | Pause and ask whether to quit (any emulator) |
