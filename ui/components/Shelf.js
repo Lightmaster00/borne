@@ -1,17 +1,34 @@
 // The library's shelf: which games show (My library: ready to play here; Store: the others),
 // in what order, gathered in groups the order explains (This week, A – D, the 1990s…), and where
-// each cover stands. Covers are all the same height; each keeps its own proportions (the cover's,
-// else its console's case), so a Game Boy Advance box stands square and a Switch case narrow.
-// Two rows; a column is as wide as its widest cover. Pure functions: the QML only draws.
+// each cover stands. Covers of a shelf are all the same height; each keeps its own proportions
+// (the cover's, else its console's case), so a Game Boy Advance box stands square and a Switch
+// case narrow. Three layouts, chosen in the Sort menu or Settings:
+//   grid   large covers in rows that fill the width, the groups one under the other (scrolls down)
+//   row    one row of large covers (the selected game's title and summary shown above it)
+//   rows2  two rows (scrolls sideways)
+// Pure functions: the QML only draws.
 .pragma library
 .import "Cases.js" as Cases
 
-// Sizes for a shelf `height` high (its two rows and their captions): covers as tall as fits,
-// between 140 and 290 (a large interface, a small window: smaller covers, never cut).
-const CAPTION = 52, ROW_GAP = 34, GAP = 46, GROUP_GAP = 130
-function sizes(height) {
-    const tileH = Math.round(Math.max(140, Math.min(290, ((height || 640) - ROW_GAP - 2 * CAPTION) / 2)))
-    return { tileH, rowH: tileH + CAPTION, heroW: Math.round(tileH * 1.92), minCol: Math.round(tileH * 0.6) }
+const CAPTION = 52, ROW_GAP = 34, GAP = 46, GROUP_GAP = 130, HEAD = 66, GRID_GAP = 40, GRID_ROW_GAP = 30, GRID_GROUP_GAP = 34
+
+function layouts() {
+    return [
+        { id: "grid", label: qsTr("Grid"), hint: qsTr("Large covers, scroll down by sections") },
+        { id: "row", label: qsTr("Large row"), hint: qsTr("One row, the selected game large above it") },
+        { id: "rows2", label: qsTr("Two rows"), hint: qsTr("More games on screen") }
+    ]
+}
+function layoutOf(id) { return ["grid", "row", "rows2"].indexOf(id) >= 0 ? id : "grid" }
+
+// Covers' height for a shelf `width` × `height` (its rows, captions and group titles).
+function sizes(layout, width, height) {
+    const w = width || 1600, h = height || 720
+    const clamp = (v, lo, hi) => Math.round(Math.max(lo, Math.min(hi, v)))
+    if (layout === "row") return { tileH: clamp(h - HEAD, 160, 460), caption: 0, rows: 1 }
+    if (layout === "rows2") return { tileH: clamp((h - HEAD - ROW_GAP - 2 * CAPTION) / 2, 140, 340), caption: CAPTION, rows: 2 }
+    // Grid: about five cases of a DVD's shape to a row, never taller than most of the view.
+    return { tileH: clamp(Math.min((w - 4 * GRID_GAP) / (5 * 0.72), (h - HEAD - CAPTION) * 0.66), 180, 420), caption: CAPTION, rows: 0 }
 }
 
 // Consoles that are one in practice share a tab (core: library::JOINED).
@@ -122,11 +139,14 @@ function quickFilters(tab) {
 }
 
 // The shelf. rows: the library (every game); opt: { tab: "home" | "store", console: tab slug or
-// "", quick: { id: true }, genre, sort, height (of the two rows), consoles: [{ slug, name }] in their order, now, fmtSize }.
-// Returns { tiles: [{ idx, x, cx, y, w, h, hero, row, sub, group }], groups: [{ x, w, label,
-// count, slug }], total, count }. idx points into rows.
+// "", quick: { id: true }, genre, sort, layout, width, height (of the shelf), consoles: [{ slug,
+// name }] in their order, now, fmtSize }.
+// Returns { tiles: [{ idx, x, cx, y, w, h, row, sub, group, caption }], groups: [{ x, y, w, label,
+// count, slug }], total (width), totalH (height), vertical, count }. idx points into rows; row
+// counts the lines of covers from the top (grid) or 0 / 1 (two rows).
 function build(rows, opt) {
     const tab = opt.tab, sort = opt.sort, now = opt.now
+    const layout = layoutOf(opt.layout)
     const quick = quickFilters(tab).filter(q => opt.quick && opt.quick[q.id])
     const picked = []
     for (let i = 0; i < rows.length; i++) {
@@ -140,38 +160,22 @@ function build(rows, opt) {
     const cmp = compare(sort)
     picked.sort((a, b) => cmp(rows[a], rows[b]))
 
-    const z = sizes(opt.height)
-    const TILE_H = z.tileH, ROW_H = z.rowH, HERO_W = z.heroW, MIN_COL = z.minCol
-    const tiles = [], groups = []
-    let x = 0
-    let rest = picked
-    const byConsole = tab === "store" && !opt.console
-    const heroLabel = byConsole ? "" : sort === "played" ? qsTr("Resume") : sort === "time" ? qsTr("Your most played")
-                    : sort === "added" ? qsTr("Newest") : ""
-    const heroOk = heroLabel && picked.length > 2
-        && !(sort === "played" && !rows[picked[0]].last_played) && !(sort === "time" && !(rows[picked[0]].play_seconds > 0))
-    if (heroOk) {
-        const h = ROW_H * 2 + ROW_GAP - CAPTION
-        groups.push({ x, w: HERO_W, label: heroLabel, count: "", slug: "" })
-        tiles.push({ idx: picked[0], x, cx: x, y: 0, w: HERO_W, h, hero: true, row: 0, group: 0,
-                     sub: subOf(sort, rows[picked[0]], tab, !!opt.console, now, opt.fmtSize) })
-        x += HERO_W + GROUP_GAP
-        rest = picked.slice(1)
-    }
-    // The groups, in order of appearance (consoles: in the consoles' order).
+    // The groups, in order of appearance (the Store without a console: by console, in the
+    // consoles' order).
     let list = []
+    const byConsole = tab === "store" && !opt.console
     if (byConsole) {
         for (const c of opt.consoles || []) {
-            const items = rest.filter(i => tabOf(rows[i].platform_slug) === c.slug)
+            const items = picked.filter(i => tabOf(rows[i].platform_slug) === c.slug)
             if (items.length) list.push({ label: c.name, slug: c.slug, items })
         }
         const known = {}
         for (const c of opt.consoles || []) known[c.slug] = true
-        const others = rest.filter(i => !known[tabOf(rows[i].platform_slug)])
+        const others = picked.filter(i => !known[tabOf(rows[i].platform_slug)])
         if (others.length) list.push({ label: qsTr("Other consoles"), slug: "", items: others })
     } else {
-        rest.forEach((i, k) => {
-            const label = groupOf(sort, rows[i], k + (heroOk ? 1 : 0), now)
+        picked.forEach((i, k) => {
+            const label = groupOf(sort, rows[i], k, now)
             const last = list[list.length - 1]
             if (last && last.label === label) last.items.push(i)
             else list.push({ label, slug: "", items: [i] })
@@ -188,34 +192,76 @@ function build(rows, opt) {
             list = merged.map(m => ({ label: m.label === m.to ? m.label : m.label + " – " + m.to, slug: "", items: m.items }))
         }
     }
+
+    const z = sizes(layout, opt.width, opt.height)
+    const H = z.tileH
+    const sub = i => subOf(sort, rows[i], tab, !!opt.console, now, opt.fmtSize)
+    const widthOf = i => Math.round(H * ratioOf(rows[i]))
+    const tiles = [], groups = []
+    if (layout === "grid") {
+        const W = Math.max(400, opt.width || 1600)
+        let y = 0, row = -1
+        for (const gr of list) {
+            const gi = groups.length
+            groups.push({ x: 0, y, w: W, label: gr.label, count: String(gr.items.length), slug: gr.slug })
+            y += HEAD
+            let x = 0
+            row++
+            for (const i of gr.items) {
+                const w = widthOf(i)
+                if (x > 0 && x + w > W) { x = 0; y += H + CAPTION + GRID_ROW_GAP; row++ }
+                tiles.push({ idx: i, x, cx: x + w / 2, y, w, h: H, row, group: gi, sub: sub(i), caption: true })
+                x += w + GRID_GAP
+            }
+            y += H + CAPTION + GRID_ROW_GAP + GRID_GROUP_GAP
+        }
+        return { tiles, groups, total: W, totalH: Math.max(0, y - GRID_ROW_GAP - GRID_GROUP_GAP), vertical: true, count: picked.length }
+    }
+    const n = z.rows
+    const minCol = Math.round(H * 0.6)
+    let x = 0
     for (const gr of list) {
         const start = x, gi = groups.length
         let cx = x
-        for (let k = 0; k < gr.items.length; k += 2) {
-            const pair = gr.items.slice(k, k + 2)
-            const widths = pair.map(i => Math.round(TILE_H * ratioOf(rows[i])))
-            const colW = Math.max(MIN_COL, Math.max.apply(null, widths))
-            pair.forEach((i, row) => {
-                tiles.push({ idx: i, x: cx + (colW - widths[row]) / 2, cx, y: row * (ROW_H + ROW_GAP), w: widths[row], h: TILE_H,
-                             hero: false, row, group: gi, sub: subOf(sort, rows[i], tab, !!opt.console, now, opt.fmtSize) })
+        for (let k = 0; k < gr.items.length; k += n) {
+            const col = gr.items.slice(k, k + n)
+            const widths = col.map(widthOf)
+            const colW = Math.max(minCol, Math.max.apply(null, widths))
+            col.forEach((i, row) => {
+                tiles.push({ idx: i, x: cx + (colW - widths[row]) / 2, cx, y: HEAD + row * (H + z.caption + ROW_GAP), w: widths[row], h: H,
+                             row, group: gi, sub: sub(i), caption: n > 1 })
             })
             cx += colW + GAP
         }
         const w = Math.max(cx - GAP - start, 240)
-        groups.push({ x: start, w, label: gr.label, count: String(gr.items.length), slug: gr.slug })
+        groups.push({ x: start, y: 0, w, label: gr.label, count: String(gr.items.length), slug: gr.slug })
         x = start + w + GROUP_GAP
     }
-    return { tiles, groups, total: Math.max(0, x - GROUP_GAP), count: picked.length }
+    return { tiles, groups, total: Math.max(0, x - GROUP_GAP), totalH: HEAD + n * (H + z.caption) + (n - 1) * ROW_GAP, vertical: false, count: picked.length }
 }
 
 // The tile reached from tile f going "left", "right", "up" or "down"; f when there is none.
-function move(tiles, f, dir) {
+function move(tiles, f, dir, vertical) {
     const cur = tiles[f]
     if (!cur) return f
+    if (vertical) {
+        // The grid: left and right along the covers, up and down to the nearest cover of the line
+        // above or below.
+        if (dir === "left") return f > 0 ? f - 1 : f
+        if (dir === "right") return f < tiles.length - 1 ? f + 1 : f
+        const want = cur.row + (dir === "down" ? 1 : -1)
+        let best = f, bd = Infinity
+        for (let j = 0; j < tiles.length; j++) {
+            const t = tiles[j]
+            if (t.row !== want) continue
+            const d = Math.abs(t.cx - cur.cx)
+            if (d < bd) { bd = d; best = j }
+        }
+        return best
+    }
     if (dir === "up" || dir === "down") {
-        if (cur.hero) return f
         const want = dir === "down" ? 1 : 0
-        const j = tiles.findIndex(t => !t.hero && t.cx === cur.cx && t.row === want)
+        const j = tiles.findIndex(t => t.cx === cur.cx && t.row === want)
         return j >= 0 ? j : f
     }
     const right = dir === "right"
@@ -229,7 +275,7 @@ function move(tiles, f, dir) {
     for (let j = 0; j < tiles.length; j++) {
         const t = tiles[j]
         if (t.cx !== edge) continue
-        if (t.hero || t.row === cur.row) return j
+        if (t.row === cur.row) return j
         if (first < 0) first = j
     }
     return first
@@ -242,4 +288,56 @@ function jumpGroup(tiles, f, d) {
     const want = cur.group + d
     const j = tiles.findIndex(t => t.group === want)
     return j >= 0 ? j : f
+}
+
+// ---------- the consoles' order ----------
+// Who made each console and when it came out (for the orders by maker and by date).
+const MADE = {
+    nes: ["Nintendo", 1983], famicom: ["Nintendo", 1983], fds: ["Nintendo", 1986], snes: ["Nintendo", 1990], sfam: ["Nintendo", 1990],
+    n64: ["Nintendo", 1996], ngc: ["Nintendo", 2001], wii: ["Nintendo", 2006], wiiu: ["Nintendo", 2012], switch: ["Nintendo", 2017],
+    gb: ["Nintendo", 1989], gbc: ["Nintendo", 1998], gba: ["Nintendo", 2001], nds: ["Nintendo", 2004], "3ds": ["Nintendo", 2011],
+    n3ds: ["Nintendo", 2014], virtualboy: ["Nintendo", 1995], "pokemon-mini": ["Nintendo", 2001],
+    psx: ["Sony", 1994], ps: ["Sony", 1994], ps2: ["Sony", 2000], ps3: ["Sony", 2006], ps4: ["Sony", 2013], psp: ["Sony", 2004], psvita: ["Sony", 2011],
+    sms: ["Sega", 1985], genesis: ["Sega", 1988], megadrive: ["Sega", 1988], segacd: ["Sega", 1991], sega32: ["Sega", 1994],
+    saturn: ["Sega", 1994], dc: ["Sega", 1998], gamegear: ["Sega", 1990],
+    xbox: ["Microsoft", 2001], xbox360: ["Microsoft", 2005], "tg16": ["NEC", 1987], pce: ["NEC", 1987], ngp: ["SNK", 1998], neogeo: ["SNK", 1990],
+    atari2600: ["Atari", 1977], lynx: ["Atari", 1989], jaguar: ["Atari", 1993], wonderswan: ["Bandai", 1999], arcade: ["Arcade", 1978]
+}
+function madeBy(slug) { return (MADE[slug] || ["", 0])[0] }
+function madeIn(slug) { return (MADE[slug] || ["", 0])[1] }
+
+function consoleOrders() {
+    return [
+        { id: "played", label: qsTr("Most played"), hint: qsTr("By your play time") },
+        { id: "count", label: qsTr("Most games"), hint: qsTr("By their number of games") },
+        { id: "year", label: qsTr("Release date"), hint: qsTr("Newest first") },
+        { id: "name", label: qsTr("Name"), hint: qsTr("From A to Z") },
+        { id: "maker", label: qsTr("Maker"), hint: qsTr("Nintendo, Sony, Sega… then by date") },
+        { id: "custom", label: qsTr("Your order"), hint: qsTr("Move them with LB and RB in the Consoles menu") }
+    ]
+}
+
+// The consoles [{ slug, name, … }] in the order chosen. rows: the library, for the play time and
+// the counts (of `tab`'s games); custom: slugs in the order the player put them.
+function orderConsoles(consoles, order, rows, tab, custom) {
+    const played = {}, count = {}
+    for (const g of rows || []) {
+        const s = tabOf(g.platform_slug)
+        played[s] = (played[s] || 0) + (g.play_seconds || 0)
+        if ((tab === "store") !== ready(g)) count[s] = (count[s] || 0) + 1
+    }
+    const name = (a, b) => String(a.name).localeCompare(String(b.name))
+    const keep = consoles.map((c, i) => ({ c, i }))
+    const by = {
+        played: (a, b) => (played[b.c.slug] || 0) - (played[a.c.slug] || 0) || a.i - b.i,
+        count: (a, b) => (count[b.c.slug] || 0) - (count[a.c.slug] || 0) || a.i - b.i,
+        year: (a, b) => madeIn(b.c.slug) - madeIn(a.c.slug) || name(a.c, b.c),
+        name: (a, b) => name(a.c, b.c),
+        maker: (a, b) => (madeBy(a.c.slug) || "~").localeCompare(madeBy(b.c.slug) || "~") || madeIn(b.c.slug) - madeIn(a.c.slug) || name(a.c, b.c),
+        custom: (a, b) => {
+            const pa = (custom || []).indexOf(a.c.slug), pb = (custom || []).indexOf(b.c.slug)
+            return (pa < 0 ? 1e6 + a.i : pa) - (pb < 0 ? 1e6 + b.i : pb)
+        }
+    }
+    return keep.sort(by[order] || by.played).map(x => x.c)
 }

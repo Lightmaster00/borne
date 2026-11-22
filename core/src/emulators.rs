@@ -882,7 +882,8 @@ fn command(
     } else {
         players
     };
-    crate::gamesettings::controllers(&p.id, &data_dir(app, &profile, &p.id), &userdir, &players, &src)?;
+    let device = crate::controls::device(app, &group);
+    crate::gamesettings::controllers_as(&p.id, &data_dir(app, &profile, &p.id), &userdir, &players, &src, &device)?;
     let _ = lang;
     let lang_dolphin = if system == "ngc" { dolphin_language(&language).unwrap_or("") } else { "" };
     let renamed = renamed_rom(app, p, rom)?;

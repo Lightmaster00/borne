@@ -38,22 +38,11 @@ Row {
                 id: row
                 anchors.centerIn: parent
                 spacing: 10
-                // Keycaps in colour: A in the console's colour, B red, X yellow, Y blue, the others light.
-                Rectangle {
+                KeyCap {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: hint.round ? 32 : key.implicitWidth + 22
-                    height: 32
-                    radius: 16
-                    readonly property string act: hint.act
-                    color: act === "a" ? bar.theme.accent : act === "b" ? "#FF6B6B" : act === "x" ? "#FFD166" : act === "y" ? "#6FB7FF" : Qt.rgba(0.96, 0.95, 1, 0.92)
-                    Ink { z: -1; theme: bar.theme; radius: 16; opacity: 0.9 }
-                    Text {
-                        id: key
-                        anchors.centerIn: parent
-                        text: hint.cap
-                        color: parent.act === "a" ? bar.theme.accentFg : bar.theme.bg
-                        font { family: bar.theme.displayFont; pixelSize: 17; weight: Font.Bold }
-                    }
+                    theme: bar.theme
+                    text: hint.cap
+                    size: 32
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter

@@ -271,6 +271,14 @@
         <source>Every button doing its own</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Controller the games see</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The console's controller shown to its games; each game can take another</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>CoreText</name>
@@ -1064,6 +1072,101 @@
     </message>
 </context>
 <context>
+    <name>Devices</name>
+    <message>
+        <source>Wii U Pro Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pro Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Joy-Con pair</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Handheld (console in hand)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii Remote + Nunchuk</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii Remote alone</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii Remote sideways</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Classic Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii U GamePad</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>For games that refuse the Pro Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The Switch as if held in hand</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most Wii games: stick on the Nunchuk, pointer on the right stick</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pointer games without a Nunchuk</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Played like a NES pad: 1 and 2 on the bottom and left buttons</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games that take the Classic Controller, Virtual Console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The Wii U's own controller, with its screen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game does not take the Pro Controller: it plays with a pair of Joy-Con, which Borne shows it.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game is played with the Wii Remote held sideways: Borne shows it one, 1 and 2 on your bottom and left buttons.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>B (trigger)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pointer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shake</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nunchuk stick</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>Display</name>
     <message>
         <source>Picture shape</source>
@@ -1399,15 +1502,15 @@
 <context>
     <name>FilterOverlay</name>
     <message>
-        <source>Filter</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Choose a console, then narrow down if you like.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>installed · %1 in the store</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Order</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1737,6 +1840,10 @@
         <source>Emulator</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Controller</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>GameSettingsPage</name>
@@ -1767,10 +1874,6 @@
     <message numerus="yes">
         <source>%n on</source>
         <translation><numerusform>%n on</numerusform><numerusform>%n on</numerusform></translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="unfinished" />
     </message>
     <message>
         <source>Cover and video</source>
@@ -1897,10 +2000,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Starts the version of the game in this language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Cover</source>
         <translation type="unfinished" />
     </message>
@@ -2001,19 +2100,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Controls</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Controller, buttons</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No emulator runs this game yet.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2026,6 +2113,110 @@
     </message>
     <message>
         <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Version and language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>One version</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons, player 1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PlayStation controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nintendo controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Xbox controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Right stick</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your %1 → %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>What each of your buttons does in the game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne sets the emulator up just before the game starts, then puts back the settings of the console's other games.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Without a choice of its own, the game takes the picture set for its console in Settings → Consoles.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The codes depend on the version chosen in Version and language. They apply the next time the game starts.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Images and video come from ScreenScraper; choose another edition's box or search for the right game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Saves stay on RomM whatever you remove here.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller the game sees</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Chosen for this game</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The one this game needs</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As for %1 (Settings → Consoles)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game's emulator reads your controller by itself, buttons where the console has them.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Version</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The one launched; the others stay on the server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Set in the emulator; may start the version in this language</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game exists in one version, in one language: nothing to choose.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2067,7 +2258,31 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Profile: %1</source>
+        <source>Console: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>All</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n already in your library</source>
+        <translation><numerusform>%n already in your library</numerusform><numerusform>%n already in your library</numerusform></translation>
+    </message>
+    <message>
+        <source>None in your library yet</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2143,10 +2358,6 @@
     </message>
     <message>
         <source>Close</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Settings</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2493,10 +2704,6 @@
         <source>Offline</source>
         <translation type="unfinished" />
     </message>
-    <message>
-        <source>Play</source>
-        <translation type="unfinished" />
-    </message>
     <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
         <translation><numerusform>Safe mode: trailers and sounds off (the UI crashed once)</numerusform><numerusform>Safe mode: trailers and sounds off (the UI crashed %n times)</numerusform></translation>
@@ -2802,10 +3009,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Sort</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Remove this file?</source>
         <translation type="unfinished" />
     </message>
@@ -2933,10 +3136,6 @@
         <source>%n game(s) of your server to discover</source>
         <translation><numerusform>%n game of your server to discover</numerusform><numerusform>%n games of your server to discover</numerusform></translation>
     </message>
-    <message>
-        <source>Resume</source>
-        <translation type="unfinished" />
-    </message>
     <message numerus="yes">
         <source>%n download(s)</source>
         <translation><numerusform>%n download</numerusform><numerusform>%n downloads</numerusform></translation>
@@ -2963,6 +3162,62 @@
     </message>
     <message>
         <source>%1 installed · %2 in the store</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Order of the consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sort by</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n filter(s)</source>
+        <translation><numerusform>%n filter</numerusform><numerusform>%n filters</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n console(s)</source>
+        <translation><numerusform>%n console</numerusform><numerusform>%n consoles</numerusform></translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Filter</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Turn on / off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Show</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Move</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>See its games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>My library</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Every console of your server, as large cards</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -3459,10 +3714,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Interface</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Emulators</source>
         <translation type="unfinished" />
     </message>
@@ -3819,15 +4070,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>The selected game's video plays by itself, muted, behind the boxes</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Video in full screen</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Without a press for this long, the boxes fade out and leave the video</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3851,15 +4094,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Look</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Interface size</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Larger text and boxes, for a screen seen from afar</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3892,10 +4127,6 @@
     </message>
     <message>
         <source>Hidden</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Sounds</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -4259,14 +4490,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Buttons for every game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The controllers connected, and how their buttons play in every game.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>RomM &amp; images</source>
         <translation type="unfinished" />
     </message>
@@ -4347,23 +4570,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Interface language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Also the language games start in, when they have it</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>As the system</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Language, videos, look</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne itself: its language, videos, size, animations, sounds and the buttons it shows.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -4407,10 +4614,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its settings). Applied the next time a game starts.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Installing %1 failed</source>
         <translation type="unfinished" />
     </message>
@@ -4420,6 +4623,146 @@
     </message>
     <message>
         <source>Your favourite. A game that does not run on it starts on the other one by itself</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Covers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How the games are shown in My library and the Store (also in the menu Y)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Grid</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Large row</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Two rows</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Order of the consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>In the Consoles menu (X) and the Store; your own order is set there with LB and RB</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Release date</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Maker</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your order</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The selected game's video plays by itself, muted, behind the covers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Without a press for this long, the covers fade out and leave the video</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne's menus; also the version and the language a game starts in, when it has several</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>One game in another version or language: open its page, then Y (Game settings) → Version and language.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Screen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Larger text and covers, for a screen seen from afar</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sound</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pro Controller, Joy-Con pair or handheld</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii Remote with Nunchuk, alone, sideways, or Classic Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Wii U GamePad or Pro Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller each console's games see</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its page, Y). Applied the next time a game starts.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Layout, consoles' order, videos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>How your games are shown: the covers' layout, the order of the consoles and the videos.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buttons, the consoles' controllers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The controllers connected, how their buttons play in every game, and which controller each console's games see.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne's language, which also picks the version and the language of the games.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Games and saves</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Screen and sound</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Size, animations, sounds</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4546,26 +4889,63 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Resume</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Your most played</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Newest</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Other consoles</source>
         <translation type="unfinished" />
     </message>
-</context>
-<context>
-    <name>SortMenu</name>
     <message>
-        <source>Sort by</source>
+        <source>Grid</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Large covers, scroll down by sections</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Large row</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>One row, the selected game large above it</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Two rows</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More games on screen</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>By your play time</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Most games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>By their number of games</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Maker</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nintendo, Sony, Sega… then by date</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your order</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Move them with LB and RB in the Consoles menu</source>
         <translation type="unfinished" />
     </message>
 </context>

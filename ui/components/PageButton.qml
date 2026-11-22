@@ -8,6 +8,7 @@ Item {
     property QtObject theme
     property string text: ""
     property string key: ""            // controller button shown at the start
+    property string detail: ""         // a second, smaller line
     property bool primary: false
     property bool disabled: false
     property bool focused: false
@@ -42,23 +43,30 @@ Item {
         id: row
         anchors { left: parent.left; leftMargin: btn.key !== "" ? 10 : 28; verticalCenter: parent.verticalCenter }
         spacing: 12
-        Rectangle {
+        KeyCap {
             visible: btn.key !== ""
             anchors.verticalCenter: parent.verticalCenter
-            width: 40; height: 40; radius: 20
-            color: btn.primary ? theme.ink : theme.glassRaised
-            Text {
-                anchors.centerIn: parent
-                text: btn.key
-                color: theme.fg
-                font { family: theme.fontFamily; pixelSize: 18; weight: Font.Bold }
-            }
+            theme: btn.theme
+            size: 40
+            text: btn.key
+            inverted: btn.primary
         }
-        Text {
+        Column {
             anchors.verticalCenter: parent.verticalCenter
-            text: btn.text
-            color: btn.primary ? theme.accentFg : theme.fg
-            font { family: theme.fontFamily; pixelSize: btn.primary ? 20 : 18; weight: btn.primary ? Font.Bold : Font.DemiBold }
+            spacing: 2
+            Text {
+                text: btn.text
+                color: btn.primary ? theme.accentFg : theme.fg
+                font { family: theme.fontFamily; pixelSize: btn.primary ? 20 : 18; weight: btn.primary ? Font.Bold : Font.DemiBold }
+            }
+            Text {
+                visible: btn.detail !== ""
+                width: Math.min(implicitWidth, btn.width - 90)
+                elide: Text.ElideRight
+                text: btn.detail
+                color: btn.primary ? theme.accentFg : theme.fgMuted
+                font { family: theme.fontFamily; pixelSize: 14; weight: Font.DemiBold }
+            }
         }
     }
     Rectangle {

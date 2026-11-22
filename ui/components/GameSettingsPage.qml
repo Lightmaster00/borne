@@ -1,12 +1,15 @@
-// A game's own settings, over its page: sections on the left, their rows on the right, as in
-// Settings. Nothing closes by itself: a choice applies and stays on screen; B goes back one level
-// (from the rows to the sections, from the sections to the game page).
+// A game's own settings, over its page: sections on the left (version and language, controller,
+// emulator, picture, cheats, cover, storage), their rows in the middle, and on the right what the
+// section changes (for the controller: what each of your buttons does in the game). Nothing
+// closes by itself: a choice applies and stays on screen; B goes back one level (from the rows to
+// the sections, from the sections to the game page).
 // Gamepad: up/down in the focused column (group titles and notes skipped), right or A enters a
 // section, left/right between a row's choices, A to choose, B to go back.
 import QtQuick
 import "Display.js" as Display
 import "EmuOptions.js" as EmuOptions
 import "Controls.js" as Controls
+import "Devices.js" as Devices
 
 Item {
     id: page
@@ -21,6 +24,9 @@ Item {
     property var controls: null      // GET /games/<id>/controls
     property bool advanced: false    // controls: each button shown (Settings → Controllers → Display)
     property var languages: []       // [{ code, version }] when the game exists in several
+    property var versions: []        // the versions to choose from (raw API rows)
+    property var versionLabel: function (v) { return String(v.rom_id) }
+    property var versionDetail: function (v) { return "" }
     property string currentLang: ""
     property var languageName: function (c) { return c }
     property bool hasVideo: false
@@ -43,19 +49,51 @@ Item {
     function note(id, t) { return { id: id, kind: "note", title: t, items: [] } }
 
     readonly property var sections: {
+        const dev = deviceOption
         const s = [
+            { id: "language", name: qsTr("Version and language"), hint: [game && versions.length > 1 ? versionLabel(versions.find(v => v.rom_id === game.rom_id) || versions[0]) : "", currentLang ? languageName(currentLang) : ""].filter(x => x).join(" · ") || qsTr("One version") },
+            { id: "controls", name: qsTr("Controller"), hint: dev ? Devices.label(dev.value, controls.console) : qsTr("Buttons, player 1") },
             { id: "emulator", name: qsTr("Emulator"), hint: emulator && emulator.own ? qsTr("Its own") : qsTr("As for its console") },
             { id: "picture", name: qsTr("Picture"), hint: qsTr("Shape, sharpness, filters") },
-            { id: "controls", name: qsTr("Controls"), hint: qsTr("Controller, buttons") },
             { id: "cheats", name: qsTr("Cheats"), hint: cheats && cheats.cheats ? qsTr("%n on", "", cheats.cheats.filter(x => x.on).length) : "" }
         ]
-        if (languages.length > 1) s.push({ id: "language", name: qsTr("Language"), hint: languageName(currentLang) })
         s.push({ id: "cover", name: qsTr("Cover and video"), hint: qsTr("ScreenScraper") })
         if (game && (game.local_state === "local" || game.linked || game.local_state === "missing"))
             s.push({ id: "storage", name: qsTr("Storage"), hint: game.local_state === "local" ? qsTr("On this device") : game.linked ? qsTr("Network mount") : "" })
         return s
     }
     readonly property string sectionId: sections[Math.min(section, sections.length - 1)].id
+    // The controller the console sees, where it has a choice (controls.rs "device").
+    readonly property var deviceOption: controls && controls.options ? controls.options.find(o => o.key === "device") || null : null
+    // What the section on screen changes, on the right.
+    readonly property var aside: {
+        const id = sectionId
+        if (id === "language") return { title: qsTr("Version and language"), text: qsTr("For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.") }
+        if (id === "controls") {
+            const dev = deviceOption
+            const fam = controls ? controls.family : "xbox"
+            const famName = fam === "playstation" ? qsTr("PlayStation controller") : fam === "nintendo" ? qsTr("Nintendo controller") : qsTr("Xbox controller")
+            const name = dev ? Devices.label(dev.value, controls.console) : (game ? game.platform_short || game.platform_name : "")
+            // What gives each of the console's buttons now (the layout and the buttons chosen
+            // included), as printed on your pad.
+            const at = {}
+            for (const b of controls ? controls.buttons || [] : []) at[b.button] = b.pad
+            const logical = { south: "a", east: "b", west: "x", north: "y", lb: "l", rb: "r", lt: "l2", rt: "r2", start: "start", select: "select" }
+            const sticks = { ls: qsTr("Left stick"), rs: qsTr("Right stick") }
+            const label = place => sticks[place] || (at[logical[place] || place] ? Controls.padLabel(fam, at[logical[place] || place]) : "—")
+            const map = dev ? Devices.mapping(dev.value, label)
+                            : Controls.consoleButtons(controls ? controls.console : "").map(x => ({ from: x[1], to: at[x[0]] ? Controls.padLabel(fam, at[x[0]]) : "—" }))
+            return { title: qsTr("Your %1 → %2").arg(famName).arg(name),
+                     text: dev ? Devices.hint(dev.value) : qsTr("What each of your buttons does in the game."),
+                     note: dev && dev.wanted && dev.value === dev.wanted ? Devices.wantedNote(dev.wanted, controls.console) : "",
+                     left: name, right: famName, map: map }
+        }
+        if (id === "emulator") return { title: qsTr("Emulator"), text: qsTr("Borne sets the emulator up just before the game starts, then puts back the settings of the console's other games.") }
+        if (id === "picture") return { title: qsTr("Picture"), text: qsTr("Without a choice of its own, the game takes the picture set for its console in Settings → Consoles.") }
+        if (id === "cheats") return { title: qsTr("Cheats"), text: qsTr("The codes depend on the version chosen in Version and language. They apply the next time the game starts.") }
+        if (id === "cover") return { title: qsTr("Cover and video"), text: qsTr("Images and video come from ScreenScraper; choose another edition's box or search for the right game.") }
+        return { title: qsTr("Storage"), text: qsTr("Saves stay on RomM whatever you remove here.") }
+    }
 
     readonly property var rows: {
         const id = sectionId
@@ -91,10 +129,21 @@ Item {
         }
         if (id === "controls") {
             if (!controls) return [note("loading", qsTr("Loading…"))]
-            if (!controls.applies) return [note("ctl-none", controls.program
-                ? qsTr("This game's emulator reads the controller by itself, buttons where the console has them.")
-                : qsTr("No emulator runs this game yet."))]
-            const r = Controls.rows(controls, advanced, game ? game.platform_name : "")
+            const r = []
+            const dev = deviceOption
+            if (dev) {
+                r.push({ id: "ctl:device", kind: "chips", title: qsTr("Controller the game sees"),
+                         desc: dev.own ? qsTr("Chosen for this game") : dev.wanted && dev.value === dev.wanted ? qsTr("The one this game needs")
+                                       : qsTr("As for %1 (Settings → Consoles)").arg(game ? game.platform_short || game.platform_name : ""),
+                         selected: dev.value, items: dev.values.map(v => ({ id: v, label: Devices.label(v, controls.console) })) })
+            }
+            if (!controls.applies) {
+                r.push(note("ctl-none", controls.program
+                    ? qsTr("This game's emulator reads your controller by itself, buttons where the console has them.")
+                    : qsTr("No emulator runs this game yet.")))
+                return r
+            }
+            for (const x of Controls.rows(controls, advanced, game ? game.platform_name : "")) r.push(x)
             r.push(note("applied", qsTr("Applied the next time the game starts. Simple or advanced display: Settings → Controllers.")))
             return r
         }
@@ -118,10 +167,18 @@ Item {
             r.push(note("applied", qsTr("Applied the next time the game starts.")))
             return r
         }
-        if (id === "language") return [
-            { id: "lang", kind: "chips", title: qsTr("Game language"), desc: qsTr("Starts the version of the game in this language"),
-              selected: currentLang, items: languages.map(l => ({ id: l.code, label: languageName(l.code) })) }
-        ]
+        if (id === "language") {
+            const r = []
+            if (versions.length > 1)
+                r.push({ id: "version", kind: "chips", title: qsTr("Version"), desc: qsTr("The one launched; the others stay on the server"),
+                         selected: game ? game.rom_id : -1, items: versions.map(v => ({ id: v.rom_id, label: versionLabel(v) + (versionDetail(v) ? " · " + versionDetail(v) : "") })) })
+            if (languages.length > 1)
+                r.push({ id: "lang", kind: "chips", title: qsTr("Game language"), desc: qsTr("Set in the emulator; may start the version in this language"),
+                         selected: currentLang, items: languages.map(l => ({ id: l.code, label: languageName(l.code) })) })
+            if (!r.length) r.push(note("one", qsTr("This game exists in one version, in one language: nothing to choose.")))
+            r.push(note("applied", qsTr("Applied the next time the game starts.")))
+            return r
+        }
         if (id === "cover") {
             const r = [group(qsTr("Cover"))]
             const regions = images && images.regions ? images.regions : []
@@ -189,6 +246,7 @@ Item {
         else if (r.id === "ctl-reset") page.action("controls", { key: "*", value: "default" })
         else if (r.id.startsWith("cheat:")) page.action("cheat", { index: Number(r.id.substring(6)), on: item.id === "on" })
         else if (r.id === "lang") page.action("lang", languages.find(l => l.code === item.id))
+        else if (r.id === "version") page.action("version", item.id)
         else if (r.id === "region") page.action("region", item.id)
         else if (r.id === "sound") page.action("sound", item.id === "on")
         else page.action(item.id, null)
@@ -270,8 +328,8 @@ Item {
     // ---------- rows ----------
     Flickable {
         id: rowsView
-        x: side.width + 80; y: 64
-        width: Math.min(1500, parent.width - x - 96)
+        x: side.width + 64; y: 64
+        width: Math.min(1200, parent.width - x - asidePanel.width - 112)
         height: parent.height - y - 110
         contentHeight: rowsCol.height + 40
         clip: true
@@ -342,7 +400,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         Column {
                             id: texts
-                            width: Math.max(260, parent.width - choices.width - 32)
+                            width: Math.max(220, parent.width - choices.width - 32)
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 4
                             Text { width: parent.width; text: rowItem.modelData.title || ""; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontFamily; pixelSize: 20; weight: Font.DemiBold } }
@@ -358,7 +416,7 @@ Item {
                         Flow {
                             id: choices
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            width: Math.min(implicitW, line.width - 292)
+                            width: Math.min(implicitW, line.width - 252)
                             readonly property real implicitW: {
                                 let w = 0
                                 for (let i = 0; i < rep.count; i++) { const it = rep.itemAt(i); if (it) w += it.width + 10 }
@@ -394,6 +452,47 @@ Item {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // ---------- what the section changes ----------
+    Column {
+        id: asidePanel
+        anchors { right: parent.right; rightMargin: 72; top: parent.top; topMargin: 72 }
+        width: parent.width > 1700 ? 460 : 330
+        spacing: 16
+        Text { width: parent.width; wrapMode: Text.WordWrap; text: page.aside.title; color: theme.fg; font { family: theme.displayFont; pixelSize: 26; weight: Font.ExtraBold } }
+        Text { width: parent.width; wrapMode: Text.WordWrap; text: page.aside.text; lineHeight: 1.3; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 17; weight: Font.DemiBold } }
+        Rectangle {
+            visible: !!page.aside.note
+            width: parent.width; height: noteBox.height + 28; radius: 18
+            color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)
+            Text { id: noteBox; x: 18; y: 14; width: parent.width - 36; wrapMode: Text.WordWrap; text: page.aside.note || ""; color: theme.fg; font { family: theme.fontFamily; pixelSize: 16; weight: Font.Bold } }
+        }
+        Rectangle {
+            visible: !!page.aside.map && page.aside.map.length > 0
+            width: parent.width; height: mapCol.height + 24; radius: 22
+            color: Qt.rgba(1, 1, 1, 0.05)
+            Column {
+                id: mapCol
+                x: 18; y: 12
+                width: parent.width - 36
+                Item {
+                    width: parent.width; height: 32
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: page.aside.left || ""; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 13; weight: Font.ExtraBold } }
+                    Text { anchors { right: parent.right; verticalCenter: parent.verticalCenter } text: page.aside.right || ""; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 13; weight: Font.ExtraBold } }
+                }
+                Repeater {
+                    model: page.aside.map || []
+                    Item {
+                        required property var modelData
+                        width: mapCol.width; height: 42
+                        Rectangle { width: parent.width; height: 1; color: Qt.rgba(1, 1, 1, 0.07) }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.from; color: theme.fg; font { family: theme.fontFamily; pixelSize: 16; weight: Font.ExtraBold } }
+                        KeyCap { anchors { right: parent.right; verticalCenter: parent.verticalCenter } theme: page.theme; size: 30; text: modelData.to }
                     }
                 }
             }

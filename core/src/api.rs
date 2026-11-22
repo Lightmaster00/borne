@@ -822,6 +822,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 }
                 // The emulator the game opens in (its own choice, else the console's).
                 let emulator = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key).map(|e| e.name);
+                // The controller the console sees for this game ("" when it has no choice), and
+                // the one the game is known to want.
+                let device = crate::controls::device(app, &g.group_key);
+                let device_wanted = crate::controls::wanted_device(&g.platform_slug, &g.name);
                 ok(
                     req,
                     json!({
@@ -843,6 +847,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         // not), per version: known before pressing Play.
                         "file_notes": all.iter().filter_map(|v| crate::emulators::file_note(v).map(|n| (v.rom_id.to_string(), n))).collect::<serde_json::Map<_, _>>(),
                         "emulator": emulator,
+                        "device": device,
+                        "device_wanted": device_wanted,
                     }),
                 )
             }

@@ -12,6 +12,7 @@ import QtMultimedia
 import "ConsoleNeeds.js" as Needs
 import "CoreText.js" as CoreText
 import "Cases.js" as Cases
+import "Devices.js" as Devices
 
 Item {
     id: page
@@ -33,6 +34,8 @@ Item {
     property var facts: null           // GET /api/v1/games/<id>/facts
     property string shotBase: ""       // URL prefix of the screenshots (…/screenshots/)
     property string emulator: ""       // the emulator the game opens in
+    property string device: ""         // the controller its console sees ("" when it has no choice)
+    property string deviceWanted: ""   // the one the game is known to want
     property bool sound: false
 
     signal action(string id, var payload)
@@ -63,7 +66,7 @@ Item {
         // Play (or get the game), the favourite, and the game's own settings (emulator, display,
         // cheats, language, cover, removal: see Main.gameSettings).
         const fav = { id: "fav", label: g.favourite ? qsTr("Remove from favourites") : qsTr("Add to favourites") }
-        const set = { id: "settings", label: qsTr("Game settings") }
+        const set = { id: "settings", label: qsTr("Game settings"), key: "Y", detail: settingsLine }
         if (g.local_state === "local" || g.linked) return [{ id: "play", label: qsTr("Play"), primary: true }, fav, set]
         if (g.local_state === "missing") return [{ id: "download", label: qsTr("Download again"), primary: true }, fav, set]
         const dl = { id: "download", label: qsTr("Download · %1").arg(fmtSize(g.fs_size)) }
@@ -71,6 +74,17 @@ Item {
         if (installMode === "stream" && streamAvailable) { net.primary = true; return [net, dl, fav, set] }
         dl.primary = true
         return [dl, net, fav, set]
+    }
+    // Under "Game settings": what this game is set to (version, language, controller).
+    readonly property string settingsLine: {
+        const g = game
+        if (!g) return ""
+        const bits = []
+        const v = playable.find(x => x.rom_id === g.rom_id)
+        if (v && playable.length > 1) bits.push(versionLabel(v))
+        if (currentLang) bits.push(languageName(currentLang))
+        if (device) bits.push(Devices.label(device, g.platform_slug))
+        return bits.join(" · ")
     }
     // Kept for Main (the actions as before).
     readonly property var allActions: actions
@@ -173,6 +187,7 @@ Item {
         add(qsTr("Versions"), playable.length > 1 ? String(playable.length) : "")
         add(qsTr("File"), fmtSize(g.fs_size))
         add(qsTr("Emulator"), emulator)
+        if (device) add(qsTr("Controller"), Devices.label(device, g.platform_slug))
         return out
     }
 
@@ -190,6 +205,7 @@ Item {
     }
     function handle(a) {
         if (a === "b") { page.action("back", null); return }
+        if (a === "y" && actions.some(x => x.id === "settings")) { page.action("settings", null); return }
         if (zone === "actions") {
             if (a === "up") actionIndex = Math.max(0, actionIndex - 1)
             else if (a === "down") {
@@ -267,10 +283,10 @@ Item {
 
     Rectangle {
         id: sheet
-        x: 40; width: parent.width - 80
-        height: parent.height - 40 - 76
-        y: page.visible ? 40 : parent.height + 40
-        Behavior on y { NumberAnimation { duration: 680 * theme.motion; easing.type: Easing.OutBack; easing.overshoot: 0.8 } }
+        x: 56; width: parent.width - 112
+        height: parent.height - 124 - 84
+        y: page.visible ? 124 : parent.height + 40
+        Behavior on y { NumberAnimation { duration: 620 * theme.motion; easing.type: Easing.OutCubic } }
         radius: 36
         color: "#16171C"
         clip: true
@@ -324,15 +340,15 @@ Item {
         // ---------- left: the cover, then what you can do ----------
         Column {
             id: leftCol
-            x: 64; y: 64
-            width: 390
-            spacing: 22
+            x: 80; y: 76
+            width: 400
+            spacing: 32
             Item {
                 id: coverBox
                 readonly property real ar: page.game && page.game.cover_ar >= 0.45 && page.game.cover_ar <= 2.2 ? page.game.cover_ar
                                            : page.game ? Cases.ratio(page.game.platform_slug) : 0.72
-                readonly property real maxH: Math.max(260, sheet.height - 64 - 22 - page.actions.length * 72 - 60)
-                width: Math.min(390, maxH * ar)
+                readonly property real maxH: Math.max(240, sheet.height - 76 - 32 - page.actions.length * 82 - 90)
+                width: Math.min(400, maxH * ar)
                 height: width / ar
                 anchors.horizontalCenter: parent.horizontalCenter
                 Rectangle {
@@ -370,17 +386,18 @@ Item {
             }
             Column {
                 width: parent.width
-                spacing: 12
+                spacing: 16
                 Repeater {
                     model: page.actions
                     PageButton {
                         required property var modelData
                         required property int index
                         width: leftCol.width
-                        implicitHeight: modelData.primary ? 72 : 58
+                        implicitHeight: modelData.primary ? 76 : modelData.detail ? 72 : 62
                         theme: page.theme
                         text: modelData.label
-                        key: modelData.primary ? "A" : ""
+                        detail: modelData.detail || ""
+                        key: modelData.primary ? "A" : modelData.key || ""
                         primary: !!modelData.primary
                         disabled: !!modelData.disabled
                         focused: page.zone === "actions" && page.actionIndex === index
@@ -410,8 +427,8 @@ Item {
         // ---------- right: everything there is to know (scrolls) ----------
         Flickable {
             id: details
-            x: leftCol.x + leftCol.width + 70; y: 0
-            width: sheet.width - x - 64; height: sheet.height
+            x: leftCol.x + leftCol.width + 110; y: 0
+            width: sheet.width - x - 88; height: sheet.height
             contentHeight: info.height + 64 + 80
             boundsBehavior: Flickable.StopAtBounds
             clip: true
@@ -419,9 +436,9 @@ Item {
 
             Column {
                 id: info
-                y: 64
+                y: 76
                 width: details.width
-                spacing: 26
+                spacing: 40
 
                 // Console and genres.
                 Flow {
@@ -483,7 +500,7 @@ Item {
                 // The counters.
                 Flow {
                     width: parent.width
-                    spacing: 14
+                    spacing: 18
                     Repeater {
                         model: page.counters
                         Rectangle {
@@ -533,6 +550,24 @@ Item {
                                 }
                             }
                         }
+                    }
+                }
+
+                // A game that takes another controller than its console's usual one.
+                Rectangle {
+                    visible: page.deviceWanted !== "" && page.device === page.deviceWanted
+                    width: parent.width
+                    height: wantedText.height + 32
+                    radius: 22
+                    color: Qt.rgba(page.tint.r, page.tint.g, page.tint.b, 0.2)
+                    Text {
+                        id: wantedText
+                        x: 24; y: 16
+                        width: parent.width - 48
+                        wrapMode: Text.WordWrap
+                        text: Devices.wantedNote(page.deviceWanted, page.game ? page.game.platform_slug : "")
+                        color: theme.fg
+                        font { family: theme.fontFamily; pixelSize: 17; weight: Font.Bold }
                     }
                 }
 
@@ -595,7 +630,7 @@ Item {
                     width: Math.min(parent.width, 1100)
                     text: page.longSummary || qsTr("No summary for this game yet.")
                     wrapMode: Text.WordWrap
-                    lineHeight: 1.45
+                    lineHeight: 1.6
                     color: theme.fgSoft
                     font { family: theme.fontFamily; pixelSize: 20 }
                 }
@@ -604,21 +639,21 @@ Item {
                 Rectangle {
                     visible: page.factRows.length > 0
                     width: parent.width
-                    height: factGrid.height + 20
-                    radius: 28
+                    height: factGrid.height + 32
+                    radius: 30
                     color: Qt.rgba(1, 1, 1, 0.05)
                     Grid {
                         id: factGrid
-                        x: 30; y: 10
-                        width: parent.width - 60
+                        x: 36; y: 16
+                        width: parent.width - 72
                         columns: width > 900 ? 2 : 1
-                        columnSpacing: 40
+                        columnSpacing: 72
                         Repeater {
                             model: page.factRows
                             Item {
                                 required property var modelData
                                 width: (factGrid.width - (factGrid.columns - 1) * factGrid.columnSpacing) / factGrid.columns
-                                height: Math.max(52, fv.implicitHeight + 26)
+                                height: Math.max(62, fv.implicitHeight + 32)
                                 Text {
                                     id: fk
                                     anchors.verticalCenter: parent.verticalCenter
@@ -699,6 +734,6 @@ Item {
     HintBar {
         anchors { right: parent.right; rightMargin: 96; bottom: parent.bottom; bottomMargin: 26 }
         theme: page.theme
-        hints: [["A", qsTr("Select"), "a"], ["B", qsTr("Back"), "b"], ["▲ ▼", qsTr("More about the game"), "down"]]
+        hints: [["A", qsTr("Select"), "a"], ["Y", qsTr("Game settings"), "y"], ["B", qsTr("Back"), "b"], ["▲ ▼", qsTr("More about the game"), "down"]]
     }
 }

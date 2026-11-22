@@ -32,6 +32,7 @@ Version 1.8 — November 2026
 | 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
 | 1.7 | One built-in look, "Halo" (living background from the selected game's art, game boxes in space, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
 | 1.8 | Emulators managed by Borne, saves on RomM, cheats, system files, display settings; 3D cel-shaded cases from ScreenScraper scans; gamepad or keyboard only (no mouse); a game settings page with per-game emulator options; interface preferences; downloads that pause; updates by parts (only what changed is downloaded) and releases ready to install; the Borne logo and pictogram, and a website. |
+| 1.11 | A calmer, more even library: three layouts of large covers to choose from (a grid scrolling down, one large row with the selected game above it, two rows), no console badges on the covers and no large card; the Store opens on its consoles as large cards; the Consoles menu (X) orders the consoles (most played, most games, release date, name, maker, or your own order) and its button stands out; a larger logo in the border's tab; one kind of keycap everywhere; the library's video off by default. The game page airier, Y opens its settings, which start with Version and language and the Controller: the controller the game sees (Switch Pro Controller, Joy-Con pair or handheld; Wii Remote with Nunchuk, alone, sideways or Classic Controller; Wii U GamePad or Pro Controller), chosen per console or per game, with a map of what each of your buttons does. Settings regrouped (Library, Controllers, Language, Games and saves, Emulators, Screen and sound…). |
 | 1.10 | New interface: *My library* (games ready here) and the *Store* (the server's others, by console); games in groups set by the order (Resume, This week, A – F, the 1990s…), covers at their own proportions; Filter (consoles as a fan of cards, quick filters, genres) and Sort apart; a border in the colour of the selected game's console with its logo; the game page as a sheet with the players' rating, play time and a table of facts. 3D cases removed. |
 | 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
 
@@ -253,7 +254,8 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   `ui/brand` (picto.svg, logo.svg, wordmark.svg), each usable alone. The pictogram is the app icon
   (cut-outs transparent) and marks the profile, pairing and server screens; the lettering signs the
   Settings sidebar above the version. The red #E60012 belongs to the mark only.
-- Background: a video of the selected game being played. When the selection rests
+- Background: a video of the selected game being played, off by default since 1.11 (a calmer
+  library; `prefs.calmVersion` turns it off once in older settings; Settings → Library). When the selection rests
   (0.9 s), `POST /api/v1/games/{id}/gameplay` returns a local file: ScreenScraper's gameplay capture
   (`video-normalized`, else `video`; its address is noted without credentials during the media fetch
   and downloaded on first use, credentials added only for that request, ScreenScraper hosts only),
@@ -264,38 +266,58 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   safe mode), on the game page and in menus. Until it plays, or when the game has no video: the game's
   blank Steam grid / marquee, else its cover blurred, enlarged and drifting slowly. One dark filter
   (about 60 %) and a deeper bottom keep the cases and the text readable. The background has no setting.
-- Attract: after 5 s without input on the library (Settings → Interface → Video in full screen: 5 s, 15 s,
+- Attract: after 5 s without input on the library (Settings → Library → Video in full screen: 5 s, 15 s,
   30 s, 1 min or never), once the video plays, the library (covers, header and
   hints) fades out and the filter lightens, leaving the video; any input or the stick brings
   it back at once, and that input only wakes it.
 - Library (`LibraryHome.qml`, laid out by `Shelf.js`): two tabs, LB / RB: *My library*, the games
   ready here (downloaded or played from RomM through the mount), and the *Store*, the server's other
   games. Every game is loaded once (`/api/v1/library`) and the shelf is built in the UI: filtered,
-  sorted, then gathered in groups the order explains: Last played (a large *Resume* card for the last
-  game, then This week, This month, Earlier, Not played yet), Added to the server (*Newest*, then the
-  recent ones), Name (letters gathered so no group is tiny), Play time (*Your most played*, then over
-  20 h, 5 to 20 h, under 5 h) and Release date (by decade); the Store, unfiltered, by console instead.
-  Two rows of covers scroll sideways; the shelf moves only when the selection would leave the view.
-  The covers share one height (sized to the screen, 140 to 290 units) and keep their own proportions
-  (the cover's, else the console's scans', else its retail case's: `Cases.ratio`), two to a column;
-  the selected one grows a little with a soft spring, a ring and a glow of its console's colour that
-  breathes. Each cover carries its console when several are shown, a progress bar while it
-  downloads, and under it its title and a line set by the order (3 days ago, 14 h played, 1998, its
-  size in the Store). LT / RT jump between groups. A on the *Resume* card plays at once; elsewhere A
-  opens the game's page.
-- Filter (X, `FilterOverlay.qml`): the consoles with games as cards fanned like a hand (every console
-  first, its colours in a ring), the chosen card standing up in front, the screen's border already in
-  its colour; each with its logo (ScreenScraper system media `logo-mono`, else `logo`, in white),
-  its installed and Store counts. Down reaches quick filters (Favourites, Never played, 2 players
-  or more; only the last in the Store) and the tab's ten most common genres, cumulative. Sort (Y,
-  `SortMenu.qml`): a list dropping from its button, each order with what it does; My library and
-  the Store keep their own (`prefs.sortHome`, `prefs.sortStore`). Select opens the search: on-screen
+  sorted, then gathered in groups the order explains: Last played (This week, This month, Earlier,
+  Not played yet), Added to the server (Recently added, Earlier), Name (letters gathered so no group
+  is tiny), Play time (over 20 h, 5 to 20 h, under 5 h) and Release date (by decade). No large card:
+  every game is a cover among the others. Three layouts (`prefs.layout`, chosen in the Y menu or
+  Settings → Library):
+  - Grid (default): large covers in lines filling the width (about five DVD cases to a line, 180 to
+    420 units high), the groups one under the other with their titles; it scrolls down by whole
+    lines, the selected line at the top (with its group's title on the group's first line), its
+    edges fading. Up and down go to the nearest cover of the line above or below.
+  - Large row: one row of large covers (160 to 460 units) scrolling sideways, and above it the
+    selected game large: its console and group, title, year, genres and the order's line, and two
+    lines of summary.
+  - Two rows: two rows scrolling sideways (140 to 340 units), the header discreet.
+  The covers keep their own proportions (the cover's, else the console's scans', else its retail
+  case's: `Cases.ratio`); the selected one grows a little (OutCubic, no spring), with a ring; a soft
+  shadow under each. No console badge on the covers: the border says the console. Under each cover
+  its title and a line set by the order (3 days ago, 14 h played, 1998, its size in the Store); a
+  progress bar while it downloads. LT / RT jump between groups. A opens the game's page.
+- The Store opens on its consoles (`wallMode`: the Store without a console chosen): one large card
+  per console with games to discover, four to a line, in the consoles' order, each in its console's
+  colour with its logo large (its name without one), the number of games and how many are already
+  in My library. A enters a console (its games, in the layout chosen); B comes back to the cards, on
+  the console left; B on the cards goes to My library. A search result in the Store opens its
+  console.
+- Consoles (X, `FilterOverlay.qml`), from a button in the header in the colour of the console shown
+  ("Console: All" otherwise): the consoles with games as cards fanned like a hand (every console
+  first, its colours in a ring), the chosen card standing up in front, the screen's border already
+  in its colour; each with its logo (ScreenScraper system media `logo-mono`, else `logo`, in white),
+  its installed and Store counts. Above them, the consoles' order (`prefs.consoleOrder`, also in
+  Settings → Library and, on the Store's cards, in the Y menu): most played (play time on this
+  profile), most games (of the tab), release date, name, maker (Nintendo, Sony, Sega… then by date;
+  `Shelf.MADE`), or your own order (`prefs.consoleCustom`, a JSON list of slugs): LB / RB move the
+  chosen card, which switches to your own order from the one shown. The order applies to the cards,
+  the Store's consoles and the Store's groups. Down reaches quick filters (Favourites, Never played,
+  2 players or more; only the last in the Store) and the tab's ten most common genres, cumulative.
+- Y (`SortMenu.qml`): a list dropping from its button in sections: Sort by (each order with what
+  it does; My library and the Store keep their own, `prefs.sortHome`, `prefs.sortStore`) and
+  Layout; on the Store's console cards, the consoles' order. Select opens the search: on-screen
   keyboard (or the physical keyboard, where typing any letter starts a search), up to six results
   ranked by title prefix, word prefix then substring; a result is shown on the shelf, in its tab,
   the filters that would hide it cleared.
-- Game page (`GamePage.qml`): a sheet rising over the library. On the left the cover at its
-  proportions and the actions (Play, Download, play from the network, favourite, the game's
-  settings), its state and download progress; on the right, scrolling: the console and genres, the
+- Game page (`GamePage.qml`): a sheet rising over the library (below the border's tab, generous
+  margins). On the left the cover at its proportions and the actions (Play, Download, play from the
+  network, favourite, Game settings with Y and, under it, what the game is set to: version, language,
+  controller), its state and download progress; on the right, scrolling: the console and genres, the
   game's logo (else its title), studio, year and players, counters (the players' rating out of 100
   as a ring when RomM has one, your play time on this profile, the last time played, where the game
   is and its size), the versions (region, languages, revision; updates and DLC left out), what the
@@ -305,15 +327,19 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   under `/assets/romm/resources/`, downloaded by the core with the profile's token through
   `POST /api/v1/games/{id}/trailer`, cached in `media/videos` and pruned beyond 2 GB; when the shown
   version has none, another version of the same game is used), else the fan art or the screenshots
-  one after the other. `/api/v1/games/{id}` adds the profile's `last_played`, `play_seconds` and the
-  `emulator`; `/facts` adds `game_modes`, `age_ratings` and `rating` (RomM's `average_rating`).
+  one after the other. A game known to want another controller than its console's usual one (the
+  Pokémon Let's Go games: Joy-Con only; New Super Mario Bros. Wii, Kirby's Return to Dream Land,
+  Super Paper Mario, WarioWare: Smooth Moves: the Wii Remote sideways; `controls::wanted_device`)
+  says so above its versions. `/api/v1/games/{id}` adds the profile's `last_played`, `play_seconds`, the
+  `emulator`, the `device` its console sees and the `device_wanted`; `/facts` adds `game_modes`, `age_ratings` and `rating` (RomM's `average_rating`).
 - Border and accent (`ScreenBorder.qml`): the screen sits in a border in the colour of the console
   of the game selected (else the one open, the card chosen in Filter, the console filtered: `Cases.js`),
-  with a soft glow inside and a tab hanging from its top edge with the console's logo in white
-  (ScreenScraper's `logo-mono` / `logo`), its name without one; the colour and the logo change with a
-  fade as the selection crosses from one console's game to another's. That colour is the accent:
-  primary buttons, the covers' glow, the A key. Keycaps are coloured (A accent, B red, X yellow,
-  Y blue). Rounded pills and cards.
+  with a soft glow inside and a tab hanging from its top edge (520 × 88 units) with the console's
+  logo in white, 58 units high (ScreenScraper's `logo-mono` / `logo`), its name without one; the colour
+  and the logo change with a fade as the selection crosses from one console's game to another's
+  (on the Store's cards, the card chosen). The tab steps aside over a game's settings. That colour is
+  the accent: primary buttons, the Console button. Keycaps are all alike (`KeyCap.qml`): light with a
+  dark letter, round for A, B, X, Y, a rounded tag for LB, Start, the arrows. Rounded pills and cards.
 - Type: Bricolage Grotesque for titles (static Bold and ExtraBold instances), Manrope for the rest
   (static Regular to ExtraBold instances). The scene keeps a 1080-unit height (or 1600
   units of width on narrow screens) and widens with the window, so 16:10, 21:9, 4:3 and 4K fill the screen.
@@ -579,7 +605,7 @@ explains the limits. It never runs privileged commands silently.
 - A game is over only when its whole process group is (a launcher that hands the game to another
   process and leaves does not end it), so two games never run together.
 - While a game runs, no interface sound and no video of Borne plays.
-- Interface language: Settings → Interface (As the system, Français, English), switched at once
+- Interface language: Settings → Language (As the system, Français, English), switched at once
   (the launcher reloads the translation), read by the launcher at start (`ui/language`).
 - Zips the built-in reader refuses are extracted with the system's tools (bsdtar, unzip, 7z); a
   zip whose end is missing on RomM is reported as such.
@@ -813,6 +839,20 @@ blocks a launch just because a game was not tested or a community database rates
   seconds), and the two pad buttons concerned trade what they do (`{button, pad}`), the level's
   buttons first written out as they are. `{key: "map.*"}` gives a level's buttons back to the
   level above, `{key: "*"}` everything.
+- The controller the console sees (`controls::devices`, key `device`, a console's level or a
+  game's, never every game's): Switch `pro` (default), `dual` (Joy-Con pair), `handheld`; Wii
+  `nunchuk` (default), `remote` (alone, pointer on the right stick), `sideways`, `classic`; Wii U
+  `gamepad` (default), `pro`. A game without its own takes the one it is known to want
+  (`wanted_device`), else its console's. Written by `gamesettings::controllers_as` for player 1:
+  Eden / Citron `player_0_type` 0 / 1 / 4, in hand the same controls on `player_8_` (the handheld
+  slot) connected, else `player_8_connected = false`; Ryujinx `controller_type` ProController /
+  JoyconPair / Handheld, in hand at `player_index` Handheld (Player1 left free); Dolphin
+  `WiimoteNew.ini` `Extension` Nunchuk / None / Classic and `Options/Sideways Wiimote` (sideways:
+  2 on the bottom button, 1 on the left, A on the right, B on the top; Classic: its a, b, x, y by
+  position, ZL / ZR on the triggers, L / R on the shoulders, both sticks); Cemu player 1 as a Wii U
+  GamePad or Pro Controller. The game's settings show, beside the controller, what each of the
+  console's buttons is on the player's pad (`Devices.mapping`, the face buttons by position, the
+  layout and each button's own choice included).
 - Per-game controls, for every emulator Borne sets up: player 1's controller, A/B and X/Y swapped,
   what each pad button acts as, and (RetroArch) the left stick as the D-pad. RetroArch gets the
   game's remap file (`profiles/<id>/remaps/<core library>/<game>.rmp`); Dolphin, PCSX2,
@@ -1129,6 +1169,10 @@ Versions change: revalidate at the start of each stage and pin the versions actu
     installation, RomM offline or a failed sync, a Borne update; a ScreenScraper account as a
     suggestion), then the main choices at a glance. Each line opens its section (A); the section
     list shows the count in red.
+  - Library: the covers' layout, the consoles' order, the clock, the videos (behind the library,
+    full screen after a while and its length, on the game page).
+  - Controllers (see below), with links to the consoles whose games can be shown another controller.
+  - Language: Borne's language, which also picks the version and the language games start in.
   - Consoles: the library's consoles, each with its emulator, version and whether its system
     files are there ("Ready" or "To fix"). A opens the console's own page, B comes back to the
     list: its emulator (a choice only when there are several) and that program's state; the
@@ -1137,14 +1181,17 @@ Versions change: revalidate at the start of each stage and pin the versions actu
     picture over the one for all games; its system files.
   - Emulators: install and update by themselves, the programs used by the consoles (and for
     which), then the others on this computer.
-  - Games: installation, network cache, saves, and the picture for every game.
+  - Games and saves: installation, network cache, saves, and the picture for every game.
   - Controllers: those connected, and for every game the face buttons, the left stick and each
     button (`GET`/`POST /api/v1/controls`, stored as `controls.game.@all.<key>`; the pad stays a
     per-game choice).
-  - Interface, RomM & images (server, sync, profile, ScreenScraper), Updates, Help.
+  - Screen and sound (size, animations, buttons shown, interface sounds), RomM & images (server,
+    sync, profile, ScreenScraper), Updates, Help.
+  A setting with many choices shows them under its title and explanation, on several lines if need
+  be. Lines of the overview pointing at a console (`go:console:<slug>`) open its page.
   A game's own values (its page → Game settings) come first, then the console's (picture) or the
   emulator's and the controllers' for every game, then Borne's defaults.
-- Settings → Interface (Qt preferences, `prefs` in Main.qml): Videos — video behind the library on/off
+- Settings → Library, Language, Screen and sound (Qt preferences, `prefs` in Main.qml): Videos — video behind the library on/off
   (`bgVideo`), video in full screen after 5 s / 15 s / 30 s / 1 min / never (`attractDelay`), its length
   1 / 3 / 10 min or no limit (`attractRest`), videos on the game page (`pageVideo`); Look — interface
   size 100 / 115 / 130 / 145 %, 130 % by default to be read from a sofa (`uiScale`: the 1080-unit scene
@@ -1159,10 +1206,14 @@ Versions change: revalidate at the start of each stage and pin the versions actu
 - Game page: Play (or Download / Play from the network), the favourite, and Game settings: a page
   over the game page (`GameSettingsPage.qml`), laid out like Settings. Nothing closes by itself: a
   choice applies and stays on screen, B goes back from the rows to the sections, then to the game.
-  Sections: Emulator (the game's own, `GET`/`POST /api/v1/games/<id>/emulator`, setting
+  On the right, what the section changes (for the controller: the map of the buttons, and why the
+  game takes another controller when it does). Sections: Version and language (the version
+  launched, `POST …/prefs {version}`, and the game's language when it has several), Controller (the
+  controller the game sees when its console has a choice, then player 1, the layout, the stick and
+  each button; shown even for an emulator that reads the pad itself), Emulator (the game's own, `GET`/`POST /api/v1/games/<id>/emulator`, setting
   `emu_for_game.<group_key>`, used at launch over the console's; and that emulator's options for this
   game), Picture (each display value, or as for its console), Cheats (on / off each, all off, a
-  .pnach for PS2), Language (when the game exists in several), Cover and video (box region, search
+  .pnach for PS2), Cover and video (box region, search
   ScreenScraper by name, video sound), Storage (delete, remove from the mount, forget).
 - Emulator options of one game (`gamesettings::EMU_OPTIONS`, setting
   `emuopt.<group_key>.<program>.<key>`, `GET`/`POST /api/v1/games/<id>/emuoptions`, "default"

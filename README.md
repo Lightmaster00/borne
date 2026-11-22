@@ -56,18 +56,26 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 
 - **Profiles** ("Who's playing?"), each bound to a RomM account; pairing without a keyboard (code or
   QR code approved from the phone). Tokens are kept outside the database, readable only by you.
-- **Your library, offline too**: *My library* holds the games ready to play here, the *Store* the
-  others on your server, by console. Games come in groups the order explains (Resume, This week,
-  A – F, the 1990s…), their covers at their own proportions; filter by console (cards fanned like a
-  hand), favourites, never played, two players or genre, sort by last played, newest, name, play time
-  or release date, search as you type, in titles from every region.
+- **Your library, offline too**: *My library* holds the games ready to play here; the *Store* opens
+  on your server's consoles as large cards, and A shows a console's games. Large covers at their own
+  proportions, in the layout you choose: a grid scrolling down, one large row with the selected game
+  above it, or two rows. Games come in groups the order explains (This week, A – F, the 1990s…);
+  choose a console in the Consoles menu (cards fanned like a hand, ordered by play time, number of
+  games, release date, name, maker or your own order), filter favourites, never played, two players
+  or a genre, sort by last played, newest, name, play time or release date, search as you type, in
+  titles from every region.
 - **A border in your console's colours**: the screen is framed in the colour of the console of the
-  game you are on, its logo on top; behind, a video of the selected game; left alone, the library
-  fades out and leaves the video.
-- **Game page**: a sheet with the cover, Play, favourite and the game's own settings; the players'
-  rating, your play time, the languages it really exists in (choosing one chooses the version), the
-  summary, a table of facts (studios, series, release, modes, age rating, file, emulator), the
-  screenshots, and the trailer playing softly behind.
+  game you are on, its logo large on top; a video of the selected game can play behind (off by
+  default).
+- **Game page**: a sheet with the cover, Play, favourite and the game's own settings (Y); the
+  players' rating, your play time, the languages it really exists in, the summary, a table of facts
+  (studios, series, release, modes, age rating, file, emulator, controller), the screenshots, and the
+  trailer playing softly behind.
+- **Each game its controller**: the version and the language, and the controller the console sees,
+  per console or per game: a Switch Pro Controller, a pair of Joy-Con or the console in hand (the
+  Pokémon Let's Go games get the Joy-Con by themselves); a Wii Remote with its Nunchuk, alone, held
+  sideways or a Classic Controller; a Wii U GamePad or Pro Controller. A map shows what each of your
+  buttons (Xbox, PlayStation or Nintendo) does in the game, and every button can be changed.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network**: on Linux only the games you pick are mounted, read from RomM on demand;
   on macOS they are downloaded as temporary copies, the least recently played removed first past
@@ -118,19 +126,19 @@ and the emulators' releases).
 |---|---|---|
 | D-pad / left stick | Arrows | Move |
 | A | Enter | Open / choose |
-| B | Escape | Back |
-| X | X | Filter (console, quick filters, genre) |
-| Y | T or Y | Sort |
+| B | Escape | Back (in the Store, back to its consoles) |
+| X | X | Consoles (choose one, their order, quick filters, genre) |
+| Y | T or Y | Sort and layout; on a game's page, its settings |
 | Select | F2, Ctrl+F or / | Search (on the profile screen, Y: profile options) |
 | — | Any letter or digit | Start a search with it |
-| LB / RB | Page Up / Page Down, Q / E | My library / Store |
+| LB / RB | Page Up / Page Down, Q / E | My library / Store; in the Consoles menu, move the console chosen |
 | LT / RT | R / C, Home / End | Previous / next group |
 | R3 | Tab | Downloads |
 | Start | M or F1 | Settings |
 | Select + Start, together | Escape | Pause and ask whether to quit (any emulator) |
 
 The hints on screen show the buttons of the device in use (or the one chosen in Settings →
-Interface). Borne is played with a gamepad or a keyboard only: the mouse is ignored.
+Screen and sound). Borne is played with a gamepad or a keyboard only: the mouse is ignored.
 
 ## Documentation
 

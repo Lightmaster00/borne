@@ -8,6 +8,9 @@ What is left to build or to check. Done work is described in [`SPEC.md`](SPEC.md
   options, controllers, cheats; Ryujinx's `enabled.txt`), and the Eden and Ryubing release file
   names on a first real install.
 - Saves: a round trip per emulator against RomM.
+- The controller the console sees: a Let's Go game on Joy-Con (Eden and Ryubing), a Switch game in
+  hand (Eden's handheld slot), a Wii game sideways and one with the Classic Controller (Dolphin), a
+  Wii U game with the Pro Controller (Cemu).
 - The library on real covers: the PlayStation hinge cut, regional N64 / Super Nintendo boxes, console
   logos from ScreenScraper on every console.
 - A 1 800-game library: 60 frames per second at 4K, library requests under 150 ms.

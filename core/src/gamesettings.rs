@@ -570,7 +570,7 @@ pub fn sdl3_guid(guid: &str, os_name: &str) -> String {
 
 /// Cemu's controller profile of player `slot`: a Wii U GamePad (player 1) or a Pro Controller on
 /// the SDL pad, buttons by place (the Wii U's A on the right), as Cemu's own defaults.
-fn cemu_controller(data: &Path, slot: usize, rank: usize, guid: &str, name: &str) -> Result<(), String> {
+fn cemu_controller(data: &Path, slot: usize, rank: usize, guid: &str, name: &str, device: &str) -> Result<(), String> {
     // Cemu's numbers: the emulated buttons, and the pad's (SDL buttons 0-31, then ZL ZR, the
     // D-pad, then the axes: left stick 38/44 for X+/X-, 39/45 for Y+/Y-, right stick 40/46,
     // 41/47, triggers 42/43).
@@ -601,7 +601,7 @@ fn cemu_controller(data: &Path, slot: usize, rank: usize, guid: &str, name: &str
         (24, 40),
         (27, 5), // home ← guide
     ];
-    let kind = if slot == 0 { "Wii U GamePad" } else { "Wii U Pro Controller" };
+    let kind = if slot == 0 && device != "pro" { "Wii U GamePad" } else { "Wii U Pro Controller" };
     let mut x = format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<emulated_controller>\n    <type>{kind}</type>\n    <controller>\n        <api>SDLController</api>\n        <uuid>{}_{guid}</uuid>\n        <display_name>{}</display_name>\n        <rumble>0</rumble>\n        <axis><deadzone>0.25</deadzone><range>1</range></axis>\n        <rotation><deadzone>0.25</deadzone><range>1</range></rotation>\n        <trigger><deadzone>0.25</deadzone><range>1</range></trigger>\n        <mappings>\n",
         rank.saturating_sub(1),
@@ -819,12 +819,27 @@ pub struct PadRef {
 
 /// The pads of a game, player 1 first (with the game's controls, `src`), the others as they are
 /// (local multiplayer, up to four). Written before each game.
+#[cfg(test)]
 pub fn controllers(
     program: &str,
     data: &Path,
     userdir: &Path,
     players: &[PadRef],
     src: &dyn Fn(&str) -> Option<&'static str>,
+) -> Result<(), String> {
+    controllers_as(program, data, userdir, players, src, "")
+}
+
+/// The same, player 1 shown to the game as `device` (controls::devices: a Switch Pro Controller,
+/// Joy-Con pair or handheld; a Wii Remote with its Nunchuk, alone, sideways, or a Classic
+/// Controller; a Wii U GamePad or Pro Controller), "" for the console's usual one.
+pub fn controllers_as(
+    program: &str,
+    data: &Path,
+    userdir: &Path,
+    players: &[PadRef],
+    src: &dyn Fn(&str) -> Option<&'static str>,
+    device: &str,
 ) -> Result<(), String> {
     let same = |b: &str| crate::controls::BUTTONS.iter().find(|x| x.0 == b).map(|x| x.0);
     if program == "rpcs3" {
@@ -856,7 +871,7 @@ pub fn controllers(
         }
         for (slot, p) in players.iter().take(4).enumerate() {
             if let Some(g) = p.guid.as_deref() {
-                cemu_controller(data, slot, p.rank.max(1), g, &p.name)?;
+                cemu_controller(data, slot, p.rank.max(1), g, &p.name, if slot == 0 { device } else { "" })?;
             }
         }
         return Ok(());
@@ -870,7 +885,8 @@ pub fn controllers(
         // PCSX2 and DuckStation number pads in SDL's list ("SDL-1"); Dolphin, the yuzu family,
         // Azahar and Ryujinx count among the pads of the same kind ("SDL/0/<name>", "port:0").
         let number = if matches!(program, "pcsx2" | "duckstation") { p.index } else { p.rank.max(1) - 1 };
-        player(program, data, userdir, slot, number, Some(p.name.as_str()), p.guid.as_deref(), s, players.len() == 1)?;
+        let dev = if slot == 0 { device } else { "" };
+        player(program, data, userdir, slot, number, Some(p.name.as_str()), p.guid.as_deref(), s, players.len() == 1, dev)?;
     }
     Ok(())
 }
@@ -1067,6 +1083,7 @@ fn player(
     guid: Option<&str>,
     src: &dyn Fn(&str) -> Option<&'static str>,
     single: bool,
+    device: &str,
 ) -> Result<(), String> {
     let ini = crate::emulators::ini_set;
     let n1 = slot + 1;
@@ -1130,16 +1147,13 @@ fn player(
             let section = format!("GCPad{n1}");
             let v: Vec<(&str, &str, &str)> = pairs.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
             ini(&path, &v)?;
-            // Wii: an emulated Wii Remote with its Nunchuk on the same pad, the pointer on the
-            // right stick (most Wii games need both); the other three remotes off.
-            let wii: Vec<(String, String)> = vec![
+            // Wii: an emulated Wii Remote on the same pad, by default with its Nunchuk and the
+            // pointer on the right stick (most Wii games need both); held alone, sideways (the
+            // games played like a NES pad: 1 and 2 on the bottom and left buttons) or with a
+            // Classic Controller when the game's controls say so. The other three remotes off.
+            let common: Vec<(String, String)> = vec![
                 ("Device".into(), format!("SDL/{index}/{pad}")),
                 ("Source".into(), "1".into()),
-                ("Extension".into(), "Nunchuk".into()),
-                ("Buttons/A".into(), bind("a", &n)),
-                ("Buttons/B".into(), bind("r2", &n)),
-                ("Buttons/1".into(), bind("x", &n)),
-                ("Buttons/2".into(), bind("y", &n)),
                 ("Buttons/-".into(), bind("select", &n)),
                 ("Buttons/+".into(), bind("start", &n)),
                 ("Buttons/Home".into(), q("Guide")),
@@ -1147,23 +1161,96 @@ fn player(
                 ("D-Pad/Down".into(), q("Pad S")),
                 ("D-Pad/Left".into(), q("Pad W")),
                 ("D-Pad/Right".into(), q("Pad E")),
+            ];
+            let shake =
+                |b: &str| -> Vec<(String, String)> { ["X", "Y", "Z"].iter().map(|a| (format!("Shake/{a}"), bind(b, &n))).collect() };
+            let pointer: Vec<(String, String)> = vec![
                 ("IR/Up".into(), q("Right Y+")),
                 ("IR/Down".into(), q("Right Y-")),
                 ("IR/Left".into(), q("Right X-")),
                 ("IR/Right".into(), q("Right X+")),
-                ("Shake/X".into(), bind("b", &n)),
-                ("Shake/Y".into(), bind("b", &n)),
-                ("Shake/Z".into(), bind("b", &n)),
-                ("Nunchuk/Buttons/C".into(), bind("l", &n)),
-                ("Nunchuk/Buttons/Z".into(), bind("l2", &n)),
-                ("Nunchuk/Stick/Up".into(), q("Left Y+")),
-                ("Nunchuk/Stick/Down".into(), q("Left Y-")),
-                ("Nunchuk/Stick/Left".into(), q("Left X-")),
-                ("Nunchuk/Stick/Right".into(), q("Left X+")),
-                ("Nunchuk/Shake/X".into(), bind("r", &n)),
-                ("Nunchuk/Shake/Y".into(), bind("r", &n)),
-                ("Nunchuk/Shake/Z".into(), bind("r", &n)),
             ];
+            let mut wii = common;
+            match device {
+                "sideways" => {
+                    wii.extend([
+                        ("Extension".into(), "None".into()),
+                        ("Options/Sideways Wiimote".into(), "True".into()),
+                        ("Buttons/2".into(), bind("a", &n)),
+                        ("Buttons/1".into(), bind("x", &n)),
+                        ("Buttons/A".into(), bind("b", &n)),
+                        ("Buttons/B".into(), bind("y", &n)),
+                    ]);
+                    wii.extend(shake("r"));
+                }
+                "remote" => {
+                    wii.extend([
+                        ("Extension".into(), "None".into()),
+                        ("Options/Sideways Wiimote".into(), "False".into()),
+                        ("Buttons/A".into(), bind("a", &n)),
+                        ("Buttons/B".into(), bind("r2", &n)),
+                        ("Buttons/1".into(), bind("x", &n)),
+                        ("Buttons/2".into(), bind("y", &n)),
+                    ]);
+                    wii.extend(pointer);
+                    wii.extend(shake("r"));
+                }
+                "classic" => {
+                    // The Classic Controller's buttons by place, as Nintendo's (its a on the right).
+                    let stick = |side: &str, axis: &str| -> Vec<(String, String)> {
+                        vec![
+                            (format!("Classic/{side} Stick/Up"), q(&format!("{axis} Y+"))),
+                            (format!("Classic/{side} Stick/Down"), q(&format!("{axis} Y-"))),
+                            (format!("Classic/{side} Stick/Left"), q(&format!("{axis} X-"))),
+                            (format!("Classic/{side} Stick/Right"), q(&format!("{axis} X+"))),
+                        ]
+                    };
+                    wii.extend([
+                        ("Extension".into(), "Classic".into()),
+                        ("Options/Sideways Wiimote".into(), "False".into()),
+                        ("Buttons/A".into(), bind("a", &n)),
+                        ("Buttons/B".into(), bind("r2", &n)),
+                        ("Classic/Buttons/A".into(), bind("b", &n)),
+                        ("Classic/Buttons/B".into(), bind("a", &n)),
+                        ("Classic/Buttons/X".into(), bind("y", &n)),
+                        ("Classic/Buttons/Y".into(), bind("x", &n)),
+                        ("Classic/Buttons/ZL".into(), bind("l2", &n)),
+                        ("Classic/Buttons/ZR".into(), bind("r2", &n)),
+                        ("Classic/Buttons/-".into(), bind("select", &n)),
+                        ("Classic/Buttons/+".into(), bind("start", &n)),
+                        ("Classic/Buttons/Home".into(), q("Guide")),
+                        ("Classic/Triggers/L".into(), bind("l", &n)),
+                        ("Classic/Triggers/R".into(), bind("r", &n)),
+                        ("Classic/D-Pad/Up".into(), q("Pad N")),
+                        ("Classic/D-Pad/Down".into(), q("Pad S")),
+                        ("Classic/D-Pad/Left".into(), q("Pad W")),
+                        ("Classic/D-Pad/Right".into(), q("Pad E")),
+                    ]);
+                    wii.extend(stick("Left", "Left"));
+                    wii.extend(stick("Right", "Right"));
+                }
+                _ => {
+                    wii.extend([
+                        ("Extension".into(), "Nunchuk".into()),
+                        ("Options/Sideways Wiimote".into(), "False".into()),
+                        ("Buttons/A".into(), bind("a", &n)),
+                        ("Buttons/B".into(), bind("r2", &n)),
+                        ("Buttons/1".into(), bind("x", &n)),
+                        ("Buttons/2".into(), bind("y", &n)),
+                        ("Nunchuk/Buttons/C".into(), bind("l", &n)),
+                        ("Nunchuk/Buttons/Z".into(), bind("l2", &n)),
+                        ("Nunchuk/Stick/Up".into(), q("Left Y+")),
+                        ("Nunchuk/Stick/Down".into(), q("Left Y-")),
+                        ("Nunchuk/Stick/Left".into(), q("Left X-")),
+                        ("Nunchuk/Stick/Right".into(), q("Left X+")),
+                        ("Nunchuk/Shake/X".into(), bind("r", &n)),
+                        ("Nunchuk/Shake/Y".into(), bind("r", &n)),
+                        ("Nunchuk/Shake/Z".into(), bind("r", &n)),
+                    ]);
+                    wii.extend(pointer);
+                    wii.extend(shake("b"));
+                }
+            }
             let wii = dolphin_any_name(wii, index, pad, &seen);
             let section = format!("Wiimote{n1}");
             let mut v: Vec<(&str, &str, &str)> = wii.iter().map(|(k, x)| (section.as_str(), k.as_str(), x.as_str())).collect();
@@ -1334,13 +1421,31 @@ fn player(
                 pairs.push(("button_rstick".into(), raw("rightstick", "button:8")));
                 pairs.push(("lstick".into(), stick("leftx", "lefty", 0, 1, ",range:1.000000")));
                 pairs.push(("rstick".into(), stick("rightx", "righty", 2, 3, ",range:1.000000")));
-                pairs.push(("type".into(), "0".into()));
+                // The controller the game sees (yuzu's numbers): Pro Controller, Joy-Con pair, or
+                // the console in hand (whose controls are those of player 8, the handheld slot).
+                let kind = match device {
+                    "dual" => "1",
+                    "handheld" => "4",
+                    _ => "0",
+                };
+                pairs.push(("type".into(), kind.into()));
                 pairs.push(("connected".into(), "true".into()));
             }
             let mut v: Vec<(String, String)> = vec![];
-            for (k, x) in pairs {
-                v.push((format!("{prefix}{k}\\default"), "false".into()));
-                v.push((format!("{prefix}{k}"), x));
+            // In hand: the same controls on the handheld slot, which is then the one connected.
+            let prefixes: Vec<String> = if !azahar && slot == 0 && device == "handheld" {
+                vec![prefix.to_string(), "player_8_".to_string()]
+            } else {
+                vec![prefix.to_string()]
+            };
+            for prefix in &prefixes {
+                for (k, x) in &pairs {
+                    v.push((format!("{prefix}{k}\\default"), "false".into()));
+                    v.push((format!("{prefix}{k}"), x.clone()));
+                }
+            }
+            if !azahar && slot == 0 && device != "handheld" {
+                v.push(("player_8_connected".into(), "false".into()));
             }
             if azahar {
                 // A Qt settings array: read only up to its size, else the profile is ignored.
@@ -1374,6 +1479,12 @@ fn player(
                 .to_string()
             };
             let b = |logical: &str| src(logical).map(n).unwrap_or_else(|| "Unbound".into());
+            let kind = match device {
+                "dual" => "JoyconPair",
+                "handheld" => "Handheld",
+                _ => "ProController",
+            };
+            let me = if device == "handheld" { "Handheld".to_string() } else { format!("Player{n1}") };
             let pad_cfg = serde_json::json!({
                 "left_joycon_stick": { "joystick": "Left", "invert_stick_x": false, "invert_stick_y": false, "rotate90_cw": false, "stick_button": "LeftStick" },
                 "right_joycon_stick": { "joystick": "Right", "invert_stick_x": false, "invert_stick_y": false, "rotate90_cw": false, "stick_button": "RightStick" },
@@ -1384,10 +1495,16 @@ fn player(
                                  "dpad_up": "DpadUp", "dpad_down": "DpadDown", "dpad_left": "DpadLeft", "dpad_right": "DpadRight" },
                 "right_joycon": { "button_plus": b("start"), "button_r": b("r"), "button_zr": b("r2"), "button_sl": "Unbound", "button_sr": "Unbound",
                                   "button_x": b("y"), "button_b": b("a"), "button_y": b("x"), "button_a": b("b") },
-                "version": 1, "backend": "GamepadSDL2", "id": format!("{index}-{id}"), "controller_type": "ProController", "player_index": format!("Player{n1}")
+                "version": 1, "backend": "GamepadSDL2", "id": format!("{index}-{id}"), "controller_type": kind, "player_index": me
             });
-            let me = format!("Player{n1}");
-            let mut rest: Vec<serde_json::Value> = list.into_iter().filter(|c| c["player_index"].as_str() != Some(me.as_str())).collect();
+            // Player 1 in hand takes the handheld slot (and Player1 is left free), else its own.
+            let mut rest: Vec<serde_json::Value> = list
+                .into_iter()
+                .filter(|c| {
+                    let at = c["player_index"].as_str();
+                    at != Some(me.as_str()) && !(slot == 0 && (at == Some("Handheld") || at == Some("Player1")))
+                })
+                .collect();
             rest.insert(slot.min(rest.len()), pad_cfg);
             cfg["input_config"] = serde_json::Value::Array(rest);
             std::fs::write(&path, serde_json::to_string_pretty(&cfg).unwrap_or_default()).map_err(|e| e.to_string())
@@ -1705,6 +1822,54 @@ mod tests {
     }
 
     #[test]
+    fn the_console_sees_the_controller_chosen() {
+        let d = std::env::temp_dir().join(format!("borne-device-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        let pad = [PadRef { index: 0, name: "Pad".to_string(), guid: Some("030000005e040000e002000000000000".into()), rank: 1 }];
+        let wii = |dev: &str| {
+            controllers_as("dolphin", &d, &d, &pad, &same, dev).unwrap();
+            std::fs::read_to_string(d.join("Config/WiimoteNew.ini")).unwrap()
+        };
+        let w = wii("sideways");
+        assert!(w.contains("Extension = None") && w.contains("Options/Sideways Wiimote = True") && w.contains("Buttons/2 = `Button S`"));
+        let w = wii("classic");
+        assert!(
+            w.contains("Extension = Classic")
+                && w.contains("Classic/Buttons/A = `Button E`")
+                && w.contains("Options/Sideways Wiimote = False")
+        );
+        let w = wii("");
+        assert!(w.contains("Extension = Nunchuk") && w.contains("Options/Sideways Wiimote = False"));
+        // Eden: the Joy-Con pair; in hand, the handheld slot gets the controls.
+        let qt = |dev: &str| {
+            controllers_as("eden", &d, &d, &pad, &same, dev).unwrap();
+            let p = if cfg!(target_os = "macos") { d.join("config/qt-config.ini") } else { d.join("config/eden/qt-config.ini") };
+            std::fs::read_to_string(p).unwrap()
+        };
+        assert!(qt("dual").contains("player_0_type = 1"));
+        let t = qt("handheld");
+        assert!(t.contains("player_0_type = 4") && t.contains("player_8_connected = true") && t.contains("player_8_button_a = "));
+        assert!(qt("").contains("player_0_type = 0") && qt("").contains("player_8_connected = false"));
+        // Ryujinx: the handheld slot instead of Player1.
+        std::fs::write(d.join("Config.json"), r#"{"input_config": [{"player_index": "Player1", "controller_type": "ProController"}]}"#)
+            .unwrap();
+        controllers_as("ryubing", &d, &d, &pad, &same, "handheld").unwrap();
+        let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(d.join("Config.json")).unwrap()).unwrap();
+        let list = v["input_config"].as_array().unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0]["player_index"], "Handheld");
+        assert_eq!(list[0]["controller_type"], "Handheld");
+        controllers_as("ryubing", &d, &d, &pad, &same, "dual").unwrap();
+        let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(d.join("Config.json")).unwrap()).unwrap();
+        let list = v["input_config"].as_array().unwrap();
+        assert_eq!(
+            (list.len(), list[0]["player_index"].as_str(), list[0]["controller_type"].as_str()),
+            (1, Some("Player1"), Some("JoyconPair"))
+        );
+        let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
     fn dolphin_values_go_to_its_ini() {
         let d = std::env::temp_dir().join(format!("borne-gs-{}", std::process::id()));
         let mut m = Map::new();
@@ -1754,7 +1919,7 @@ mod cemu_tests {
         let text = std::fs::read_to_string(cfg.join("settings.xml")).unwrap();
         assert!(text.contains("<console_language>1</console_language>") && text.matches("<console_language>").count() == 1, "{text}");
         assert!(text.contains("<check_update>false</check_update>"));
-        cemu_controller(&data, 0, 1, &g, "Pad").unwrap();
+        cemu_controller(&data, 0, 1, &g, "Pad", "").unwrap();
         let x = std::fs::read_to_string(cfg.join("controllerProfiles/controller0.xml")).unwrap();
         assert!(x.contains("<type>Wii U GamePad</type>") && x.contains(&format!("<uuid>0_{g}</uuid>")));
         assert!(x.contains("<entry><mapping>1</mapping><button>1</button></entry>"), "A on the east button");

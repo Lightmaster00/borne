@@ -271,6 +271,14 @@
         <source>Every button doing its own</source>
         <translation>Chaque bouton fait le sien</translation>
     </message>
+    <message>
+        <source>Controller the games see</source>
+        <translation>Manette que voient les jeux</translation>
+    </message>
+    <message>
+        <source>The console's controller shown to its games; each game can take another</source>
+        <translation>La manette de la console présentée à ses jeux ; chaque jeu peut en prendre une autre</translation>
+    </message>
 </context>
 <context>
     <name>CoreText</name>
@@ -1064,6 +1072,101 @@
     </message>
 </context>
 <context>
+    <name>Devices</name>
+    <message>
+        <source>Wii U Pro Controller</source>
+        <translation>Manette Pro Wii U</translation>
+    </message>
+    <message>
+        <source>Pro Controller</source>
+        <translation>Manette Pro</translation>
+    </message>
+    <message>
+        <source>Joy-Con pair</source>
+        <translation>Joy-Con en paire</translation>
+    </message>
+    <message>
+        <source>Handheld (console in hand)</source>
+        <translation>Mode portable (console en main)</translation>
+    </message>
+    <message>
+        <source>Wii Remote + Nunchuk</source>
+        <translation>Wiimote + Nunchuk</translation>
+    </message>
+    <message>
+        <source>Wii Remote alone</source>
+        <translation>Wiimote seule</translation>
+    </message>
+    <message>
+        <source>Wii Remote sideways</source>
+        <translation>Wiimote à l’horizontale</translation>
+    </message>
+    <message>
+        <source>Classic Controller</source>
+        <translation>Manette classique</translation>
+    </message>
+    <message>
+        <source>Wii U GamePad</source>
+        <translation>GamePad Wii U</translation>
+    </message>
+    <message>
+        <source>Most games</source>
+        <translation>Le plus de jeux</translation>
+    </message>
+    <message>
+        <source>For games that refuse the Pro Controller</source>
+        <translation>Pour les jeux qui refusent la Manette Pro</translation>
+    </message>
+    <message>
+        <source>The Switch as if held in hand</source>
+        <translation>La Switch comme tenue en main</translation>
+    </message>
+    <message>
+        <source>Most Wii games: stick on the Nunchuk, pointer on the right stick</source>
+        <translation>La plupart des jeux Wii : stick sur le Nunchuk, pointeur sur le stick droit</translation>
+    </message>
+    <message>
+        <source>Pointer games without a Nunchuk</source>
+        <translation>Les jeux au pointeur sans Nunchuk</translation>
+    </message>
+    <message>
+        <source>Played like a NES pad: 1 and 2 on the bottom and left buttons</source>
+        <translation>Jouée comme une manette NES : 1 et 2 sur les boutons du bas et de gauche</translation>
+    </message>
+    <message>
+        <source>Games that take the Classic Controller, Virtual Console</source>
+        <translation>Les jeux qui prennent la manette classique, la Console virtuelle</translation>
+    </message>
+    <message>
+        <source>The Wii U's own controller, with its screen</source>
+        <translation>La manette de la Wii U, avec son écran</translation>
+    </message>
+    <message>
+        <source>This game does not take the Pro Controller: it plays with a pair of Joy-Con, which Borne shows it.</source>
+        <translation>Ce jeu ne prend pas la Manette Pro : il se joue avec deux Joy-Con, que Borne lui présente.</translation>
+    </message>
+    <message>
+        <source>This game is played with the Wii Remote held sideways: Borne shows it one, 1 and 2 on your bottom and left buttons.</source>
+        <translation>Ce jeu se joue la Wiimote à l’horizontale : Borne lui en présente une, 1 et 2 sur tes boutons du bas et de gauche.</translation>
+    </message>
+    <message>
+        <source>B (trigger)</source>
+        <translation>B (gâchette)</translation>
+    </message>
+    <message>
+        <source>Pointer</source>
+        <translation>Pointeur</translation>
+    </message>
+    <message>
+        <source>Shake</source>
+        <translation>Secouer</translation>
+    </message>
+    <message>
+        <source>Nunchuk stick</source>
+        <translation>Stick du Nunchuk</translation>
+    </message>
+</context>
+<context>
     <name>Display</name>
     <message>
         <source>Picture shape</source>
@@ -1399,16 +1502,16 @@
 <context>
     <name>FilterOverlay</name>
     <message>
-        <source>Filter</source>
-        <translation>Filtrer</translation>
-    </message>
-    <message>
-        <source>Choose a console, then narrow down if you like.</source>
-        <translation>Choisis une console, puis affine si tu veux.</translation>
-    </message>
-    <message>
         <source>installed · %1 in the store</source>
         <translation>installés · %1 dans la boutique</translation>
+    </message>
+    <message>
+        <source>Consoles</source>
+        <translation>Consoles</translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation>Ordre</translation>
     </message>
 </context>
 <context>
@@ -1737,6 +1840,10 @@
         <source>Emulator</source>
         <translation>Émulateur</translation>
     </message>
+    <message>
+        <source>Controller</source>
+        <translation>Manette</translation>
+    </message>
 </context>
 <context>
     <name>GameSettingsPage</name>
@@ -1767,10 +1874,6 @@
     <message numerus="yes">
         <source>%n on</source>
         <translation><numerusform>%n activé</numerusform><numerusform>%n activés</numerusform></translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation>Langue</translation>
     </message>
     <message>
         <source>Cover and video</source>
@@ -1897,10 +2000,6 @@
         <translation>Langue du jeu</translation>
     </message>
     <message>
-        <source>Starts the version of the game in this language</source>
-        <translation>Lance la version du jeu dans cette langue</translation>
-    </message>
-    <message>
         <source>Cover</source>
         <translation>Jaquette</translation>
     </message>
@@ -2001,20 +2100,8 @@
         <translation>Retour au jeu</translation>
     </message>
     <message>
-        <source>Controls</source>
-        <translation>Commandes</translation>
-    </message>
-    <message>
-        <source>Controller, buttons</source>
-        <translation>Manette, boutons</translation>
-    </message>
-    <message>
         <source>No emulator runs this game yet.</source>
         <translation>Aucun émulateur ne lance encore ce jeu.</translation>
-    </message>
-    <message>
-        <source>This game's emulator reads the controller by itself, buttons where the console has them.</source>
-        <translation>L’émulateur de ce jeu lit la manette tout seul, les boutons à la place de ceux de la console.</translation>
     </message>
     <message>
         <source>as for all its games</source>
@@ -2027,6 +2114,110 @@
     <message>
         <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
         <translation>Appliqué au prochain lancement du jeu. Affichage simple ou avancé : Paramètres → Manettes.</translation>
+    </message>
+    <message>
+        <source>Version and language</source>
+        <translation>Version et langue</translation>
+    </message>
+    <message>
+        <source>One version</source>
+        <translation>Une seule version</translation>
+    </message>
+    <message>
+        <source>Controller</source>
+        <translation>Manette</translation>
+    </message>
+    <message>
+        <source>Buttons, player 1</source>
+        <translation>Boutons, joueur 1</translation>
+    </message>
+    <message>
+        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.</source>
+        <translation>Pour ce jeu seulement. Sans choix, Borne prend la version et la langue de Réglages → Langue.</translation>
+    </message>
+    <message>
+        <source>PlayStation controller</source>
+        <translation>manette PlayStation</translation>
+    </message>
+    <message>
+        <source>Nintendo controller</source>
+        <translation>manette Nintendo</translation>
+    </message>
+    <message>
+        <source>Xbox controller</source>
+        <translation>manette Xbox</translation>
+    </message>
+    <message>
+        <source>Left stick</source>
+        <translation>Stick gauche</translation>
+    </message>
+    <message>
+        <source>Right stick</source>
+        <translation>Stick droit</translation>
+    </message>
+    <message>
+        <source>Your %1 → %2</source>
+        <translation>Ta %1 → %2</translation>
+    </message>
+    <message>
+        <source>What each of your buttons does in the game.</source>
+        <translation>Ce que fait chacun de tes boutons dans le jeu.</translation>
+    </message>
+    <message>
+        <source>Borne sets the emulator up just before the game starts, then puts back the settings of the console's other games.</source>
+        <translation>Borne règle l’émulateur juste avant le lancement, puis remet les réglages des autres jeux de la console.</translation>
+    </message>
+    <message>
+        <source>Without a choice of its own, the game takes the picture set for its console in Settings → Consoles.</source>
+        <translation>Sans choix propre, le jeu prend l’image réglée pour sa console dans Réglages → Consoles.</translation>
+    </message>
+    <message>
+        <source>The codes depend on the version chosen in Version and language. They apply the next time the game starts.</source>
+        <translation>Les codes dépendent de la version choisie dans Version et langue. Ils s’appliquent au prochain lancement.</translation>
+    </message>
+    <message>
+        <source>Images and video come from ScreenScraper; choose another edition's box or search for the right game.</source>
+        <translation>Images et vidéo viennent de ScreenScraper : choisis la boîte d’une autre édition ou cherche le bon jeu.</translation>
+    </message>
+    <message>
+        <source>Saves stay on RomM whatever you remove here.</source>
+        <translation>Les sauvegardes restent sur RomM, quoi que tu supprimes ici.</translation>
+    </message>
+    <message>
+        <source>Controller the game sees</source>
+        <translation>Manette que voit le jeu</translation>
+    </message>
+    <message>
+        <source>Chosen for this game</source>
+        <translation>Choisie pour ce jeu</translation>
+    </message>
+    <message>
+        <source>The one this game needs</source>
+        <translation>Celle qu’il faut à ce jeu</translation>
+    </message>
+    <message>
+        <source>As for %1 (Settings → Consoles)</source>
+        <translation>Comme pour %1 (Réglages → Consoles)</translation>
+    </message>
+    <message>
+        <source>This game's emulator reads your controller by itself, buttons where the console has them.</source>
+        <translation>L’émulateur de ce jeu lit ta manette lui-même, les boutons à la place de ceux de la console.</translation>
+    </message>
+    <message>
+        <source>Version</source>
+        <translation>Version</translation>
+    </message>
+    <message>
+        <source>The one launched; the others stay on the server</source>
+        <translation>Celle qui est lancée ; les autres restent sur le serveur</translation>
+    </message>
+    <message>
+        <source>Set in the emulator; may start the version in this language</source>
+        <translation>Réglée dans l’émulateur ; peut lancer la version dans cette langue</translation>
+    </message>
+    <message>
+        <source>This game exists in one version, in one language: nothing to choose.</source>
+        <translation>Ce jeu existe en une version, dans une langue : rien à choisir.</translation>
     </message>
 </context>
 <context>
@@ -2067,8 +2258,32 @@
         <translation>Boutique</translation>
     </message>
     <message>
-        <source>Profile: %1</source>
-        <translation>Profil : %1</translation>
+        <source>Console: %1</source>
+        <translation>Console : %1</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Toutes</translation>
+    </message>
+    <message>
+        <source>Console</source>
+        <translation>Console</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s)</source>
+        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n already in your library</source>
+        <translation><numerusform>%n déjà dans ta ludothèque</numerusform><numerusform>%n déjà dans ta ludothèque</numerusform></translation>
+    </message>
+    <message>
+        <source>None in your library yet</source>
+        <translation>Aucun dans ta ludothèque pour l’instant</translation>
     </message>
 </context>
 <context>
@@ -2446,10 +2661,6 @@
         <translation>%1 est prêt à être joué depuis le réseau.</translation>
     </message>
     <message>
-        <source>Settings</source>
-        <translation>Paramètres</translation>
-    </message>
-    <message>
         <source>Playing from the network is unavailable here: %1</source>
         <translation>Jouer depuis le réseau n'est pas disponible ici : %1</translation>
     </message>
@@ -2492,10 +2703,6 @@
     <message>
         <source>Offline</source>
         <translation>Hors ligne</translation>
-    </message>
-    <message>
-        <source>Play</source>
-        <translation>Jouer</translation>
     </message>
     <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
@@ -2802,10 +3009,6 @@
         <translation>Ce jeu utilise maintenant %1.</translation>
     </message>
     <message>
-        <source>Sort</source>
-        <translation>Trier</translation>
-    </message>
-    <message>
         <source>Remove this file?</source>
         <translation>Retirer ce fichier ?</translation>
     </message>
@@ -2933,10 +3136,6 @@
         <source>%n game(s) of your server to discover</source>
         <translation><numerusform>%n jeu de ton serveur à découvrir</numerusform><numerusform>%n jeux de ton serveur à découvrir</numerusform></translation>
     </message>
-    <message>
-        <source>Resume</source>
-        <translation>Reprendre</translation>
-    </message>
     <message numerus="yes">
         <source>%n download(s)</source>
         <translation><numerusform>%n téléchargement</numerusform><numerusform>%n téléchargements</numerusform></translation>
@@ -2964,6 +3163,62 @@
     <message>
         <source>%1 installed · %2 in the store</source>
         <translation>%1 installés · %2 dans la boutique</translation>
+    </message>
+    <message>
+        <source>Order of the consoles</source>
+        <translation>Ordre des consoles</translation>
+    </message>
+    <message>
+        <source>Sort by</source>
+        <translation>Trier par</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Disposition</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n filter(s)</source>
+        <translation><numerusform>%n filtre</numerusform><numerusform>%n filtres</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n console(s)</source>
+        <translation><numerusform>%n console</numerusform><numerusform>%n consoles</numerusform></translation>
+    </message>
+    <message>
+        <source>Order</source>
+        <translation>Ordre</translation>
+    </message>
+    <message>
+        <source>Consoles</source>
+        <translation>Consoles</translation>
+    </message>
+    <message>
+        <source>Filter</source>
+        <translation>Filtrer</translation>
+    </message>
+    <message>
+        <source>Turn on / off</source>
+        <translation>Activer / désactiver</translation>
+    </message>
+    <message>
+        <source>Show</source>
+        <translation>Afficher</translation>
+    </message>
+    <message>
+        <source>Move</source>
+        <translation>Déplacer</translation>
+    </message>
+    <message>
+        <source>See its games</source>
+        <translation>Voir ses jeux</translation>
+    </message>
+    <message>
+        <source>My library</source>
+        <translation>Ma ludothèque</translation>
+    </message>
+    <message>
+        <source>Every console of your server, as large cards</source>
+        <translation>Toutes les consoles de ton serveur, en grandes cartes</translation>
     </message>
 </context>
 <context>
@@ -3459,10 +3714,6 @@
         <translation>Stable</translation>
     </message>
     <message>
-        <source>Interface</source>
-        <translation>Interface</translation>
-    </message>
-    <message>
         <source>Emulators</source>
         <translation>Émulateurs</translation>
     </message>
@@ -3819,16 +4070,8 @@
         <translation>Vidéo derrière la bibliothèque</translation>
     </message>
     <message>
-        <source>The selected game's video plays by itself, muted, behind the boxes</source>
-        <translation>La vidéo du jeu sélectionné se lance seule, sans le son, derrière les boîtes</translation>
-    </message>
-    <message>
         <source>Video in full screen</source>
         <translation>Vidéo en plein écran</translation>
-    </message>
-    <message>
-        <source>Without a press for this long, the boxes fade out and leave the video</source>
-        <translation>Sans appui pendant ce temps, les boîtes s’effacent et laissent la vidéo</translation>
     </message>
     <message>
         <source>Never</source>
@@ -3851,16 +4094,8 @@
         <translation>La bande-annonce d’un jeu démarre sur sa page après un instant</translation>
     </message>
     <message>
-        <source>Look</source>
-        <translation>Apparence</translation>
-    </message>
-    <message>
         <source>Interface size</source>
         <translation>Taille de l’interface</translation>
-    </message>
-    <message>
-        <source>Larger text and boxes, for a screen seen from afar</source>
-        <translation>Textes et boîtes plus grands, pour un écran vu de loin</translation>
     </message>
     <message>
         <source>Animations</source>
@@ -3893,10 +4128,6 @@
     <message>
         <source>Hidden</source>
         <translation>Masquée</translation>
-    </message>
-    <message>
-        <source>Sounds</source>
-        <translation>Sons</translation>
     </message>
     <message>
         <source>Volume</source>
@@ -4259,14 +4490,6 @@
         <translation>Manettes</translation>
     </message>
     <message>
-        <source>Buttons for every game</source>
-        <translation>Boutons pour tous les jeux</translation>
-    </message>
-    <message>
-        <source>The controllers connected, and how their buttons play in every game.</source>
-        <translation>Les manettes connectées, et le rôle de leurs boutons dans tous les jeux.</translation>
-    </message>
-    <message>
         <source>RomM &amp; images</source>
         <translation>RomM et images</translation>
     </message>
@@ -4347,24 +4570,8 @@
         <translation>Langue</translation>
     </message>
     <message>
-        <source>Interface language</source>
-        <translation>Langue de l'interface</translation>
-    </message>
-    <message>
-        <source>Also the language games start in, when they have it</source>
-        <translation>C'est aussi la langue dans laquelle les jeux démarrent, quand ils l'ont</translation>
-    </message>
-    <message>
         <source>As the system</source>
         <translation>Comme le système</translation>
-    </message>
-    <message>
-        <source>Language, videos, look</source>
-        <translation>Langue, vidéos, apparence</translation>
-    </message>
-    <message>
-        <source>Borne itself: its language, videos, size, animations, sounds and the buttons it shows.</source>
-        <translation>Borne lui-même : sa langue, ses vidéos, sa taille, ses animations, ses sons et les boutons qu'il affiche.</translation>
     </message>
     <message>
         <source>Consoles shown in Borne</source>
@@ -4407,10 +4614,6 @@
         <translation>Avancé</translation>
     </message>
     <message>
-        <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its settings). Applied the next time a game starts.</source>
-        <translation>Chaque console peut avoir les siennes (Paramètres → Consoles → la console), et chaque jeu les siennes (ses réglages). Appliqué au prochain lancement d’un jeu.</translation>
-    </message>
-    <message>
         <source>Installing %1 failed</source>
         <translation>L’installation de %1 a échoué</translation>
     </message>
@@ -4421,6 +4624,146 @@
     <message>
         <source>Your favourite. A game that does not run on it starts on the other one by itself</source>
         <translation>Votre préféré. Un jeu qui ne fonctionne pas dessus démarre tout seul sur l’autre</translation>
+    </message>
+    <message>
+        <source>Covers</source>
+        <translation>Jaquettes</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Disposition</translation>
+    </message>
+    <message>
+        <source>How the games are shown in My library and the Store (also in the menu Y)</source>
+        <translation>Comment les jeux sont présentés dans Ma ludothèque et la Boutique (aussi dans le menu Y)</translation>
+    </message>
+    <message>
+        <source>Grid</source>
+        <translation>Grille</translation>
+    </message>
+    <message>
+        <source>Large row</source>
+        <translation>Grande rangée</translation>
+    </message>
+    <message>
+        <source>Two rows</source>
+        <translation>Deux rangées</translation>
+    </message>
+    <message>
+        <source>Order of the consoles</source>
+        <translation>Ordre des consoles</translation>
+    </message>
+    <message>
+        <source>In the Consoles menu (X) and the Store; your own order is set there with LB and RB</source>
+        <translation>Dans le menu Consoles (X) et la Boutique ; ton propre ordre se règle là, avec LB et RB</translation>
+    </message>
+    <message>
+        <source>Most played</source>
+        <translation>Les plus joués</translation>
+    </message>
+    <message>
+        <source>Most games</source>
+        <translation>Le plus de jeux</translation>
+    </message>
+    <message>
+        <source>Release date</source>
+        <translation>Date de sortie</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nom</translation>
+    </message>
+    <message>
+        <source>Maker</source>
+        <translation>Fabricant</translation>
+    </message>
+    <message>
+        <source>Your order</source>
+        <translation>Personnalisé</translation>
+    </message>
+    <message>
+        <source>The selected game's video plays by itself, muted, behind the covers</source>
+        <translation>La vidéo du jeu choisi passe toute seule, sans le son, derrière les jaquettes</translation>
+    </message>
+    <message>
+        <source>Without a press for this long, the covers fade out and leave the video</source>
+        <translation>Sans appui pendant ce temps, les jaquettes s’effacent et laissent la vidéo</translation>
+    </message>
+    <message>
+        <source>Borne's menus; also the version and the language a game starts in, when it has several</source>
+        <translation>Les menus de Borne ; aussi la version et la langue dans lesquelles un jeu démarre, quand il en a plusieurs</translation>
+    </message>
+    <message>
+        <source>One game in another version or language: open its page, then Y (Game settings) → Version and language.</source>
+        <translation>Un jeu dans une autre version ou langue : ouvre sa fiche, puis Y (Réglages du jeu) → Version et langue.</translation>
+    </message>
+    <message>
+        <source>Screen</source>
+        <translation>Écran</translation>
+    </message>
+    <message>
+        <source>Larger text and covers, for a screen seen from afar</source>
+        <translation>Textes et jaquettes plus grands, pour un écran vu de loin</translation>
+    </message>
+    <message>
+        <source>Sound</source>
+        <translation>Son</translation>
+    </message>
+    <message>
+        <source>Pro Controller, Joy-Con pair or handheld</source>
+        <translation>Manette Pro, Joy-Con en paire ou mode portable</translation>
+    </message>
+    <message>
+        <source>Wii Remote with Nunchuk, alone, sideways, or Classic Controller</source>
+        <translation>Wiimote avec Nunchuk, seule, à l’horizontale, ou manette classique</translation>
+    </message>
+    <message>
+        <source>Wii U GamePad or Pro Controller</source>
+        <translation>GamePad Wii U ou Manette Pro</translation>
+    </message>
+    <message>
+        <source>Controller each console's games see</source>
+        <translation>Manette que voient les jeux de chaque console</translation>
+    </message>
+    <message>
+        <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its page, Y). Applied the next time a game starts.</source>
+        <translation>Chaque console peut avoir les siens (Réglages → Consoles → la console), et chaque jeu aussi (sa fiche, Y). Appliqué au prochain lancement d’un jeu.</translation>
+    </message>
+    <message>
+        <source>Layout, consoles' order, videos</source>
+        <translation>Disposition, ordre des consoles, vidéos</translation>
+    </message>
+    <message>
+        <source>How your games are shown: the covers' layout, the order of the consoles and the videos.</source>
+        <translation>Comment tes jeux sont présentés : la disposition des jaquettes, l’ordre des consoles et les vidéos.</translation>
+    </message>
+    <message>
+        <source>Buttons, the consoles' controllers</source>
+        <translation>Boutons, manettes des consoles</translation>
+    </message>
+    <message>
+        <source>The controllers connected, how their buttons play in every game, and which controller each console's games see.</source>
+        <translation>Les manettes branchées, ce que font leurs boutons dans tous les jeux, et la manette que voient les jeux de chaque console.</translation>
+    </message>
+    <message>
+        <source>Borne's language, which also picks the version and the language of the games.</source>
+        <translation>La langue de Borne, qui choisit aussi la version et la langue des jeux.</translation>
+    </message>
+    <message>
+        <source>Games and saves</source>
+        <translation>Jeux et sauvegardes</translation>
+    </message>
+    <message>
+        <source>Screen and sound</source>
+        <translation>Écran et son</translation>
+    </message>
+    <message>
+        <source>Size, animations, sounds</source>
+        <translation>Taille, animations, sons</translation>
+    </message>
+    <message>
+        <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
+        <translation>Borne lui-même : sa taille, ses animations, ses sons et les boutons qu’il affiche.</translation>
     </message>
 </context>
 <context>
@@ -4546,27 +4889,64 @@
         <translation>2 joueurs ou plus</translation>
     </message>
     <message>
-        <source>Resume</source>
-        <translation>Reprendre</translation>
-    </message>
-    <message>
-        <source>Your most played</source>
-        <translation>Ton plus joué</translation>
-    </message>
-    <message>
-        <source>Newest</source>
-        <translation>Dernier arrivé</translation>
-    </message>
-    <message>
         <source>Other consoles</source>
         <translation>Autres consoles</translation>
     </message>
-</context>
-<context>
-    <name>SortMenu</name>
     <message>
-        <source>Sort by</source>
-        <translation>Trier par</translation>
+        <source>Grid</source>
+        <translation>Grille</translation>
+    </message>
+    <message>
+        <source>Large covers, scroll down by sections</source>
+        <translation>Grandes jaquettes, on descend par sections</translation>
+    </message>
+    <message>
+        <source>Large row</source>
+        <translation>Grande rangée</translation>
+    </message>
+    <message>
+        <source>One row, the selected game large above it</source>
+        <translation>Une rangée, le jeu choisi en grand au-dessus</translation>
+    </message>
+    <message>
+        <source>Two rows</source>
+        <translation>Deux rangées</translation>
+    </message>
+    <message>
+        <source>More games on screen</source>
+        <translation>Plus de jeux à l’écran</translation>
+    </message>
+    <message>
+        <source>Most played</source>
+        <translation>Les plus joués</translation>
+    </message>
+    <message>
+        <source>By your play time</source>
+        <translation>Selon ton temps de jeu</translation>
+    </message>
+    <message>
+        <source>Most games</source>
+        <translation>Le plus de jeux</translation>
+    </message>
+    <message>
+        <source>By their number of games</source>
+        <translation>Selon leur nombre de jeux</translation>
+    </message>
+    <message>
+        <source>Maker</source>
+        <translation>Fabricant</translation>
+    </message>
+    <message>
+        <source>Nintendo, Sony, Sega… then by date</source>
+        <translation>Nintendo, Sony, Sega… puis par date</translation>
+    </message>
+    <message>
+        <source>Your order</source>
+        <translation>Personnalisé</translation>
+    </message>
+    <message>
+        <source>Move them with LB and RB in the Consoles menu</source>
+        <translation>Déplace-les avec LB et RB dans le menu Consoles</translation>
     </message>
 </context>
 <context>

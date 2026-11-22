@@ -139,6 +139,106 @@ fn console_of(app: &Shared, group: &str) -> Option<String> {
     app.db.group(group).into_iter().next().map(|g| g.platform_slug)
 }
 
+// ---------- The controller the console sees ----------
+//
+// Some consoles had several controllers, and some games want one of them: a Switch game made for
+// the Joy-Con (no Pro Controller), a Wii game played with the Wii Remote held sideways. "device"
+// is the one the emulator shows the game, chosen for the console (Settings → Consoles) or the
+// game, the first of the list by default. Written by gamesettings::controllers_as.
+
+/// The controllers a console's games can be shown, the first the default.
+pub fn devices(console: &str) -> &'static [&'static str] {
+    match console {
+        "switch" => &["pro", "dual", "handheld"],
+        "wii" => &["nunchuk", "remote", "sideways", "classic"],
+        "wiiu" => &["gamepad", "pro"],
+        _ => &[],
+    }
+}
+
+/// The controller a game is known to want, when it does not take the console's usual one: the
+/// Pokémon Let's Go games take the Joy-Con only; these Wii games are played sideways.
+pub fn wanted_device(console: &str, name: &str) -> Option<&'static str> {
+    let n = name.to_lowercase().replace('’', "'");
+    match console {
+        "switch"
+            if n.contains("let's go, pikachu")
+                || n.contains("let's go, eevee")
+                || n.contains("let's go pikachu")
+                || n.contains("let's go eevee") =>
+        {
+            Some("dual")
+        }
+        "wii"
+            if n.contains("new super mario bros. wii")
+                || n.contains("new super mario bros wii")
+                || n.contains("super paper mario")
+                || n.contains("kirby's return to dream land")
+                || n.contains("kirby's adventure wii")
+                || n.contains("warioware: smooth moves") =>
+        {
+            Some("sideways")
+        }
+        _ => None,
+    }
+}
+
+fn console_level(app: &Shared, group: &str) -> String {
+    if group == ALL_GAMES {
+        String::new()
+    } else if let Some(c) = group.strip_prefix("@console:") {
+        c.to_string()
+    } else {
+        console_of(app, group).unwrap_or_default()
+    }
+}
+
+fn own_device(app: &Shared, group: &str, console: &str) -> Option<String> {
+    app.db.setting(&key(group, "device")).filter(|v| devices(console).contains(&v.as_str()))
+}
+
+/// The controller of a level without one of its own: for a game, the one it is known to want,
+/// else its console's; for a console, the first of its list.
+fn device_inherited(app: &Shared, group: &str, console: &str) -> String {
+    let list = devices(console);
+    if list.is_empty() {
+        return String::new();
+    }
+    if !group.starts_with('@') {
+        let name = app.db.group(group).into_iter().next().map(|g| g.name).unwrap_or_default();
+        if let Some(d) = wanted_device(console, &name) {
+            return d.to_string();
+        }
+        if let Some(d) = own_device(app, &console_group(console), console) {
+            return d;
+        }
+    }
+    list[0].to_string()
+}
+
+/// The controller the emulator shows this game ("" for a console without a choice).
+pub fn device(app: &Shared, group: &str) -> String {
+    let console = console_level(app, group);
+    own_device(app, group, &console).unwrap_or_else(|| device_inherited(app, group, &console))
+}
+
+fn set_device(app: &Shared, group: &str, value: &str) -> Result<(), String> {
+    let console = console_level(app, group);
+    let list = devices(&console);
+    if list.is_empty() {
+        return Err("unknown setting".into());
+    }
+    if value == "default" || value == device_inherited(app, group, &console) {
+        app.db.set_setting(&key(group, "device"), "");
+        return Ok(());
+    }
+    if !list.contains(&value) {
+        return Err("unknown value".into());
+    }
+    app.db.set_setting(&key(group, "device"), value);
+    Ok(())
+}
+
 fn own(app: &Shared, group: &str, k: &str) -> Option<String> {
     let vals = values(k);
     app.db.setting(&key(group, k)).filter(|v| vals.contains(v))
@@ -205,7 +305,7 @@ pub fn view(app: &Shared, group: &str, program: &str) -> Value {
     };
     let console =
         if level == "console" { group.trim_start_matches("@console:").to_string() } else { console_of(app, group).unwrap_or_default() };
-    let options: Vec<Value> = keys()
+    let mut options: Vec<Value> = keys()
         .iter()
         .filter(|k| level == "game" || k.as_str() != "pad")
         .map(|k| {
@@ -213,6 +313,22 @@ pub fn view(app: &Shared, group: &str, program: &str) -> Value {
             json!({ "key": k, "value": value, "own": own, "inherited": inherited(app, group, k), "values": values(k) })
         })
         .collect();
+    // The controller the console sees, where it has a choice.
+    let list = devices(&console);
+    let wanted = if level == "game" {
+        let name = app.db.group(group).into_iter().next().map(|g| g.name).unwrap_or_default();
+        wanted_device(&console, &name)
+    } else {
+        None
+    };
+    if !list.is_empty() {
+        let mine = own_device(app, group, &console);
+        options.insert(
+            0,
+            json!({ "key": "device", "value": device(app, group), "own": mine.is_some(),
+                    "inherited": device_inherited(app, group, &console), "values": list, "wanted": wanted }),
+        );
+    }
     json!({
         "applies": level != "game" || APPLIES.contains(&program),
         "stick": level != "game" || program == "retroarch",
@@ -227,11 +343,15 @@ pub fn view(app: &Shared, group: &str, program: &str) -> Value {
 }
 
 pub fn set(app: &Shared, group: &str, k: &str, value: &str) -> Result<(), String> {
+    if k == "device" {
+        return set_device(app, group, value);
+    }
     // Everything of this level back to the level above.
     if k == "*" {
         for k in keys() {
             app.db.set_setting(&key(group, &k), "");
         }
+        app.db.set_setting(&key(group, "device"), "");
         app.db.set_setting(&key(group, "pad.id"), "");
         return Ok(());
     }
@@ -416,6 +536,17 @@ mod tests {
         assert!(values("map.a").contains(&"select".to_string()));
         assert_eq!(keys().len(), 13);
         assert!(values("nope").is_empty());
+    }
+
+    #[test]
+    fn consoles_and_their_controllers() {
+        assert_eq!(devices("switch")[0], "pro");
+        assert_eq!(devices("wii"), &["nunchuk", "remote", "sideways", "classic"]);
+        assert!(devices("snes").is_empty());
+        assert_eq!(wanted_device("switch", "Pokémon: Let’s Go, Pikachu!"), Some("dual"));
+        assert_eq!(wanted_device("wii", "New Super Mario Bros. Wii"), Some("sideways"));
+        assert_eq!(wanted_device("wii", "Mario Kart Wii"), None);
+        assert_eq!(wanted_device("switch", "Super Mario Odyssey"), None);
     }
 
     #[test]

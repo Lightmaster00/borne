@@ -1,4 +1,8 @@
 {
+ "%n already in your library": [
+  "%n already in your library",
+  "%n already in your library"
+ ],
  "%n cheat(s) found in the file.": [
   "%n cheat found in the file.",
   "%n cheats found in the file."
@@ -22,6 +26,10 @@
  "%n file(s) taken from RomM.": [
   "%n file taken from RomM.",
   "%n files taken from RomM."
+ ],
+ "%n filter(s)": [
+  "%n filter",
+  "%n filters"
  ],
  "%n frame(s)": [
   "%n frame",

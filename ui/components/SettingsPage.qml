@@ -66,36 +66,50 @@ Item {
                  items: choices.map(c => ({ id: String(c[0]), label: c[1], value: c[0] })) }
     }
     function secs(n) { return n >= 60 ? qsTr("%1 min").arg(n / 60) : qsTr("%1 s").arg(n) }
-    function interfaceRows() {
+    // The library: how the games are laid out, the consoles' order, the videos.
+    function libraryRows() {
         const on = [[true, qsTr("On")], [false, qsTr("Off")]]
         const rows = [
-            group(qsTr("Language")),
-            pref("language", qsTr("Interface language"), qsTr("Also the language games start in, when they have it"),
-                 [["auto", qsTr("As the system")], ["fr", "Français"], ["en", "English"]]),
+            group(qsTr("Covers")),
+            pref("layout", qsTr("Layout"), qsTr("How the games are shown in My library and the Store (also in the menu Y)"),
+                 [["grid", qsTr("Grid")], ["row", qsTr("Large row")], ["rows2", qsTr("Two rows")]]),
+            pref("consoleOrder", qsTr("Order of the consoles"), qsTr("In the Consoles menu (X) and the Store; your own order is set there with LB and RB"),
+                 [["played", qsTr("Most played")], ["count", qsTr("Most games")], ["year", qsTr("Release date")], ["name", qsTr("Name")], ["maker", qsTr("Maker")], ["custom", qsTr("Your order")]]),
+            pref("showClock", qsTr("Clock"), qsTr("The time at the top of the library"), [[true, qsTr("Shown")], [false, qsTr("Hidden")]]),
             group(qsTr("Videos")),
-            pref("bgVideo", qsTr("Video behind the library"), qsTr("The selected game's video plays by itself, muted, behind the boxes"), on),
-            pref("attractDelay", qsTr("Video in full screen"), qsTr("Without a press for this long, the boxes fade out and leave the video"),
+            pref("bgVideo", qsTr("Video behind the library"), qsTr("The selected game's video plays by itself, muted, behind the covers"), on),
+            pref("attractDelay", qsTr("Video in full screen"), qsTr("Without a press for this long, the covers fade out and leave the video"),
                  [[5, secs(5)], [15, secs(15)], [30, secs(30)], [60, secs(60)], [0, qsTr("Never")]]),
             pref("attractRest", qsTr("Full-screen video length"), qsTr("Then the games come back, the video going on dimmed behind them"),
                  [[60, secs(60)], [180, secs(180)], [600, secs(600)], [0, qsTr("No limit")]]),
-            pref("pageVideo", qsTr("Videos on the game page"), qsTr("A game's trailer starts on its page after a moment"), on),
-            group(qsTr("Look")),
-            pref("uiScale", qsTr("Interface size"), qsTr("Larger text and boxes, for a screen seen from afar"),
+            pref("pageVideo", qsTr("Videos on the game page"), qsTr("A game's trailer starts on its page after a moment"), on)
+        ]
+        // No full-screen video without the video behind the library.
+        return rows.filter(r => !(prefs && !prefs.bgVideo && (r.id === "pref:attractDelay" || r.id === "pref:attractRest"))
+                             && !(prefs && prefs.attractDelay === 0 && r.id === "pref:attractRest"))
+    }
+    function languageRows() {
+        return [
+            pref("language", qsTr("Language"), qsTr("Borne's menus; also the version and the language a game starts in, when it has several"),
+                 [["auto", qsTr("As the system")], ["fr", "Français"], ["en", "English"]]),
+            note("lang-game", qsTr("One game in another version or language: open its page, then Y (Game settings) → Version and language."))
+        ]
+    }
+    function screenRows() {
+        const on = [[true, qsTr("On")], [false, qsTr("Off")]]
+        const rows = [
+            group(qsTr("Screen")),
+            pref("uiScale", qsTr("Interface size"), qsTr("Larger text and covers, for a screen seen from afar"),
                  [[100, "100 %"], [115, "115 %"], [130, "130 %"], [145, "145 %"]]),
             pref("motion", qsTr("Animations"), qsTr("Reduced: shorter movements and fades"), [["normal", qsTr("Normal")], ["reduced", qsTr("Reduced")]]),
-            pref("showClock", qsTr("Clock"), qsTr("The time at the top of the library"), [[true, qsTr("Shown")], [false, qsTr("Hidden")]]),
-            group(qsTr("Sounds")),
+            pref("prompts", qsTr("Buttons shown"), qsTr("The hints at the bottom show the gamepad's buttons or the keyboard's keys"),
+                 [["auto", qsTr("Last used")], ["pad", qsTr("Gamepad")], ["keyboard", qsTr("Keyboard")]]),
+            group(qsTr("Sound")),
             pref("sounds", qsTr("Interface sounds"), qsTr("Short, quiet sounds when moving and choosing"), on),
             pref("soundVolume", qsTr("Volume"), qsTr("Of the interface sounds only, not of the games"),
-                 [["low", qsTr("Low")], ["medium", qsTr("Medium")], ["high", qsTr("High")]]),
-            group(qsTr("Controls")),
-            pref("prompts", qsTr("Buttons shown"), qsTr("The hints at the bottom show the gamepad's buttons or the keyboard's keys"),
-                 [["auto", qsTr("Last used")], ["pad", qsTr("Gamepad")], ["keyboard", qsTr("Keyboard")]])
+                 [["low", qsTr("Low")], ["medium", qsTr("Medium")], ["high", qsTr("High")]])
         ]
-        // No full-screen video without the video behind the library; no volume without sounds.
-        return rows.filter(r => !(prefs && !prefs.bgVideo && (r.id === "pref:attractDelay" || r.id === "pref:attractRest"))
-                             && !(prefs && prefs.attractDelay === 0 && r.id === "pref:attractRest")
-                             && !(prefs && !prefs.sounds && r.id === "pref:soundVolume"))
+        return rows.filter(r => !(prefs && !prefs.sounds && r.id === "pref:soundVolume"))
     }
 
     readonly property string updateText: {
@@ -180,11 +194,6 @@ Item {
         const ch = chosenOf(c), p = ch ? programOf(ch.program) : null
         const parts = []
         if (ch) parts.push(ch.name + (p && p.managed && p.version && p.version !== "flatpak" ? " " + p.version : ""))
-        // Controls: this console's own over those for every game.
-        if (consoleControls && consoleControls.console === c.slug) {
-            rows.push(group(qsTr("Controls")))
-            Controls.rows(consoleControls, prefs && prefs.controlsAdvanced, qsTr("every game")).forEach(r => rows.push(r))
-        }
         const sf = sysOf(c.slug)
         if (sf && sf.items.length) {
             const req = sf.items.filter(i => i.required)
@@ -319,7 +328,14 @@ Item {
                            [[false, qsTr("Simple")], [true, qsTr("Advanced")]]),
                       group(qsTr("For every game"))]
         Controls.rows(controlsAll, prefs && prefs.controlsAdvanced, qsTr("every game")).forEach(r => rows.push(r))
-        rows.push(note("ctl-note", qsTr("Each console can have its own (Settings → Consoles → the console), and each game its own (its settings). Applied the next time a game starts.")))
+        // The consoles whose games can be shown another controller (Joy-Con, Wii Remote…).
+        const kinds = { switch: qsTr("Pro Controller, Joy-Con pair or handheld"), wii: qsTr("Wii Remote with Nunchuk, alone, sideways, or Classic Controller"), wiiu: qsTr("Wii U GamePad or Pro Controller") }
+        const own = consoles.filter(c => kinds[c.slug])
+        if (own.length) {
+            rows.push(group(qsTr("Controller each console's games see")))
+            own.forEach(c => rows.push(link("go:console:" + c.slug, c.name, kinds[c.slug])))
+        }
+        rows.push(note("ctl-note", qsTr("Each console can have its own (Settings → Consoles → the console), and each game its own (its page, Y). Applied the next time a game starts.")))
         return rows
     }
 
@@ -396,14 +412,18 @@ Item {
         { id: "consoles", name: qsTr("Consoles"), warn: consoles.some(c => consoleIssues(c).some(i => i.tone === "bad")),
           hint: consoles.length ? qsTr("%n console(s)", "", consoles.length) : qsTr("Emulator, picture, BIOS"),
           intro: qsTr("Everything about each console of your library: the emulator that plays it, that emulator's options, the picture and the system files. A game can still have its own settings, from its page.") },
+        { id: "shelf", name: qsTr("Library"), hint: qsTr("Layout, consoles' order, videos"),
+          intro: qsTr("How your games are shown: the covers' layout, the order of the consoles and the videos.") },
+        { id: "controls", name: qsTr("Controllers"), hint: qsTr("Buttons, the consoles' controllers"),
+          intro: qsTr("The controllers connected, how their buttons play in every game, and which controller each console's games see.") },
+        { id: "language", name: qsTr("Language"), hint: prefs && prefs.language !== "auto" ? (prefs.language === "fr" ? "Français" : "English") : qsTr("As the system"),
+          intro: qsTr("Borne's language, which also picks the version and the language of the games.") },
+        { id: "games", name: qsTr("Games and saves"), hint: qsTr("Installation, saves, picture"),
+          intro: qsTr("How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.") },
         { id: "programs", name: qsTr("Emulators"), hint: qsTr("Install, update"),
           intro: qsTr("The emulator programs on this computer. Borne installs and updates them; you can also give your own.") },
-        { id: "games", name: qsTr("Games"), hint: qsTr("Installation, saves, picture"),
-          intro: qsTr("How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.") },
-        { id: "controls", name: qsTr("Controllers"), hint: qsTr("Buttons for every game"),
-          intro: qsTr("The controllers connected, and how their buttons play in every game.") },
-        { id: "interface", name: qsTr("Interface"), hint: qsTr("Language, videos, look"),
-          intro: qsTr("Borne itself: its language, videos, size, animations, sounds and the buttons it shows.") },
+        { id: "interface", name: qsTr("Screen and sound"), hint: qsTr("Size, animations, sounds"),
+          intro: qsTr("Borne itself: its size, animations, sounds and the buttons it shows.") },
         { id: "library", name: qsTr("RomM & images"), hint: qsTr("Server, profile, ScreenScraper"), warn: !!(status && status.server_url && !status.online),
           intro: qsTr("The server your games come from, who is playing, and where the case scans come from.") },
         { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable"),
@@ -438,7 +458,9 @@ Item {
             { id: "auto", kind: "chips", title: qsTr("Check automatically"), desc: qsTr("Every 6 hours, never while you play"),
               selected: upd && upd.auto_check ? "on" : "off", items: onOff() }
         ]
-        if (id === "interface") return interfaceRows()
+        if (id === "interface") return screenRows()
+        if (id === "shelf") return libraryRows()
+        if (id === "language") return languageRows()
         if (id === "library") return [
             group(qsTr("RomM")),
             { id: "server", kind: "buttons", title: qsTr("RomM server"), desc: status && status.server_url ? status.server_url + (status.online ? "" : " · " + qsTr("offline")) : qsTr("not configured"),
@@ -523,6 +545,8 @@ Item {
     // Opens a section from the overview (or a console's page), the focus on its rows.
     function go(target) {
         const parts = target.split(":")
+        // "console:<slug>": that console's page in Consoles.
+        if (parts[0] === "console") parts[0] = "consoles"
         const i = sections.findIndex(x => x.id === parts[0])
         if (i < 0) return
         closeConsole()
@@ -802,12 +826,14 @@ Item {
                     visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header" && rowItem.modelData.kind !== "note"
                     x: 32
                     width: parent.width - 64
-                    height: Math.max(texts.height, choices.height)
+                    // Many choices: under the title and its explanation rather than beside them.
+                    readonly property bool stacked: choices.natural > width - 380
+                    height: stacked ? texts.height + 16 + choices.height : Math.max(texts.height, choices.height)
                     anchors.verticalCenter: parent.verticalCenter
                     Column {
                         id: texts
-                        width: parent.width - choices.width - 32
-                        anchors.verticalCenter: parent.verticalCenter
+                        width: line.stacked ? parent.width : parent.width - choices.width - 32
+                        y: line.stacked ? 0 : (line.height - height) / 2
                         spacing: 4
                         Text { text: rowItem.modelData.title || ""; color: theme.fg; font { family: theme.fontFamily; pixelSize: 20; weight: Font.DemiBold } }
                         Text {
@@ -819,14 +845,24 @@ Item {
                             font { family: theme.fontFamily; pixelSize: 18 }
                         }
                     }
-                    Row {
+                    Flow {
                         id: choices
-                        anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                        // Its width on one line; wrapped to the row's width when stacked.
+                        readonly property real natural: {
+                            let w = 0, n = 0
+                            for (let i = 0; i < children.length; i++) {
+                                const c = children[i]
+                                if (c.visible && c.width > 0) { w += c.width; n++ }
+                            }
+                            return w + Math.max(0, n - 1) * spacing
+                        }
+                        width: line.stacked ? line.width : natural
+                        x: line.stacked ? 0 : line.width - width
+                        y: line.stacked ? texts.height + 16 : (line.height - height) / 2
                         spacing: 10
                         // A line that opens something: its state as a small badge, then a chevron.
                         Rectangle {
                             visible: rowItem.modelData.kind === "link" && (rowItem.modelData.badge || "") !== ""
-                            anchors.verticalCenter: parent.verticalCenter
                             height: 34; radius: 17
                             width: badgeText.implicitWidth + 28
                             readonly property string tone: rowItem.modelData.tone || ""
@@ -841,7 +877,6 @@ Item {
                         }
                         Text {
                             visible: rowItem.modelData.kind === "link"
-                            anchors.verticalCenter: parent.verticalCenter
                             text: "›"
                             color: rowItem.current && page.inRows ? theme.fg : theme.fgFaint
                             font { family: theme.fontFamily; pixelSize: 34; weight: Font.Medium }

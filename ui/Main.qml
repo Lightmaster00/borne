@@ -86,8 +86,34 @@ Window {
     readonly property double hourClock: Math.floor(clock / 3600000) * 3600000
     function relayout() {
         const l = Shelf.build(rows, { tab: libTab, console: consoleFilter, quick: quick, genre: prefs.libraryGenre, sort: sortId,
-                                      consoles: consoles, now: hourClock, fmtSize: fmtSize, height: home.shelfHeight })
+                                      layout: Shelf.layoutOf(prefs.layout), consoles: orderedConsoles, now: hourClock, fmtSize: fmtSize,
+                                      width: home.shelfWidth, height: home.shelfHeight })
         if (JSON.stringify(l) !== JSON.stringify(layout)) layout = l
+    }
+    // The consoles in the order chosen (Consoles menu, X), and the player's own order.
+    readonly property var customOrder: { try { return JSON.parse(prefs.consoleCustom || "[]") } catch (e) { return [] } }
+    readonly property var orderedConsoles: Shelf.orderConsoles(consoles, prefs.consoleOrder, rows, libTab, customOrder)
+    onOrderedConsolesChanged: relayout()
+    // The Store without a console: its consoles as large cards (those with games to discover).
+    readonly property bool wallMode: libTab === "store" && consoleFilter === ""
+    property int wallIndex: 0
+    readonly property var wall: {
+        if (!wallMode) return []
+        const count = {}, installed = {}
+        for (const g of rows) {
+            const c = Shelf.tabOf(g.platform_slug)
+            if (Shelf.ready(g)) installed[c] = (installed[c] || 0) + 1
+            else count[c] = (count[c] || 0) + 1
+        }
+        return orderedConsoles.filter(c => count[c.slug] > 0)
+                              .map(c => ({ slug: c.slug, name: c.name, logo: c.logo, count: count[c.slug], installed: installed[c.slug] || 0 }))
+    }
+    onWallChanged: if (wallIndex >= wall.length) wallIndex = Math.max(0, wall.length - 1)
+    function enterConsole(slug) {
+        if (!slug) return
+        sfx.play("accept")
+        focusRom = -1
+        consoleFilter = slug
     }
     onLibTabChanged: relayout()
     onConsoleFilterChanged: relayout()
@@ -95,7 +121,7 @@ Window {
     onSortIdChanged: relayout()
     onHourClockChanged: relayout()
     onConsolesChanged: relayout()
-    readonly property var focusedTile: layout.tiles[Math.min(focusIndex, layout.tiles.length - 1)] || null
+    readonly property var focusedTile: wallMode ? null : layout.tiles[Math.min(focusIndex, layout.tiles.length - 1)] || null
     readonly property var focusedGame: focusedTile ? rows[focusedTile.idx] || null : null
     onRowsChanged: relayout()
     // The shelf laid out again (new list, other tab, filter or order): the same game stays selected
@@ -123,7 +149,7 @@ Window {
     readonly property bool anyVideo: bgVideos || trailers
     readonly property var activeProfile: status ? status.active_profile : null
     readonly property bool textEntry: screen === "server" || nameEntry.visible
-    // The interface's language: chosen in Settings → Interface, else the system's.
+    // The interface's language: chosen in Settings → Language, else the system's.
     readonly property string uiLang: prefs.language !== "auto" ? prefs.language : Qt.locale().name.substring(0, 2)
     property var settings: ({ install_mode: "download", stream: { available: false, error: "" } })
     // Game page
@@ -189,6 +215,7 @@ Window {
     readonly property string consoleSlug: {
         if (overlay === "game" && pageGame) return Shelf.tabOf(pageGame.platform_slug)
         if (filterOverlay.visible) return filterOverlay.consoles[filterOverlay.index] ? filterOverlay.consoles[filterOverlay.index].slug : ""
+        if (screen === "library" && wallMode) return wall[wallIndex] ? wall[wallIndex].slug : ""
         if (screen === "library" && focusedGame) return Shelf.tabOf(focusedGame.platform_slug)
         return screen === "library" ? consoleFilter : ""
     }
@@ -454,7 +481,12 @@ Window {
         else settingsPage.controlsAll = r
     }
     function controlsChange(scope, body) {
-        api("POST", controlsUrl(scope), body, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); else controlsShow(scope, r) })
+        api("POST", controlsUrl(scope), body, function (r, err) {
+            if (err) { toasts.show(CoreText.tr(err), "error"); return }
+            controlsShow(scope, r)
+            // The game's page says which controller it gets.
+            if (scope.startsWith("game:") && (body.key === "device" || body.key === "*")) reloadGame()
+        })
     }
     // "Press the button for…": the core sends the next pad button pressed (a "capture" event)
     // instead of moving in Borne; ten seconds, else nothing changes.
@@ -620,6 +652,7 @@ Window {
             else if (id === "pnach-url") nameEntry.open(qsTr("Link to the .pnach file"), "", function (t) { send({ url: t }) }, "https://…")
         }
         else if (id === "lang") pageAction("lang", payload)
+        else if (id === "version") pageAction("version", payload)
         else if (id === "region") {
             correctImages(g, { region: payload })
             const im = Object.assign({}, gameSettingsPage.images); im.chosen = payload; gameSettingsPage.images = im
@@ -631,7 +664,7 @@ Window {
     }
     // The settings follow the version shown (a language can open another one).
     onPageGameChanged: if (gameSettingsPage.visible) {
-        if (pageGame) loadGameSettings(pageGame, ["emulator", "emuoptions", "display", "cheats", "screenscraper"])
+        if (pageGame) loadGameSettings(pageGame, ["emulator", "emuoptions", "display", "controls", "cheats", "screenscraper"])
         else gameSettingsPage.close()
     }
     function pageAction(id, payload) {
@@ -915,6 +948,8 @@ Window {
         if (t === libTab) return
         sfx.play("move")
         focusRom = -1
+        // The Store opens on its consoles; My library keeps the console it shows.
+        if (t === "store") { consoleFilter = ""; wallIndex = 0 }
         libTab = t
     }
     // Filter: the consoles (every console first, then those with games in this tab), quick
@@ -922,7 +957,7 @@ Window {
     function filterConsoles() {
         const count = (slug, store) => rows.filter(g => (!slug || Shelf.tabOf(g.platform_slug) === slug) && Shelf.ready(g) !== store).length
         const list = [{ slug: "", name: qsTr("Every console"), logo: "", home: count("", false), store: count("", true) }]
-        for (const c of consoles) {
+        for (const c of orderedConsoles) {
             const home = count(c.slug, false), store = count(c.slug, true)
             if (home + store > 0) list.push({ slug: c.slug, name: c.name, logo: c.logo, home: home, store: store })
         }
@@ -948,14 +983,50 @@ Window {
         filterOverlay.chips = filterChips()
         filterOverlay.chipIndex = 0
         filterOverlay.chipsFocused = false
+        filterOverlay.ordersFocused = false
+        filterOverlay.orders = consoleOrders()
+        filterOverlay.orderIndex = Math.max(0, Shelf.consoleOrders().findIndex(o => o.id === prefs.consoleOrder))
         filterOverlay.visible = true
         sfx.play("accept")
+    }
+    function consoleOrders() { return Shelf.consoleOrders().map(o => ({ id: o.id, label: o.label, on: o.id === prefs.consoleOrder })) }
+    // A new order: the card chosen stays chosen.
+    function setConsoleOrder(id) {
+        const f = filterOverlay
+        const keep = f.consoles[f.index] ? f.consoles[f.index].slug : ""
+        prefs.consoleOrder = id
+        f.orders = consoleOrders()
+        f.consoles = filterConsoles()
+        f.index = Math.max(0, f.consoles.findIndex(c => c.slug === keep))
+    }
+    // Your order: the chosen console one place left (-1) or right (+1).
+    function moveConsole(d) {
+        const f = filterOverlay
+        const c = f.consoles[f.index]
+        if (!c || !c.slug) return
+        const list = f.consoles.filter(x => x.slug).map(x => x.slug)
+        if (prefs.consoleOrder !== "custom") {
+            prefs.consoleCustom = JSON.stringify(list)
+            prefs.consoleOrder = "custom"
+            f.orders = consoleOrders()
+            f.orderIndex = Shelf.consoleOrders().findIndex(o => o.id === "custom")
+        }
+        const p = list.indexOf(c.slug), q = p + d
+        if (q < 0 || q >= list.length) return
+        list[p] = list[q]; list[q] = c.slug
+        // Every console known is kept in the order, those without games too.
+        const rest = customOrder.filter(x => list.indexOf(x) < 0)
+        prefs.consoleCustom = JSON.stringify(list.concat(rest))
+        f.consoles = filterConsoles()
+        f.index = Math.max(0, f.consoles.findIndex(x => x.slug === c.slug))
+        sfx.play("move")
     }
     function applyConsole(k) {
         const c = filterOverlay.consoles[k]
         if (!c) return
         focusRom = -1
         consoleFilter = c.slug
+        if (!c.slug) wallIndex = 0
         filterOverlay.visible = false
         sfx.play("accept")
     }
@@ -976,9 +1047,16 @@ Window {
     function handleFilter(a) {
         const f = filterOverlay
         if (a === "b" || a === "x") { sfx.play("back"); f.visible = false; return }
-        if (!f.chipsFocused) {
+        if (f.ordersFocused) {
+            if (a === "left" && f.orderIndex > 0) { f.orderIndex--; setConsoleOrder(f.orders[f.orderIndex].id); sfx.play("move") }
+            else if (a === "right" && f.orderIndex < f.orders.length - 1) { f.orderIndex++; setConsoleOrder(f.orders[f.orderIndex].id); sfx.play("move") }
+            else if (a === "down" || a === "a") { f.ordersFocused = false; sfx.play("move") }
+        } else if (!f.chipsFocused) {
             if (a === "left" && f.index > 0) { f.index--; sfx.play("move") }
             else if (a === "right" && f.index < f.consoles.length - 1) { f.index++; sfx.play("move") }
+            else if (a === "lb") moveConsole(-1)
+            else if (a === "rb") moveConsole(1)
+            else if (a === "up") { f.ordersFocused = true; sfx.play("move") }
             else if (a === "down" && f.chips.length) { f.chipsFocused = true; sfx.play("move") }
             else if (a === "a") applyConsole(f.index)
         } else {
@@ -988,16 +1066,29 @@ Window {
             else if (a === "a") toggleChip(f.chipIndex)
         }
     }
+    // Y: the order of the games and the layout of the covers; on the Store's consoles, their order.
+    function sortSections() {
+        if (wallMode) return [{ title: qsTr("Order of the consoles"), kind: "consoles",
+                                items: Shelf.consoleOrders().map(o => ({ id: o.id, label: o.label, hint: o.hint, on: o.id === prefs.consoleOrder })) }]
+        const lay = Shelf.layoutOf(prefs.layout)
+        return [{ title: qsTr("Sort by"), kind: "sort", items: Shelf.sortsFor(libTab).map(x => ({ id: x.id, label: x.label, hint: x.hint, on: x.id === sortId })) },
+                { title: qsTr("Layout"), kind: "layout", items: Shelf.layouts().map(x => ({ id: x.id, label: x.label, hint: x.hint, on: x.id === lay })) }]
+    }
     function openSort() {
-        sortMenu.sorts = Shelf.sortsFor(libTab)
-        sortMenu.index = Math.max(0, sortMenu.sorts.findIndex(x => x.id === sortId))
+        sortMenu.sections = sortSections()
+        sortMenu.index = Math.max(0, sortMenu.flat.findIndex(x => sortMenu.sections[x.section].items.find(i => i.id === x.id).on))
         sortMenu.visible = true
         sfx.play("accept")
     }
-    function applySort(id) {
-        focusRom = -1
-        if (libTab === "store") prefs.sortStore = id
-        else prefs.sortHome = id
+    function applySort(pick) {
+        const kind = sortMenu.sections[pick.section].kind
+        if (kind === "consoles") prefs.consoleOrder = pick.id
+        else if (kind === "layout") prefs.layout = pick.id
+        else {
+            focusRom = -1
+            if (libTab === "store") prefs.sortStore = pick.id
+            else prefs.sortHome = pick.id
+        }
         sortMenu.visible = false
         sfx.play("accept")
     }
@@ -1005,15 +1096,26 @@ Window {
         const m = sortMenu
         if (a === "b" || a === "y") { sfx.play("back"); m.visible = false }
         else if (a === "up" && m.index > 0) { m.index--; sfx.play("move") }
-        else if (a === "down" && m.index < m.sorts.length - 1) { m.index++; sfx.play("move") }
-        else if (a === "a" && m.sorts[m.index]) applySort(m.sorts[m.index].id)
+        else if (a === "down" && m.index < m.flat.length - 1) { m.index++; sfx.play("move") }
+        else if (a === "a" && m.picked) applySort(m.picked)
     }
-    // A from the library: the hero plays at once (Resume), any other cover opens its page.
+    // A from the library: the game's page; on the Store's consoles, that console's games.
     function primaryAction() {
+        if (wallMode) { if (wall[wallIndex]) enterConsole(wall[wallIndex].slug); return }
         const g = focusedGame
         if (!g) return
-        if (focusedTile && focusedTile.hero && Shelf.ready(g)) { sfx.play("accept"); play(g) }
-        else openGame(g.rom_id)
+        openGame(g.rom_id)
+    }
+    function moveWall(a) {
+        const n = wall.length, cols = 4
+        let j = wallIndex
+        if (a === "left") j--
+        else if (a === "right") j++
+        else if (a === "up") j -= cols
+        else if (a === "down") j += cols
+        if (j < 0 || j >= n) return
+        sfx.play("move")
+        wallIndex = j
     }
     function openDownloads() {
         downloadsPanel.open()
@@ -1044,7 +1146,7 @@ Window {
             refreshStatus()
             loadSettings()
             screen = "library"
-            libTab = "home"; consoleFilter = ""; quick = ({}); focusRom = -1
+            libTab = "home"; consoleFilter = ""; quick = ({}); focusRom = -1; wallIndex = 0
             loadPlatforms()
             loadLibrary(true)
         })
@@ -1119,7 +1221,7 @@ Window {
     }
 
     // ---------- Input ----------
-    function move(a) { focusTile(Shelf.move(layout.tiles, focusIndex, a)) }
+    function move(a) { if (wallMode) moveWall(a); else focusTile(Shelf.move(layout.tiles, focusIndex, a, layout.vertical)) }
     function jumpGroup(d) { focusTile(Shelf.jumpGroup(layout.tiles, focusIndex, d)) }
     function openSearch(initial, fromKeyboard) {
         if (!libModel.count) return
@@ -1134,6 +1236,8 @@ Window {
         focusRom = romId
         let changed = false
         if (libTab !== tab) { libTab = tab; changed = true }
+        // The Store shows one console's games: the game's.
+        if (tab === "store") consoleFilter = Shelf.tabOf(rows[i].platform_slug)
         const on = () => layout.tiles.findIndex(t => t.idx === i)
         if (on() < 0) { consoleFilter = ""; quick = ({}); prefs.libraryGenre = ""; changed = true }
         relayout()
@@ -1178,12 +1282,20 @@ Window {
         else if (a === "y") openSort()
         else if (a === "select") openSearch("", false)
         else if (a === "start") settingsMenu()
+        else if (a === "b" && libTab === "store" && consoleFilter) {
+            // Back to the Store's consoles, on the one just left.
+            sfx.play("back")
+            const left = consoleFilter
+            consoleFilter = ""
+            wallIndex = Math.max(0, wall.findIndex(c => c.slug === left))
+        }
+        else if (a === "b" && libTab === "store") setTab("home")
         else if (a === "b") { sfx.play("back"); showProfiles() }
         else if (a === "lb") setTab("home")
         else if (a === "rb") setTab("store")
         else if (a === "r3") openDownloads()
-        else if (a === "lt") jumpGroup(-1)
-        else if (a === "rt") jumpGroup(1)
+        else if (a === "lt") { if (!wallMode) jumpGroup(-1) }
+        else if (a === "rt") { if (!wallMode) jumpGroup(1) }
         else move(a)
     }
 
@@ -1476,27 +1588,31 @@ Window {
         theme: win.theme
         rows: win.rows
         layout: win.layout
+        layoutKind: Shelf.layoutOf(prefs.layout)
         current: win.focusIndex
         tab: win.libTab
-        filtered: win.consoleFilter !== ""
         emptyText: win.emptyLibraryText
         keyLabel: function (a) { return graphite.key(a) }
+        wallMode: win.wallMode
+        wall: win.wall
+        wallIndex: win.wallIndex
+        groupLabel: win.focusedTile && win.layout.groups[win.focusedTile.group] ? win.layout.groups[win.focusedTile.group].label : ""
+        readonly property var filteredConsole: win.consoles.find(c => c.slug === win.consoleFilter) || null
+        consoleName: filteredConsole ? filteredConsole.name : win.consoleFilter ? (win.shortNames[win.consoleFilter] || win.consoleFilter) : ""
+        consoleTint: win.consoleFilter ? Cases.tint(win.consoleFilter) : "#F3F1EE"
         subtitle: {
-            const where = win.consoleFilter ? (win.consoleInfo && win.consoleSlug === win.consoleFilter ? win.consoleInfo.name
-                          : (win.consoles.find(c => c.slug === win.consoleFilter) || { name: win.consoleFilter }).name) : qsTr("every console")
+            const where = consoleName || qsTr("every console")
             const n = win.layout.count
-            return win.libTab === "home" ? qsTr("%n game(s) ready to play", "", n) + " · " + where
-                                         : qsTr("%n game(s) of your server to discover", "", n) + " · " + where
-        }
-        filterLabel: {
-            const c = win.consoles.find(x => x.slug === win.consoleFilter)
             const extra = Object.keys(win.quick).filter(k => win.quick[k]).length + (prefs.libraryGenre ? 1 : 0)
-            return (c ? c.name : qsTr("Every console")) + (extra ? " + " + extra : "")
+            const filters = extra ? " · " + qsTr("%n filter(s)", "", extra) : ""
+            if (win.wallMode) return qsTr("%n console(s)", "", win.wall.length) + " · " + qsTr("%n game(s) of your server to discover", "", win.wall.reduce((a, c) => a + c.count, 0))
+            return win.libTab === "home" ? qsTr("%n game(s) ready to play", "", n) + " · " + where + filters
+                                         : qsTr("%n game(s) of your server to discover", "", n) + " · " + where + filters
         }
-        sortLabel: (Shelf.sortsFor(win.libTab).find(x => x.id === win.sortId) || { label: "" }).label
-        profileName: win.activeProfile ? win.activeProfile.name : ""
+        sortLabel: win.wallMode ? (Shelf.consoleOrders().find(x => x.id === prefs.consoleOrder) || { label: "" }).label
+                                : (Shelf.sortsFor(win.libTab).find(x => x.id === win.sortId) || { label: "" }).label + " · "
+                                  + (Shelf.layouts().find(x => x.id === Shelf.layoutOf(prefs.layout)) || { label: "" }).label
         clockText: prefs.showClock ? win.playTimeText() : ""
-        heroAction: win.libTab === "home" ? (win.sortId === "played" ? qsTr("Resume") : qsTr("Play")) : ""
         downloadsText: {
             const s = win.status ? win.status.sync : null
             if (!win.status || !win.status.online) return qsTr("Offline")
@@ -1510,6 +1626,8 @@ Window {
             return busy.reduce((a, g) => a + g.dl_received, 0) / busy.reduce((a, g) => a + g.dl_total, 0)
         }
         onShelfHeightChanged: win.relayout()
+        onShelfWidthChanged: win.relayout()
+        onLayoutKindChanged: win.relayout()
     }
 
     Item {
@@ -1524,14 +1642,25 @@ Window {
             anchors { right: parent.right; rightMargin: 96; verticalCenter: parent.verticalCenter }
             theme: win.theme
             hints: {
-                if (filterOverlay.visible) return [["◀ ▶", qsTr("Console"), "right"], ["A", qsTr("Apply"), "a"], ["B", qsTr("Close"), "b"]]
-                if (sortMenu.visible) return [["▲ ▼", qsTr("Choose"), "down"], ["A", qsTr("Sort"), "a"], ["B", qsTr("Close"), "b"]]
+                const f = filterOverlay
+                if (f.visible && f.ordersFocused) return [["◀ ▶", qsTr("Order"), "right"], ["▼", qsTr("Consoles"), "down"], ["B", qsTr("Close"), "b"]]
+                if (f.visible && f.chipsFocused) return [["◀ ▶", qsTr("Filter"), "right"], ["A", qsTr("Turn on / off"), "a"], ["B", qsTr("Close"), "b"]]
+                if (f.visible) {
+                    const h = [["◀ ▶", qsTr("Console"), "right"], ["A", qsTr("Show"), "a"], ["▲", qsTr("Order"), "up"]]
+                    if (f.consoles[f.index] && f.consoles[f.index].slug) h.push(["LB RB", qsTr("Move"), "lb", "Q · E"])
+                    h.push(["B", qsTr("Close"), "b"])
+                    return h
+                }
+                if (sortMenu.visible) return [["▲ ▼", qsTr("Choose"), "down"], ["A", qsTr("Apply"), "a"], ["B", qsTr("Close"), "b"]]
+                if (win.wallMode) return win.wall.length ? [["A", qsTr("See its games"), "a"], ["X", qsTr("Consoles"), "x"], ["Y", qsTr("Order"), "y"], ["B", qsTr("My library"), "b"]]
+                                                         : [["B", qsTr("My library"), "b"]]
                 const g = win.focusedGame
                 const h = []
-                if (g) h.push(["A", win.focusedTile && win.focusedTile.hero && Shelf.ready(g) ? (win.sortId === "played" ? qsTr("Resume") : qsTr("Play")) : qsTr("Open"), "a"])
-                if (win.layout.groups.length > 1) h.push(["LT RT", qsTr("Groups"), "rt"])
+                if (g) h.push(["A", qsTr("Open"), "a"])
+                h.push(["X", qsTr("Consoles"), "x"])
+                if (win.libTab === "store") h.push(["B", qsTr("Every console"), "b"])
+                else if (win.layout.groups.length > 1) h.push(["LT RT", qsTr("Groups"), "rt"])
                 h.push(["Select", qsTr("Search"), "select"])
-                h.push(["Start", qsTr("Settings"), "start"])
                 return h
             }
         }
@@ -1541,9 +1670,8 @@ Window {
         id: sortMenu
         visible: false
         z: 40
-        anchors { right: parent.right; rightMargin: 96; top: parent.top; topMargin: 156 }
+        anchors { right: parent.right; rightMargin: 96; top: parent.top; topMargin: 186 }
         theme: win.theme
-        current: win.sortId
     }
     FilterOverlay {
         id: filterOverlay
@@ -1555,8 +1683,9 @@ Window {
         line: {
             const c = consoles[index]
             if (!c) return ""
-            if (!c.slug) return qsTr("All your games, every console together")
-            return qsTr("%1 installed · %2 in the store").arg(c.home).arg(c.store)
+            if (!c.slug) return win.libTab === "store" ? qsTr("Every console of your server, as large cards") : qsTr("All your games, every console together")
+            const made = Shelf.madeBy(c.slug)
+            return (made ? made + " · " : "") + qsTr("%1 installed · %2 in the store").arg(c.home).arg(c.store)
         }
     }
 
@@ -1879,6 +2008,8 @@ Window {
         gameLanguages: win.page && win.page.languages ? win.page.languages : []
         uiLang: win.uiLang
         emulator: win.page && win.page.emulator ? win.page.emulator : ""
+        device: win.page && win.page.device ? win.page.device : ""
+        deviceWanted: win.page && win.page.device_wanted ? win.page.device_wanted : ""
         installMode: win.page ? win.page.install_mode : "download"
         streamAvailable: win.page ? win.page.stream.available : false
         streamError: win.page && win.page.stream.error ? CoreText.tr(win.page.stream.error) : ""
@@ -1900,6 +2031,9 @@ Window {
         advanced: prefs.controlsAdvanced
         game: win.pageGame
         languages: gamePage.gameLanguages
+        versions: gamePage.playable
+        versionLabel: function (v) { return gamePage.versionLabel(v) }
+        versionDetail: function (v) { return gamePage.versionDetail(v) }
         currentLang: gamePage.currentLang
         languageName: function (c) { return gamePage.languageName(c) }
         regionName: function (c) { return win.regionName(c) }
@@ -2077,7 +2211,8 @@ Window {
         margin: win.frameMargin
         radius: Math.round(34 * scene.k)
         unit: scene.k
-        name: (win.screen === "library" && win.overlay !== "settings") || win.overlay === "game" ? (win.consoleInfo ? win.consoleInfo.name : win.consoleSlug ? (win.shortNames[win.consoleSlug] || win.consoleSlug) : qsTr("Every console")) : ""
+        // Not over the settings (theirs or a game's): they fill the screen.
+        name: ((win.screen === "library" && win.overlay !== "settings") || win.overlay === "game") && !gameSettingsPage.visible ? (win.consoleInfo ? win.consoleInfo.name : win.consoleSlug ? (win.shortNames[win.consoleSlug] || win.consoleSlug) : qsTr("Every console")) : ""
         logo: win.consoleInfo ? win.consoleInfo.logo : ""
         fadeMs: Math.round(650 * graphite.motion)
     }
@@ -2089,7 +2224,7 @@ Window {
         property bool sounds: true
         property bool trailers: true          // older builds: one switch for every video (copied once to the two below)
         property bool videosSplit: false
-        property bool bgVideo: true           // the selected game's video behind the library
+        property bool bgVideo: false          // the selected game's video behind the library
         property bool pageVideo: true         // videos on the game page
         property int attractDelay: 5          // s without input before the video fills the screen; 0: never
         property int attractRest: 60          // s of full-screen video before the games come back; 0: never
@@ -2106,6 +2241,11 @@ Window {
         property string soundVolume: "medium" // "low" | "medium" | "high"
         property string prompts: "auto"       // buttons shown in the hints: "auto" | "pad" | "keyboard"
         property bool showClock: true
+        property string layout: "grid"        // the covers' layout: "grid" | "row" | "rows2" (Shelf.js)
+        onLayoutChanged: win.relayout()
+        property string consoleOrder: "played" // the consoles' order (Shelf.consoleOrders)
+        property string consoleCustom: "[]"   // the player's own order: console slugs, JSON
+        property int calmVersion: 0           // 1: the library's video turned off once (a calmer screen)
         property string sortHome: "played"   // My library's order (Shelf.js sorts)
         property string sortStore: "added"   // the Store's
         property string libraryGenre: ""
@@ -2125,6 +2265,7 @@ Window {
             // Older settings kept the small 100 % of earlier builds: the larger default, once.
             if (prefs.scaleVersion < 1) { if (prefs.uiScale <= 100) prefs.uiScale = 130; prefs.scaleVersion = 1 }
             if (!prefs.videosSplit) { prefs.bgVideo = prefs.trailers; prefs.pageVideo = prefs.trailers; prefs.videosSplit = true }
+            if (prefs.calmVersion < 1) { prefs.bgVideo = false; prefs.calmVersion = 1 }
             if (safeMode) { prefs.bgVideo = false; prefs.pageVideo = false; prefs.sounds = false }
             refreshStatus(function (s) {
                 if (!s) { fatal = qsTr("Borne core unreachable"); return }

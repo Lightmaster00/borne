@@ -5,6 +5,7 @@
 // (core/src/controls.rs). The rows' ids: "ctl:<key>" a setting, "ctl-btn:<button>" press the
 // pad button for a console button, "ctl-reset-buttons", "ctl-reset".
 .pragma library
+.import "Devices.js" as Devices
 
 // A pad button by its place, in the controls' names: a bottom, b right, x left, y top.
 const PLACES = ["a", "b", "x", "y", "l", "r", "l2", "r2", "start", "select"]
@@ -74,6 +75,12 @@ function rows(v, advanced, parentName) {
         return { id: "ctl:" + k, kind: "chips", title: title, desc: desc + (o.own || v.level === "all" || k === "pad" ? "" : " · " + qsTr("as for %1").arg(parentName)),
                  selected: o.value, items: vals.map(x => ({ id: x, label: labels(x) })) }
     }
+    // A console's games: the controller its emulator shows them (a game can change it).
+    const dev = v.options.find(o => o.key === "device")
+    if (dev && v.level === "console")
+        out.push({ id: "ctl:device", kind: "chips", title: qsTr("Controller the games see"),
+                   desc: qsTr("The console's controller shown to its games; each game can take another"),
+                   selected: dev.value, items: dev.values.map(x => ({ id: x, label: Devices.label(x, v.console) })) })
     if (v.level === "game")
         out.push(chips("pad", qsTr("Player 1"), qsTr("The controller that plays"),
                        x => x === "auto" ? qsTr("Automatic") : (v.pads[Number(x) - 1] || qsTr("Controller %1").arg(x))))

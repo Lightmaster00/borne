@@ -1,6 +1,8 @@
-// Filter: the consoles as cards fanned out like a hand, the chosen one standing up in front (and
-// the screen's border already in its colour); below, quick filters and genres to add. Left and
-// right pick a console, down reaches the filters, A applies, B closes.
+// Consoles (X): the consoles as cards fanned out like a hand, the chosen one standing up in front
+// (and the screen's border already in its colour), in the order chosen on the line above them
+// (most played, most games, release date, name, maker, or the player's own: LB / RB move the
+// chosen card). Below, quick filters and genres to add. Up and down go from line to line, left
+// and right choose, A applies, B closes.
 import QtQuick
 import QtQuick.Effects
 import "Cases.js" as Cases
@@ -13,6 +15,9 @@ Rectangle {
     property var chips: []            // [{ label, on }]
     property int chipIndex: 0
     property bool chipsFocused: false
+    property var orders: []           // [{ id, label, on }]
+    property int orderIndex: 0
+    property bool ordersFocused: false
     property string line: ""
     property var keyLabel: function (a) { return a }
 
@@ -21,19 +26,56 @@ Rectangle {
     Behavior on opacity { NumberAnimation { duration: 300 } }
 
     Column {
-        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Math.round(root.height * 0.09) }
+        id: titles
+        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Math.round(root.height * 0.125) }
         spacing: 10
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: qsTr("Filter")
+            text: qsTr("Consoles")
             color: theme.fg
             font { family: theme.displayFont; pixelSize: 60; weight: Font.ExtraBold; letterSpacing: -1.5 }
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: qsTr("Choose a console, then narrow down if you like.")
+            text: root.line
             color: theme.fgMuted
             font { family: theme.fontFamily; pixelSize: 19; weight: Font.DemiBold }
+        }
+    }
+
+    // The order of the consoles.
+    Row {
+        id: orderRow
+        anchors { horizontalCenter: parent.horizontalCenter; top: titles.bottom; topMargin: 26 }
+        spacing: 10
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            rightPadding: 8
+            text: qsTr("Order")
+            color: theme.fgFaint
+            font { family: theme.fontFamily; pixelSize: 16; weight: Font.ExtraBold }
+        }
+        Repeater {
+            model: root.orders
+            Rectangle {
+                required property var modelData
+                required property int index
+                readonly property bool hov: root.ordersFocused && index === root.orderIndex
+                width: orderText.implicitWidth + 40; height: 48; radius: 24
+                color: hov ? theme.fg : modelData.on ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.05)
+                border { width: 2; color: modelData.on || hov ? theme.fg : Qt.rgba(1, 1, 1, 0.18) }
+                Behavior on color { ColorAnimation { duration: 150 } }
+                Accessible.role: Accessible.RadioButton
+                Accessible.name: modelData.label
+                Accessible.checked: !!modelData.on
+                Text {
+                    id: orderText
+                    anchors.centerIn: parent
+                    text: modelData.label
+                    color: parent.hov ? theme.bg : theme.fg
+                    font { family: theme.fontFamily; pixelSize: 16; weight: Font.ExtraBold }
+                }
+            }
         }
     }
 
@@ -41,7 +83,7 @@ Rectangle {
     Item {
         id: fan
         anchors.horizontalCenter: parent.horizontalCenter
-        y: Math.round(root.height * 0.33); width: 0; height: 400
+        y: orderRow.y + orderRow.height + 40 * scale + 46; width: 0; height: 400
         // The cards smaller in a short scene (a large interface, a small window).
         scale: Math.min(1, root.height / 1000)
         transformOrigin: Item.Top
@@ -61,17 +103,17 @@ Rectangle {
                 z: 20 - Math.abs(d)
                 rotation: on ? 0 : d * 4.5
                 scale: on ? 1.12 : 0.94
-                opacity: on ? 1 : Math.max(0, 0.66 - (Math.abs(d) - 1) * 0.12) * (root.chipsFocused ? 0.6 : 1)
-                Behavior on x { NumberAnimation { duration: 520 * theme.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
-                Behavior on y { NumberAnimation { duration: 520 * theme.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
+                opacity: on ? 1 : Math.max(0, 0.66 - (Math.abs(d) - 1) * 0.12) * (root.chipsFocused || root.ordersFocused ? 0.6 : 1)
+                Behavior on x { NumberAnimation { duration: 520 * theme.motion; easing.type: Easing.OutCubic } }
+                Behavior on y { NumberAnimation { duration: 520 * theme.motion; easing.type: Easing.OutCubic } }
                 Behavior on rotation { NumberAnimation { duration: 520 * theme.motion; easing.type: Easing.OutCubic } }
-                Behavior on scale { NumberAnimation { duration: 520 * theme.motion; easing.type: Easing.OutBack; easing.overshoot: 1.6 } }
+                Behavior on scale { NumberAnimation { duration: 520 * theme.motion; easing.type: Easing.OutCubic } }
                 Behavior on opacity { NumberAnimation { duration: 300 } }
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.name
 
                 Rectangle {
-                    visible: card.on && !root.chipsFocused
+                    visible: card.on && !root.chipsFocused && !root.ordersFocused
                     anchors { fill: face; margins: -8 }
                     radius: face.radius + 8
                     color: "transparent"
@@ -104,8 +146,8 @@ Rectangle {
                         visible: card.modelData.slug !== "" && status === Image.Ready
                         anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 50 }
                         source: card.modelData.logo || ""
-                        width: parent.width - 52; height: 82
-                        sourceSize.height: 164
+                        width: parent.width - 40; height: 110
+                        sourceSize.height: 220
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
                         layer.enabled: true
@@ -153,12 +195,6 @@ Rectangle {
         anchors { horizontalCenter: parent.horizontalCenter; top: fan.top; topMargin: 420 * fan.scale + 20 }
         width: Math.min(parent.width - 240, 1500)
         spacing: 18
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.line
-            color: theme.fgSoft
-            font { family: theme.fontFamily; pixelSize: 19; weight: Font.Bold }
-        }
         Flow {
             width: parent.width
             spacing: 12
