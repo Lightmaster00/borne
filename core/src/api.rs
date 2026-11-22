@@ -40,7 +40,7 @@
 //!   GET    /api/v1/library?platform=&q=&local=1&ready=1&fav=1&recent=1&genre=&sort=name|played|added|time&lang=fr
 //!                                                 one entry per game, versions grouped
 //!   GET    /api/v1/games/<rom_id>?lang=fr        game page: shown version, all versions, choices
-//!   GET    /api/v1/games/<rom_id>/facts?lang=fr  credits, studios, series, screenshots (RomM)
+//!   GET    /api/v1/games/<rom_id>/facts?lang=fr  studios, series, modes, age ratings, rating, screenshots (RomM)
 //!   GET    /api/v1/games/<rom_id>/screenshots/<n>  a screenshot, fetched from RomM and cached
 //!   POST   /api/v1/games/<rom_id>/download
 //!   DELETE /api/v1/games/<rom_id>/local          deletes the local copy (never on RomM)
@@ -799,10 +799,12 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 let versions = app.db.group(&g.group_key);
                 let prefs = app.active_profile().and_then(|p| app.db.game_prefs(&p.id).remove(&g.group_key)).unwrap_or((None, None));
                 let mut game = library::version_json(&g);
-                game["favourite"] = json!(app
-                    .active_profile()
-                    .map(|p| app.db.play_stats(&p.id).get(&g.group_key).map(|s| s.2).unwrap_or(false))
-                    .unwrap_or(false));
+                // The profile's record of the game: favourite, last played, time played.
+                let (last, secs, fav) =
+                    app.active_profile().and_then(|p| app.db.play_stats(&p.id).get(&g.group_key).cloned()).unwrap_or((None, 0, false));
+                game["favourite"] = json!(fav);
+                game["last_played"] = json!(last);
+                game["play_seconds"] = json!(secs);
                 let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
                 game["group_key"] = json!(g.group_key);
                 crate::screenscraper::localize(app, &mut game, &lang);
@@ -818,6 +820,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 if let Some(r) = game["cover_local"].as_str().and_then(cover_ratio) {
                     game["cover_ar"] = json!(r);
                 }
+                // The emulator the game opens in (its own choice, else the console's).
+                let emulator = crate::emulators::chosen_for_game(app, &g.platform_slug, &g.group_key).map(|e| e.name);
                 ok(
                     req,
                     json!({
@@ -838,6 +842,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         // What the downloaded files say about themselves (a 3DS dump encrypted or
                         // not), per version: known before pressing Play.
                         "file_notes": all.iter().filter_map(|v| crate::emulators::file_note(v).map(|n| (v.rom_id.to_string(), n))).collect::<serde_json::Map<_, _>>(),
+                        "emulator": emulator,
                     }),
                 )
             }
@@ -855,6 +860,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                             "facts": Value::Null,
                             "companies": extra["companies"],
                             "franchises": extra["franchises"],
+                            "collections": extra["collections"],
+                            "game_modes": extra["game_modes"],
+                            "age_ratings": extra["age_ratings"],
+                            "rating": extra["rating"],
+                            "release": extra["release"],
                             "screenshots": shots,
                         }),
                     )

@@ -1385,6 +1385,21 @@
     </message>
 </context>
 <context>
+    <name>FilterOverlay</name>
+    <message>
+        <source>Filter</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Choose a console, then narrow down if you like.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>installed · %1 in the store</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>GamePage</name>
     <message>
         <source>%1 GB</source>
@@ -1563,10 +1578,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Screenshots</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>More about the game</source>
         <translation type="unfinished" />
     </message>
@@ -1580,10 +1591,6 @@
     </message>
     <message>
         <source>Loading the trailer…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>About</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1620,6 +1627,102 @@
     </message>
     <message>
         <source>Version</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Never</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Today</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n day(s) ago</source>
+        <translation><numerusform>%n day ago</numerusform><numerusform>%n days ago</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n week(s) ago</source>
+        <translation><numerusform>%n week ago</numerusform><numerusform>%n weeks ago</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n month(s) ago</source>
+        <translation><numerusform>%n month ago</numerusform><numerusform>%n months ago</numerusform></translation>
+    </message>
+    <message>
+        <source>Players' rating</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>out of 100</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 h</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 min</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your play time</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>on this profile</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not played yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Last played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From the network</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>On the server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Modes</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Age rating</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Regions</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Languages</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Versions</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>File</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulator</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1942,75 +2045,22 @@
     </message>
 </context>
 <context>
-    <name>LibraryView</name>
+    <name>LibraryHome</name>
     <message>
-        <source>No games here.</source>
+        <source>My library</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>%1 GB</source>
+        <source>Store</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>%1 MB</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>%1 KB</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Downloading %1%</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Downloading</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Download failed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Installed</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Mounted</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Files missing</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>On RomM · %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n version(s)</source>
-        <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
-    </message>
-    <message>
-        <source>All games</source>
-        <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n game(s)</source>
-        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
-    </message>
-    <message>
-        <source>Download paused</source>
+        <source>Profile: %1</source>
         <translation type="unfinished" />
     </message>
 </context>
 <context>
     <name>Main</name>
-    <message>
-        <source>Installed</source>
-        <comment>systems bar</comment>
-        <translation type="unfinished" />
-    </message>
     <message>
         <source>core unreachable</source>
         <translation type="unfinished" />
@@ -2092,10 +2142,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Downloads</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>RomM server</source>
         <translation type="unfinished" />
     </message>
@@ -2105,10 +2151,6 @@
     </message>
     <message>
         <source>Quit Borne</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Profile: %1</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2176,19 +2218,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Covers… %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>offline</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Syncing the library…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No games here.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2452,16 +2486,8 @@
         <translation type="unfinished" />
     </message>
     <message numerus="yes">
-        <source>Synced at %1 · %n game(s)</source>
-        <translation><numerusform>Synced at %1 · %n game</numerusform><numerusform>Synced at %1 · %n games</numerusform></translation>
-    </message>
-    <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
         <translation><numerusform>Safe mode: trailers and sounds off (the UI crashed once)</numerusform><numerusform>Safe mode: trailers and sounds off (the UI crashed %n times)</numerusform></translation>
-    </message>
-    <message>
-        <source>Letters</source>
-        <translation type="unfinished" />
     </message>
     <message>
         <source>Search</source>
@@ -2545,18 +2571,6 @@
     </message>
     <message>
         <source>RomM unreachable: the save will be sent later.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Favourites</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Recent</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Current</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2672,38 +2686,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>By name</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Recently played</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Recently added</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Most played</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Every genre</source>
-        <translation type="unfinished" />
-    </message>
-    <message numerus="yes">
-        <source>%n game(s)</source>
-        <translation><numerusform>%n game</numerusform><numerusform>%n games</numerusform></translation>
-    </message>
-    <message>
-        <source>Sort and filter</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Order of the games, and one genre</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Sign in with the password</source>
         <translation type="unfinished" />
     </message>
@@ -2775,10 +2757,6 @@
         <source>RomM: %1</source>
         <translation type="unfinished" />
     </message>
-    <message>
-        <source>No game played yet on this profile.</source>
-        <translation type="unfinished" />
-    </message>
     <message numerus="yes">
         <source>%n cheat(s) found in the file.</source>
         <translation><numerusform>%n cheat found in the file.</numerusform><numerusform>%n cheats found in the file.</numerusform></translation>
@@ -2789,10 +2767,6 @@
     </message>
     <message>
         <source>Link to the .pnach file</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No game installed yet. Open a game in its console’s tab to download it or play it from the network.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2813,18 +2787,6 @@
     </message>
     <message>
         <source>This game now uses %1.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No favourites yet. On a game's page, choose “Add to favourites”.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No “%1” game here. Change the genre with %2 (Sort and filter).</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Tabs</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2880,10 +2842,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Change profile</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Preparing your library</source>
         <translation type="unfinished" />
     </message>
@@ -2936,35 +2894,63 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Installed games only</source>
+        <source>Every console</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>All games</source>
+        <source>No game matches this filter. Change it with %1 (Filter).</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Show all games</source>
+        <source>No game installed yet. Open the Store with %1 to download one.</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Show installed games only</source>
+        <source>Every game of your server is installed here.</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Now: installed only</source>
+        <source>every console</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) ready to play</source>
+        <translation><numerusform>%n game ready to play</numerusform><numerusform>%n games ready to play</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) of your server to discover</source>
+        <translation><numerusform>%n game of your server to discover</numerusform><numerusform>%n games of your server to discover</numerusform></translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n download(s)</source>
+        <translation><numerusform>%n download</numerusform><numerusform>%n downloads</numerusform></translation>
+    </message>
+    <message>
+        <source>Console</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Now: all games</source>
+        <source>Apply</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No game installed yet. Press %1 to see all games, then download one.</source>
+        <source>Choose</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Installed only</source>
+        <source>Groups</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>All your games, every console together</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 installed · %2 in the store</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4422,6 +4408,152 @@
     </message>
     <message>
         <source>Your favourite. A game that does not run on it starts on the other one by itself</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>Shelf</name>
+    <message>
+        <source>Today</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n day(s) ago</source>
+        <translation><numerusform>%n day ago</numerusform><numerusform>%n days ago</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n week(s) ago</source>
+        <translation><numerusform>%n week ago</numerusform><numerusform>%n weeks ago</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n month(s) ago</source>
+        <translation><numerusform>%n month ago</numerusform><numerusform>%n months ago</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n year(s) ago</source>
+        <translation><numerusform>%n year ago</numerusform><numerusform>%n years ago</numerusform></translation>
+    </message>
+    <message>
+        <source>Last played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>What you launched lately first</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Added to the server</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Newest first</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>From A to Z</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Play time</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your most played first</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Release date</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>By decade, newest first</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Not played yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This week</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This month</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Over 20 hours</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>5 to 20 hours</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Under 5 hours</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The %1s</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Date unknown</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recently added</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 h played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>2 players or more</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your most played</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other consoles</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>SortMenu</name>
+    <message>
+        <source>Sort by</source>
         <translation type="unfinished" />
     </message>
 </context>

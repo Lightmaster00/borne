@@ -42,6 +42,8 @@ jobs:
       - uses: ./.github/actions/qt-linux
       - name: QML syntax
         run: scripts/check-qml.sh qt-ess/PySide6
+      - name: Library shelf layout
+        run: node tests/shelf_test.js
       - name: Translations up to date and complete
         run: |
           LD_LIBRARY_PATH="$PWD/qt-ess/PySide6/Qt/lib" scripts/i18n/update.sh "$PWD/qt-ess/PySide6/lupdate"

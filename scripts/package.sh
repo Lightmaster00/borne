@@ -16,12 +16,10 @@ cmake --build "$HERE/build" -j
 
 rm -rf "$OUT"; mkdir -p "$OUT"/{bin,lib,plugins,qml,resources}
 
-# Qt libraries: everything except unused modules (WebEngine, Qt 3D, charts…). Qt Quick 3D stays: the
-# game boxes are 3D models.
+# Qt libraries: everything except unused modules (WebEngine, Qt 3D and Qt Quick 3D, charts…).
 cp -a "$QT/lib/." "$OUT/lib/"
 ( cd "$OUT/lib" && rm -rf cmake pkgconfig metatypes ./*.prl \
-  libQt6WebEngine* libQt63D* libQt6Quick3DParticle* libQt6Quick3DXr* libQt6Quick3DSpatialAudio* \
-  libQt6Quick3DPhysics* libQt6Charts* libQt6DataVisualization* libQt6Graphs* \
+  libQt6WebEngine* libQt63D* libQt6Quick3D* libQt6ShaderTools* libQt6Charts* libQt6DataVisualization* libQt6Graphs* \
   libQt6Location* libQt6Pdf* libQt6Designer* libQt6Bluetooth* libQt6Nfc* libQt6Sensors* libQt6Serial* \
   libQt6Scxml* libQt6StateMachine* libQt6RemoteObjects* libQt6TextToSpeech* libQt6WebView* libQt6Positioning* \
   libQt6Help* libQt6UiTools* libQt6HttpServer* libQt6SpatialAudio* libQt6Sql* libQt6Test* libQt6PrintSupport* \
@@ -35,8 +33,7 @@ for p in platforms xcbglintegrations wayland-decoration-client wayland-graphics-
 done
 rm -f "$OUT/plugins/imageformats/libqpdf.so"
 
-for m in QtQuick QtQml QtCore QtMultimedia QtWebSockets QtQuick3D; do cp -a "$QT/qml/$m" "$OUT/qml/"; done
-rm -rf "$OUT"/qml/QtQuick3D/{Particles3D,ParticleEffects,Xr,Physics,AssetUtils,SpatialAudio}
+for m in QtQuick QtQml QtCore QtMultimedia QtWebSockets; do cp -a "$QT/qml/$m" "$OUT/qml/"; done
 rm -rf "$OUT"/qml/QtQuick/{Controls,Dialogs,Templates,VirtualKeyboard,Scene2D,Scene3D,Pdf,NativeStyle} \
        "$OUT"/qml/QtQuick/Timeline* "$OUT/qml/QtQml/StateMachine"
 

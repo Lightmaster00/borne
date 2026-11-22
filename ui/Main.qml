@@ -12,6 +12,7 @@ import Borne.Theme
 import "components"
 import "components/Display.js" as Display
 import "components/Cases.js" as Cases
+import "components/Shelf.js" as Shelf
 import "components/ConsoleNeeds.js" as ConsoleNeeds
 import "components/CoreText.js" as CoreText
 
@@ -34,9 +35,8 @@ Window {
     // ---------- State ----------
     property string screen: "boot"       // boot | server | profiles | pairing | library
     property var status: null
-    property var systems: []
-    property int systemIndex: 0
-    property int focusIndex: 0
+    property int focusIndex: 0           // the selected cover on the shelf (layout.tiles)
+    property int focusRom: -1            // its game: kept when the shelf is laid out again
     property string overlay: ""          // "", "diag", "launch", "game", "settings"
     property bool hud: false
     property bool ready: false
@@ -51,8 +51,6 @@ Window {
     property var pairingProfile: null
     property int qrRevision: 0
     property var indexByRom: ({})
-    property var letters: []             // first letters present in the list, in order
-    property var letterStart: ({})       // letter -> index of its first game
     property string coreVersion: ""
     property var reportPaths: []
     property double clock: Date.now()
@@ -68,10 +66,57 @@ Window {
     }
     readonly property QtObject theme: graphite
 
-    readonly property var focusedGame: {
-        libRevision
-        return libModel.count ? libModel.get(Math.min(focusIndex, libModel.count - 1)) : null
+    // ---------- The shelf ----------
+    // Every game of the library (one row per game), loaded once; the shelf shows My library (the
+    // games ready here) or the Store (the others), filtered, sorted and grouped by Shelf.js.
+    property var rows: []
+    // The consoles with games: [{ slug, name, logo, ready, total }], RomM's order.
+    property var consoles: []
+    property string libTab: "home"       // "home" | "store"
+    property string consoleFilter: ""     // a console's slug, "" for all
+    property var quick: ({})              // quick filters on: { id: true }
+    readonly property string sortId: {
+        const ids = Shelf.sortsFor(libTab).map(s => s.id)
+        const want = libTab === "store" ? prefs.sortStore : prefs.sortHome
+        return ids.indexOf(want) >= 0 ? want : ids[0]
     }
+    // Laid out again only when what it shows changes (a download's progress changes a row, not the
+    // shelf): an unchanged shelf keeps its covers as they are.
+    property var layout: ({ tiles: [], groups: [], total: 0, count: 0 })
+    readonly property double hourClock: Math.floor(clock / 3600000) * 3600000
+    function relayout() {
+        const l = Shelf.build(rows, { tab: libTab, console: consoleFilter, quick: quick, genre: prefs.libraryGenre, sort: sortId,
+                                      consoles: consoles, now: hourClock, fmtSize: fmtSize, height: home.shelfHeight })
+        if (JSON.stringify(l) !== JSON.stringify(layout)) layout = l
+    }
+    onLibTabChanged: relayout()
+    onConsoleFilterChanged: relayout()
+    onQuickChanged: relayout()
+    onSortIdChanged: relayout()
+    onHourClockChanged: relayout()
+    onConsolesChanged: relayout()
+    readonly property var focusedTile: layout.tiles[Math.min(focusIndex, layout.tiles.length - 1)] || null
+    readonly property var focusedGame: focusedTile ? rows[focusedTile.idx] || null : null
+    onRowsChanged: relayout()
+    // The shelf laid out again (new list, other tab, filter or order): the same game stays selected
+    // when it is still there, else the first.
+    onLayoutChanged: {
+        const t = layout.tiles
+        const j = focusRom >= 0 ? t.findIndex(x => rows[x.idx] && rows[x.idx].rom_id === focusRom) : -1
+        focusIndex = j >= 0 ? j : 0
+        if (j < 0) focusRom = t.length ? rows[t[0].idx].rom_id : -1
+    }
+    function focusTile(j) {
+        if (j < 0 || j >= layout.tiles.length) return
+        if (j !== focusIndex) sfx.play("move")
+        focusIndex = j
+        focusRom = rows[layout.tiles[j].idx].rom_id
+    }
+    readonly property var shortNames: ({ "nes": "NES", "snes": "Super Nintendo", "n64": "Nintendo 64", "gb": "Game Boy", "gbc": "Game Boy Color",
+                                         "gba": "Game Boy Advance", "nds": "Nintendo DS", "genesis": "Mega Drive", "sms": "Master System",
+                                         "ngc": "GameCube", "wii": "Wii", "wiiu": "Wii U", "switch": "Switch", "ps": "PlayStation", "psx": "PlayStation",
+                                         "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "psvita": "PS Vita", "dc": "Dreamcast", "saturn": "Saturn",
+                                         "arcade": "Arcade", "3ds": "3DS", "n3ds": "New 3DS" })
     // Videos: the selected game's behind the library (it plays by itself) and those on a game page.
     readonly property bool bgVideos: prefs.bgVideo
     readonly property bool trailers: prefs.pageVideo
@@ -116,6 +161,8 @@ Window {
         const server = status && status.server_url ? status.server_url : ""
         return {
             rom_id: g.rom_id, name: g.name, platform_name: g.platform_name, platform_slug: g.platform_slug,
+            platform_short: shortNames[Shelf.tabOf(g.platform_slug)] || g.platform_name,
+            play_seconds: g.play_seconds || 0, released: g.released || 0,
             year: g.year || 0, genres: g.genres || "", regions: g.regions || "", players: g.players || "",
             summary: g.summary || "", fs_size: g.fs_size || 0,
             cover: g.cover_local ? fileUrl(g.cover_local, g.cover_stamp) : "",
@@ -137,17 +184,19 @@ Window {
     }
     // The console the screen is dressed in: the open game's, else the selected console tab's, else
     // the selected game's. Its colour is the accent; its blank Steam grid frames the screen.
-    property var consoleFrames: ({})
+    // The console the screen is dressed in (border, accent): the open game's, else the one
+    // previewed in Filter, else the selected game's, else the console filtered.
     readonly property string consoleSlug: {
-        if (overlay === "game" && pageGame) return pageGame.platform_slug || ""
-        const s = systems[systemIndex]
-        if (s && ["local", "fav", "recent"].indexOf(s.id) < 0) return s.id
-        return focusedGame ? focusedGame.platform_slug || "" : ""
+        if (overlay === "game" && pageGame) return Shelf.tabOf(pageGame.platform_slug)
+        if (filterOverlay.visible) return filterOverlay.consoles[filterOverlay.index] ? filterOverlay.consoles[filterOverlay.index].slug : ""
+        if (screen === "library" && focusedGame) return Shelf.tabOf(focusedGame.platform_slug)
+        return screen === "library" ? consoleFilter : ""
     }
-    readonly property color consoleTint: Cases.tint(consoleSlug)
+    readonly property var consoleInfo: consoles.find(c => c.slug === consoleSlug) || null
+    readonly property color consoleTint: consoleSlug ? Cases.tint(consoleSlug) : "#8A8C99"
     onConsoleTintChanged: graphite.accent = consoleTint
     readonly property bool framed: !gameMode
-    readonly property real frameMargin: framed ? Math.round(Math.min(width, height) * 0.036) : 0
+    readonly property real frameMargin: framed ? Math.round(Math.min(width, height) * 0.013) : 0
     // Each game's images' revision: bumped when its own arrive, so only its images reload (never
     // the whole shelf).
     property var artRevs: ({})
@@ -155,35 +204,21 @@ Window {
     function loadPlatforms() {
         // Only the latest request's answer is used (a profile switch can cross an older one).
         const seq = ++platformsSeq
-        api("GET", "/api/v1/library/tabs", null, function (tabs) {
-          api("GET", "/api/v1/platforms", null, function (list) {
+        api("GET", "/api/v1/platforms", null, function (list) {
             if (!list || seq !== platformsSeq) return
-            const current = systems[systemIndex] ? systems[systemIndex].id : ""
-            // The player's own tabs, only when they hold something; then one tab per console.
-            const sys = []
-            // "Installed" mode: every tab holds only games ready here, so no tab of its own.
-            if (!readyOnly && tabs && tabs.local > 0) sys.push({ id: "local", name: qsTr("Installed", "systems bar") })
-            if (tabs && tabs.fav > 0) sys.push({ id: "fav", name: qsTr("Favourites") })
-            if (tabs && tabs.recent > 0) sys.push({ id: "recent", name: qsTr("Recent") })
-            // Short names for the systems bar (RomM returns full names).
-            const shortNames = { "nes": "NES", "snes": "Super Nintendo", "n64": "Nintendo 64", "gb": "Game Boy", "gbc": "Game Boy Color",
-                            "gba": "Game Boy Advance", "nds": "Nintendo DS", "genesis": "Mega Drive", "sms": "Master System",
-                            "ngc": "GameCube", "wii": "Wii", "wiiu": "Wii U", "switch": "Switch", "ps": "PlayStation", "psx": "PlayStation",
-                            "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "dc": "Dreamcast", "saturn": "Saturn", "arcade": "Arcade" }
-            const frames = {}, shapes = {}
+            const out = [], shapes = {}
             for (const p of list) {
-                if (readyOnly && !(p.ready_count > 0)) continue
-                sys.push({ id: p.slug, name: shortNames[p.slug] || p.name })
                 if (p.case_ar) shapes[p.slug] = p.case_ar   // the cases' shapes from their scans
-                if (p.art_kinds && p.art_kinds.indexOf("frame") >= 0) frames[p.slug] = apiBase + "/api/v1/systems/" + p.slug + "/art/frame"
+                const kinds = p.art_kinds || []
+                const logo = kinds.indexOf("logo-mono") >= 0 ? "logo-mono" : kinds.indexOf("logo") >= 0 ? "logo" : ""
+                out.push({ slug: Shelf.tabOf(p.slug), name: shortNames[p.slug] || p.name,
+                           logo: logo ? apiBase + "/api/v1/systems/" + p.slug + "/art/" + logo : "",
+                           ready: p.ready_count || 0, total: p.rom_count || 0 })
             }
-            consoleFrames = frames
             Cases.setRatios(shapes)
-            systems = sys
-            systemIndex = Math.max(0, sys.findIndex(s => s.id === current))
-            // The open tab went away (emptied) or this is the first list: show the one now open.
-            if (sys.length && sys[systemIndex].id !== current) loadLibrary(true)
-          })
+            consoles = out
+            // The console filtered went away (hidden in Settings → Consoles): every console again.
+            if (consoleFilter && !out.some(c => c.slug === consoleFilter)) consoleFilter = ""
         })
     }
     // First import: an empty library being filled by its first sync is shown once its games and
@@ -207,48 +242,33 @@ Window {
     onScreenChanged: checkImport()
     Timer { id: importCap; interval: 120000; onTriggered: { win.importing = false; win.maybeAskConsoles() } }
     property int libSeq: 0
-    // Reloads the list keeping the selection; updates in place if the list did not change.
+    // Loads every game (the shelf sorts and filters them); keeps the selection.
     function loadLibrary(resetFocus) {
-        const s = systems[systemIndex] || systems[0]
-        if (!s) { libModel.clear(); return }
-        const tab = s.id === "local" ? "&local=1" : s.id === "fav" ? "&fav=1" : s.id === "recent" ? "&recent=1" : "&platform=" + encodeURIComponent(s.id)
-        // The Recent tab is always newest first; the others follow the chosen order and genre.
-        const order = s.id === "recent" ? "played" : prefs.librarySort
-        const q = "?lang=" + uiLang + tab + "&sort=" + order + (prefs.libraryGenre ? "&genre=" + encodeURIComponent(prefs.libraryGenre) : "")
-                + (readyOnly ? "&ready=1" : "")
         const t0 = Date.now()
-        // Tabs switched quickly: only the latest request's answer is shown (answers can cross).
+        // Only the latest request's answer is shown (answers can cross).
         const seq = ++libSeq
-        api("GET", "/api/v1/library" + q, null, function (list, err) {
+        api("GET", "/api/v1/library?lang=" + uiLang + "&sort=name", null, function (list, err) {
             if (seq !== libSeq) return
             if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); return }
-            const rows = list.map(toRow)
-            // The game selected now (the player may have moved while the answer came): kept.
-            const keep = !resetFocus && focusedGame ? focusedGame.rom_id : -1
-            const same = rows.length === libModel.count && rows.every((r, i) => libModel.get(i).rom_id === r.rom_id)
+            const r = list.map(toRow)
+            const idx = {}
+            r.forEach((x, i) => idx[x.rom_id] = i)
+            indexByRom = idx
+            const same = r.length === libModel.count && r.every((x, i) => libModel.get(i).rom_id === x.rom_id)
             if (same) {
-                // Same games in the same order: updated in place, the selection untouched.
-                for (let i = 0; i < rows.length; i++) {
+                for (let i = 0; i < r.length; i++) {
                     const cur = libModel.get(i)
-                    if (Object.keys(rows[i]).some(k => cur[k] !== rows[i][k])) libModel.set(i, rows[i])
+                    if (Object.keys(r[i]).some(k => cur[k] !== r[i][k])) libModel.set(i, r[i])
                 }
             } else {
                 libModel.clear()
-                libModel.append(rows)
+                libModel.append(r)
             }
-            const idx = {}
-            rows.forEach((r, i) => idx[r.rom_id] = i)
-            indexByRom = idx
-            const starts = {}, order = []
-            rows.forEach((r, i) => { const l = letterOf(r.name); if (starts[l] === undefined) { starts[l] = i; order.push(l) } })
-            letterStart = starts
-            letters = order
-            if (same && !resetFocus) {}
-            else if (keep >= 0 && idx[keep] !== undefined) focusIndex = idx[keep]
-            else if (resetFocus || focusIndex >= rows.length) focusIndex = 0
+            if (resetFocus) focusRom = -1
+            rows = r
             loadMs = Date.now() - t0
             ready = true
-            if (rows.length) maybeAskConsoles()
+            if (r.length) maybeAskConsoles()
             libRevision++
         })
     }
@@ -259,12 +279,14 @@ Window {
     function onDownloadEvent(m) {
         const i = indexByRom[m.rom_id]
         if (i !== undefined && i < libModel.count) {
-            libModel.setProperty(i, "dl_state", m.state === "done" || m.state === "cancelled" ? "" : m.state)
-            libModel.setProperty(i, "dl_received", m.received || 0)
-            libModel.setProperty(i, "dl_total", m.total || 0)
-            libModel.setProperty(i, "dl_error", CoreText.tr(m.error || ""))
-            libRevision++
+            const patch = { dl_state: m.state === "done" || m.state === "cancelled" ? "" : m.state, dl_received: m.received || 0,
+                            dl_total: m.total || 0, dl_error: CoreText.tr(m.error || "") }
+            for (const k in patch) libModel.setProperty(i, k, patch[k])
+            const r = rows.slice()
+            if (r[i]) { r[i] = Object.assign({}, r[i], patch); rows = r }
         }
+        // Installed: the game moves from the Store to My library.
+        if (m.state === "done") libReload.restart()
         const name = i !== undefined && i < libModel.count ? libModel.get(i).name : qsTr("The game")
         if (m.state === "done") toasts.show(qsTr("%1 is installed.").arg(name), "ok")
         if (m.state === "failed") toasts.show(qsTr("%1: %2").arg(name).arg(m.error ? CoreText.tr(m.error) : qsTr("download failed")), "error")
@@ -298,9 +320,6 @@ Window {
             })
         })
     }
-    function primaryAction() {
-        if (focusedGame) openGame(focusedGame.rom_id)
-    }
     // ---------- Game page ----------
     function openGame(romId) {
         api("GET", "/api/v1/games/" + romId + "?lang=" + uiLang, null, function (d, err) {
@@ -308,7 +327,7 @@ Window {
             const first = page === null || overlay !== "game"
             page = d
             pageGame = toRow(d.game)
-            if (first) { pageFacts = null; gamePage.reset(); resetTurn(); overlay = "game"; sfx.play("accept") }
+            if (first) { pageFacts = null; gamePage.reset(); overlay = "game"; sfx.play("accept") }
             loadFacts(romId)
             loadTrailer(pageGame)
         })
@@ -347,9 +366,9 @@ Window {
                 if (win.bgVideoFor === g.rom_id && r && r.path) win.bgVideo = fileUrl(r.path, 0)
                 if (!r && err) console.log("No video for " + g.name + ": " + err)
                 // The neighbours' videos fetched meanwhile, so the next one starts at once.
-                for (const d of [1, -1]) {
-                    const n = win.focusIndex + d
-                    if (n >= 0 && n < libModel.count) api("POST", "/api/v1/games/" + libModel.get(n).rom_id + "/gameplay", {}, function () {})
+                for (const d of ["right", "left"]) {
+                    const n = Shelf.move(win.layout.tiles, win.focusIndex, d)
+                    if (n !== win.focusIndex && win.rows[win.layout.tiles[n].idx]) api("POST", "/api/v1/games/" + win.rows[win.layout.tiles[n].idx].rom_id + "/gameplay", {}, function () {})
                 }
             })
         }
@@ -369,7 +388,7 @@ Window {
     property bool attract: false
     readonly property bool attractAllowed: prefs.attractDelay > 0 && screen === "library" && overlay === "" && ready && !gameMode
                                            && !menu.visible && !search.visible && !downloadsPanel.visible
-                                           && !nameEntry.visible && !turning
+                                           && !nameEntry.visible
                                            && libModel.count > 0 && ambience.videoShown && !videoRested
     onAttractAllowedChanged: if (!attractAllowed) attract = false
     function touch() {
@@ -391,8 +410,6 @@ Window {
         running: win.attract && prefs.attractRest > 0
         onTriggered: { win.videoRested = true; win.attract = false }
     }
-    onTurnXChanged: touch()
-    onTurnYChanged: touch()
     // Studios, series and screenshots (RomM).
     property var pageFacts: null
     function loadFacts(romId) {
@@ -515,7 +532,7 @@ Window {
             // The launch screen shows the game that runs, whichever started it.
             if (!launchGame || launchGame.rom_id !== s.rom_id) {
                 const i = indexByRom[s.rom_id]
-                launchGame = pageGame && pageGame.rom_id === s.rom_id ? pageGame : i !== undefined ? libModel.get(i) : { rom_id: s.rom_id, name: s.name }
+                launchGame = pageGame && pageGame.rom_id === s.rom_id ? pageGame : i !== undefined && rows[i] ? rows[i] : { rom_id: s.rom_id, name: s.name }
             }
             gameMode = true
             launchPhase = "starting"; launchStarted.restart()
@@ -894,35 +911,110 @@ Window {
             libReload.restart()
         })
     }
-    // Two libraries: every game of RomM, or only those ready to play here (downloaded, or played
-    // from RomM through the mount), console by console. L3 (I on the keyboard) switches.
-    readonly property bool readyOnly: prefs.libraryMode === "ready"
-    function toggleLibraryMode() {
-        prefs.libraryMode = readyOnly ? "all" : "ready"
-        toasts.show(readyOnly ? qsTr("Installed games only") : qsTr("All games"), "info")
-        loadPlatforms()
-        loadLibrary(true)
+    // ---------- Library: tabs, filter, order ----------
+    function setTab(t) {
+        if (t === libTab) return
+        sfx.play("move")
+        focusRom = -1
+        libTab = t
     }
-    // Order and genre of the library (kept between sessions).
-    function sortMenu() {
-        const sorts = [["name", qsTr("By name")], ["played", qsTr("Recently played")], ["added", qsTr("Recently added")], ["time", qsTr("Most played")]]
+    // Filter: the consoles (every console first, then those with games in this tab), quick
+    // filters and genres.
+    function filterConsoles() {
+        const count = (slug, store) => rows.filter(g => (!slug || Shelf.tabOf(g.platform_slug) === slug) && Shelf.ready(g) !== store).length
+        const list = [{ slug: "", name: qsTr("Every console"), logo: "", home: count("", false), store: count("", true) }]
+        for (const c of consoles) {
+            const home = count(c.slug, false), store = count(c.slug, true)
+            if (home + store > 0) list.push({ slug: c.slug, name: c.name, logo: c.logo, home: home, store: store })
+        }
+        return list
+    }
+    function filterChips() {
+        const out = Shelf.quickFilters(libTab).map(q => ({ id: "q:" + q.id, label: q.label, on: !!quick[q.id] }))
+        // The genres of the games in this tab, the most common first.
         const genres = {}
-        for (let i = 0; i < libModel.count; i++)
-            for (const x of (libModel.get(i).genres || "").split(", ")) if (x) genres[x] = (genres[x] || 0) + 1
-        const items = [{ id: "mode", label: readyOnly ? qsTr("Show all games") : qsTr("Show installed games only"),
-                         detail: readyOnly ? qsTr("Now: installed only") : qsTr("Now: all games") }]
-        sorts.forEach(s => items.push({ id: "sort:" + s[0], label: s[1], detail: prefs.librarySort === s[0] ? qsTr("Current") : "" }))
-        items.push({ id: "genre:", label: qsTr("Every genre"), detail: prefs.libraryGenre === "" ? qsTr("Current") : "" })
-        for (const k of Object.keys(genres).sort())
-            items.push({ id: "genre:" + k, label: k, detail: prefs.libraryGenre === k ? qsTr("Current") : qsTr("%n game(s)", "", genres[k]) })
-        if (prefs.libraryGenre && !genres[prefs.libraryGenre]) items.push({ id: "genre:" + prefs.libraryGenre, label: prefs.libraryGenre, detail: qsTr("Current") })
-        menu.open(qsTr("Sort and filter"), qsTr("Order of the games, and one genre"), items, function (c) {
-            if (c === "mode") { toggleLibraryMode(); return }
-            if (c.indexOf("sort:") === 0) prefs.librarySort = c.slice(5)
-            else if (c.indexOf("genre:") === 0) prefs.libraryGenre = c.slice(6)
-            else return
-            loadLibrary(true)
-        })
+        for (const g of rows) {
+            if (Shelf.ready(g) === (libTab === "store")) continue
+            for (const x of (g.genres || "").split(", ")) if (x) genres[x] = (genres[x] || 0) + 1
+        }
+        const top = Object.keys(genres).sort((a, b) => genres[b] - genres[a]).slice(0, 10)
+        if (prefs.libraryGenre && top.indexOf(prefs.libraryGenre) < 0) top.push(prefs.libraryGenre)
+        for (const k of top) out.push({ id: "g:" + k, label: k, on: prefs.libraryGenre === k })
+        return out
+    }
+    function openFilter() {
+        const list = filterConsoles()
+        filterOverlay.consoles = list
+        filterOverlay.index = Math.max(0, list.findIndex(c => c.slug === consoleFilter))
+        filterOverlay.chips = filterChips()
+        filterOverlay.chipIndex = 0
+        filterOverlay.chipsFocused = false
+        filterOverlay.visible = true
+        sfx.play("accept")
+    }
+    function applyConsole(k) {
+        const c = filterOverlay.consoles[k]
+        if (!c) return
+        focusRom = -1
+        consoleFilter = c.slug
+        filterOverlay.visible = false
+        sfx.play("accept")
+    }
+    function toggleChip(k) {
+        const c = filterOverlay.chips[k]
+        if (!c) return
+        focusRom = -1
+        if (c.id.indexOf("q:") === 0) {
+            const q = Object.assign({}, quick)
+            q[c.id.slice(2)] = !q[c.id.slice(2)]
+            quick = q
+        } else {
+            prefs.libraryGenre = prefs.libraryGenre === c.id.slice(2) ? "" : c.id.slice(2)
+        }
+        filterOverlay.chips = filterChips()
+        sfx.play("accept")
+    }
+    function handleFilter(a) {
+        const f = filterOverlay
+        if (a === "b" || a === "x") { sfx.play("back"); f.visible = false; return }
+        if (!f.chipsFocused) {
+            if (a === "left" && f.index > 0) { f.index--; sfx.play("move") }
+            else if (a === "right" && f.index < f.consoles.length - 1) { f.index++; sfx.play("move") }
+            else if (a === "down" && f.chips.length) { f.chipsFocused = true; sfx.play("move") }
+            else if (a === "a") applyConsole(f.index)
+        } else {
+            if (a === "left" && f.chipIndex > 0) { f.chipIndex--; sfx.play("move") }
+            else if (a === "right" && f.chipIndex < f.chips.length - 1) { f.chipIndex++; sfx.play("move") }
+            else if (a === "up") { f.chipsFocused = false; sfx.play("move") }
+            else if (a === "a") toggleChip(f.chipIndex)
+        }
+    }
+    function openSort() {
+        sortMenu.sorts = Shelf.sortsFor(libTab)
+        sortMenu.index = Math.max(0, sortMenu.sorts.findIndex(x => x.id === sortId))
+        sortMenu.visible = true
+        sfx.play("accept")
+    }
+    function applySort(id) {
+        focusRom = -1
+        if (libTab === "store") prefs.sortStore = id
+        else prefs.sortHome = id
+        sortMenu.visible = false
+        sfx.play("accept")
+    }
+    function handleSort(a) {
+        const m = sortMenu
+        if (a === "b" || a === "y") { sfx.play("back"); m.visible = false }
+        else if (a === "up" && m.index > 0) { m.index--; sfx.play("move") }
+        else if (a === "down" && m.index < m.sorts.length - 1) { m.index++; sfx.play("move") }
+        else if (a === "a" && m.sorts[m.index]) applySort(m.sorts[m.index].id)
+    }
+    // A from the library: the hero plays at once (Resume), any other cover opens its page.
+    function primaryAction() {
+        const g = focusedGame
+        if (!g) return
+        if (focusedTile && focusedTile.hero && Shelf.ready(g)) { sfx.play("accept"); play(g) }
+        else openGame(g.rom_id)
     }
     function openDownloads() {
         downloadsPanel.open()
@@ -953,7 +1045,7 @@ Window {
             refreshStatus()
             loadSettings()
             screen = "library"
-            systemIndex = 0
+            libTab = "home"; consoleFilter = ""; quick = ({}); focusRom = -1
             loadPlatforms()
             loadLibrary(true)
         })
@@ -1028,76 +1120,29 @@ Window {
     }
 
     // ---------- Input ----------
-    function move(a) {
-        const n = libModel.count
-        if (!n) return
-        let i = focusIndex
-        if (a === "left") i -= 1
-        else if (a === "right") i += 1
-        else if (a === "up") { if (i - libraryView.columns >= 0) i -= libraryView.columns }
-        else if (a === "down") {
-            const cols = libraryView.columns
-            if (Math.floor(i / cols) < Math.floor((n - 1) / cols)) i = Math.min(n - 1, i + cols)
-        }
-        i = Math.max(0, Math.min(n - 1, i))
-        if (i !== focusIndex) sfx.play("move")
-        focusIndex = i
-    }
-    function letterOf(name) {
-        const c = (name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").charAt(0).toUpperCase()
-        return c >= "A" && c <= "Z" ? c : "#"
-    }
+    function move(a) { focusTile(Shelf.move(layout.tiles, focusIndex, a)) }
+    function jumpGroup(d) { focusTile(Shelf.jumpGroup(layout.tiles, focusIndex, d)) }
     function openSearch(initial, fromKeyboard) {
         if (!libModel.count) return
-        searchReturn = focusIndex
         sfx.play("accept")
         search.open(initial, fromKeyboard)
     }
-    property int searchReturn: 0
-    function jumpLetter(d) {
-        if (!focusedGame || letters.length < 2) return
-        const k = letters.indexOf(letterOf(focusedGame.name))
-        const next = letters[Math.max(0, Math.min(letters.length - 1, k + d))]
-        if (next !== undefined && letterStart[next] !== undefined && letterStart[next] !== focusIndex) {
-            focusIndex = letterStart[next]
-            sfx.play("move")
-            libraryView.showLetter(next)
-        }
-    }
-    function setSystem(d) {
-        systemIndex = (systemIndex + d + systems.length) % systems.length
-        sfx.play("move")
-        loadLibrary(true)
+    // A game found by the search: shown on the shelf, in its tab, every filter off if it hides it.
+    function showGame(romId) {
+        const i = indexByRom[romId]
+        if (i === undefined || !rows[i]) return
+        const tab = Shelf.ready(rows[i]) ? "home" : "store"
+        focusRom = romId
+        let changed = false
+        if (libTab !== tab) { libTab = tab; changed = true }
+        const on = () => layout.tiles.findIndex(t => t.idx === i)
+        if (on() < 0) { consoleFilter = ""; quick = ({}); prefs.libraryGenre = ""; changed = true }
+        relayout()
+        const j = on()
+        if (j >= 0) { focusIndex = j }
     }
 
-    // ---------- turning the selected box (right stick, or W A S D) ----------
-    property real padTurnX: 0
-    property real padTurnY: 0
-    property var turnKeys: ({})
-    readonly property real turnX: Math.max(-1, Math.min(1, padTurnX + (turnKeys.d ? 1 : 0) - (turnKeys.a ? 1 : 0)))
-    readonly property real turnY: Math.max(-1, Math.min(1, padTurnY + (turnKeys.s ? 1 : 0) - (turnKeys.w ? 1 : 0)))
-    // The stick sets the angle directly (not a speed): the box turns toward where you push, far
-    // enough to show its spine well (never its back), and comes back as soon as you let go.
-    readonly property real maxYaw: 60
-    readonly property real maxPitch: 40
-    // Follows the stick each frame (exponential easing): steady however often the stick reports,
-    // no restart of an animation at each small change.
-    property real boxYaw: 0
-    property real boxPitch: 0
-    FrameAnimation {
-        running: win.turnActive || Math.abs(win.boxYaw) > 0.05 || Math.abs(win.boxPitch) > 0.05
-        onTriggered: {
-            const k = 1 - Math.exp(-Math.min(frameTime, 0.05) * 14)
-            const ty = win.turnX * win.maxYaw, tp = win.turnY * win.maxPitch
-            win.boxYaw = Math.abs(ty - win.boxYaw) < 0.05 ? ty : win.boxYaw + (ty - win.boxYaw) * k
-            win.boxPitch = Math.abs(tp - win.boxPitch) < 0.05 ? tp : win.boxPitch + (tp - win.boxPitch) * k
-        }
-    }
-    readonly property bool turning: turnActive || Math.abs(boxYaw) > 0.5 || Math.abs(boxPitch) > 0.5
-    readonly property bool turnActive: Math.abs(turnX) > 0.01 || Math.abs(turnY) > 0.01
-    function setTurnKey(k, down) { const t = Object.assign({}, turnKeys); t[k] = down; turnKeys = t }
-    function resetTurn() { turnKeys = ({}) }
-    onFocusIndexChanged: { resetTurn(); lastActivity = Date.now() }
+    onFocusIndexChanged: lastActivity = Date.now()
 
     function dispatch(a, source) {
         inputCounts[source] = (inputCounts[source] || 0) + 1
@@ -1118,6 +1163,8 @@ Window {
         if (nameEntry.visible) return nameEntry.handle(a)
         if (search.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return search.handle(a) }
         if (downloadsPanel.visible) return a === "r3" ? (downloadsPanel.visible = false) : downloadsPanel.handle(a)
+        if (filterOverlay.visible) return handleFilter(a)
+        if (sortMenu.visible) return handleSort(a)
         if (overlay === "diag") return diag.handle(a)
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
         if (overlay === "settings") { if (a !== "a" && a !== "b") sfx.play("move"); return settingsPage.handle(a) }
@@ -1128,17 +1175,16 @@ Window {
         if (screen === "pairing") return pairingScreen.handle(a)
         if (screen !== "library") return
         if (a === "a") primaryAction()
-        else if (a === "y") openSearch("", false)
-        else if (a === "x") { if (focusedGame) play(focusedGame) }
+        else if (a === "x") openFilter()
+        else if (a === "y") openSort()
+        else if (a === "select") openSearch("", false)
         else if (a === "start") settingsMenu()
-        else if (a === "select") sortMenu()
         else if (a === "b") { sfx.play("back"); showProfiles() }
-        else if (a === "lb") setSystem(-1)
-        else if (a === "rb") setSystem(1)
+        else if (a === "lb") setTab("home")
+        else if (a === "rb") setTab("store")
         else if (a === "r3") openDownloads()
-        else if (a === "l3") toggleLibraryMode()
-        else if (a === "lt") jumpLetter(-1)
-        else if (a === "rt") jumpLetter(1)
+        else if (a === "lt") jumpGroup(-1)
+        else if (a === "rt") jumpGroup(1)
         else move(a)
     }
 
@@ -1146,16 +1192,11 @@ Window {
     readonly property string emptyLibraryText: {
         const st = win.status ? win.status.sync : null
         if (st && st.running) return qsTr("Syncing the library…")
-        if (st && st.error && libModel.count === 0) return qsTr("The library could not be synced: %1").arg(CoreText.tr(st.error))
-        const tabId = win.systems[win.systemIndex] ? win.systems[win.systemIndex].id : ""
-        if (tabId === "fav") return qsTr("No favourites yet. On a game's page, choose “Add to favourites”.")
-        if (tabId === "recent") return qsTr("No game played yet on this profile.")
-        if (prefs.libraryGenre) return qsTr("No “%1” game here. Change the genre with %2 (Sort and filter).").arg(prefs.libraryGenre).arg(graphite.key("select"))
-        if (win.readyOnly && win.systems.length === 0)
-            return qsTr("No game installed yet. Press %1 to see all games, then download one.").arg(graphite.key("l3"))
-        if (win.systems[win.systemIndex] && win.systems[win.systemIndex].id === "local")
-            return qsTr("No game installed yet. Open a game in its console’s tab to download it or play it from the network.")
-        return qsTr("No games here.")
+        if (st && st.error && rows.length === 0) return qsTr("The library could not be synced: %1").arg(CoreText.tr(st.error))
+        if (consoleFilter || prefs.libraryGenre || Object.keys(quick).some(k => quick[k]))
+            return qsTr("No game matches this filter. Change it with %1 (Filter).").arg(graphite.key("x"))
+        if (libTab === "home") return qsTr("No game installed yet. Open the Store with %1 to download one.").arg(graphite.key("rb"))
+        return qsTr("Every game of your server is installed here.")
     }
     function playTimeText() {
         const d = new Date(clock)
@@ -1173,7 +1214,6 @@ Window {
             try { m = JSON.parse(msg) } catch (e) { return }
             if (m.type === "hello") win.coreOnline = true
             else if (m.type === "pad") win.dispatch(m.action, "pad")
-            else if (m.type === "stick") { win.padTurnX = m.x; win.padTurnY = m.y }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
             else if (m.type === "media") {
@@ -1292,7 +1332,7 @@ Window {
         function start() {
             running = true
             win.overlay = ""
-            win.systemIndex = 0; win.loadLibrary(true)
+            win.libTab = "home"; win.loadLibrary(true)
             const q = [{ wait: 800 }, { record: true }]
             const add = (a, times, every) => { if (!times) q.push({ wait: every }); for (let i = 0; i < times; i++) q.push({ action: a, wait: every }) }
             add("right", 30, 90); add("down", 60, 85); add("right", 5, 300)
@@ -1309,9 +1349,8 @@ Window {
             const s = queue.shift()
             if (!s) return
             if (s.record) { frames.recording = []; videoStart = win.videoFrames }
-            if (s.action) win.move(s.action === "rb" || s.action === "lb" ? "" : s.action)
-            if (s.action === "rb") win.setSystem(1)
-            if (s.action === "lb") win.setSystem(-1)
+            if (s.action === "rb" || s.action === "lb") win.jumpGroup(s.action === "rb" ? 1 : -1)
+            else if (s.action) win.move(s.action)
             if (s.finish) { finish(); return }
             benchTimer.interval = Math.max(1, s.wait || 1)
             benchTimer.start()
@@ -1355,7 +1394,7 @@ Window {
         id: scene
         // 1080 logical pixels high; the width follows the screen's shape (16:10, 21:9…) so there
         // are no bars, never narrower than 1360.
-        // Inside the console's frame (ConsoleFrame).
+        // Inside the border round the screen (ScreenBorder).
         // Interface size (prefs.uiScale, %) enlarges everything, never below 1360 wide.
         readonly property real k: Math.min(Math.min((win.height - 2 * win.frameMargin) / 1080, (win.width - 2 * win.frameMargin) / 1600) * prefs.uiScale / 100,
                                            (win.width - 2 * win.frameMargin) / 1360)
@@ -1411,17 +1450,10 @@ Window {
             if (screen === "library" && overlay === "" && !menu.visible && !nameEntry.visible && !downloadsPanel.visible) {
                 const f = e.key === Qt.Key_Slash || (e.key === Qt.Key_F && (e.modifiers & Qt.ControlModifier))
                 if (f) { e.accepted = true; openSearch("", true); return }
-                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_Q, Qt.Key_E, Qt.Key_R, Qt.Key_C, Qt.Key_W, Qt.Key_A, Qt.Key_S, Qt.Key_D].indexOf(e.key) >= 0
+                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_Q, Qt.Key_E, Qt.Key_R, Qt.Key_C].indexOf(e.key) >= 0
                 if (!shortcut && !(e.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && e.text && e.text.length === 1 && (e.text.toLowerCase() !== e.text.toUpperCase() || /[0-9]/.test(e.text))) {
                     e.accepted = true; openSearch(e.text, true); return
                 }
-            }
-            // W A S D turn the selected box (held keys, like a stick).
-            const turnKey = { [Qt.Key_W]: "w", [Qt.Key_A]: "a", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
-            if (turnKey && !search.visible && !menu.visible && (win.screen === "library" || win.overlay === "game")) {
-                e.accepted = true
-                if (!e.isAutoRepeat) setTurnKey(turnKey, true)
-                return
             }
             const map = {}
             map[Qt.Key_Up] = "up"; map[Qt.Key_Down] = "down"; map[Qt.Key_Left] = "left"; map[Qt.Key_Right] = "right"
@@ -1433,242 +1465,99 @@ Window {
             const a = map[e.key]
             if (a) { e.accepted = true; dispatch(a, "keyboard") }
         }
-        Keys.onReleased: (e) => {
-            const turnKey = { [Qt.Key_W]: "w", [Qt.Key_A]: "a", [Qt.Key_S]: "s", [Qt.Key_D]: "d" }[e.key]
-            if (turnKey && !e.isAutoRepeat) { e.accepted = true; setTurnKey(turnKey, false) }
-        }
     }
 
     // ---------- Library ----------
-    Item {
-        id: topbar
-        opacity: win.attract ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
-        y: 40
-        width: parent.width; height: 56
-        visible: win.screen === "library" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
-        // Systems: scrolls to keep the active system visible, without overflowing.
-        ListView {
-            id: sysBar
-            x: 96
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.min(contentWidth, rightGroup.x - x - 40)
-            height: 56
-            orientation: ListView.Horizontal
-            spacing: 14
-            clip: true
-            interactive: false
-            model: win.systems
-            currentIndex: win.systemIndex
-            highlightFollowsCurrentItem: true
-            highlightRangeMode: ListView.ApplyRange
-            preferredHighlightBegin: width * 0.2
-            preferredHighlightEnd: width * 0.8
-            highlightMoveDuration: theme.scrollMs
-            delegate: Item {
-                required property var modelData
-                required property int index
-                readonly property bool cur: index === win.systemIndex
-                // Too many tabs for the space (a large interface size, many consoles): a tab only
-                // partly in view is dimmed, showing that more wait on that side.
-                readonly property real inView: x - sysBar.contentX
-                opacity: inView < -1 || inView + width > sysBar.width + 1 ? 0.3 : 1
-                Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
-                // A pill: filled with the console's colour when it is the open tab.
-                width: (sysLogo.visible ? sysLogo.width : lbl.implicitWidth) + 44; height: 48
-                y: 2
-                Ink { theme: win.theme; radius: 24; visible: parent.cur }
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 24
-                    color: parent.cur ? theme.accent : Qt.rgba(1, 1, 1, 0.06)
-                    Behavior on color { ColorAnimation { duration: theme.focusMs } }
-                }
-                Accessible.role: Accessible.PageTab
-                Accessible.name: modelData.name
-                Image {
-                    id: sysLogo
-                    anchors.centerIn: parent
-                    visible: status === Image.Ready
-                    source: modelData.logo || ""
-                    height: 28; width: Math.min(150, implicitWidth * 28 / Math.max(1, implicitHeight))
-                    sourceSize.height: 56
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    opacity: parent.cur ? 1 : 0.6
-                    Behavior on opacity { NumberAnimation { duration: theme.focusMs } }
-                    // On the console's colour, the logo in white.
-                    layer.enabled: parent.cur
-                    layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
-                }
-                Text {
-                    id: lbl; anchors.centerIn: parent
-                    visible: !sysLogo.visible
-                    text: modelData.name
-                    color: parent.cur ? theme.accentFg : theme.fgSoft
-                    font { family: theme.fontFamily; pixelSize: 18; weight: Font.Bold }
-                }
-            }
-        }
-        Row {
-            id: rightGroup
-            anchors { right: parent.right; rightMargin: 96; verticalCenter: parent.verticalCenter }
-            spacing: 20
-            // The library's mode, always in view: all of RomM, or only what is ready here.
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: modeRow.implicitWidth + 28; height: 44; radius: 22
-                color: win.readyOnly ? theme.accent : theme.glass
-                border { width: 1; color: win.readyOnly ? "transparent" : theme.glassEdge }
-                Accessible.role: Accessible.Button
-                Accessible.name: modeText.text
-                Row {
-                    id: modeRow
-                    anchors.centerIn: parent
-                    spacing: 10
-                    // Its button (L3, I on the keyboard), as on the downloads pill.
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: modeKey.implicitWidth + 16; height: 28; radius: 14
-                        color: win.readyOnly ? Qt.rgba(1, 1, 1, 0.25) : theme.fg
-                        Text {
-                            id: modeKey
-                            anchors.centerIn: parent
-                            text: graphite.key("l3")
-                            color: win.readyOnly ? theme.accentFg : theme.bg
-                            font { family: theme.fontFamily; pixelSize: 14; weight: Font.Black }
-                        }
-                    }
-                    Text {
-                        id: modeText
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: win.readyOnly ? qsTr("Installed only") : qsTr("All games")
-                        color: win.readyOnly ? theme.accentFg : theme.fgSoft
-                        font { family: theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
-                    }
-                }
-                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: win.toggleLibraryMode() }
-            }
-            // Sync or downloads in progress: a pill that opens the downloads panel.
-            Rectangle {
-                readonly property var s: win.status ? win.status.sync : null
-                readonly property bool syncing: !!(s && (s.running || s.covers_pending > 0))
-                visible: syncing || !win.status || !win.status.online
-                anchors.verticalCenter: parent.verticalCenter
-                width: pillText.implicitWidth + 32; height: 44; radius: 22
-                color: theme.glass
-                border { width: 1; color: theme.glassEdge }
-                Text {
-                    id: pillText
-                    anchors.centerIn: parent
-                    text: !win.status || !win.status.online ? qsTr("Offline")
-                        : !parent.s ? "" : parent.s.running ? qsTr("Syncing %1/%2").arg(parent.s.done).arg(parent.s.total)
-                        : qsTr("Covers… %1").arg(parent.s.covers_pending)
-                    color: !win.status || !win.status.online ? theme.bad : theme.fgSoft
-                    font { family: theme.fontFamily; pixelSize: 18 }
-                }
-            }
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: dlRow.implicitWidth + 20; height: 48; radius: 24
-                color: theme.glass
-                Ink { z: -1; theme: win.theme; radius: 24; opacity: 0.5 }
-                Accessible.role: Accessible.Button
-                Accessible.name: qsTr("Downloads")
-                // Its own button: R3 (right stick click), Tab on the keyboard.
-                Row {
-                    id: dlRow
-                    anchors.centerIn: parent
-                    spacing: 2
-                    Icon { anchors.verticalCenter: parent.verticalCenter; name: "download"; size: 18; stroke: 2.2; color: theme.fg }
-                    HintBar { anchors.verticalCenter: parent.verticalCenter; theme: win.theme; hints: [["R3", qsTr("Downloads"), "r3"]] }
-                }
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: prefs.showClock
-                text: win.playTimeText()
-                color: theme.fgSoft
-                font { family: theme.fontFamily; pixelSize: 20; features: { "tnum": 1 } }
-            }
-            // Who is playing, and how to change: B (Backspace on the keyboard) goes back to the profiles.
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: profileRow.implicitWidth + 12; height: 48; radius: 24
-                color: theme.glass
-                Ink { z: -1; theme: win.theme; radius: 24; opacity: 0.5 }
-                Accessible.role: Accessible.Button
-                Accessible.name: qsTr("Profile: %1").arg(win.activeProfile ? win.activeProfile.name : "")
-                Row {
-                    id: profileRow
-                    anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
-                    spacing: 8
-                    Rectangle {
-                        width: 40; height: 40; radius: 20
-                        color: theme.accent
-                        Text {
-                            anchors.centerIn: parent
-                            text: win.activeProfile ? win.activeProfile.name.charAt(0).toUpperCase() : ""
-                            color: theme.accentFg
-                            font { family: theme.displayFont; pixelSize: 20; weight: Font.Bold }
-                        }
-                    }
-                    HintBar { anchors.verticalCenter: parent.verticalCenter; theme: win.theme; hints: [["B", qsTr("Change profile"), "b"]] }
-                }
-            }
-        }
-    }
-
-    LibraryView {
-        id: libraryView
-        opacity: win.attract ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
+    LibraryHome {
+        id: home
         anchors.fill: parent
-        boxYaw: win.boxYaw
-        boxPitch: win.boxPitch
+        opacity: win.attract ? 0 : filterOverlay.visible ? 0.2 : 1
+        Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
         visible: win.screen === "library" && win.ready && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
         theme: win.theme
-        games: libModel
-        game: win.focusedGame
-        currentIndex: win.focusIndex
-        sectionTitle: win.systems[win.systemIndex] ? win.systems[win.systemIndex].name : ""
+        rows: win.rows
+        layout: win.layout
+        current: win.focusIndex
+        tab: win.libTab
+        filtered: win.consoleFilter !== ""
         emptyText: win.emptyLibraryText
-        letters: win.letters
-        revision: win.libRevision
-        currentLetter: win.focusedGame ? win.letterOf(win.focusedGame.name) : ""
+        keyLabel: function (a) { return graphite.key(a) }
+        subtitle: {
+            const where = win.consoleFilter ? (win.consoleInfo && win.consoleSlug === win.consoleFilter ? win.consoleInfo.name
+                          : (win.consoles.find(c => c.slug === win.consoleFilter) || { name: win.consoleFilter }).name) : qsTr("every console")
+            const n = win.layout.count
+            return win.libTab === "home" ? qsTr("%n game(s) ready to play", "", n) + " · " + where
+                                         : qsTr("%n game(s) of your server to discover", "", n) + " · " + where
+        }
+        filterLabel: {
+            const c = win.consoles.find(x => x.slug === win.consoleFilter)
+            const extra = Object.keys(win.quick).filter(k => win.quick[k]).length + (prefs.libraryGenre ? 1 : 0)
+            return (c ? c.name : qsTr("Every console")) + (extra ? " + " + extra : "")
+        }
+        sortLabel: (Shelf.sortsFor(win.libTab).find(x => x.id === win.sortId) || { label: "" }).label
+        profileName: win.activeProfile ? win.activeProfile.name : ""
+        clockText: prefs.showClock ? win.playTimeText() : ""
+        heroAction: win.libTab === "home" ? (win.sortId === "played" ? qsTr("Resume") : qsTr("Play")) : ""
+        downloadsText: {
+            const s = win.status ? win.status.sync : null
+            if (!win.status || !win.status.online) return qsTr("Offline")
+            if (s && s.running) return qsTr("Syncing %1/%2").arg(s.done).arg(s.total)
+            const busy = win.rows.filter(g => ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0)
+            return busy.length ? qsTr("%n download(s)", "", busy.length) : ""
+        }
+        downloadsProgress: {
+            const busy = win.rows.filter(g => g.dl_state === "downloading" && g.dl_total > 0)
+            if (!busy.length) return -1
+            return busy.reduce((a, g) => a + g.dl_received, 0) / busy.reduce((a, g) => a + g.dl_total, 0)
+        }
+        onShelfHeightChanged: win.relayout()
     }
 
-    Rectangle {
+    Item {
         id: hintsBar
         opacity: win.attract ? 0 : 1
         Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 20 }
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 18 }
         height: 48
-        color: "transparent"
         visible: win.screen === "library" && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
         HintBar {
             id: hints
-            x: 84; anchors.verticalCenter: parent.verticalCenter
+            anchors { right: parent.right; rightMargin: 96; verticalCenter: parent.verticalCenter }
             theme: win.theme
             hints: {
+                if (filterOverlay.visible) return [["◀ ▶", qsTr("Console"), "right"], ["A", qsTr("Apply"), "a"], ["B", qsTr("Close"), "b"]]
+                if (sortMenu.visible) return [["▲ ▼", qsTr("Choose"), "down"], ["A", qsTr("Sort"), "a"], ["B", qsTr("Close"), "b"]]
                 const g = win.focusedGame
                 const h = []
-                if (g) h.push(["A", qsTr("Open"), "a"])
-                if (g) h.push(["X", qsTr("Play"), "x"])
-                h.push(["Y", qsTr("Search"), "y"])
-                h.push(["LB RB", qsTr("Tabs"), "rb"])
-                if (win.letters.length > 1) h.push(["LT RT", qsTr("Letters"), "rt"])
+                if (g) h.push(["A", win.focusedTile && win.focusedTile.hero && Shelf.ready(g) ? (win.sortId === "played" ? qsTr("Resume") : qsTr("Play")) : qsTr("Open"), "a"])
+                if (win.layout.groups.length > 1) h.push(["LT RT", qsTr("Groups"), "rt"])
+                h.push(["Select", qsTr("Search"), "select"])
                 h.push(["Start", qsTr("Settings"), "start"])
-                h.push(["Select", qsTr("Sort"), "select"])
                 return h
             }
         }
-        Text {
-            anchors { right: parent.right; rightMargin: 96; verticalCenter: parent.verticalCenter }
-            readonly property var s: win.status ? win.status.sync : null
-            text: s && s.last_sync ? qsTr("Synced at %1 · %n game(s)", "", libModel.count).arg(new Date(s.last_sync * 1000).toLocaleTimeString(Qt.locale(), Locale.ShortFormat)) : ""
-            color: theme.fgFaint
-            font { family: theme.fontFamily; pixelSize: 17 }
+    }
+
+    SortMenu {
+        id: sortMenu
+        visible: false
+        z: 40
+        anchors { right: parent.right; rightMargin: 96; top: parent.top; topMargin: 156 }
+        theme: win.theme
+        current: win.sortId
+    }
+    FilterOverlay {
+        id: filterOverlay
+        visible: false
+        z: 40
+        anchors.fill: parent
+        theme: win.theme
+        keyLabel: function (a) { return graphite.key(a) }
+        line: {
+            const c = consoles[index]
+            if (!c) return ""
+            if (!c.slug) return qsTr("All your games, every console together")
+            return qsTr("%1 installed · %2 in the store").arg(c.home).arg(c.store)
         }
     }
 
@@ -1989,10 +1878,8 @@ Window {
         fileNote: win.page && win.page.file_notes && win.pageGame ? (win.page.file_notes[String(win.pageGame.rom_id)] || null) : null
         emuLanguage: win.page ? win.page.emu_language : "auto"
         gameLanguages: win.page && win.page.languages ? win.page.languages : []
-        boxYaw: win.boxYaw
-        boxPitch: win.boxPitch
-        boxTurning: win.turning
         uiLang: win.uiLang
+        emulator: win.page && win.page.emulator ? win.page.emulator : ""
         installMode: win.page ? win.page.install_mode : "download"
         streamAvailable: win.page ? win.page.stream.available : false
         streamError: win.page && win.page.stream.error ? CoreText.tr(win.page.stream.error) : ""
@@ -2073,7 +1960,7 @@ Window {
         theme: win.theme
         model: libModel
         z: 60
-        onPicked: (i) => { if (win.focusIndex !== i) win.focusIndex = i }
+        onPicked: (i) => { if (win.rows[i]) win.showGame(win.rows[i].rom_id) }
     }
     ActionMenu { id: menu; theme: win.theme; z: 80 }
     Toasts {
@@ -2183,15 +2070,17 @@ Window {
     }
     }
 
-    // The console's frame round the screen, over everything.
-    ConsoleFrame {
+    // The border round the screen, in the colour of the console you are on, its logo on top.
+    ScreenBorder {
         anchors.fill: parent
         visible: win.framed
         tint: win.consoleTint
-        art: win.consoleFrames[win.consoleSlug] || ""
         margin: win.frameMargin
-        radius: win.frameMargin * 1.1
-        ink: graphite.ink
+        radius: Math.round(34 * scene.k)
+        unit: scene.k
+        name: (win.screen === "library" && win.overlay !== "settings") || win.overlay === "game" ? (win.consoleInfo ? win.consoleInfo.name : win.consoleSlug ? (win.shortNames[win.consoleSlug] || win.consoleSlug) : qsTr("Every console")) : ""
+        logo: win.consoleInfo ? win.consoleInfo.logo : ""
+        fadeMs: Math.round(650 * graphite.motion)
     }
 
     // Light preferences stored by Qt (~/.config/Borne/Borne.conf).
@@ -2218,9 +2107,10 @@ Window {
         property string soundVolume: "medium" // "low" | "medium" | "high"
         property string prompts: "auto"       // buttons shown in the hints: "auto" | "pad" | "keyboard"
         property bool showClock: true
-        property string librarySort: "name"
+        property string sortHome: "played"   // My library's order (Shelf.js sorts)
+        property string sortStore: "added"   // the Store's
         property string libraryGenre: ""
-        property string libraryMode: "all"
+        onLibraryGenreChanged: win.relayout()
         property int notifiedBuild: 0
     }
 

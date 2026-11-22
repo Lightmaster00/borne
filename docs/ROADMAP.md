@@ -8,8 +8,8 @@ What is left to build or to check. Done work is described in [`SPEC.md`](SPEC.md
   options, controllers, cheats; Ryujinx's `enabled.txt`), and the Eden and Ryubing release file
   names on a first real install.
 - Saves: a round trip per emulator against RomM.
-- 3D cases on real covers: the PlayStation hinge cut, regional N64 / Super Nintendo boxes, spine
-  thickness, the glass reflections; stick sensitivity on Xbox, PlayStation and Switch Pro pads.
+- The library on real covers: the PlayStation hinge cut, regional N64 / Super Nintendo boxes, console
+  logos from ScreenScraper on every console.
 - A 1 800-game library: 60 frames per second at 4K, library requests under 150 ms.
 - Updates by parts between two published builds, on Linux and macOS.
 

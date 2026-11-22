@@ -32,6 +32,7 @@ Version 1.8 — November 2026
 | 1.6 | Settings screen (install method with its trade-offs, network cache, updates, interface); in-app updates from GitHub releases with stable and development channels. |
 | 1.7 | One built-in look, "Halo" (living background from the selected game's art, game boxes in space, glass panels, accent taken from the cover); user QML themes removed. Persistent log and shareable diagnostic report. Sturdier sync and downloads against slow or older RomM servers. |
 | 1.8 | Emulators managed by Borne, saves on RomM, cheats, system files, display settings; 3D cel-shaded cases from ScreenScraper scans; gamepad or keyboard only (no mouse); a game settings page with per-game emulator options; interface preferences; downloads that pause; updates by parts (only what changed is downloaded) and releases ready to install; the Borne logo and pictogram, and a website. |
+| 1.10 | New interface: *My library* (games ready here) and the *Store* (the server's others, by console); games in groups set by the order (Resume, This week, A – F, the 1990s…), covers at their own proportions; Filter (consoles as a fan of cards, quick filters, genres) and Sort apart; a border in the colour of the selected game's console with its logo; the game page as a sheet with the players' rating, play time and a table of facts. 3D cases removed. |
 | 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
 
 ## 1. Executive summary
@@ -264,49 +265,57 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   blank Steam grid / marquee, else its cover blurred, enlarged and drifting slowly. One dark filter
   (about 60 %) and a deeper bottom keep the cases and the text readable. The background has no setting.
 - Attract: after 5 s without input on the library (Settings → Interface → Video in full screen: 5 s, 15 s,
-  30 s, 1 min or never; turning the box counts as input), once the video plays, the library (cases, bars and
+  30 s, 1 min or never), once the video plays, the library (covers, header and
   hints) fades out and the filter lightens, leaving the video; any input or the stick brings
   it back at once, and that input only wakes it.
-- Library: the selected game's platform, title and states, and the games as physical cases standing on
-  the stage below (cover inset under a plastic rim with gloss, spines with the system's color band and the
-  title, a contact shadow, a faint floor reflection; the case follows the cover's aspect ratio). The
-  selected box faces the camera, a little forward, swaying gently; the others turn toward it and recede.
-  Rendered in real 3D with Qt Quick 3D (`Shelf3D`, `Case3D`): each case is a box to its console's
-  proportions with slightly rounded corners and edges (`CaseMesh.js`): cover on the front, the same spine
-  on the left and the right, the back scan behind, the console's signature colour on the top and the bottom;
-  cel shaded: the faces are printed flat (unlit), a skin just over the box (`toon.frag`, multiplied)
-  gives flat light bands with a hard terminator, a dark side in the console's colour and a paper or
-  plastic grain (`grain.png`), and a second skin (`gloss.frag`, added) the clear plastic seen as glass:
-  it reflects a procedural photo studio (a softbox above on the left, tall windows on the sides, a thin
-  strip, a faint diagonal sheen), weak face-on and strong at grazing angles (Fresnel), so the
-  reflections slide over the print as the case turns, on the flat faces only (on the rounded edges
-  the normal sweeps every direction and always caught a window: a light line along each edge); a
-  broad soft glint; cardboard reflects barely; all inside a bold ink outline (the same ink as the hard shadow under
-  buttons, chips, cards and panels: `Ink.qml`). A key light casts soft shadows on a floor that fades
-  out (the floor alone reflects the studio light probe `studio.hdr`; both assets come from
-  `scripts/gen-case-assets.py`). A slot keeps its case while the case stays in view, so moving
-  reloads one print only; a title is drawn only where a game has no scan, never while one loads. Only the 13
-  cases around the selection exist. Fallback: the earlier 2D drawing (`BoxShelf`, six flat faces
-  through one perspective matrix), used when Qt Quick 3D cannot load; `ShelfView` picks one and forwards the same properties. A letter index; LT / RT jump between letters and show the letter
-  large for a moment. Y opens the search: on-screen keyboard (or the physical keyboard, where typing any
-  letter starts a search), up to six results ranked by title prefix, word prefix then substring, and the
-  shelf follows the highlighted result. The catalog rarely changes, so there is no "featured" slot.
-- Game page: the trailer across the top (muted, sound on request; RomM's `path_video`, a path under
-  `/assets/romm/resources/`, downloaded by the core with the profile's token through
+- Library (`LibraryHome.qml`, laid out by `Shelf.js`): two tabs, LB / RB: *My library*, the games
+  ready here (downloaded or played from RomM through the mount), and the *Store*, the server's other
+  games. Every game is loaded once (`/api/v1/library`) and the shelf is built in the UI: filtered,
+  sorted, then gathered in groups the order explains: Last played (a large *Resume* card for the last
+  game, then This week, This month, Earlier, Not played yet), Added to the server (*Newest*, then the
+  recent ones), Name (letters gathered so no group is tiny), Play time (*Your most played*, then over
+  20 h, 5 to 20 h, under 5 h) and Release date (by decade); the Store, unfiltered, by console instead.
+  Two rows of covers scroll sideways; the shelf moves only when the selection would leave the view.
+  The covers share one height (sized to the screen, 140 to 290 units) and keep their own proportions
+  (the cover's, else the console's scans', else its retail case's: `Cases.ratio`), two to a column;
+  the selected one grows a little with a soft spring, a ring and a glow of its console's colour that
+  breathes. Each cover carries its console when several are shown, a progress bar while it
+  downloads, and under it its title and a line set by the order (3 days ago, 14 h played, 1998, its
+  size in the Store). LT / RT jump between groups. A on the *Resume* card plays at once; elsewhere A
+  opens the game's page.
+- Filter (X, `FilterOverlay.qml`): the consoles with games as cards fanned like a hand (every console
+  first, its colours in a ring), the chosen card standing up in front, the screen's border already in
+  its colour; each with its logo (ScreenScraper system media `logo-mono`, else `logo`, in white),
+  its installed and Store counts. Down reaches quick filters (Favourites, Never played, 2 players
+  or more; only the last in the Store) and the tab's ten most common genres, cumulative. Sort (Y,
+  `SortMenu.qml`): a list dropping from its button, each order with what it does; My library and
+  the Store keep their own (`prefs.sortHome`, `prefs.sortStore`). Select opens the search: on-screen
+  keyboard (or the physical keyboard, where typing any letter starts a search), up to six results
+  ranked by title prefix, word prefix then substring; a result is shown on the shelf, in its tab,
+  the filters that would hide it cleared.
+- Game page (`GamePage.qml`): a sheet rising over the library. On the left the cover at its
+  proportions and the actions (Play, Download, play from the network, favourite, the game's
+  settings), its state and download progress; on the right, scrolling: the console and genres, the
+  game's logo (else its title), studio, year and players, counters (the players' rating out of 100
+  as a ring when RomM has one, your play time on this profile, the last time played, where the game
+  is and its size), the versions (region, languages, revision; updates and DLC left out), what the
+  console needs that this machine lacks, the file's own note, the summary, a table of facts (studios,
+  series, release date, players, modes, age rating, regions, languages, versions, file size, the
+  emulator it opens in) and the screenshots. Behind, softly: the trailer (RomM's `path_video`, a path
+  under `/assets/romm/resources/`, downloaded by the core with the profile's token through
   `POST /api/v1/games/{id}/trailer`, cached in `media/videos` and pruned beyond 2 GB; when the shown
-  version has none, another version of the same game is used; without a trailer the case stands on the
-  right), then the choices and an introduction,
-  the studios and series (RomM only), and the screenshots from RomM (fetched through the core with the profile's token).
-- Console frame and accent: the screen sits in a frame dressed in the selected console (the open game's,
-  else the open console tab's, else the selected game's): its blank Steam grid from ScreenScraper
-  (system media "frame": the blank Steam grid type found by name in `mediasSystemeListe.php`, else
-  Steam grid or fan art) over a gradient of the console's own colour (`Cases.js`), with a rounded hole
-  and an ink edge (`ConsoleFrame.qml`). That colour is the accent: primary buttons, the open console
-  tab, the game count, the A key, the radio marks. Keycaps are coloured (A accent, B red, X yellow,
-  Y blue). Rounded pills and cards with a hard ink shadow (`Ink.qml`). Shelf: the selected case faces
-  you in the middle, two cases each side turned about 18° and 26° toward it, well apart (`Cases.place`).
-- Type: Fredoka for titles (static Medium, SemiBold and Bold instances), Manrope for the rest (static
-  Regular to ExtraBold instances). The scene keeps a 1080-unit height (or 1600
+  version has none, another version of the same game is used), else the fan art or the screenshots
+  one after the other. `/api/v1/games/{id}` adds the profile's `last_played`, `play_seconds` and the
+  `emulator`; `/facts` adds `game_modes`, `age_ratings` and `rating` (RomM's `average_rating`).
+- Border and accent (`ScreenBorder.qml`): the screen sits in a border in the colour of the console
+  of the game selected (else the one open, the card chosen in Filter, the console filtered: `Cases.js`),
+  with a soft glow inside and a tab hanging from its top edge with the console's logo in white
+  (ScreenScraper's `logo-mono` / `logo`), its name without one; the colour and the logo change with a
+  fade as the selection crosses from one console's game to another's. That colour is the accent:
+  primary buttons, the covers' glow, the A key. Keycaps are coloured (A accent, B red, X yellow,
+  Y blue). Rounded pills and cards.
+- Type: Bricolage Grotesque for titles (static Bold and ExtraBold instances), Manrope for the rest
+  (static Regular to ExtraBold instances). The scene keeps a 1080-unit height (or 1600
   units of width on narrow screens) and widens with the window, so 16:10, 21:9, 4:3 and 4K fill the screen.
 - Safe mode: repeated UI crashes restart Borne with trailers and sounds off.
 
@@ -390,10 +399,9 @@ reports the offline state and syncs on reconnection according to section 6.4.
 ### 6.6 Library and downloads
 
 - Local cached catalog with stable RomM identifiers, systems, names, covers and local presence state.
-- Two libraries, switched with L3 (I on the keyboard), the pill at the top or Sort and filter: *All
-  games* (everything on RomM) and *Installed only* (`prefs.libraryMode = "ready"`): each console tab
-  then shows only the games ready here, downloaded or played from RomM through the mount
-  (`/api/v1/library?ready=1`), and consoles without any are left out (`ready_count` in
+- Two tabs (§5.4): *My library*, the games ready here, downloaded or played from RomM through the
+  mount, and the *Store*, the others; a game moves from one to the other when it is installed or
+  removed. Consoles without games are left out of Filter (`ready_count`, `rom_count` in
   `/api/v1/platforms`).
 - On-demand downloads with resume, size/hash verification and error handling.
 - Downloads panel (R3 / Tab): per download a Pause (Resume when paused, Retry when failed) and a Cancel
@@ -1219,8 +1227,7 @@ About and screenshots side by side on the game page, credits on one line.
   disc), `wheel-hd` / `wheel` (logo), `fanart`, in the version's region first (Europe → eu, France →
   fr then eu, then wor, us, ss, jp). No spine scan: the spine is cut from `box-texture` (back | spine |
   front) using the front's proportions. ScreenScraper's images take precedence over RomM's copies.
-- Boxes are real boxes: the spine on the left side only, the opening edge on the right; the front
-  takes the exact proportions of its image (scan, else cover), so nothing is cropped.
+- A cover takes the exact proportions of its image (scan, else RomM's cover), so nothing is cropped.
 
 ## 21. External services
 
@@ -1238,17 +1245,3 @@ never logged by Borne, never returned by the API (only `developer_access: true/f
 from stored media URLs. Errors from the network never carry the request URL. A build without them
 says so in Settings; development builds can set the same variables in the environment.
 
-## 22. Game boxes in 2D (fallback when 3D is unavailable)
-
-- Six faces (front, back, spine on the left, opening edge on the right, top, bottom), each drawn
-  through one perspective matrix; the box turns about its vertical axis (yaw) and its horizontal
-  axis (pitch). Faces facing away are culled (a box is convex, so no depth sorting is needed).
-- One key light (above, left, in front): each face is shaded by how it faces the light, scaled so a
-  box facing the viewer at rest is fully lit, and catches a specular highlight (Blinn) that slides
-  across it as it turns; the clear sleeve of plastic cases adds a sheen band that follows the turn.
-  Materials: keep case (rim, rounded edges, moulded ridges on bare edges), jewel case (hinge, black
-  tray under a clear lid), clamshell, cardboard (matte, crisp folds).
-- The selected box (library and game page) leans with the right stick (core event `stick`, dead
-  zone 0.18, steps of 0.05) or W A S D held: the stick sets the angle, within ±60° of turn and ±40°
-  of tilt, enough to show the spine (never the back); released, the box comes straight
-  back. `POST /api/v1/debug/stick?x=&y=` drives it in tests.

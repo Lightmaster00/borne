@@ -56,15 +56,18 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 
 - **Profiles** ("Who's playing?"), each bound to a RomM account; pairing without a keyboard (code or
   QR code approved from the phone). Tokens are kept outside the database, readable only by you.
-- **Your library, offline too**: consoles, favourites and recently played, sorted by name (the first four
-  letters, then the exact release date, so a series stands in order) or by play time, filtered by genre, searched as you
-  type, in titles from every region.
-- **Games as real cases**: 3D boxes in the shape of each console's retail case, rebuilt from the
-  front, spine and back scans of ScreenScraper, cel shaded under clear plastic that reflects like
-  glass; turn them with the right stick (or W A S D) to read the spine. Behind them, a video of the
-  selected game; left alone, the library fades out and leaves the video.
-- **Game page**: the trailer, the game's logo, the languages it really exists in (choosing one
-  chooses the version), Play, favourite, and the game's own settings.
+- **Your library, offline too**: *My library* holds the games ready to play here, the *Store* the
+  others on your server, by console. Games come in groups the order explains (Resume, This week,
+  A – F, the 1990s…), their covers at their own proportions; filter by console (cards fanned like a
+  hand), favourites, never played, two players or genre, sort by last played, newest, name, play time
+  or release date, search as you type, in titles from every region.
+- **A border in your console's colours**: the screen is framed in the colour of the console of the
+  game you are on, its logo on top; behind, a video of the selected game; left alone, the library
+  fades out and leaves the video.
+- **Game page**: a sheet with the cover, Play, favourite and the game's own settings; the players'
+  rating, your play time, the languages it really exists in (choosing one chooses the version), the
+  summary, a table of facts (studios, series, release, modes, age rating, file, emulator), the
+  screenshots, and the trailer playing softly behind.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network**: on Linux only the games you pick are mounted, read from RomM on demand;
   on macOS they are downloaded as temporary copies, the least recently played removed first past
@@ -116,16 +119,14 @@ and the emulators' releases).
 | D-pad / left stick | Arrows | Move |
 | A | Enter | Open / choose |
 | B | Escape | Back |
-| X | X | Play |
-| Y | Y, T, Ctrl+F or / | Search (on the profile screen: profile options) |
+| X | X | Filter (console, quick filters, genre) |
+| Y | T or Y | Sort |
+| Select | F2, Ctrl+F or / | Search (on the profile screen, Y: profile options) |
 | — | Any letter or digit | Start a search with it |
-| LB / RB | Page Up / Page Down, Q / E | Previous / next tab |
-| LT / RT | R / C, Home / End | Previous / next letter |
-| Right stick | W A S D (held) | Turn the selected case to see its spine |
+| LB / RB | Page Up / Page Down, Q / E | My library / Store |
+| LT / RT | R / C, Home / End | Previous / next group |
 | R3 | Tab | Downloads |
-| L3 | I | All games / installed games only |
 | Start | M or F1 | Settings |
-| Select | F2 | Sort and filter |
 | Select + Start, together | Escape | Pause and ask whether to quit (any emulator) |
 
 The hints on screen show the buttons of the device in use (or the one chosen in Settings →
@@ -140,4 +141,4 @@ Interface). Borne is played with a gamepad or a keyboard only: the mouse is igno
 ## License
 
 GPL-3.0-or-later. The Borne name, logo and pictogram (`ui/brand`) identify this project. Qt is used under the LGPL (dynamic linking, replaceable libraries). Fonts:
-Fredoka and Manrope (SIL Open Font License, `ui/fonts/licenses`).
+Bricolage Grotesque and Manrope (SIL Open Font License, `ui/fonts/licenses`).

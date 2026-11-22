@@ -600,12 +600,10 @@ Item {
 
 
     // ---------- sections ----------
-    Rectangle {
+    Item {
         id: side
         width: 480
         height: parent.height
-        color: Qt.rgba(1, 1, 1, 0.05)
-        Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.1) }
 
         Text {
             x: 64; y: 72
@@ -627,25 +625,18 @@ Item {
                     readonly property bool current: page.section === index
                     // Shorter on a short screen (a larger interface size): every section fits above the version.
                     width: parent.width; height: Math.max(52, Math.min(72, (side.height - 160 - 160) / page.sections.length - 8))
-                    radius: 14
-                    // The open section: a soft fill and a bar in the accent colour; brighter while the
-                    // focus is on the list (no ring: the bar says it).
+                    radius: height / 2
+                    // The open section: a pill, white while the focus is on the list.
                     readonly property bool focusedHere: current && !page.inRows
-                    color: focusedHere ? Qt.rgba(1, 1, 1, 0.14) : current ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    color: focusedHere ? theme.fg : current ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
                     Behavior on color { ColorAnimation { duration: theme.focusMs } }
-                    Rectangle {
-                        x: 0; anchors.verticalCenter: parent.verticalCenter
-                        width: 4; height: parent.height - 24; radius: 2
-                        color: theme.accent
-                        opacity: sec.focusedHere ? 1 : sec.current ? 0.45 : 0
-                    }
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
                     Column {
-                        x: 20; anchors.verticalCenter: parent.verticalCenter
+                        x: 26; anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
-                        Text { text: sec.modelData.name; color: sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: Font.DemiBold } }
-                        Text { text: sec.modelData.hint; color: sec.modelData.warn ? theme.bad : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
+                        Text { text: sec.modelData.name; color: sec.focusedHere ? theme.bg : sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: sec.current ? Font.ExtraBold : Font.DemiBold } }
+                        Text { text: sec.modelData.hint; color: sec.modelData.warn ? theme.bad : sec.focusedHere ? Qt.rgba(0, 0, 0, 0.6) : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
                     }
                 }
             }
@@ -667,12 +658,19 @@ Item {
         }
     }
 
-    // ---------- rows (scroll to follow the selection when there are many) ----------
+    // ---------- rows, in a floating panel (scroll to follow the selection when there are many) ----------
+    Rectangle {
+        x: rowsView.x - 44; y: rowsView.y - 40
+        width: rowsView.width + 88; height: rowsView.height + 64
+        radius: 34
+        color: Qt.rgba(1, 1, 1, 0.045)
+        border { width: 1; color: Qt.rgba(1, 1, 1, 0.08) }
+    }
     Flickable {
         id: rowsView
-        x: side.width + 80; y: 64
-        width: Math.min(1500, parent.width - x - 96)
-        height: parent.height - y - 110
+        x: side.width + 84; y: 104
+        width: Math.min(1500, parent.width - x - 140)
+        height: parent.height - y - 150
         contentHeight: rowsCol.height + 40
         clip: true
         boundsBehavior: Flickable.StopAtBounds

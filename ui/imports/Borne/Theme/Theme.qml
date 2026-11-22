@@ -1,5 +1,5 @@
 // Borne's single look: a dark stage inside the selected console's frame, rounded shapes with an ink
-// edge (a touch of cel shading), the console's own colour for what you act on. Type: Fredoka for
+// edge (a touch of cel shading), the console's own colour for what you act on. Type: Bricolage Grotesque for
 // titles, Manrope for the rest.
 // Focus: a white ring.
 // Designed at 1920×1080; the window scales the whole scene.
@@ -58,7 +58,7 @@ QtObject {
 
     // ---------- Type ----------
     readonly property string fontFamily: "Manrope"
-    readonly property string displayFont: "Fredoka"   // titles: rounded, playful
+    readonly property string displayFont: "Bricolage Grotesque"   // titles: tight, characterful
 
     // ---------- Shape and motion ----------
     readonly property int radius: 14

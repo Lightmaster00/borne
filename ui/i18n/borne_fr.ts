@@ -1385,6 +1385,21 @@
     </message>
 </context>
 <context>
+    <name>FilterOverlay</name>
+    <message>
+        <source>Filter</source>
+        <translation>Filtrer</translation>
+    </message>
+    <message>
+        <source>Choose a console, then narrow down if you like.</source>
+        <translation>Choisis une console, puis affine si tu veux.</translation>
+    </message>
+    <message>
+        <source>installed · %1 in the store</source>
+        <translation>installés · %1 dans la boutique</translation>
+    </message>
+</context>
+<context>
     <name>GamePage</name>
     <message>
         <source>%1 GB</source>
@@ -1563,10 +1578,6 @@
         <translation>Pas encore de résumé pour ce jeu.</translation>
     </message>
     <message>
-        <source>Screenshots</source>
-        <translation>Captures d'écran</translation>
-    </message>
-    <message>
         <source>More about the game</source>
         <translation>Plus sur le jeu</translation>
     </message>
@@ -1581,10 +1592,6 @@
     <message>
         <source>Loading the trailer…</source>
         <translation>Chargement de la bande-annonce…</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation>À propos</translation>
     </message>
     <message>
         <source>Source: RomM</source>
@@ -1621,6 +1628,102 @@
     <message>
         <source>Version</source>
         <translation>Version</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Jamais</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Aujourd’hui</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Hier</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n day(s) ago</source>
+        <translation><numerusform>il y a %n jour</numerusform><numerusform>il y a %n jours</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n week(s) ago</source>
+        <translation><numerusform>il y a %n semaine</numerusform><numerusform>il y a %n semaines</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n month(s) ago</source>
+        <translation><numerusform>il y a %n mois</numerusform><numerusform>il y a %n mois</numerusform></translation>
+    </message>
+    <message>
+        <source>Players' rating</source>
+        <translation>Note des joueurs</translation>
+    </message>
+    <message>
+        <source>out of 100</source>
+        <translation>sur 100</translation>
+    </message>
+    <message>
+        <source>%1 h</source>
+        <translation>%1 h</translation>
+    </message>
+    <message>
+        <source>%1 min</source>
+        <translation>%1 min</translation>
+    </message>
+    <message>
+        <source>Your play time</source>
+        <translation>Ton temps de jeu</translation>
+    </message>
+    <message>
+        <source>on this profile</source>
+        <translation>sur ce profil</translation>
+    </message>
+    <message>
+        <source>Not played yet</source>
+        <translation>Pas encore joué</translation>
+    </message>
+    <message>
+        <source>Last played</source>
+        <translation>Dernière partie</translation>
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation>Installé</translation>
+    </message>
+    <message>
+        <source>From the network</source>
+        <translation>Depuis le réseau</translation>
+    </message>
+    <message>
+        <source>On the server</source>
+        <translation>Sur le serveur</translation>
+    </message>
+    <message>
+        <source>Modes</source>
+        <translation>Modes</translation>
+    </message>
+    <message>
+        <source>Age rating</source>
+        <translation>Âge conseillé</translation>
+    </message>
+    <message>
+        <source>Regions</source>
+        <translation>Régions</translation>
+    </message>
+    <message>
+        <source>Languages</source>
+        <translation>Langues</translation>
+    </message>
+    <message>
+        <source>Versions</source>
+        <translation>Versions</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Fichier</translation>
+    </message>
+    <message>
+        <source>Emulator</source>
+        <translation>Émulateur</translation>
     </message>
 </context>
 <context>
@@ -1942,66 +2045,18 @@
     </message>
 </context>
 <context>
-    <name>LibraryView</name>
+    <name>LibraryHome</name>
     <message>
-        <source>No games here.</source>
-        <translation>Aucun jeu ici.</translation>
-    </message>
-    <message>
-        <source>%1 GB</source>
-        <translation>%1 Go</translation>
+        <source>My library</source>
+        <translation>Ma ludothèque</translation>
     </message>
     <message>
-        <source>%1 MB</source>
-        <translation>%1 Mo</translation>
+        <source>Store</source>
+        <translation>Boutique</translation>
     </message>
     <message>
-        <source>%1 KB</source>
-        <translation>%1 Ko</translation>
-    </message>
-    <message>
-        <source>Downloading %1%</source>
-        <translation>Téléchargement %1 %</translation>
-    </message>
-    <message>
-        <source>Downloading</source>
-        <translation>Téléchargement</translation>
-    </message>
-    <message>
-        <source>Download failed</source>
-        <translation>Échec du téléchargement</translation>
-    </message>
-    <message>
-        <source>Installed</source>
-        <translation>Installé</translation>
-    </message>
-    <message>
-        <source>Mounted</source>
-        <translation>Monté</translation>
-    </message>
-    <message>
-        <source>Files missing</source>
-        <translation>Fichiers manquants</translation>
-    </message>
-    <message>
-        <source>On RomM · %1</source>
-        <translation>Sur RomM · %1</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n version(s)</source>
-        <translation><numerusform>%n version</numerusform><numerusform>%n versions</numerusform></translation>
-    </message>
-    <message>
-        <source>All games</source>
-        <translation>Tous les jeux</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n game(s)</source>
-        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
-    </message>
-    <message>
-        <source>Download paused</source>
-        <translation>Téléchargement en pause</translation>
+        <source>Profile: %1</source>
+        <translation>Profil : %1</translation>
     </message>
 </context>
 <context>
@@ -2009,11 +2064,6 @@
     <message>
         <source>core unreachable</source>
         <translation>cœur injoignable</translation>
-    </message>
-    <message>
-        <source>Installed</source>
-        <comment>systems bar</comment>
-        <translation>Installés</translation>
     </message>
     <message>
         <source>error %1</source>
@@ -2080,10 +2130,6 @@
         <translation>Fermer</translation>
     </message>
     <message>
-        <source>Downloads</source>
-        <translation>Téléchargements</translation>
-    </message>
-    <message>
         <source>RomM server</source>
         <translation>Serveur RomM</translation>
     </message>
@@ -2094,10 +2140,6 @@
     <message>
         <source>Quit Borne</source>
         <translation>Quitter Borne</translation>
-    </message>
-    <message>
-        <source>Profile: %1</source>
-        <translation>Profil : %1</translation>
     </message>
     <message>
         <source>Sync started.</source>
@@ -2164,20 +2206,12 @@
         <translation>Synchronisation %1/%2</translation>
     </message>
     <message>
-        <source>Covers… %1</source>
-        <translation>Jaquettes… %1</translation>
-    </message>
-    <message>
         <source>offline</source>
         <translation>hors ligne</translation>
     </message>
     <message>
         <source>Syncing the library…</source>
         <translation>Synchronisation de la bibliothèque…</translation>
-    </message>
-    <message>
-        <source>No games here.</source>
-        <translation>Aucun jeu ici.</translation>
     </message>
     <message>
         <source>Connected to RomM (%1).</source>
@@ -2452,16 +2486,8 @@
         <translation>Jouer</translation>
     </message>
     <message numerus="yes">
-        <source>Synced at %1 · %n game(s)</source>
-        <translation><numerusform>Synchronisé à %1 · %n jeu</numerusform><numerusform>Synchronisé à %1 · %n jeux</numerusform></translation>
-    </message>
-    <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
         <translation><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform></translation>
-    </message>
-    <message>
-        <source>Letters</source>
-        <translation>Lettres</translation>
     </message>
     <message>
         <source>Search</source>
@@ -2546,18 +2572,6 @@
     <message>
         <source>RomM unreachable: the save will be sent later.</source>
         <translation>RomM injoignable : la sauvegarde sera envoyée plus tard.</translation>
-    </message>
-    <message>
-        <source>Favourites</source>
-        <translation>Favoris</translation>
-    </message>
-    <message>
-        <source>Recent</source>
-        <translation>Récents</translation>
-    </message>
-    <message>
-        <source>Current</source>
-        <translation>Actuel</translation>
     </message>
     <message>
         <source>Search ScreenScraper</source>
@@ -2672,38 +2686,6 @@
         <translation>%1 retiré de vos favoris.</translation>
     </message>
     <message>
-        <source>By name</source>
-        <translation>Par nom</translation>
-    </message>
-    <message>
-        <source>Recently played</source>
-        <translation>Joués récemment</translation>
-    </message>
-    <message>
-        <source>Recently added</source>
-        <translation>Ajoutés récemment</translation>
-    </message>
-    <message>
-        <source>Most played</source>
-        <translation>Les plus joués</translation>
-    </message>
-    <message>
-        <source>Every genre</source>
-        <translation>Tous les genres</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n game(s)</source>
-        <translation><numerusform>%n jeu</numerusform><numerusform>%n jeux</numerusform></translation>
-    </message>
-    <message>
-        <source>Sort and filter</source>
-        <translation>Trier et filtrer</translation>
-    </message>
-    <message>
-        <source>Order of the games, and one genre</source>
-        <translation>L’ordre des jeux, et un genre</translation>
-    </message>
-    <message>
         <source>Sign in with the password</source>
         <translation>Se connecter avec le mot de passe</translation>
     </message>
@@ -2775,10 +2757,6 @@
         <source>RomM: %1</source>
         <translation>RomM : %1</translation>
     </message>
-    <message>
-        <source>No game played yet on this profile.</source>
-        <translation>Aucun jeu joué pour l’instant avec ce profil.</translation>
-    </message>
     <message numerus="yes">
         <source>%n cheat(s) found in the file.</source>
         <translation><numerusform>%n cheat trouvé dans le fichier.</numerusform><numerusform>%n cheats trouvés dans le fichier.</numerusform></translation>
@@ -2790,10 +2768,6 @@
     <message>
         <source>Link to the .pnach file</source>
         <translation>Lien vers le fichier .pnach</translation>
-    </message>
-    <message>
-        <source>No game installed yet. Open a game in its console’s tab to download it or play it from the network.</source>
-        <translation>Aucun jeu installé pour l'instant. Ouvrez un jeu dans l'onglet de sa console pour le télécharger ou y jouer depuis le réseau.</translation>
     </message>
     <message>
         <source>Enter</source>
@@ -2814,18 +2788,6 @@
     <message>
         <source>This game now uses %1.</source>
         <translation>Ce jeu utilise maintenant %1.</translation>
-    </message>
-    <message>
-        <source>No favourites yet. On a game's page, choose “Add to favourites”.</source>
-        <translation>Pas encore de favoris. Sur la page d'un jeu, choisissez « Ajouter aux favoris ».</translation>
-    </message>
-    <message>
-        <source>No “%1” game here. Change the genre with %2 (Sort and filter).</source>
-        <translation>Aucun jeu « %1 » ici. Changez le genre avec %2 (Trier et filtrer).</translation>
-    </message>
-    <message>
-        <source>Tabs</source>
-        <translation>Onglets</translation>
     </message>
     <message>
         <source>Sort</source>
@@ -2880,10 +2842,6 @@
         <translation>Borne apparaîtra dans Steam à son prochain démarrage.</translation>
     </message>
     <message>
-        <source>Change profile</source>
-        <translation>Changer de profil</translation>
-    </message>
-    <message>
         <source>Preparing your library</source>
         <translation>Préparation de ta bibliothèque</translation>
     </message>
@@ -2936,36 +2894,64 @@
         <translation>%1 sera installé après %2, en cours d’installation. Le jeu se lance dès qu’il est prêt.</translation>
     </message>
     <message>
-        <source>Installed games only</source>
-        <translation>Jeux installés uniquement</translation>
+        <source>Every console</source>
+        <translation>Toutes les consoles</translation>
     </message>
     <message>
-        <source>All games</source>
-        <translation>Tous les jeux</translation>
+        <source>No game matches this filter. Change it with %1 (Filter).</source>
+        <translation>Aucun jeu ne correspond à ce filtre. Change-le avec %1 (Filtrer).</translation>
     </message>
     <message>
-        <source>Show all games</source>
-        <translation>Afficher tous les jeux</translation>
+        <source>No game installed yet. Open the Store with %1 to download one.</source>
+        <translation>Aucun jeu installé pour l’instant. Ouvre la boutique avec %1 pour en télécharger un.</translation>
     </message>
     <message>
-        <source>Show installed games only</source>
-        <translation>Afficher uniquement les jeux installés</translation>
+        <source>Every game of your server is installed here.</source>
+        <translation>Tous les jeux de ton serveur sont installés ici.</translation>
     </message>
     <message>
-        <source>Now: installed only</source>
-        <translation>Actuellement : installés uniquement</translation>
+        <source>every console</source>
+        <translation>toutes consoles</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) ready to play</source>
+        <translation><numerusform>%n jeu prêt à jouer</numerusform><numerusform>%n jeux prêts à jouer</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n game(s) of your server to discover</source>
+        <translation><numerusform>%n jeu de ton serveur à découvrir</numerusform><numerusform>%n jeux de ton serveur à découvrir</numerusform></translation>
     </message>
     <message>
-        <source>Now: all games</source>
-        <translation>Actuellement : tous les jeux</translation>
+        <source>Resume</source>
+        <translation>Reprendre</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n download(s)</source>
+        <translation><numerusform>%n téléchargement</numerusform><numerusform>%n téléchargements</numerusform></translation>
     </message>
     <message>
-        <source>No game installed yet. Press %1 to see all games, then download one.</source>
-        <translation>Aucun jeu installé pour l’instant. Appuyez sur %1 pour voir tous les jeux, puis téléchargez-en un.</translation>
+        <source>Console</source>
+        <translation>Console</translation>
     </message>
     <message>
-        <source>Installed only</source>
-        <translation>Installés seulement</translation>
+        <source>Apply</source>
+        <translation>Afficher</translation>
+    </message>
+    <message>
+        <source>Choose</source>
+        <translation>Choisir</translation>
+    </message>
+    <message>
+        <source>Groups</source>
+        <translation>Groupes</translation>
+    </message>
+    <message>
+        <source>All your games, every console together</source>
+        <translation>Tous tes jeux, toutes consoles confondues</translation>
+    </message>
+    <message>
+        <source>%1 installed · %2 in the store</source>
+        <translation>%1 installés · %2 dans la boutique</translation>
     </message>
 </context>
 <context>
@@ -4423,6 +4409,152 @@
     <message>
         <source>Your favourite. A game that does not run on it starts on the other one by itself</source>
         <translation>Votre préféré. Un jeu qui ne fonctionne pas dessus démarre tout seul sur l’autre</translation>
+    </message>
+</context>
+<context>
+    <name>Shelf</name>
+    <message>
+        <source>Today</source>
+        <translation>Aujourd’hui</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Hier</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n day(s) ago</source>
+        <translation><numerusform>il y a %n jour</numerusform><numerusform>il y a %n jours</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n week(s) ago</source>
+        <translation><numerusform>il y a %n semaine</numerusform><numerusform>il y a %n semaines</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n month(s) ago</source>
+        <translation><numerusform>il y a %n mois</numerusform><numerusform>il y a %n mois</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n year(s) ago</source>
+        <translation><numerusform>il y a %n an</numerusform><numerusform>il y a %n ans</numerusform></translation>
+    </message>
+    <message>
+        <source>Last played</source>
+        <translation>Dernière partie</translation>
+    </message>
+    <message>
+        <source>What you launched lately first</source>
+        <translation>Ce que tu as lancé récemment d’abord</translation>
+    </message>
+    <message>
+        <source>Added to the server</source>
+        <translation>Ajout au serveur</translation>
+    </message>
+    <message>
+        <source>Newest first</source>
+        <translation>Les nouveautés d’abord</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nom</translation>
+    </message>
+    <message>
+        <source>From A to Z</source>
+        <translation>De A à Z</translation>
+    </message>
+    <message>
+        <source>Play time</source>
+        <translation>Temps de jeu</translation>
+    </message>
+    <message>
+        <source>Your most played first</source>
+        <translation>Tes jeux les plus joués d’abord</translation>
+    </message>
+    <message>
+        <source>Release date</source>
+        <translation>Date de sortie</translation>
+    </message>
+    <message>
+        <source>By decade, newest first</source>
+        <translation>Par décennie, du plus récent</translation>
+    </message>
+    <message>
+        <source>Not played yet</source>
+        <translation>Pas encore joué</translation>
+    </message>
+    <message>
+        <source>This week</source>
+        <translation>Cette semaine</translation>
+    </message>
+    <message>
+        <source>This month</source>
+        <translation>Ce mois-ci</translation>
+    </message>
+    <message>
+        <source>Earlier</source>
+        <translation>Plus tôt</translation>
+    </message>
+    <message>
+        <source>Over 20 hours</source>
+        <translation>Plus de 20 heures</translation>
+    </message>
+    <message>
+        <source>5 to 20 hours</source>
+        <translation>De 5 à 20 heures</translation>
+    </message>
+    <message>
+        <source>Under 5 hours</source>
+        <translation>Moins de 5 heures</translation>
+    </message>
+    <message>
+        <source>The %1s</source>
+        <translation>Années %1</translation>
+    </message>
+    <message>
+        <source>Date unknown</source>
+        <translation>Date inconnue</translation>
+    </message>
+    <message>
+        <source>Recently added</source>
+        <translation>Ajoutés récemment</translation>
+    </message>
+    <message>
+        <source>Never played</source>
+        <translation>Jamais joué</translation>
+    </message>
+    <message>
+        <source>%1 h played</source>
+        <translation>%1 h de jeu</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Favoris</translation>
+    </message>
+    <message>
+        <source>2 players or more</source>
+        <translation>2 joueurs ou plus</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Reprendre</translation>
+    </message>
+    <message>
+        <source>Your most played</source>
+        <translation>Ton plus joué</translation>
+    </message>
+    <message>
+        <source>Newest</source>
+        <translation>Dernier arrivé</translation>
+    </message>
+    <message>
+        <source>Other consoles</source>
+        <translation>Autres consoles</translation>
+    </message>
+</context>
+<context>
+    <name>SortMenu</name>
+    <message>
+        <source>Sort by</source>
+        <translation>Trier par</translation>
     </message>
 </context>
 <context>

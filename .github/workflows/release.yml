@@ -100,7 +100,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: "6.9.3"
-          modules: "qtmultimedia qtwebsockets qtquick3d qtshadertools"
+          modules: "qtmultimedia qtwebsockets"
           cache: true
       - name: Borne.app
         run: scripts/package-macos.sh "$PWD/out-macos"

@@ -11,6 +11,14 @@
   "%n console",
   "%n consoles"
  ],
+ "%n day(s) ago": [
+  "%n day ago",
+  "%n days ago"
+ ],
+ "%n download(s)": [
+  "%n download",
+  "%n downloads"
+ ],
  "%n file(s) taken from RomM.": [
   "%n file taken from RomM.",
   "%n files taken from RomM."
@@ -22,6 +30,18 @@
  "%n game(s)": [
   "%n game",
   "%n games"
+ ],
+ "%n game(s) of your server to discover": [
+  "%n game of your server to discover",
+  "%n games of your server to discover"
+ ],
+ "%n game(s) ready to play": [
+  "%n game ready to play",
+  "%n games ready to play"
+ ],
+ "%n month(s) ago": [
+  "%n month ago",
+  "%n months ago"
  ],
  "%n on": [
   "%n on",
@@ -46,6 +66,14 @@
  "%n version(s)": [
   "%n version",
   "%n versions"
+ ],
+ "%n week(s) ago": [
+  "%n week ago",
+  "%n weeks ago"
+ ],
+ "%n year(s) ago": [
+  "%n year ago",
+  "%n years ago"
  ],
  "Safe mode: trailers and sounds off (the UI crashed %n time(s))": [
   "Safe mode: trailers and sounds off (the UI crashed once)",

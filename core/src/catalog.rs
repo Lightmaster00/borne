@@ -99,7 +99,8 @@ pub fn map_rom(v: &Value) -> Option<GameUpsert> {
     })
 }
 
-/// What the game page shows beyond the library row: studios, series, screenshots, ids.
+/// What the game page shows beyond the library row: studios, series, modes, age ratings, rating,
+/// screenshots, ids.
 pub fn extra_of(v: &Value) -> Value {
     let strings = |x: &Value| -> Vec<String> {
         x.as_array()
@@ -111,6 +112,10 @@ pub fn extra_of(v: &Value) -> Value {
         "companies": strings(&v["metadatum"]["companies"]),
         "franchises": strings(&v["metadatum"]["franchises"]),
         "collections": strings(&v["metadatum"]["collections"]),
+        "game_modes": strings(&v["metadatum"]["game_modes"]),
+        "age_ratings": strings(&v["metadatum"]["age_ratings"]),
+        // RomM's average of the sources' ratings, out of 100 (null when none rated it).
+        "rating": v["metadatum"]["average_rating"].as_f64().filter(|r| *r > 0.0).map(|r| r.round()),
         "screenshots": shots,
         "art": art_of(v),
         "igdb_id": v["igdb_id"].as_i64(),

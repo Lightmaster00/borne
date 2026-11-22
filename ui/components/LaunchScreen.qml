@@ -80,7 +80,7 @@ Item {
             text: screen.game ? screen.game.name : ""
             wrapMode: Text.WordWrap
             color: theme ? theme.fg : "white"
-            font { family: theme ? theme.displayFont : "Fredoka"; pixelSize: 58; weight: Font.Bold }
+            font { family: theme ? theme.displayFont : "Bricolage Grotesque"; pixelSize: 58; weight: Font.Bold }
             style: Text.Raised; styleColor: "#05060A"
         }
 
@@ -141,7 +141,7 @@ Item {
                     anchors.centerIn: parent
                     text: modelData
                     color: "#0C0D10"
-                    font { family: theme ? theme.displayFont : "Fredoka"; pixelSize: 16; weight: Font.Bold }
+                    font { family: theme ? theme.displayFont : "Bricolage Grotesque"; pixelSize: 16; weight: Font.Bold }
                 }
             }
         }

@@ -52,7 +52,7 @@ Item {
                 text: ask.title
                 wrapMode: Text.WordWrap
                 color: theme ? theme.fg : "white"
-                font { family: theme ? theme.displayFont : "Fredoka"; pixelSize: 34; weight: Font.Bold }
+                font { family: theme ? theme.displayFont : "Bricolage Grotesque"; pixelSize: 34; weight: Font.Bold }
             }
             Text {
                 width: parent.width

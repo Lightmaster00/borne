@@ -11,14 +11,17 @@ API=$(grep -ao 'API http://[^ ]*' "$LOG" | head -1 | cut -d' ' -f2)
 pad() { for a in "$@"; do case $a in sleep:*) sleep "${a#sleep:}" ;; *) curl -sf -X POST "$API/api/v1/debug/pad?action=$a" >/dev/null || { echo "FAILED: debug pad closed"; exit 1; }; sleep 0.3 ;; esac; done; }
 start=$(wc -l < "$LOG")
 pad a sleep:4                                   # profile
-pad rb rb rb rb rb rb lb lb lb lb lb lb lt rt   # tabs, letters
+pad rb lb rb lb lt rt rt lt                      # My library / Store, groups
+pad x sleep:1 right right down right a up a sleep:1  # filter: a console, a quick filter
+pad x sleep:1 down right a up left left left left a sleep:1  # every console again, the filter off
 pad right right left a sleep:2 down down up up        # game page
-pad left left left right right a sleep:2             # its settings, every section row by row
+pad up up up down down a sleep:2                   # its settings, every section row by row
 for section in 1 2 3 4 5 6; do
   pad right; for _ in $(seq 1 10); do pad down; done; pad b down sleep:0.5
 done
 pad b sleep:0.5 b sleep:1
-pad y sleep:1 b select sleep:1 b              # search, quick menu
+pad y sleep:1 down a sleep:1 y sleep:1 up a sleep:1  # sort: by name, then back
+pad select sleep:1 b                             # search
 pad start sleep:2                                # settings
 for section in 1 2 3 4 5 6 7 8 9 10; do
   pad right; for _ in $(seq 1 14); do pad down; done; pad b down sleep:0.5
