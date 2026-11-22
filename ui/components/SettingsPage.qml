@@ -72,19 +72,20 @@ Item {
         const rows = [
             group(qsTr("Home")),
             pref("consoleOrder", qsTr("Order of the consoles"), qsTr("In the collections and the Store (also with Y); your own order: LT and RT on a console of the Store"),
-                 [["played", qsTr("Most played")], ["count", qsTr("Most games")], ["year", qsTr("Release date")], ["name", qsTr("Name")], ["maker", qsTr("Maker")], ["custom", qsTr("Your order")]]),
+                 [["played", qsTr("Most played")], ["count", qsTr("Most games")], ["year", qsTr("Release date")], ["name", qsTr("Name")], ["maker", qsTr("Maker, then release")], ["maker-name", qsTr("Maker, then name")], ["custom", qsTr("Your order")]]),
+            pref("background", qsTr("Background"), qsTr("Behind the home and the game pages"),
+                 [["lights", qsTr("Lights in the console's colour")], ["art", qsTr("The game's art")]]),
             pref("showClock", qsTr("Clock"), qsTr("The time at the top of the library"), [[true, qsTr("Shown")], [false, qsTr("Hidden")]]),
             group(qsTr("Videos")),
             pref("bgVideo", qsTr("Video behind the library"), qsTr("The selected game's video plays by itself, muted, behind the covers"), on),
-            pref("attractDelay", qsTr("Video in full screen"), qsTr("Without a press for this long, the covers fade out and leave the video"),
+            pref("attractDelay", qsTr("Video in full screen"), qsTr("Without a press for this long, the page fades out and leaves the game's video, with its sound on a game's page"),
                  [[5, secs(5)], [15, secs(15)], [30, secs(30)], [60, secs(60)], [0, qsTr("Never")]]),
             pref("attractRest", qsTr("Full-screen video length"), qsTr("Then the games come back, the video going on dimmed behind them"),
                  [[60, secs(60)], [180, secs(180)], [600, secs(600)], [0, qsTr("No limit")]]),
             pref("pageVideo", qsTr("Videos on the game page"), qsTr("A game's trailer starts on its page after a moment"), on)
         ]
-        // No full-screen video without the video behind the library.
-        return rows.filter(r => !(prefs && !prefs.bgVideo && (r.id === "pref:attractDelay" || r.id === "pref:attractRest"))
-                             && !(prefs && prefs.attractDelay === 0 && r.id === "pref:attractRest"))
+        // The full-screen video's length only when it goes full screen.
+        return rows.filter(r => !(prefs && prefs.attractDelay === 0 && r.id === "pref:attractRest"))
     }
     function languageRows() {
         return [

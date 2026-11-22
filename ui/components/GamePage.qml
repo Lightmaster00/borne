@@ -2,11 +2,11 @@
 // its sound after a few seconds without a press), the console and where the game was opened from,
 // its name, a few lines about it and what you can do: Play (or Install), the heart (favourites),
 // its settings (Y) and its fact sheet (i), which takes the summary's place. On the right its case
-// in 3D, turning slowly; up reaches it and the arrows turn it. Under it, the gallery: the video
-// first (A: in full screen with its sound), then the screenshots, which the background follows.
+// in 3D, a little turned, floating; the right stick (or W A S D) turns it up to 30° and it comes
+// back when let go. Under it, the screenshots (A: in large). X: the video in full screen.
 //
-// Gamepad: left / right through the buttons, up to the case, down to the gallery, A to activate,
-// Y for the game's settings, B to go back.
+// Gamepad: left / right through the buttons, down to the screenshots, A to activate, Y for the
+// game's settings, X the video, right stick the case, B to go back.
 import QtQuick
 import QtQuick.Effects
 import "ConsoleNeeds.js" as Needs
@@ -43,7 +43,7 @@ Item {
 
     signal action(string id, var payload)
 
-    // Where the selection is: "buttons", "box" (the case, turned with the arrows) or "gallery".
+    // Where the selection is: "buttons" or "gallery" (the screenshots).
     property string zone: "buttons"
     property int buttonIndex: 0
     property int galleryIndex: 0
@@ -215,28 +215,26 @@ Item {
         if (a.id === "link") return a.disabled ? streamError : qsTr("Nothing stored on this device")
         return stateText()
     }
-    // The gallery: the game's video (when there is one), then the screenshots.
+    // The gallery: the screenshots (the video plays behind the page; X shows it in full screen).
     property bool videoShown: false       // the video plays behind the page (Main's background)
-    readonly property bool videoItem: trailers && (trailerUrl !== "" || trailerState === "loading")
-    readonly property int shotCount: facts ? Math.min(8, facts.screenshots || 0) : 0
-    readonly property int galleryCount: (videoItem ? 1 : 0) + shotCount
-    function shotOf(k) { return videoItem ? k - 1 : k }
-    // The picture behind the page: the screenshot selected in the gallery ("" for the game's art).
-    readonly property string artOverride: zone === "gallery" && shotOf(galleryIndex) >= 0 && shotBase ? shotBase + shotOf(galleryIndex) : ""
+    readonly property bool hasVideo: trailers && trailerUrl !== ""
+    readonly property int shotCount: facts ? Math.min(12, facts.screenshots || 0) : 0
+    readonly property int galleryCount: shotCount
+    function shotOf(k) { return k }
     // The footer's buttons (Main's footer shows them).
     readonly property var hints: {
         if (shotOpen) return [["◀ ▶", qsTr("Screenshots"), "right"], ["B", qsTr("Close"), "b"]]
-        if (zone === "box") return [["✥", qsTr("Turn the case"), "right", "← →"], ["A", qsTr("Done"), "a"]]
         const h = []
         if (zone === "buttons") {
             const b = buttons[buttonIndex]
             if (b && !b.disabled) h.push(["A", b.label, "a"])
-            h.push(["▲", qsTr("The case"), "up"])
-            if (galleryCount) h.push(["▼", qsTr("Gallery"), "down"])
+            if (galleryCount) h.push(["▼", qsTr("Screenshots"), "down"])
         } else {
-            h.push(["A", shotOf(galleryIndex) < 0 ? qsTr("Watch") : qsTr("View"), "a"])
+            h.push(["A", qsTr("View"), "a"])
             h.push(["▲", qsTr("Actions"), "up"])
         }
+        if (videoShown) h.push(["X", qsTr("Video"), "x"])
+        h.push(["RS", qsTr("Turn the case"), "", "W A S D"])
         if (actions.some(x => x.id === "settings")) h.push(["Y", qsTr("Game settings"), "y"])
         h.push(["B", qsTr("Back"), "b"])
         return h
@@ -250,32 +248,34 @@ Item {
         infoShown = false
         shotOpen = false
         sound = false
-        caseYaw = -24; casePitch = 6
+        tiltX = 0; tiltY = 0; keyTilt = ({})
     }
-    property real caseYaw: -24
-    property real casePitch: 6
+    // The case's tilt, -1 to 1 on each axis: the right stick, or W A S D (held); back to its
+    // resting angle when let go.
+    property real tiltX: 0
+    property real tiltY: 0
+    property var keyTilt: ({})
+    function stick(x, y) { tiltX = Math.max(-1, Math.min(1, x)); tiltY = Math.max(-1, Math.min(1, y)) }
+    function tiltKey(k, down) {
+        const t = Object.assign({}, keyTilt)
+        t[k] = down
+        keyTilt = t
+        tiltX = (t.d ? 1 : 0) - (t.a ? 1 : 0)
+        tiltY = (t.s ? 1 : 0) - (t.w ? 1 : 0)
+    }
     function handle(a) {
         if (shotOpen) {
             if (a === "b" || a === "a") shotOpen = false
-            else if (a === "left" && galleryIndex > (videoItem ? 1 : 0)) galleryIndex--
+            else if (a === "left" && galleryIndex > 0) galleryIndex--
             else if (a === "right" && galleryIndex < galleryCount - 1) galleryIndex++
-            return
-        }
-        if (zone === "box") {
-            if (a === "left") caseYaw -= 30
-            else if (a === "right") caseYaw += 30
-            else if (a === "up") casePitch = Math.max(-45, casePitch - 15)
-            else if (a === "down") casePitch = Math.min(45, casePitch + 15)
-            else if (a === "a" || a === "b") { zone = "buttons"; caseYaw = -24; casePitch = 6 }
-            else if (a === "y" && actions.some(x => x.id === "settings")) page.action("settings", null)
             return
         }
         if (a === "b") { page.action("back", null); return }
         if (a === "y" && actions.some(x => x.id === "settings")) { page.action("settings", null); return }
+        if (a === "x") { page.action("watch", null); return }
         if (zone === "buttons") {
             if (a === "left") buttonIndex = Math.max(0, buttonIndex - 1)
             else if (a === "right") buttonIndex = Math.min(buttons.length - 1, buttonIndex + 1)
-            else if (a === "up") zone = "box"
             else if (a === "down" && galleryCount > 0) zone = "gallery"
             else if (a === "a") {
                 const b = buttons[buttonIndex]
@@ -287,11 +287,7 @@ Item {
             if (a === "left") galleryIndex = Math.max(0, galleryIndex - 1)
             else if (a === "right") galleryIndex = Math.min(galleryCount - 1, galleryIndex + 1)
             else if (a === "up") zone = "buttons"
-            else if (a === "a") {
-                // The video: in full screen with its sound; a screenshot: in large.
-                if (shotOf(galleryIndex) < 0) page.action("watch", null)
-                else shotOpen = true
-            }
+            else if (a === "a") shotOpen = true
         }
     }
     onButtonsChanged: buttonIndex = Math.min(buttonIndex, Math.max(0, buttons.length - 1))
@@ -304,6 +300,8 @@ Item {
         anchors.fill: parent
         opacity: page.visible ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 450 * theme.motion } }
+        // Rising into place as it opens.
+        transform: Translate { y: page.visible ? 0 : 40; Behavior on y { NumberAnimation { duration: 600 * theme.motion; easing.type: Easing.OutCubic } } }
         readonly property real leftX: 196
         readonly property real textW: Math.min(820, width * 0.46)
 
@@ -547,8 +545,6 @@ Item {
                 width: parent.width
                 elide: Text.ElideRight
                 text: page.zone === "buttons" ? (page.buttons[page.buttonIndex] ? page.buttons[page.buttonIndex].tip : "")
-                    : page.zone === "box" ? qsTr("Turn the case with the arrows")
-                    : page.shotOf(page.galleryIndex) < 0 ? qsTr("A to watch the video in full screen, with its sound")
                     : qsTr("Screenshot %1 of %2 · A to see it in large").arg(page.shotOf(page.galleryIndex) + 1).arg(page.shotCount)
                 color: Qt.rgba(1, 1, 1, 0.75)
                 font { family: theme.fontFamily; pixelSize: 16; weight: Font.Bold }
@@ -562,52 +558,47 @@ Item {
             y: 120
             width: body.width - x - 100
             height: (page.galleryCount > 0 ? 760 : 940) - y
-            Rectangle {
-                visible: page.zone === "box"
-                anchors { fill: parent; margins: 10 }
-                radius: 24
-                color: Qt.rgba(1, 1, 1, 0.06)
-                border { width: 3; color: Qt.rgba(1, 1, 1, 0.5) }
-            }
-            // A slow sway while it is not being turned.
-            property real sway
-            SequentialAnimation on sway {
+            // Floating a little.
+            property real bob
+            SequentialAnimation on bob {
                 loops: Animation.Infinite
-                running: page.visible && page.zone !== "box" && !page.paused
-                NumberAnimation { from: -9; to: 9; duration: 7000; easing.type: Easing.InOutSine }
-                NumberAnimation { from: 9; to: -9; duration: 7000; easing.type: Easing.InOutSine }
+                running: page.visible && !page.paused && theme.motion > 0.5
+                NumberAnimation { from: 0; to: -8; duration: 3200; easing.type: Easing.InOutSine }
+                NumberAnimation { from: -8; to: 0; duration: 3200; easing.type: Easing.InOutSine }
             }
             Box3D {
                 id: box3d
                 anchors.fill: parent
+                transform: Translate { y: caseArea.bob }
                 theme: page.theme
                 game: page.game
                 boxH: Math.min(480, parent.height - 110)
-                yaw: page.caseYaw + (page.zone === "box" ? 0 : caseArea.sway)
-                pitch: page.casePitch
-                Behavior on yaw { enabled: page.zone === "box"; NumberAnimation { duration: 420 * theme.motion; easing.type: Easing.OutCubic } }
-                Behavior on pitch { NumberAnimation { duration: 420 * theme.motion; easing.type: Easing.OutCubic } }
+                // At rest a little turned; the stick or W A S D turn it up to 30° more.
+                yaw: -20 + page.tiltX * 30
+                pitch: 5 + page.tiltY * 30
+                Behavior on yaw { SmoothedAnimation { velocity: 160 } }
+                Behavior on pitch { SmoothedAnimation { velocity: 160 } }
             }
         }
 
-        // ---------- the gallery ----------
+        // ---------- the screenshots ----------
         Item {
             visible: page.galleryCount > 0
-            x: body.leftX - 10; y: 772
-            width: body.width - x - 90; height: 200
+            x: body.leftX - 24; y: 766
+            width: body.width - x - 90; height: 214
             Text {
-                x: 10
-                text: qsTr("Gallery")
+                x: 24
+                text: qsTr("Screenshots")
                 color: Qt.rgba(1, 1, 1, 0.8)
                 font { family: theme.fontFamily; pixelSize: 18; weight: Font.ExtraBold }
             }
             Item {
                 y: 26
-                width: parent.width; height: 174
+                width: parent.width; height: 188
                 clip: true
                 Row {
-                    x: 10 - Math.max(0, (page.galleryIndex + 1) * 274 - (parent.width - 40))
-                    y: 12
+                    x: 24 - Math.max(0, (page.galleryIndex + 1) * 274 - (parent.width - 60))
+                    y: 22
                     spacing: 18
                     Behavior on x { NumberAnimation { duration: 400 * theme.motion; easing.type: Easing.OutCubic } }
                     Repeater {
@@ -615,21 +606,14 @@ Item {
                         Item {
                             id: ga
                             required property int index
-                            readonly property bool isVideo: page.shotOf(index) < 0
                             readonly property bool on: page.zone === "gallery" && page.galleryIndex === index && !page.shotOpen
                             width: 256; height: 144
-                            scale: on ? 1.06 : 1
+                            scale: on ? 1.04 : 1
                             z: on ? 2 : 1
                             Behavior on scale { NumberAnimation { duration: 250 * theme.motion; easing.type: Easing.OutCubic } }
                             Accessible.role: Accessible.Button
-                            Accessible.name: isVideo ? qsTr("Video") : qsTr("Screenshot %1").arg(page.shotOf(index) + 1)
-                            Rectangle {
-                                visible: ga.on
-                                anchors { fill: parent; margins: -8 }
-                                radius: 18
-                                color: "transparent"
-                                border { width: 4; color: theme.fg }
-                            }
+                            Accessible.name: qsTr("Screenshot %1").arg(index + 1)
+                            FocusGlow { on: ga.on; tint: page.tint; ringColor: theme.fg; radius: 10; gap: 8; line: 4; motion: theme.motion }
                             Item {
                                 anchors.fill: parent
                                 layer.enabled: true
@@ -637,30 +621,14 @@ Item {
                                 Rectangle { anchors.fill: parent; color: Qt.rgba(1, 1, 1, 0.08) }
                                 Image {
                                     anchors.fill: parent
-                                    source: !page.game ? "" : ga.isVideo ? (page.has("fanart") ? page.game.art + "fanart" : page.has("backdrop") ? page.game.art + "backdrop" : page.game.cover)
-                                            : page.shotBase + page.shotOf(ga.index)
+                                    source: page.game ? page.shotBase + ga.index : ""
                                     sourceSize: Qt.size(512, 288)
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                 }
-                                Rectangle { anchors.fill: parent; visible: ga.isVideo; color: Qt.rgba(0, 0, 0, 0.35) }
+                                Shine { active: ga.on; motion: theme.motion; strength: 0.2 }
                             }
                             Rectangle { id: gaMask; anchors.fill: parent; radius: 10; visible: false; layer.enabled: true }
-                            Rectangle {
-                                visible: ga.isVideo
-                                anchors.centerIn: parent
-                                width: 54; height: 54; radius: 27
-                                color: Qt.rgba(0, 0, 0, 0.3)
-                                border { width: 3; color: "#ffffff" }
-                                Icon { anchors.centerIn: parent; anchors.horizontalCenterOffset: 2; name: "play"; size: 20; filled: true; stroke: 1.5; color: "#ffffff" }
-                            }
-                            Text {
-                                visible: ga.isVideo
-                                x: 12; anchors { bottom: parent.bottom; bottomMargin: 8 }
-                                text: page.trailerState === "loading" ? qsTr("Video · loading…") : qsTr("Video")
-                                color: "#ffffff"
-                                font { family: theme.fontFamily; pixelSize: 14; weight: Font.ExtraBold }
-                            }
                         }
                     }
                 }

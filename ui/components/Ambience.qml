@@ -1,11 +1,13 @@
-// Background: the selected game's art, sharp, filling the screen and drifting very slowly (its fan
-// art, else a screenshot, else ScreenScraper's blank Steam grid or marquee; `override` shows another
-// picture, a screenshot chosen on the game's page), under scrims that darken the left side and the
-// floor where the text stands. A game without art: a deep gradient in its console's colour.
+// Background: lights in the selected game's console's colour drifting slowly over a deep ground
+// (three soft glows and a beam that sweeps by now and then), or, when chosen (`artShown`), the
+// game's art, sharp, drifting very slowly (its fan art, else a screenshot, else ScreenScraper's
+// blank Steam grid or marquee), under scrims that darken the left side and the floor where the text
+// stands.
 // Over it, once the selection rests, a video of the game (its trailer or ScreenScraper's gameplay
 // capture), muted unless `sound`; in attract mode (the page faded out to show the video) the scrims
 // lift.
 import QtQuick
+import QtQuick.Shapes
 import QtMultimedia
 import QtQuick.Effects
 import "Cases.js" as Cases
@@ -15,6 +17,7 @@ Item {
     property QtObject theme
     property var game: null
     property string override: ""      // a picture shown instead of the game's art
+    property bool artShown: false     // the game's art rather than the lights
     property color tint: Cases.tint(game ? game.platform_slug : "")
     Behavior on tint { ColorAnimation { duration: 700 } }
     property bool trailers: true      // videos may play
@@ -39,14 +42,72 @@ Item {
             GradientStop { position: 1.0; color: "#050608" }
         }
     }
-    // A wide soft light in the console's colour, top right.
-    Rectangle {
-        x: parent.width * 0.45; y: -parent.height * 0.55
-        width: parent.width; height: width; radius: width / 2
-        color: amb.tint
-        opacity: 0.16
-        layer.enabled: true
-        layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 64 }
+    // ---------- the lights ----------
+    Item {
+        id: lights
+        anchors.fill: parent
+        // One slow cycle (four minutes), each glow on its own path.
+        property real t
+        NumberAnimation on t {
+            from: 0; to: Math.PI * 2; duration: 240000; loops: Animation.Infinite
+            running: amb.visible && !amb.paused
+        }
+        readonly property color warm: Qt.hsla((amb.tint.hslHue + 0.07) % 1, Math.min(1, amb.tint.hslSaturation * 0.9), 0.5, 1)
+        readonly property color cool: Qt.hsla((amb.tint.hslHue + 0.92) % 1, Math.min(1, amb.tint.hslSaturation * 0.8), 0.45, 1)
+        component Glow: Shape {
+            id: gl
+            property color c
+            property real r: 600
+            property real a: 0.5
+            width: r * 2; height: r * 2
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                strokeWidth: -1
+                fillGradient: RadialGradient {
+                    centerX: gl.r; centerY: gl.r; focalX: gl.r; focalY: gl.r
+                    centerRadius: gl.r; focalRadius: 0
+                    GradientStop { position: 0; color: Qt.rgba(gl.c.r, gl.c.g, gl.c.b, gl.a) }
+                    GradientStop { position: 0.45; color: Qt.rgba(gl.c.r, gl.c.g, gl.c.b, gl.a * 0.35) }
+                    GradientStop { position: 1; color: Qt.rgba(gl.c.r, gl.c.g, gl.c.b, 0) }
+                }
+                PathRectangle { x: 0; y: 0; width: gl.r * 2; height: gl.r * 2 }
+            }
+        }
+        Glow {
+            c: amb.tint; r: lights.width * 0.42; a: 0.42
+            x: lights.width * (0.72 + 0.12 * Math.sin(lights.t * 3)) - r
+            y: lights.height * (0.12 + 0.1 * Math.cos(lights.t * 2)) - r
+        }
+        Glow {
+            c: lights.warm; r: lights.width * 0.3; a: 0.28
+            x: lights.width * (0.3 + 0.18 * Math.cos(lights.t * 2)) - r
+            y: lights.height * (0.78 + 0.08 * Math.sin(lights.t * 4)) - r
+        }
+        Glow {
+            c: lights.cool; r: lights.width * 0.26; a: 0.24
+            x: lights.width * (0.08 + 0.1 * Math.sin(lights.t * 5)) - r
+            y: lights.height * (0.2 + 0.15 * Math.sin(lights.t * 3 + 1)) - r
+        }
+        // A beam that sweeps across now and then.
+        Rectangle {
+            id: beam
+            width: lights.width * 0.22; height: lights.height * 2.2
+            y: -lights.height * 0.6
+            rotation: 22
+            x: -width * 2
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0) }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.045) }
+                GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 0) }
+            }
+            SequentialAnimation on x {
+                loops: Animation.Infinite
+                running: amb.visible && !amb.paused && amb.theme && amb.theme.motion > 0.5
+                PauseAnimation { duration: 9000 }
+                NumberAnimation { from: -beam.width * 2; to: lights.width + beam.width; duration: 5200; easing.type: Easing.InOutSine }
+            }
+        }
     }
 
     // ---------- the art ----------
@@ -57,7 +118,7 @@ Item {
     Item {
         id: stillLayer
         anchors.fill: parent
-        visible: gameplay.opacity < 1
+        visible: gameplay.opacity < 1 && amb.artShown
         property bool useA: true
         property string shown: ""
         Timer { id: stillDelay; interval: 250; onTriggered: stillLayer.swap() }
@@ -140,10 +201,12 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: "#06070a"
-            opacity: amb.scrims ? 0.22 : 0.12
+            opacity: amb.artShown ? (amb.scrims ? 0.22 : 0.12) : 0
         }
         Rectangle {
             anchors.fill: parent
+            opacity: amb.artShown || amb.videoShown ? 1 : 0.4
+            Behavior on opacity { NumberAnimation { duration: 600 } }
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: Qt.rgba(0.02, 0.024, 0.035, 0.88) }

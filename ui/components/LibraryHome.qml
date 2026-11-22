@@ -52,10 +52,10 @@ Item {
     readonly property var folderGame: curTile ? rows[curTile.idx] || null : null
 
     // The folder's room (Main lays its grid out to it).
-    readonly property real panelX: 230
-    readonly property real panelW: width - panelX - 150
+    readonly property real panelX: 196
+    readonly property real panelW: width - panelX - 110
     readonly property real panelH: Math.min(850, height - 110 - 120)
-    readonly property real gridPad: 16
+    readonly property real gridPad: 30
     readonly property real folderWidth: panelW - 60 - 2 * gridPad
     readonly property real folderHeight: panelH - 116 - 80
     readonly property int folderTileH: Math.round(Math.max(200, Math.min(330, (folderWidth - 4 * 40) / (5 * 0.72))))
@@ -70,6 +70,9 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 450 * root.motion; easing.type: Easing.InOutQuad } }
         Behavior on x { NumberAnimation { duration: 600 * root.motion; easing.type: Easing.OutCubic } }
 
+        // Faded out above the footer, so the collections peeking from below never run under it.
+        layer.enabled: visible
+        layer.effect: MultiEffect { maskEnabled: true; maskSource: homeFade; maskThresholdMin: 0.0; maskSpreadAtMin: 1.0 }
         Item {
             id: homeContent
             width: parent.width; height: parent.height
@@ -87,8 +90,8 @@ Item {
             // ---------- the row ----------
             Item {
                 id: rowView
-                x: 172; y: 216
-                width: parent.width - x - 14; height: 510
+                x: 172; y: 200
+                width: parent.width - x - 14; height: 540
                 clip: true
                 opacity: root.zone === "shelf" ? 0.4 : 1
                 Behavior on opacity { NumberAnimation { duration: 450 * root.motion } }
@@ -101,7 +104,7 @@ Item {
                     const n = root.rowGames.length + 1
                     for (let k = 0; k < n; k++) {
                         const g = root.rowGames[k]
-                        const ratio = g ? Math.max(0.72, Math.min(1.25, g.cover_ar >= 0.45 && g.cover_ar <= 2.2 ? g.cover_ar : Cases.ratio(g.platform_slug))) : 0.8
+                        const ratio = g ? Math.max(0.55, Math.min(1.5, g.cover_ar >= 0.45 && g.cover_ar <= 2.2 ? g.cover_ar : Cases.ratio(g.platform_slug))) : 0.8
                         const hh = k === root.rowIndex ? (lit ? coverH + 40 : coverH) : Math.round(coverH * 0.8)
                         const w = Math.round(hh * ratio)
                         out.push({ x: x, y: Math.round((coverH + 40 - hh) / 2), w: w, h: hh })
@@ -112,7 +115,7 @@ Item {
                 Item {
                     id: rowTrack
                     x: 24 - Math.max(0, (rowView.geom[root.rowIndex] ? rowView.geom[root.rowIndex].x : 0) - 40)
-                    y: 10
+                    y: 26
                     Behavior on x { NumberAnimation { duration: 520 * root.motion; easing.type: Easing.OutCubic } }
                     Repeater {
                         model: root.rowGames.length + 1
@@ -369,7 +372,7 @@ Item {
             Item {
                 id: track
                 x: root.gridPad
-                y: viewport.targetY + 20
+                y: viewport.targetY + root.gridPad
                 Behavior on y { NumberAnimation { duration: 480 * root.motion; easing.type: Easing.OutCubic } }
                 Repeater {
                     model: root.layout.groups.length > 1 ? root.layout.groups : []
@@ -438,6 +441,23 @@ Item {
         }
     }
 
+    // The home's fade above the footer (its layer's mask).
+    Item {
+        id: homeFade
+        width: root.width; height: root.height
+        visible: false
+        layer.enabled: true
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0; color: "white" }
+                GradientStop { position: 930 / Math.max(1, homeFade.height); color: "white" }
+                GradientStop { position: 985 / Math.max(1, homeFade.height); color: "transparent" }
+                GradientStop { position: 1; color: "transparent" }
+            }
+        }
+    }
+
     // ================= pieces =================
 
     // A cover with rounded corners: the image, else the title on the game's colour; "See all".
@@ -448,15 +468,17 @@ Item {
         property bool ring: false
         property real radius: 22
         property string badge: ""
-        // Ring: dark gap, then light.
-        Rectangle {
-            visible: cov.ring
-            anchors { fill: parent; margins: -11 }
-            radius: cov.radius + 11
-            color: "transparent"
-            border { width: 5; color: theme.fg }
+        // The light it casts, its ring.
+        FocusGlow {
+            z: -1
+            on: cov.ring
+            tint: cov.g ? Cases.tint(cov.g.platform_slug) : theme.fg
+            ringColor: theme.fg
+            radius: cov.radius
+            motion: root.motion
         }
         Rectangle {
+            z: -2
             x: 0; y: 16; width: parent.width; height: parent.height
             radius: cov.radius
             color: Qt.rgba(0, 0, 0, 0.45)
@@ -488,6 +510,7 @@ Item {
                 opacity: status === Image.Ready ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: 300 } }
             }
+            Shine { active: cov.ring; motion: root.motion }
             Column {
                 visible: cov.all
                 anchors.centerIn: parent
@@ -543,18 +566,14 @@ Item {
         Behavior on scale { NumberAnimation { duration: 300 * root.motion; easing.type: Easing.OutCubic } }
         Accessible.role: Accessible.Button
         Accessible.name: c.name
-        Rectangle {
-            visible: fo.on
-            anchors { fill: parent; margins: -9 }
-            radius: 29
-            color: "transparent"
-            border { width: 4; color: theme.fg }
-        }
+        FocusGlow { on: fo.on; tint: fo.c.slug ? Cases.tint(fo.c.slug) : theme.fg; ringColor: theme.fg; radius: 20; gap: 9; line: 4; motion: root.motion }
         Rectangle {
             anchors.fill: parent
             radius: 20
+            clip: true
             color: Qt.rgba(1, 1, 1, fo.on ? 0.16 : 0.1)
             border { width: 1; color: Qt.rgba(1, 1, 1, 0.1) }
+            Shine { active: fo.on; motion: root.motion; strength: 0.18 }
         }
         Grid {
             x: 16; y: 16
@@ -628,6 +647,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: 16
+                clip: true
                 gradient: Gradient {
                     orientation: Gradient.Vertical
                     GradientStop { position: 0; color: Qt.lighter(card.tint, 1.15) }
@@ -641,6 +661,7 @@ Item {
                     opacity: card.on ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 400 * root.motion } }
                 }
+                Shine { active: card.lit; motion: root.motion; strength: 0.22 }
                 Rectangle {
                     anchors.fill: parent
                     radius: 16
@@ -666,6 +687,15 @@ Item {
             Behavior on scale { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
             layer.enabled: visible
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.6; shadowBlur: 0.8; shadowVerticalOffset: 18 }
+            // Floating, slowly.
+            property real bob
+            SequentialAnimation on bob {
+                loops: Animation.Infinite
+                running: card.on && root.motion > 0.5
+                NumberAnimation { from: 0; to: -10; duration: 2600; easing.type: Easing.InOutSine }
+                NumberAnimation { from: -10; to: 0; duration: 2600; easing.type: Easing.InOutSine }
+            }
+            transform: Translate { y: photo.bob }
         }
         // No picture: three of its games.
         Row {
@@ -760,18 +790,15 @@ Item {
         visible: inView
         transform: Scale {
             origin.x: tile.width / 2; origin.y: tile.t.h / 2
-            xScale: tile.cur ? 1.08 : 1
+            xScale: tile.cur ? 1.05 : 1
             yScale: xScale
             Behavior on xScale { NumberAnimation { duration: 280 * root.motion; easing.type: Easing.OutCubic } }
         }
         Accessible.role: Accessible.Button
         Accessible.name: g ? g.name : ""
-        Rectangle {
-            visible: tile.cur
-            x: -9; y: -9; width: tile.width + 18; height: tile.t.h + 18
-            radius: 21
-            color: "transparent"
-            border { width: 4; color: theme.fg }
+        Item {
+            width: tile.width; height: tile.t.h
+            FocusGlow { on: tile.cur; tint: tile.g ? Cases.tint(tile.g.platform_slug) : theme.fg; ringColor: theme.fg; radius: 12; gap: 9; line: 4; motion: root.motion }
         }
         Item {
             width: tile.width; height: tile.t.h
@@ -787,6 +814,7 @@ Item {
                 color: "#ffffff"
                 font { family: theme.displayFont; pixelSize: 19; weight: Font.ExtraBold }
             }
+            Shine { z: 2; active: tile.cur; motion: root.motion }
             Image {
                 id: tileImg
                 anchors.fill: parent

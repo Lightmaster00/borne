@@ -625,6 +625,9 @@ fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> us
         ("physical", vec!["support-2D".into()]),
         ("logo", vec!["wheel-hd".into(), "wheel".into()]),
         ("fanart", vec!["fanart".into()]),
+        // Screenshots: in game and the title screen (the game page's gallery, after RomM's).
+        ("shot", vec!["ss".into()]),
+        ("shot-title", vec!["sstitle".into()]),
         // Art without any title on it: the library's background and the game page's picture.
         ("steamgrid", steam),
         ("marquee", marquee),
@@ -655,7 +658,7 @@ fn fetch_game(app: &Shared, c: &Credentials, group_key: &str, rec: &Value) -> us
     // The gameplay video is only noted here (redacted address): it is downloaded the first
     // time the game is shown with the video background, see `video`.
     let video =
-        pick(&medias, &["video-normalized", "video"], &regions).map(|u| format!("ss|{}", redact(u))).unwrap_or_else(|| "none".into());
+        pick(&medias, &["video", "video-normalized"], &regions).map(|u| format!("ss|{}", redact(u))).unwrap_or_else(|| "none".into());
     if app.db.media(group_key, "video").map(|m| m.stamp != video).unwrap_or(true) {
         app.db.set_media(group_key, "video", "", 0, 0, &video);
     }
@@ -864,6 +867,41 @@ pub fn cut_stored_hinges(app: &Shared) {
     }
 }
 
+/// Screenshots (in game, title screen) and the full-size gameplay video, which came later than the
+/// rest: taken once from the kept records.
+fn fetch_shots(app: &Shared, c: &Credentials) {
+    for key in app.db.ss_record_keys() {
+        let flag = format!("shots_v1.{key}");
+        if app.db.setting(&flag).is_some() {
+            continue;
+        }
+        let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { continue };
+        let medias: Vec<Value> = rec["jeu"]["medias"].as_array().cloned().unwrap_or_default();
+        let regions = ui_regions(&ui_lang(app));
+        let mut failed = false;
+        for (kind, ty) in [("shot", "ss"), ("shot-title", "sstitle")] {
+            let Some(url) = pick(&medias, &[ty], &regions) else { continue };
+            match download(c, url).and_then(|b| crate::media::store(app, &key, kind, &b)) {
+                Ok((path, w, h)) => app.db.set_media(&key, kind, &path.to_string_lossy(), w, h, &format!("ss|{}", redact(url))),
+                Err(e) => {
+                    app.db.log("screenscraper", &format!("{kind} of {key}: {e}"));
+                    failed = true;
+                }
+            }
+        }
+        // The original video rather than the smaller "normalized" one: noted, downloaded on use.
+        if let Some(u) = pick(&medias, &["video", "video-normalized"], &regions) {
+            let stamp = format!("ss|{}", redact(u));
+            if app.db.media(&key, "video").map(|m| m.stamp != stamp).unwrap_or(true) {
+                app.db.set_media(&key, "video", "", 0, 0, &stamp);
+            }
+        }
+        if !failed {
+            app.db.set_setting(&flag, "1");
+        }
+    }
+}
+
 /// Spines cut the old way (often off centre) cut again from the kept records, in the background.
 fn recut_spines(app: &Shared, c: &Credentials) {
     for key in app.db.ss_record_keys() {
@@ -917,6 +955,7 @@ pub fn start(app: &Shared, again: bool) {
             drop_jewel_texture_spines(&app);
             recut_spines(&app, &c);
             refetch_fronts(&app, &c);
+            fetch_shots(&app, &c);
             STOP.store(false, Ordering::SeqCst);
             PAUSED.store(false, Ordering::SeqCst);
             status_set(&app, |s| {

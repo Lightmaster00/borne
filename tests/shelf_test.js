@@ -126,11 +126,12 @@ const order = o => S.orderConsoles(consoles, o, rows, "home", ["ngc", "gba"]).ma
 same(order("name"), ["3DS", "GB", "GBA", "N64", "NGC", "PSVITA", "SWITCH"].map(x => x.toLowerCase()))
 same(order("year").slice(0, 2), ["switch", "3ds"])
 same(order("custom").slice(0, 2), ["ngc", "gba"])
-same(order("maker").slice(-1), ["psvita"])
+same(order("maker"), ["gb", "n64", "gba", "ngc", "3ds", "switch", "psvita"])
+same(order("maker-name"), ["3ds", "gb", "gba", "n64", "ngc", "switch", "psvita"])
 const playedOrder = order("played")
 const secs = s => rows.filter(g => S.tabOf(g.platform_slug) === s).reduce((a, g) => a + g.play_seconds, 0)
 for (let k = 1; k < playedOrder.length; k++) assert.ok(secs(playedOrder[k - 1]) >= secs(playedOrder[k]))
-assert.strictEqual(S.consoleOrders().length, 6)
+assert.strictEqual(S.consoleOrders().length, 7)
 assert.strictEqual(S.layouts().length, 3)
 
 // The home: the row of recent games, the collections, the Store's console cards.
@@ -158,6 +159,20 @@ assert.strictEqual(S.layouts().length, 3)
     const sw = cards.find(c => c.slug === "switch")
     assert.strictEqual(sw.count, rows.filter(g => !S.ready(g) && g.platform_slug === "switch").length)
     assert.strictEqual(sw.first, Math.max(...rows.filter(g => !S.ready(g) && g.platform_slug === "switch").map(g => g.rom_id)))
+    // Justified lines: every full line reaches the right edge.
+    {
+        const j = S.build(rows, opt({ layout: "grid", tileH: 300, justify: true, width: 1400, sort: "name" }))
+        const byRow = {}
+        for (const t of j.tiles) (byRow[t.group + ":" + t.row] = byRow[t.group + ":" + t.row] || []).push(t)
+        const keys = Object.keys(byRow)
+        for (let k = 0; k < keys.length; k++) {
+            const line = byRow[keys[k]], last = line[line.length - 1]
+            const nextSameGroup = keys[k + 1] && keys[k + 1].split(":")[0] === keys[k].split(":")[0]
+            if (nextSameGroup) assert.ok(Math.abs(last.x + last.w - 1400) <= line.length + 1, "line " + keys[k] + " ends at " + (last.x + last.w))
+            assert.ok(last.x + last.w <= 1400 + line.length)
+            assert.ok(line.every(t => t.h === line[0].h))
+        }
+    }
     // A fixed cover height for the folders' grid.
     const l = S.build(rows, opt({ layout: "grid", tileH: 250 }))
     assert.ok(l.tiles.every(t => t.h === 250))

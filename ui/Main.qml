@@ -100,7 +100,7 @@ Window {
     function relayout() {
         const l = folder ? Shelf.build(rows, { tab: libTab, console: consoleFilter, quick: quick, genre: "", sort: sortId,
                                                layout: "grid", consoles: orderedConsoles, now: hourClock, fmtSize: fmtSize,
-                                               width: home.folderWidth, height: home.folderHeight, tileH: home.folderTileH })
+                                               width: home.folderWidth, height: home.folderHeight, tileH: home.folderTileH, justify: true })
                          : { tiles: [], groups: [], total: 0, totalH: 0, vertical: true, count: 0 }
         if (JSON.stringify(l) !== JSON.stringify(layout)) layout = l
         refreshHome()
@@ -230,13 +230,18 @@ Window {
     // ---------- Library ----------
     function toRow(g) {
         const server = status && status.server_url ? status.server_url : ""
+        // The cover: ScreenScraper's front scan when there is one (CD cases without their hinge,
+        // the whole box), else RomM's; its proportions with it.
+        const artBase = apiBase + "/api/v1/games/" + g.rom_id + "/art/" + (artRevs[g.group_key] || 0) + "/"
+        const front = (g.art_kinds || []).indexOf("front") >= 0
+        const frontAr = g.media_sizes && g.media_sizes.front ? g.media_sizes.front[0] / g.media_sizes.front[1] : 0
         return {
             rom_id: g.rom_id, name: g.name, platform_name: g.platform_name, platform_slug: g.platform_slug,
             platform_short: shortNames[Shelf.tabOf(g.platform_slug)] || g.platform_name,
             play_seconds: g.play_seconds || 0, released: g.released || 0,
             year: g.year || 0, genres: g.genres || "", regions: g.regions || "", players: g.players || "",
             summary: g.summary || "", fs_size: g.fs_size || 0,
-            cover: g.cover_local ? fileUrl(g.cover_local, g.cover_stamp) : "",
+            cover: front ? artBase + "front" : g.cover_local ? fileUrl(g.cover_local, g.cover_stamp) : "",
             trailer: g.video_remote && server ? server + encodeURI(g.video_remote) : "",
             local_state: g.local_state, dl_state: g.download_state || "", dl_received: g.download_received || 0,
             dl_total: g.download_total || 0, dl_error: g.download_error || "", hue: (g.rom_id * 47) % 360,
@@ -249,7 +254,7 @@ Window {
             // Pixel sizes of the case scans: the box is shaped before the images load.
             front_ar: g.media_sizes && g.media_sizes.front ? g.media_sizes.front[0] / g.media_sizes.front[1] : 0,
             side_ar: g.media_sizes && g.media_sizes.side ? g.media_sizes.side[0] / g.media_sizes.side[1] : 0,
-            cover_ar: g.cover_ar || 0,
+            cover_ar: front && frontAr > 0 ? frontAr : g.cover_ar || 0,
             spine_color: g.spine_color || ""   // the spine scan's dominant colour: the case's top and bottom
         }
     }
@@ -1259,6 +1264,7 @@ Window {
         if (source === "pad") win.inputSeen = "pad"
         inputCountsChanged()
         lastInput = a + " via " + source
+        if (attract && overlay === "game" && a === "x") { prefs.videoMuted = !prefs.videoMuted; lastActivity = Date.now(); return }
         if (touch() && screen === "library" && (overlay === "" || overlay === "game")) return
         // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs);
         // the question it raises is answered here.
@@ -1330,6 +1336,7 @@ Window {
             try { m = JSON.parse(msg) } catch (e) { return }
             if (m.type === "hello") win.coreOnline = true
             else if (m.type === "pad") win.dispatch(m.action, "pad")
+            else if (m.type === "stick") { if (win.overlay === "game") { win.touch(); gamePage.stick(m.x, m.y) } }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
             else if (m.type === "media") {
@@ -1526,12 +1533,12 @@ Window {
             theme: win.theme
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.ambientGame
-            override: win.overlay === "game" ? gamePage.artOverride : ""
+            artShown: prefs.background === "art"
             // The library's video (off by default), and on a game's page its trailer.
             trailers: win.overlay === "game" ? win.trailers : win.bgVideos && win.screen === "library" && win.overlay === ""
             videoUrl: win.overlay === "game" ? win.pageTrailer : win.bgVideo
             // A game's video in full screen plays with its sound.
-            sound: win.overlay === "game" && win.attract
+            sound: win.overlay === "game" && win.attract && !prefs.videoMuted
             paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible || gameSettingsPage.visible
                     || !!(win.session && win.session.running)
             rest: win.videoRested
@@ -1544,8 +1551,19 @@ Window {
         id: keys
         anchors.fill: parent
         focus: true
+        // On a game's page, W A S D turn its case while held.
+        readonly property var tiltKeys: ({ [Qt.Key_W]: "w", [Qt.Key_A]: "a", [Qt.Key_S]: "s", [Qt.Key_D]: "d" })
+        Keys.onReleased: (e) => {
+            const k = tiltKeys[e.key]
+            if (k && !e.isAutoRepeat && win.overlay === "game") { e.accepted = true; gamePage.tiltKey(k, false) }
+        }
         Keys.onPressed: (e) => {
             win.inputSeen = "keyboard"   // hints now show keyboard keys
+            if (win.overlay === "game" && !menu.visible && !nameEntry.visible && tiltKeys[e.key] && !(e.modifiers & Qt.ControlModifier)) {
+                e.accepted = true
+                if (!e.isAutoRepeat) { win.touch(); gamePage.tiltKey(tiltKeys[e.key], true) }
+                return
+            }
             // Text entry: the physical keyboard types directly.
             if (win.textEntry && !menu.visible) {
                 const target = nameEntry.visible ? nameEntry : setup
@@ -1750,6 +1768,31 @@ Window {
             consoleName: pageConsole ? pageConsole.name : win.pageGame ? win.pageGame.platform_short : ""
             crumb: win.folder ? win.folder.name : win.libTab === "store" ? qsTr("Store") : qsTr("Recently played")
             onAction: (id, payload) => win.pageAction(id, payload)
+        }
+
+        // A game's video in full screen: its sound, X to turn it off or on.
+        Rectangle {
+            z: 30
+            visible: opacity > 0
+            opacity: win.attract && win.overlay === "game" ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 600 } }
+            anchors { right: parent.right; bottom: parent.bottom; rightMargin: 96; bottomMargin: 72 }
+            width: muteRow.implicitWidth + 36; height: 56; radius: 28
+            color: Qt.rgba(0.04, 0.04, 0.055, 0.6)
+            border { width: 1; color: Qt.rgba(1, 1, 1, 0.16) }
+            Row {
+                id: muteRow
+                anchors.centerIn: parent
+                spacing: 12
+                KeyCap { anchors.verticalCenter: parent.verticalCenter; theme: win.theme; size: 32; text: graphite.key("x") }
+                Icon { anchors.verticalCenter: parent.verticalCenter; name: prefs.videoMuted ? "mute" : "sound"; size: 24; stroke: 2; color: graphite.fg }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: prefs.videoMuted ? qsTr("Sound off") : qsTr("Sound on")
+                    color: graphite.fg
+                    font { family: graphite.fontFamily; pixelSize: 18; weight: Font.Bold }
+                }
+            }
         }
 
         // The settings stand in a glass panel over the game's art.
@@ -2296,6 +2339,8 @@ Window {
         property int calmVersion: 0           // 1: the library's video turned off once (a calmer screen)
         property string sortHome: "played"   // My library's order (Shelf.js sorts)
         property string sortStore: "added"   // the Store's
+        property string background: "lights"  // behind the home: "lights" (the console's colour) | "art" (the game's)
+        property bool videoMuted: false       // a game's video in full screen plays without its sound
         property int notifiedBuild: 0
     }
 

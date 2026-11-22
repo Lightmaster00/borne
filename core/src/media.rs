@@ -110,7 +110,11 @@ fn trim(img: &DynamicImage) -> DynamicImage {
 /// Cleans a downloaded image and writes it; returns (path, width, height).
 pub fn store(app: &Shared, group_key: &str, kind: &str, bytes: &[u8]) -> Result<(PathBuf, u32, u32), String> {
     let img = decode(bytes)?;
-    let mut img = if matches!(kind, "logo" | "logo-mono" | "physical" | "steamgrid" | "marquee" | "fanart") { img } else { trim(&img) };
+    let mut img = if matches!(kind, "logo" | "logo-mono" | "physical" | "steamgrid" | "marquee" | "fanart" | "shot" | "shot-title") {
+        img
+    } else {
+        trim(&img)
+    };
     if kind == "front" && cd_case(group_key) {
         img = cut_hinge(&img);
     }
@@ -248,7 +252,7 @@ fn finish(app: &Shared, group_key: &str, kind: &str, mut img: DynamicImage) -> R
     // Pictures shown full screen keep a screen's width.
     let cap = match kind {
         "logo" | "logo-mono" => 900,
-        "steamgrid" | "marquee" | "fanart" | "photo" => 1920,
+        "steamgrid" | "marquee" | "fanart" | "photo" | "shot" | "shot-title" => 1920,
         _ => 1000,
     };
     if img.width().max(img.height()) > cap {

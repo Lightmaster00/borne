@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Walks through every screen of a running Borne with the debug pad (BORNE_DEBUG_INPUT=1) and fails
 # on any QML error in its log: the home (recent games, collections, the rail), a folder and its
-# order, the Store's consoles and one console's games, game page (fact sheet, its case in 3D, gallery) and its
+# order, the Store's consoles and one console's games, game page (fact sheet, screenshots, video) and its
 # settings, search, every Settings section row by row. Needs a paired profile (see integration_romm.py).
 #
 #   tests/ui_tour.sh <log of the running Borne>
@@ -19,7 +19,7 @@ for _ in $(seq 1 14); do pad right; done; pad a sleep:1 down y sleep:1 down a sl
 pad rb sleep:1 right left rt lt a sleep:1 right a sleep:2 b sleep:1 b sleep:1  # the Store: a console, a game
 pad y sleep:1 up a sleep:1 lb sleep:1               # the consoles' order
 pad a sleep:2 right right right a sleep:1 a left left left sleep:1  # game page, its fact sheet
-pad up left right up down a down right left up      # its case in 3D, its gallery
+pad down right left a sleep:1 right b up x sleep:1     # its screenshots, its video
 pad y sleep:2 b sleep:1                            # Y: its settings, and back
 pad right right a sleep:2                          # its settings, every section row by row
 for section in 1 2 3 4 5 6 7; do

@@ -140,7 +140,8 @@ function quickFilters(tab) {
 
 // The shelf. rows: the library (every game); opt: { tab: "home" | "store", console: tab slug or
 // "", quick: { id: true }, genre, sort, layout, width, height (of the shelf), consoles: [{ slug,
-// name }] in their order, now, fmtSize, tileH (the covers' height, else from the shelf's size) }.
+// name }] in their order, now, fmtSize, tileH (the covers' height, else from the shelf's size),
+// justify (grid: each line fills the width) }.
 // Returns { tiles: [{ idx, x, cx, y, w, h, row, sub, group, caption }], groups: [{ x, y, w, label,
 // count, slug }], total (width), totalH (height), vertical, count }. idx points into rows; row
 // counts the lines of covers from the top (grid) or 0 / 1 (two rows).
@@ -201,19 +202,42 @@ function build(rows, opt) {
     if (layout === "grid") {
         const W = Math.max(400, opt.width || 1600)
         let y = 0, row = -1
+        // Lines filling the width: each line's covers scaled together so its ends meet the edges
+        // (one more cover, a little smaller, when that is closer to their height than fewer,
+        // larger); the group's last line keeps the height unless it would overflow.
+        const lineOf = (ids, scale) => {
+            const ws = ids.map(i => Math.round(widthOf(i) * scale))
+            return { ids, ws, h: Math.round(H * scale) }
+        }
         for (const gr of list) {
             const gi = groups.length
             groups.push({ x: 0, y, w: W, label: gr.label, count: String(gr.items.length), slug: gr.slug })
             y += HEAD
-            let x = 0
-            row++
+            const lines = []
+            let cur = []
+            const fit = ids => (W - GRID_GAP * (ids.length - 1)) / ids.reduce((a, i) => a + widthOf(i), 0)
             for (const i of gr.items) {
-                const w = widthOf(i)
-                if (x > 0 && x + w > W) { x = 0; y += H + CAPTION + GRID_ROW_GAP; row++ }
-                tiles.push({ idx: i, x, cx: x + w / 2, y, w, h: H, row, group: gi, sub: sub(i), caption: true })
-                x += w + GRID_GAP
+                const next = cur.concat([i])
+                if (cur.length && fit(next) < 1) {
+                    const up = fit(cur), down = fit(next)
+                    // Fewer covers made larger, or this one in too, made smaller.
+                    if (opt.justify && Math.abs(Math.log(down)) < Math.abs(Math.log(up)) && down >= 0.72) { lines.push(lineOf(next, down)); cur = []; continue }
+                    lines.push(lineOf(cur, opt.justify ? Math.min(up, 1.3) : 1))
+                    cur = [i]
+                } else cur = next
             }
-            y += H + CAPTION + GRID_ROW_GAP + GRID_GROUP_GAP
+            if (cur.length) lines.push(lineOf(cur, Math.min(1, fit(cur))))
+            for (const ln of lines) {
+                row++
+                let x = 0
+                ln.ids.forEach((i, k) => {
+                    const w = ln.ws[k]
+                    tiles.push({ idx: i, x, cx: x + w / 2, y, w, h: ln.h, row, group: gi, sub: sub(i), caption: true })
+                    x += w + GRID_GAP
+                })
+                y += ln.h + CAPTION + GRID_ROW_GAP
+            }
+            y += GRID_GROUP_GAP
         }
         return { tiles, groups, total: W, totalH: Math.max(0, y - GRID_ROW_GAP - GRID_GROUP_GAP), vertical: true, count: picked.length }
     }
@@ -312,7 +336,8 @@ function consoleOrders() {
         { id: "count", label: qsTr("Most games"), hint: qsTr("By their number of games") },
         { id: "year", label: qsTr("Release date"), hint: qsTr("Newest first") },
         { id: "name", label: qsTr("Name"), hint: qsTr("From A to Z") },
-        { id: "maker", label: qsTr("Maker"), hint: qsTr("Nintendo, Sony, Sega… then by date") },
+        { id: "maker", label: qsTr("Maker, then release"), hint: qsTr("Nintendo, Sony, Sega…, each from its first console to its latest") },
+        { id: "maker-name", label: qsTr("Maker, then name"), hint: qsTr("Nintendo, Sony, Sega…, each from A to Z") },
         { id: "custom", label: qsTr("Your order"), hint: qsTr("Move them with LT and RT in the Store") }
     ]
 }
@@ -333,7 +358,8 @@ function orderConsoles(consoles, order, rows, tab, custom) {
         count: (a, b) => (count[b.c.slug] || 0) - (count[a.c.slug] || 0) || a.i - b.i,
         year: (a, b) => madeIn(b.c.slug) - madeIn(a.c.slug) || name(a.c, b.c),
         name: (a, b) => name(a.c, b.c),
-        maker: (a, b) => (madeBy(a.c.slug) || "~").localeCompare(madeBy(b.c.slug) || "~") || madeIn(b.c.slug) - madeIn(a.c.slug) || name(a.c, b.c),
+        maker: (a, b) => (madeBy(a.c.slug) || "~").localeCompare(madeBy(b.c.slug) || "~") || madeIn(a.c.slug) - madeIn(b.c.slug) || name(a.c, b.c),
+        "maker-name": (a, b) => (madeBy(a.c.slug) || "~").localeCompare(madeBy(b.c.slug) || "~") || name(a.c, b.c),
         custom: (a, b) => {
             const pa = (custom || []).indexOf(a.c.slug), pb = (custom || []).indexOf(b.c.slug)
             return (pa < 0 ? 1e6 + a.i : pa) - (pb < 0 ? 1e6 + b.i : pb)

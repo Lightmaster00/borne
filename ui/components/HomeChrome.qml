@@ -2,6 +2,7 @@
 // profile, Home, Store, Downloads, Settings, Quit) and, top right, the downloads under way, the
 // server's state and the time.
 import QtQuick
+import QtQuick.Effects
 
 Item {
     id: chrome
@@ -30,6 +31,22 @@ Item {
         radius: 48
         color: Qt.rgba(0.047, 0.047, 0.063, 0.42)
         border { width: 1; color: Qt.rgba(1, 1, 1, 0.1) }
+        // The page shown: a light bar beside its item, gliding from one to the other.
+        Rectangle {
+            readonly property int at: Math.max(0, chrome.items.findIndex(x => x.id === chrome.here))
+            x: 6; width: 4; height: 30; radius: 2
+            y: col.y + at * (64 + col.spacing) + 17
+            color: theme.accent
+            Behavior on y { NumberAnimation { duration: 450 * chrome.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
+            Rectangle {
+                anchors { fill: parent; margins: -6 }
+                radius: 6
+                color: theme.accent
+                opacity: 0.45
+                layer.enabled: true
+                layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 16 }
+            }
+        }
         Column {
             id: col
             anchors.centerIn: parent
@@ -44,20 +61,15 @@ Item {
                     readonly property bool isHere: modelData.id === chrome.here
                     readonly property bool isProfile: modelData.id === "profile"
                     width: 64; height: 64
+                    scale: it.on ? 1.1 : 1
+                    Behavior on scale { NumberAnimation { duration: 320 * chrome.motion; easing.type: Easing.OutBack; easing.overshoot: 2.2 } }
                     Accessible.role: Accessible.Button
                     Accessible.name: modelData.label
-                    Rectangle {
-                        visible: it.on
-                        anchors { fill: parent; margins: -7 }
-                        radius: width / 2
-                        color: "transparent"
-                        border { width: 3; color: theme.fg }
-                    }
+                    FocusGlow { on: it.on; tint: theme.accent; ringColor: theme.fg; radius: 32; gap: 6; line: 3; motion: chrome.motion }
                     Rectangle {
                         anchors.fill: parent
                         radius: 32
-                        color: it.on ? theme.fg : it.isProfile ? chrome.profileColor : it.isHere ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(1, 1, 1, 0.06)
-                        border { width: it.isHere && !it.on ? 2 : 0; color: Qt.rgba(1, 1, 1, 0.5) }
+                        color: it.on ? theme.fg : it.isProfile ? chrome.profileColor : it.isHere ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
                         Behavior on color { ColorAnimation { duration: 250 * chrome.motion } }
                     }
                     Text {
@@ -74,6 +86,8 @@ Item {
                         size: 26
                         stroke: 2.2
                         color: it.on ? "#121216" : theme.fg
+                        opacity: it.on || it.isHere ? 1 : 0.6
+                        Behavior on opacity { NumberAnimation { duration: 250 * chrome.motion } }
                     }
                     Rectangle {
                         visible: it.modelData.id === "downloads" && chrome.downloading
@@ -106,7 +120,7 @@ Item {
 
     // ---------- status ----------
     Row {
-        anchors { right: parent.right; rightMargin: 120; top: parent.top; topMargin: 112 }
+        anchors { right: parent.right; rightMargin: 120; top: parent.top; topMargin: 56 }
         spacing: 24
         Row {
             visible: chrome.downloadsText !== ""

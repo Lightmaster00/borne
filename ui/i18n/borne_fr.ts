@@ -1822,10 +1822,6 @@
         <translation>Fermer</translation>
     </message>
     <message>
-        <source>Gallery</source>
-        <translation>Galerie</translation>
-    </message>
-    <message>
         <source>View</source>
         <translation>Voir</translation>
     </message>
@@ -1862,32 +1858,8 @@
         <translation>Tourner la boîte</translation>
     </message>
     <message>
-        <source>Done</source>
-        <translation>Terminé</translation>
-    </message>
-    <message>
-        <source>The case</source>
-        <translation>La boîte</translation>
-    </message>
-    <message>
-        <source>Watch</source>
-        <translation>Regarder</translation>
-    </message>
-    <message>
-        <source>Turn the case with the arrows</source>
-        <translation>Fais tourner la boîte avec les flèches</translation>
-    </message>
-    <message>
-        <source>A to watch the video in full screen, with its sound</source>
-        <translation>A pour voir la vidéo en plein écran, avec le son</translation>
-    </message>
-    <message>
         <source>Video</source>
         <translation>Vidéo</translation>
-    </message>
-    <message>
-        <source>Video · loading…</source>
-        <translation>Vidéo · chargement…</translation>
     </message>
 </context>
 <context>
@@ -3304,6 +3276,14 @@
     <message>
         <source>The video is still loading.</source>
         <translation>La vidéo se charge encore.</translation>
+    </message>
+    <message>
+        <source>Sound off</source>
+        <translation>Couper le son</translation>
+    </message>
+    <message>
+        <source>Sound on</source>
+        <translation>Mettre le son</translation>
     </message>
 </context>
 <context>
@@ -4731,20 +4711,12 @@
         <translation>Nom</translation>
     </message>
     <message>
-        <source>Maker</source>
-        <translation>Fabricant</translation>
-    </message>
-    <message>
         <source>Your order</source>
         <translation>Personnalisé</translation>
     </message>
     <message>
         <source>The selected game's video plays by itself, muted, behind the covers</source>
         <translation>La vidéo du jeu choisi passe toute seule, sans le son, derrière les jaquettes</translation>
-    </message>
-    <message>
-        <source>Without a press for this long, the covers fade out and leave the video</source>
-        <translation>Sans appui pendant ce temps, les jaquettes s’effacent et laissent la vidéo</translation>
     </message>
     <message>
         <source>Borne's menus; also the version and the language a game starts in, when it has several</source>
@@ -4829,6 +4801,34 @@
     <message>
         <source>How your games are shown: the order of the consoles, the clock and the videos.</source>
         <translation>Comment tes jeux sont présentés : l’ordre des consoles, l’heure et les vidéos.</translation>
+    </message>
+    <message>
+        <source>Maker, then release</source>
+        <translation>Constructeur, puis date de sortie</translation>
+    </message>
+    <message>
+        <source>Maker, then name</source>
+        <translation>Constructeur, puis nom</translation>
+    </message>
+    <message>
+        <source>Background</source>
+        <translation>Fond</translation>
+    </message>
+    <message>
+        <source>Behind the home and the game pages</source>
+        <translation>Derrière l’accueil et les fiches des jeux</translation>
+    </message>
+    <message>
+        <source>Lights in the console's colour</source>
+        <translation>Lumières aux couleurs de la console</translation>
+    </message>
+    <message>
+        <source>The game's art</source>
+        <translation>L’illustration du jeu</translation>
+    </message>
+    <message>
+        <source>Without a press for this long, the page fades out and leaves the game's video, with its sound on a game's page</source>
+        <translation>Sans appui pendant ce temps, la page s’efface et laisse la vidéo du jeu, avec le son sur la fiche d’un jeu</translation>
     </message>
 </context>
 <context>
@@ -4998,14 +4998,6 @@
         <translation>Selon leur nombre de jeux</translation>
     </message>
     <message>
-        <source>Maker</source>
-        <translation>Fabricant</translation>
-    </message>
-    <message>
-        <source>Nintendo, Sony, Sega… then by date</source>
-        <translation>Nintendo, Sony, Sega… puis par date</translation>
-    </message>
-    <message>
         <source>Your order</source>
         <translation>Personnalisé</translation>
     </message>
@@ -5016,6 +5008,22 @@
     <message>
         <source>Two players</source>
         <translation>À deux</translation>
+    </message>
+    <message>
+        <source>Maker, then release</source>
+        <translation>Constructeur, puis date de sortie</translation>
+    </message>
+    <message>
+        <source>Nintendo, Sony, Sega…, each from its first console to its latest</source>
+        <translation>Nintendo, Sony, Sega…, chacun de sa première console à la dernière</translation>
+    </message>
+    <message>
+        <source>Maker, then name</source>
+        <translation>Constructeur, puis nom</translation>
+    </message>
+    <message>
+        <source>Nintendo, Sony, Sega…, each from A to Z</source>
+        <translation>Nintendo, Sony, Sega…, chacun de A à Z</translation>
     </message>
 </context>
 <context>

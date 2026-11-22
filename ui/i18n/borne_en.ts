@@ -1822,10 +1822,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Gallery</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>View</source>
         <translation type="unfinished" />
     </message>
@@ -1862,31 +1858,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Done</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The case</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Watch</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Turn the case with the arrows</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>A to watch the video in full screen, with its sound</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Video</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Video · loading…</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -3303,6 +3275,14 @@
     </message>
     <message>
         <source>The video is still loading.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sound off</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sound on</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4731,19 +4711,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Maker</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Your order</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>The selected game's video plays by itself, muted, behind the covers</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Without a press for this long, the covers fade out and leave the video</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -4828,6 +4800,34 @@
     </message>
     <message>
         <source>How your games are shown: the order of the consoles, the clock and the videos.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Maker, then release</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Maker, then name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Background</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Behind the home and the game pages</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Lights in the console's colour</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The game's art</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Without a press for this long, the page fades out and leaves the game's video, with its sound on a game's page</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4998,14 +4998,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Maker</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Nintendo, Sony, Sega… then by date</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Your order</source>
         <translation type="unfinished" />
     </message>
@@ -5015,6 +5007,22 @@
     </message>
     <message>
         <source>Two players</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Maker, then release</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nintendo, Sony, Sega…, each from its first console to its latest</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Maker, then name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nintendo, Sony, Sega…, each from A to Z</source>
         <translation type="unfinished" />
     </message>
 </context>

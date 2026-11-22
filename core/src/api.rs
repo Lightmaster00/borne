@@ -41,7 +41,7 @@
 //!                                                 one entry per game, versions grouped
 //!   GET    /api/v1/games/<rom_id>?lang=fr        game page: shown version, all versions, choices
 //!   GET    /api/v1/games/<rom_id>/facts?lang=fr  studios, series, modes, age ratings, rating, screenshots (RomM)
-//!   GET    /api/v1/games/<rom_id>/screenshots/<n>  a screenshot, fetched from RomM and cached
+//!   GET    /api/v1/games/<rom_id>/screenshots/<n>  a screenshot: RomM's (fetched and cached), then ScreenScraper's
 //!   POST   /api/v1/games/<rom_id>/download
 //!   DELETE /api/v1/games/<rom_id>/local          deletes the local copy (never on RomM)
 //!   POST   /api/v1/games/<rom_id>/link           exposes the game in the virtual mount (no download)
@@ -262,15 +262,36 @@ fn choose_version(app: &Shared, rom_id: i64) {
     }
 }
 
-/// A game's n-th screenshot: from the cache, or fetched from RomM (with the profile's token).
+/// ScreenScraper's screenshots of a game (in game, then its title screen), as stored.
+fn ss_shots(app: &Shared, rom_id: i64) -> Vec<String> {
+    let Some(g) = app.db.game(rom_id) else { return vec![] };
+    ["shot", "shot-title"]
+        .iter()
+        .filter_map(|k| app.db.media(&g.group_key, k))
+        .map(|m| m.path)
+        .filter(|p| !p.is_empty() && std::path::Path::new(p).is_file())
+        .collect()
+}
+
+/// RomM's screenshots of a game (their addresses).
+fn romm_shots(app: &Shared, rom_id: i64) -> Vec<String> {
+    let extra: Value = app.db.game_extra(rom_id).and_then(|e| serde_json::from_str(&e).ok()).unwrap_or(Value::Null);
+    extra["screenshots"].as_array().map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect()).unwrap_or_default()
+}
+
+/// A game's n-th screenshot: RomM's first (from the cache, or fetched with the profile's token),
+/// then ScreenScraper's.
 fn screenshot(app: &Shared, rom_id: i64, n: usize) -> Result<PathBuf, String> {
+    let shots = romm_shots(app, rom_id);
+    if n >= shots.len() {
+        return ss_shots(app, rom_id).get(n - shots.len()).map(PathBuf::from).ok_or_else(|| "no such screenshot".to_string());
+    }
     let dir = app.paths.screenshots();
     let path = dir.join(format!("{rom_id}-{n}.img"));
     if path.is_file() {
         return Ok(path);
     }
-    let extra: Value = app.db.game_extra(rom_id).and_then(|e| serde_json::from_str(&e).ok()).ok_or("no screenshots")?;
-    let remote = extra["screenshots"][n].as_str().ok_or("no such screenshot")?;
+    let remote = &shots[n];
     let client = app.client().ok_or("offline")?;
     let bytes = client.fetch_bytes(remote, 20 * 1024 * 1024).map_err(|e| e.to_string())?;
     if !catalog::looks_like_image(&bytes) {
@@ -858,7 +879,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             match id.parse::<i64>().ok().filter(|i| app.db.game(*i).is_some()) {
                 Some(rom_id) => {
                     let extra: Value = app.db.game_extra(rom_id).and_then(|e| serde_json::from_str(&e).ok()).unwrap_or(Value::Null);
-                    let shots = extra["screenshots"].as_array().map(|a| a.len()).unwrap_or(0);
+                    let shots = romm_shots(app, rom_id).len() + ss_shots(app, rom_id).len();
                     ok(
                         req,
                         json!({
