@@ -299,7 +299,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   game's logo (else its title), studio, year and players, counters (the players' rating out of 100
   as a ring when RomM has one, your play time on this profile, the last time played, where the game
   is and its size), the versions (region, languages, revision; updates and DLC left out), what the
-  console needs that this machine lacks, the file's own note, the summary, a table of facts (studios,
+  console needs that this machine lacks, the file's own note (a 3DS copy encrypted or not; a PS Vita dump with or without its license, `sce_sys/package/work.bin`, or decrypted), the summary, a table of facts (studios,
   series, release date, players, modes, age rating, regions, languages, versions, file size, the
   emulator it opens in) and the screenshots. Behind, softly: the trailer (RomM's `path_video`, a path
   under `/assets/romm/resources/`, downloaded by the core with the profile's token through

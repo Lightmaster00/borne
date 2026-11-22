@@ -383,12 +383,11 @@ Window {
     // Attract: after a few seconds without input on the library (5 by default, prefs.attractDelay; 0: never), once the selected game's video plays, the
     // library fades out and leaves the video; any input brings it back (that input only wakes it),
     // and so does a minute of it (see videoRested).
-    // Turning the box (stick or W A S D) counts as input.
     property double lastActivity: Date.now()
     property bool attract: false
     readonly property bool attractAllowed: prefs.attractDelay > 0 && screen === "library" && overlay === "" && ready && !gameMode
                                            && !menu.visible && !search.visible && !downloadsPanel.visible
-                                           && !nameEntry.visible
+                                           && !nameEntry.visible && !filterOverlay.visible && !sortMenu.visible
                                            && libModel.count > 0 && ambience.videoShown && !videoRested
     onAttractAllowedChanged: if (!attractAllowed) attract = false
     function touch() {

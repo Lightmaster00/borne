@@ -1050,6 +1050,18 @@
         <source>no PS Vita game (sce_sys/param.sfo) in this zip</source>
         <translation>aucun jeu PS Vita (sce_sys/param.sfo) dans ce zip</translation>
     </message>
+    <message>
+        <source>decrypted game: Vita3K can play it</source>
+        <translation>jeu déchiffré : Vita3K peut le lancer</translation>
+    </message>
+    <message>
+        <source>the game's license (work.bin) is there: Vita3K can play it</source>
+        <translation>la licence du jeu (work.bin) est présente : Vita3K peut le lancer</translation>
+    </message>
+    <message>
+        <source>this dump has no license (sce_sys/package/work.bin): Vita3K cannot open it. Put on RomM a NoNpDrm dump with its work.bin, or the .pkg with its zRIF key</source>
+        <translation>cette copie n’a pas de licence (sce_sys/package/work.bin) : Vita3K ne peut pas l’ouvrir. Mets sur RomM une copie NoNpDrm avec son work.bin, ou le .pkg avec sa clé zRIF</translation>
+    </message>
 </context>
 <context>
     <name>Display</name>

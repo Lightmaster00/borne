@@ -1556,10 +1556,16 @@ fn switch_base(rom: &Path) -> Result<PathBuf, String> {
 /// A note on a downloaded game's file, shown on its page: a 3DS dump said encrypted (Azahar
 /// cannot play it) or decrypted.
 pub fn file_note(g: &crate::db::GameRow) -> Option<Value> {
-    if g.platform_slug != "3ds" || g.local_state != "local" {
+    if g.local_state != "local" {
         return None;
     }
     let rom = PathBuf::from(g.local_main.as_deref()?);
+    if g.platform_slug == "psvita" {
+        return vita_license_note(&rom);
+    }
+    if g.platform_slug != "3ds" {
+        return None;
+    }
     let ext = rom.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
     if !["3ds", "cci", "cxi"].contains(&ext.as_str()) {
         return None;
@@ -1568,6 +1574,28 @@ pub fn file_note(g: &crate::db::GameRow) -> Option<Value> {
         json!({ "ok": false, "text": "this copy is encrypted: Azahar cannot play it. Put a decrypted copy of the game on RomM" })
     } else {
         json!({ "ok": true, "text": "decrypted copy: Azahar can play it" })
+    })
+}
+
+/// What a PS Vita game folder (its `sce_sys/param.sfo` given) says of itself: a game dumped from a
+/// console keeps its executable encrypted and needs its license (`sce_sys/package/work.bin`, a
+/// NoNpDrm dump) for Vita3K to open it; a fully decrypted executable (an ELF) needs none. A raw dump
+/// without its license cannot be played: said on the game's page rather than left to fail.
+fn vita_license_note(param_sfo: &Path) -> Option<Value> {
+    use std::io::Read;
+    let root = param_sfo.parent()?.parent()?;
+    if !param_sfo.ends_with("sce_sys/param.sfo") || !root.is_dir() {
+        return None;
+    }
+    let mut magic = [0u8; 4];
+    let eboot = std::fs::File::open(root.join("eboot.bin")).and_then(|mut f| f.read_exact(&mut magic));
+    if eboot.is_ok() && &magic == b"\x7fELF" {
+        return Some(json!({ "ok": true, "text": "decrypted game: Vita3K can play it" }));
+    }
+    Some(if root.join("sce_sys/package/work.bin").is_file() {
+        json!({ "ok": true, "text": "the game's license (work.bin) is there: Vita3K can play it" })
+    } else {
+        json!({ "ok": false, "text": "this dump has no license (sce_sys/package/work.bin): Vita3K cannot open it. Put on RomM a NoNpDrm dump with its work.bin, or the .pkg with its zRIF key" })
     })
 }
 
@@ -2487,6 +2515,23 @@ mod tests {
         assert_eq!((pkg.as_str(), tid.as_str(), zrif.as_deref()), ("EP1024-PCSB01061_00-COLLARMALICE0000.pkg", "PCSB01061", Some(key)));
         assert_eq!(vita_pkg_of(&make("b.zip", None)).unwrap().2, None);
         let _ = std::fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn a_vita_dump_without_its_license_is_told() {
+        let root = std::env::temp_dir().join(format!("borne-vita-note-{}", std::process::id()));
+        let game = root.join("PCSB00001");
+        std::fs::create_dir_all(game.join("sce_sys/package")).unwrap();
+        std::fs::write(game.join("sce_sys/param.sfo"), b"\0PSF").unwrap();
+        std::fs::write(game.join("eboot.bin"), b"SCE\0rest").unwrap();
+        let sfo = game.join("sce_sys/param.sfo");
+        assert_eq!(vita_license_note(&sfo).unwrap()["ok"], json!(false));
+        std::fs::write(game.join("sce_sys/package/work.bin"), b"license").unwrap();
+        assert_eq!(vita_license_note(&sfo).unwrap()["ok"], json!(true));
+        std::fs::remove_file(game.join("sce_sys/package/work.bin")).unwrap();
+        std::fs::write(game.join("eboot.bin"), b"\x7fELFrest").unwrap();
+        assert_eq!(vita_license_note(&sfo).unwrap()["ok"], json!(true));
+        std::fs::remove_dir_all(&root).ok();
     }
 
     #[test]
