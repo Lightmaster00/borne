@@ -1,44 +1,45 @@
-// Each console's games: the proportions of their retail case (width × height in millimetres, as
-// sold in Europe / North America), for a cover that has no picture or a picture of no sensible
-// shape, and the console's colour (the screen's border, the covers' glow, the badges).
+// Each console's games: their retail case (width × height × thickness in millimetres, as sold in
+// Europe / North America, and the plastic's or the box's colour), for a cover that has no picture
+// or a picture of no sensible shape and for the case in 3D on a game's page; and the console's
+// colour (the screen's border, the covers' glow, the badges).
 .pragma library
 
 const CASES = {
-    nes:       { w: 127, h: 184 },
-    famicom:   { mat: "card",  color: "#26262a", w: 127, h: 92,  d: 25 },
-    snes:      { w: 184, h: 133 },
-    sfam:      { w: 184, h: 133 },
-    n64:       { w: 190, h: 133 },
-    gb:        { w: 114, h: 127 },
-    gbc:       { w: 114, h: 127 },
-    gba:       { w: 127, h: 127 },
-    atari2600: { w: 140, h: 190 },
-    genesis:   { w: 135, h: 184 },
-    sms:       { w: 135, h: 184 },
-    gamegear:  { w: 112, h: 160 },
+    nes:       { w: 127, h: 184, d: 32, color: "#26262a" },
+    famicom:   { w: 127, h: 92, d: 25, color: "#26262a" },
+    snes:      { w: 184, h: 133, d: 38, color: "#26262a" },
+    sfam:      { w: 184, h: 133, d: 38, color: "#26262a" },
+    n64:       { w: 190, h: 133, d: 38, color: "#26262a" },
+    gb:        { w: 114, h: 127, d: 22, color: "#26262a" },
+    gbc:       { w: 114, h: 127, d: 22, color: "#26262a" },
+    gba:       { w: 127, h: 127, d: 30, color: "#26262a" },
+    atari2600: { w: 140, h: 190, d: 30, color: "#26262a" },
+    genesis:   { w: 135, h: 184, d: 23, color: "#121214" },
+    sms:       { w: 135, h: 184, d: 23, color: "#121214" },
+    gamegear:  { w: 112, h: 160, d: 20, color: "#121214" },
     // CD consoles: the square cover insert alone (the core cuts a case hinge out of the scans,
     // media::cut_hinge).
-    psx:       { w: 125, h: 125 },
-    ps:        { w: 125, h: 125 },
+    psx:       { w: 125, h: 125, d: 10, color: "#0b0b0d" },
+    ps:        { w: 125, h: 125, d: 10, color: "#0b0b0d" },
     // Saturn, Mega-CD and Dreamcast jewel cases hold the same square insert.
-    saturn:    { w: 125, h: 125 },
-    segacd:    { w: 125, h: 125 },
-    dc:        { w: 125, h: 125 },
-    ngc:       { w: 136, h: 191 },
-    ps2:       { w: 135, h: 190 },
-    xbox:      { w: 135, h: 190 },
-    wii:       { w: 135, h: 190 },
-    xbox360:   { w: 135, h: 190 },
-    wiiu:      { w: 135, h: 170 },
-    ps3:       { w: 135, h: 171 },
-    ps4:       { w: 135, h: 171 },
-    psp:       { w: 105, h: 180 },
-    nds:       { w: 125, h: 137 },
-    "3ds":     { w: 125, h: 137 },
-    switch:    { w: 105, h: 170 },
+    saturn:    { w: 125, h: 125, d: 10, color: "#0b0b0d" },
+    segacd:    { w: 125, h: 125, d: 10, color: "#0b0b0d" },
+    dc:        { w: 125, h: 125, d: 10, color: "#0b0b0d" },
+    ngc:       { w: 136, h: 191, d: 14, color: "#151517" },
+    ps2:       { w: 135, h: 190, d: 14, color: "#141416" },
+    xbox:      { w: 135, h: 190, d: 14, color: "#141416" },
+    wii:       { w: 135, h: 190, d: 14, color: "#eceef1" },
+    xbox360:   { w: 135, h: 190, d: 14, color: "#4f9a3a" },
+    wiiu:      { w: 135, h: 170, d: 13, color: "#2a8fd0" },
+    ps3:       { w: 135, h: 171, d: 12, color: "#2b4f96" },
+    ps4:       { w: 135, h: 171, d: 12, color: "#2b4f96" },
+    psp:       { w: 105, h: 180, d: 14, color: "#141416" },
+    nds:       { w: 125, h: 137, d: 14, color: "#18181b" },
+    "3ds":     { w: 125, h: 137, d: 13, color: "#eceef1" },
+    switch:    { w: 105, h: 170, d: 11, color: "#d0202b" },
     // Neo Geo AES: a big cardboard box.
-    neogeoaes: { w: 140, h: 191 },
-    neogeo:    { w: 140, h: 191 }
+    neogeoaes: { w: 140, h: 191, d: 42, color: "#26262a" },
+    neogeo:    { w: 140, h: 191, d: 42, color: "#26262a" }
 }
 // Each console's case proportions (width / height) as its front scans show them, from the core
 // (GET /platforms, case_ar: one or two shapes, most common first), when the consoles are listed.
@@ -71,5 +72,5 @@ const TINTS = {
 function tint(slug) { return TINTS[slug] || "#5A6DB0" }
 
 function of(slug) {
-    return CASES[slug] || { w: 135, h: 190 }
+    return CASES[slug] || { w: 135, h: 190, d: 14, color: "#141416" }
 }

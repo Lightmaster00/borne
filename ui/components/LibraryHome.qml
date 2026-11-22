@@ -54,11 +54,11 @@ Item {
     // The folder's room (Main lays its grid out to it).
     readonly property real panelX: 230
     readonly property real panelW: width - panelX - 150
-    readonly property real panelH: Math.min(790, height - 150 - 140)
+    readonly property real panelH: Math.min(850, height - 110 - 120)
     readonly property real gridPad: 16
     readonly property real folderWidth: panelW - 60 - 2 * gridPad
     readonly property real folderHeight: panelH - 116 - 80
-    readonly property int folderTileH: Math.round(Math.max(180, Math.min(270, (folderWidth - 5 * 40) / (6 * 0.72))))
+    readonly property int folderTileH: Math.round(Math.max(200, Math.min(330, (folderWidth - 4 * 40) / (5 * 0.72))))
 
     // ================= the home =================
     Item {
@@ -78,7 +78,7 @@ Item {
             Behavior on y { NumberAnimation { duration: 650 * root.motion; easing.type: Easing.OutCubic } }
 
             Text {
-                x: root.leftX; y: 250
+                x: root.leftX; y: 186
                 text: qsTr("Recently played")
                 color: Qt.rgba(1, 1, 1, 0.75)
                 font { family: theme.fontFamily; pixelSize: 18; weight: Font.ExtraBold }
@@ -87,12 +87,12 @@ Item {
             // ---------- the row ----------
             Item {
                 id: rowView
-                x: 172; y: 286
-                width: parent.width - x - 14; height: 460
+                x: 172; y: 216
+                width: parent.width - x - 14; height: 510
                 clip: true
                 opacity: root.zone === "shelf" ? 0.4 : 1
                 Behavior on opacity { NumberAnimation { duration: 450 * root.motion } }
-                readonly property real coverH: 340
+                readonly property real coverH: 420
                 readonly property bool lit: root.zone === "row" && root.onHome && !root.folderOpen
                 // Each tile's place: the selected one large (larger while the row has the focus).
                 readonly property var geom: {
@@ -102,7 +102,7 @@ Item {
                     for (let k = 0; k < n; k++) {
                         const g = root.rowGames[k]
                         const ratio = g ? Math.max(0.72, Math.min(1.25, g.cover_ar >= 0.45 && g.cover_ar <= 2.2 ? g.cover_ar : Cases.ratio(g.platform_slug))) : 0.8
-                        const hh = k === root.rowIndex ? (lit ? coverH + 40 : coverH) : Math.round(coverH * 0.78)
+                        const hh = k === root.rowIndex ? (lit ? coverH + 40 : coverH) : Math.round(coverH * 0.8)
                         const w = Math.round(hh * ratio)
                         out.push({ x: x, y: Math.round((coverH + 40 - hh) / 2), w: w, h: hh })
                         x += w + 26
@@ -122,7 +122,7 @@ Item {
                             g: index < root.rowGames.length ? root.rowGames[index] : null
                             all: index === root.allIndex
                             x: r.x; y: r.y; width: r.w; height: r.h
-                            radius: 26
+                            radius: 14
                             ring: rowView.lit && index === root.rowIndex
                             badge: index === 0 && !!g && g.last_played > 0 ? qsTr("In progress") : ""
                             Behavior on x { NumberAnimation { duration: 520 * root.motion; easing.type: Easing.OutCubic } }
@@ -145,7 +145,7 @@ Item {
 
             // ---------- the selected game, under the row ----------
             Column {
-                x: root.leftX; y: 716
+                x: root.leftX; y: 726
                 width: Math.min(1300, parent.width - root.leftX - 140)
                 spacing: 8
                 opacity: root.zone === "row" ? 1 : 0.35
@@ -186,13 +186,13 @@ Item {
 
             // ---------- the collections ----------
             Text {
-                x: root.leftX; y: 896
+                x: root.leftX; y: 886
                 text: qsTr("Collections")
                 color: Qt.rgba(1, 1, 1, 0.75)
                 font { family: theme.fontFamily; pixelSize: 18; weight: Font.ExtraBold }
             }
             Item {
-                x: root.leftX - 20; y: 920
+                x: root.leftX - 20; y: 910
                 width: parent.width - x - 14; height: 280
                 clip: true
                 Row {
@@ -224,7 +224,7 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 450 * root.motion; easing.type: Easing.InOutQuad } }
         Behavior on x { NumberAnimation { duration: 600 * root.motion; easing.type: Easing.OutCubic } }
         Column {
-            x: root.leftX; y: 226
+            x: root.leftX; y: 170
             spacing: 6
             Text {
                 text: qsTr("Store")
@@ -238,8 +238,8 @@ Item {
             }
         }
         Item {
-            x: 150; y: 330
-            width: parent.width - x - 14; height: 540
+            x: 150; y: 270
+            width: parent.width - x - 14; height: 590
             clip: true
             Row {
                 x: 80 - Math.max(0, (root.wallIndex - 1) * 172)
@@ -268,7 +268,7 @@ Item {
             font { family: theme.fontFamily; pixelSize: 24; weight: Font.DemiBold }
         }
         Column {
-            x: root.leftX; y: 872
+            x: root.leftX; y: 862
             spacing: 8
             readonly property var w: root.wall[root.wallIndex] || null
             Text {
@@ -301,9 +301,9 @@ Item {
     }
     Rectangle {
         id: panel
-        x: root.panelX; y: 150
+        x: root.panelX; y: 110
         width: root.panelW; height: root.panelH
-        radius: 40
+        radius: 28
         color: Qt.rgba(0.12, 0.12, 0.15, 0.86)
         border { width: 1; color: Qt.rgba(1, 1, 1, 0.14) }
         opacity: root.folderOpen ? 1 : 0
@@ -546,13 +546,13 @@ Item {
         Rectangle {
             visible: fo.on
             anchors { fill: parent; margins: -9 }
-            radius: 37
+            radius: 29
             color: "transparent"
             border { width: 4; color: theme.fg }
         }
         Rectangle {
             anchors.fill: parent
-            radius: 28
+            radius: 20
             color: Qt.rgba(1, 1, 1, fo.on ? 0.16 : 0.1)
             border { width: 1; color: Qt.rgba(1, 1, 1, 0.1) }
         }
@@ -574,7 +574,7 @@ Item {
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
-                    Rectangle { id: miniMask; anchors.fill: parent; radius: 12; visible: false; layer.enabled: true }
+                    Rectangle { id: miniMask; anchors.fill: parent; radius: 7; visible: false; layer.enabled: true }
                 }
             }
         }
@@ -596,7 +596,8 @@ Item {
         }
     }
 
-    // A console of the Store: a slanted card in its colour, wide when selected.
+    // A console of the Store: a slanted card in its colour, wide when selected, with a picture of
+    // the console (ScreenScraper's), else three of its games; its logo along the card when narrow.
     component Card: Item {
         id: card
         property var c
@@ -604,8 +605,9 @@ Item {
         property bool lit: false
         readonly property color tint: Cases.tint(c.slug)
         readonly property real k: 0.158      // tan(9°)
-        width: on ? 560 : 150
-        height: 470
+        readonly property bool hasPhoto: photo.status === Image.Ready
+        width: on ? 640 : 150
+        height: 520
         y: on ? -14 : 0
         z: on ? 2 : 1
         Behavior on width { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
@@ -619,83 +621,125 @@ Item {
             Rectangle {
                 visible: card.lit
                 anchors { fill: parent; margins: -10 }
-                radius: 36
+                radius: 26
                 color: "transparent"
                 border { width: 4; color: theme.fg }
             }
             Rectangle {
                 anchors.fill: parent
-                radius: 26
+                radius: 16
                 gradient: Gradient {
                     orientation: Gradient.Vertical
-                    GradientStop { position: 0; color: Qt.lighter(card.tint, 1.1) }
-                    GradientStop { position: 1; color: Qt.darker(card.tint, 2.6) }
+                    GradientStop { position: 0; color: Qt.lighter(card.tint, 1.15) }
+                    GradientStop { position: 1; color: Qt.darker(card.tint, 2.8) }
+                }
+                // A soft light behind the console.
+                Rectangle {
+                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 40 }
+                    width: Math.min(parent.width * 0.8, 320); height: width; radius: width / 2
+                    color: Qt.rgba(1, 1, 1, 0.14)
+                    opacity: card.on ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 400 * root.motion } }
                 }
                 Rectangle {
                     anchors.fill: parent
-                    radius: 26
+                    radius: 16
                     color: "#000000"
-                    opacity: card.on ? 0 : 0.28
+                    opacity: card.on ? 0 : 0.3
                     Behavior on opacity { NumberAnimation { duration: 400 * root.motion } }
                 }
             }
         }
-        // Three of its games, upright.
+        // The console itself, upright.
+        Image {
+            id: photo
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 34 }
+            width: 520; height: 300
+            source: card.c.photo || ""
+            sourceSize.height: 600
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            opacity: card.on && status === Image.Ready ? 1 : 0
+            visible: opacity > 0
+            scale: card.on ? 1 : 0.85
+            Behavior on opacity { NumberAnimation { duration: 450 * root.motion } }
+            Behavior on scale { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
+            layer.enabled: visible
+            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.6; shadowBlur: 0.8; shadowVerticalOffset: 18 }
+        }
+        // No picture: three of its games.
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 40
+            y: 50
             spacing: 14
-            opacity: card.on ? 1 : 0
+            opacity: card.on && !card.hasPhoto ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 400 * root.motion } }
             Repeater {
                 model: card.c.covers
                 Item {
                     required property string modelData
-                    width: 150; height: 210
+                    width: 170; height: 240
                     layer.enabled: true
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: cardMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                     Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.25) }
                     Image {
                         anchors.fill: parent
                         source: modelData
-                        sourceSize.height: 420
+                        sourceSize.height: 480
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
-                    Rectangle { id: cardMask; anchors.fill: parent; radius: 16; visible: false; layer.enabled: true }
+                    Rectangle { id: cardMask; anchors.fill: parent; radius: 10; visible: false; layer.enabled: true }
                 }
             }
         }
-        // The console's logo (white), else its name.
+        // Its logo in white: across the foot when wide, along the card when narrow.
         Item {
-            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 70 }
-            width: card.on ? 380 : 120
-            height: 96
-            Behavior on width { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
-            Image {
-                id: cardLogo
-                anchors.fill: parent
-                visible: status === Image.Ready
-                source: card.c.logo || ""
-                sourceSize.height: 240
-                fillMode: Image.PreserveAspectFit
-                asynchronous: true
-                layer.enabled: visible
-                layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
-            }
-            Text {
-                visible: !cardLogo.visible
-                anchors.fill: parent
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                fontSizeMode: Text.Fit
-                minimumPixelSize: 16
-                wrapMode: Text.WordWrap
-                text: card.c.name
-                color: "#ffffff"
-                font { family: theme.displayFont; pixelSize: card.on ? 54 : 24; weight: Font.ExtraBold; letterSpacing: -1 }
-            }
+            id: wideLogo
+            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 56 }
+            width: 400; height: 92
+            opacity: card.on ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 350 * root.motion } }
+            Logo { anchors.fill: parent; c: card.c; size: 54 }
+        }
+        Item {
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: 20
+            width: card.height * 0.62; height: 70
+            rotation: -81
+            opacity: card.on ? 0 : 1
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 350 * root.motion } }
+            Logo { anchors.fill: parent; c: card.c; size: 30 }
+        }
+    }
+    component Logo: Item {
+        id: lg
+        property var c
+        property real size: 30
+        Image {
+            id: lgImg
+            anchors.fill: parent
+            visible: status === Image.Ready
+            source: lg.c.logo || ""
+            sourceSize.height: 240
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            layer.enabled: visible
+            layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
+        }
+        Text {
+            visible: !lgImg.visible
+            anchors.fill: parent
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            fontSizeMode: Text.Fit
+            minimumPixelSize: 14
+            text: lg.c.name
+            color: "#ffffff"
+            font { family: theme.displayFont; pixelSize: lg.size; weight: Font.ExtraBold; letterSpacing: -0.6 }
         }
     }
 
@@ -725,7 +769,7 @@ Item {
         Rectangle {
             visible: tile.cur
             x: -9; y: -9; width: tile.width + 18; height: tile.t.h + 18
-            radius: 29
+            radius: 21
             color: "transparent"
             border { width: 4; color: theme.fg }
         }
@@ -765,7 +809,7 @@ Item {
                 }
             }
         }
-        Rectangle { id: tileMask; width: tile.width; height: tile.t.h; radius: 20; visible: false; layer.enabled: true }
+        Rectangle { id: tileMask; width: tile.width; height: tile.t.h; radius: 12; visible: false; layer.enabled: true }
         Column {
             visible: tile.t.caption
             y: tile.t.h + 12

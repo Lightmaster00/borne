@@ -63,15 +63,16 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   sorted by last played, newest, name, play time or release date; search as you type, in titles
   from every region.
 - **The Store**: your server's consoles as slanted cards in their colours, the one selected opening
-  wide on three of its games; ordered by play time, number of games, release date, name, maker or
+  wide on a picture of the console; ordered by play time, number of games, release date, name, maker or
   your own order (LT / RT move a console).
 - **A border in your console's colours**: the screen is framed in the colour of the console of the
   game you are on, its logo large on top; a video of the selected game can play behind (off by
   default).
-- **Game page**: a glass window over the game's art, its trailer playing there; Play (or
-  Install), the heart for your favourites, the game's own settings (Y) and its fact sheet (players'
-  rating, your play time, studios, series, release, modes, age rating, languages, file, emulator,
-  controller); under it a gallery, the trailer then the screenshots.
+- **Game page**: over the game's art, its video playing behind (in full screen with its sound
+  after a few seconds); its case in 3D that you turn with the arrows; Play (or Install), the heart
+  for your favourites, the game's own settings (Y) and its fact sheet (players' rating, your play
+  time, studios, series, release, modes, age rating, languages, file, emulator, controller); a
+  gallery, the video then the screenshots.
 - **Each game its controller**: the version and the language, and the controller the console sees,
   per console or per game: a Switch Pro Controller, a pair of Joy-Con or the console in hand (the
   Pokémon Let's Go games get the Joy-Con by themselves); a Wii Remote with its Nunchuk, alone, held

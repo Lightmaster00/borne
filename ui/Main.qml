@@ -286,6 +286,7 @@ Window {
                 const logo = kinds.indexOf("logo-mono") >= 0 ? "logo-mono" : kinds.indexOf("logo") >= 0 ? "logo" : ""
                 out.push({ slug: Shelf.tabOf(p.slug), name: shortNames[p.slug] || p.name,
                            logo: logo ? apiBase + "/api/v1/systems/" + p.slug + "/art/" + logo : "",
+                           photo: kinds.indexOf("photo") >= 0 ? apiBase + "/api/v1/systems/" + p.slug + "/art/photo" : "",
                            ready: p.ready_count || 0, total: p.rom_count || 0 })
             }
             Cases.setRatios(shapes)
@@ -400,7 +401,7 @@ Window {
             const first = page === null || overlay !== "game"
             page = d
             pageGame = toRow(d.game)
-            if (first) { pageFacts = null; gamePage.reset(); overlay = "game"; sfx.play("accept") }
+            if (first) { pageFacts = null; gamePage.reset(); videoRested = false; overlay = "game"; sfx.play("accept") }
             loadFacts(romId)
             loadTrailer(pageGame)
         })
@@ -408,16 +409,26 @@ Window {
     // Trailer: the core fetches it once from RomM (with the token) and plays it from disk.
     property string pageTrailer: ""
     property string pageTrailerState: ""   // "", "loading", "ready", "error: …"
+    // The game page's video: RomM's trailer, else ScreenScraper's capture of the game being played
+    // (both prepared by the core as local files).
     function loadTrailer(g) {
-        if (!g || !g.trailer) { pageTrailer = ""; pageTrailerState = ""; return }
+        if (!g) { pageTrailer = ""; pageTrailerState = ""; return }
         if (pageTrailerState === "loading" && pageTrailerFor === g.rom_id) return
         pageTrailerFor = g.rom_id
         pageTrailer = ""
         pageTrailerState = "loading"
+        const gameplay = function () {
+            api("POST", "/api/v1/games/" + g.rom_id + "/gameplay", {}, function (r, err) {
+                if (pageTrailerFor !== g.rom_id) return
+                if (r && r.path) { pageTrailer = fileUrl(r.path, 0); pageTrailerState = "ready" }
+                else pageTrailerState = g.trailer ? "error: " + (err || "") : ""
+            })
+        }
+        if (!g.trailer) { gameplay(); return }
         api("POST", "/api/v1/games/" + g.rom_id + "/trailer", {}, function (r, err) {
             if (pageTrailerFor !== g.rom_id) return
             if (r && r.path) { pageTrailer = fileUrl(r.path, 0); pageTrailerState = "ready" }
-            else pageTrailerState = "error: " + (err || "")
+            else gameplay()
         })
     }
     property int pageTrailerFor: -1
@@ -468,7 +479,7 @@ Window {
     // and so does a minute of it (see videoRested).
     property double lastActivity: Date.now()
     property bool attract: false
-    readonly property bool attractAllowed: prefs.attractDelay > 0 && screen === "library" && overlay === "" && ready && !gameMode
+    readonly property bool attractAllowed: prefs.attractDelay > 0 && screen === "library" && (overlay === "" || (overlay === "game" && !gameSettingsPage.visible)) && ready && !gameMode
                                            && !menu.visible && !search.visible && !downloadsPanel.visible
                                            && !nameEntry.visible && !sortMenu.visible
                                            && libModel.count > 0 && ambience.videoShown && !videoRested
@@ -728,6 +739,7 @@ Window {
         if (id === "back") { sfx.play("back"); closeGame(); return }
         if (!g) return
         if (id === "settings") gameSettings(g)
+        else if (id === "watch") { if (ambience.videoShown) { videoRested = false; attract = true } else toasts.show(qsTr("The video is still loading."), "info") }
         else if (id === "download") download(g)
         else if (id === "link") link(g)
         else if (id === "unlink") unlink(g)
@@ -1247,7 +1259,7 @@ Window {
         if (source === "pad") win.inputSeen = "pad"
         inputCountsChanged()
         lastInput = a + " via " + source
-        if (touch() && screen === "library" && overlay === "") return
+        if (touch() && screen === "library" && (overlay === "" || overlay === "game")) return
         // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs);
         // the question it raises is answered here.
         // Waiting for a pad button: only the keyboard's Escape (B) gives up.
@@ -1514,14 +1526,18 @@ Window {
             theme: win.theme
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.ambientGame
-            trailers: win.bgVideos && win.screen === "library" && win.overlay === ""
-            videoUrl: win.bgVideo
-            paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible
+            override: win.overlay === "game" ? gamePage.artOverride : ""
+            // The library's video (off by default), and on a game's page its trailer.
+            trailers: win.overlay === "game" ? win.trailers : win.bgVideos && win.screen === "library" && win.overlay === ""
+            videoUrl: win.overlay === "game" ? win.pageTrailer : win.bgVideo
+            // A game's video in full screen plays with its sound.
+            sound: win.overlay === "game" && win.attract
+            paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible || gameSettingsPage.visible
+                    || !!(win.session && win.session.running)
             rest: win.videoRested
             scrims: win.overlay === ""
             attract: win.attract
             dim: win.overlay === "settings" || win.overlay === "diag" ? 0.55 : gameSettingsPage.visible ? 0.45 : 0
-            blur: win.overlay === "game" ? 0.7 : 1
         }
 
     Item {
@@ -1704,6 +1720,10 @@ Window {
             z: 20
             // Hidden under the game's settings (their glass would show it through).
             visible: win.overlay === "game" && win.pageGame !== null && !gameSettingsPage.visible
+            // Its video in full screen: the page steps aside.
+            opacity: win.attract ? 0 : 1
+            Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
+            videoShown: ambience.videoShown
             theme: win.theme
             game: win.pageGame
             versions: win.page ? win.page.versions : []
@@ -1730,6 +1750,52 @@ Window {
             consoleName: pageConsole ? pageConsole.name : win.pageGame ? win.pageGame.platform_short : ""
             crumb: win.folder ? win.folder.name : win.libTab === "store" ? qsTr("Store") : qsTr("Recently played")
             onAction: (id, payload) => win.pageAction(id, payload)
+        }
+
+        // The settings stand in a glass panel over the game's art.
+        Rectangle {
+            id: glassPanel
+            readonly property bool shown: win.overlay === "settings" || gameSettingsPage.visible
+            x: 120; y: 96
+            width: stage.width - x - 110; height: stage.height - y - 96
+            z: 23
+            radius: 28
+            color: Qt.rgba(0.07, 0.075, 0.095, 0.9)
+            border { width: 1; color: Qt.rgba(1, 1, 1, 0.13) }
+            opacity: shown ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 380 * graphite.motion } }
+        }
+        GameSettingsPage {
+            id: gameSettingsPage
+            x: glassPanel.x; y: glassPanel.y; width: glassPanel.width; height: glassPanel.height
+            clip: true
+            z: 24
+            theme: win.theme
+            advanced: prefs.controlsAdvanced
+            game: win.pageGame
+            languages: gamePage.gameLanguages
+            versions: gamePage.playable
+            versionLabel: function (v) { return gamePage.versionLabel(v) }
+            versionDetail: function (v) { return gamePage.versionDetail(v) }
+            currentLang: gamePage.currentLang
+            languageName: function (c) { return gamePage.languageName(c) }
+            regionName: function (c) { return win.regionName(c) }
+            onAction: (id, payload) => win.gameSettingsAction(id, payload)
+        }
+        SettingsPage {
+            id: settingsPage
+            x: glassPanel.x; y: glassPanel.y; width: glassPanel.width; height: glassPanel.height
+            clip: true
+            z: 25
+            visible: win.overlay === "settings"
+            theme: win.theme
+            settings: win.settings
+            status: win.status
+            version: win.coreVersion
+            reportPaths: win.reportPaths
+            prefs: prefs
+            onAction: (id, payload) => win.settingsAction(id, payload)
         }
 
     }
@@ -2037,55 +2103,6 @@ Window {
             color: "#8b97ab"
             font { family: theme.fontFamily; pixelSize: 18 }
         }
-    }
-
-    // The settings stand in a glass panel over the game's art.
-    Rectangle {
-        id: glassPanel
-        readonly property bool shown: win.overlay === "settings" || gameSettingsPage.visible
-        readonly property real m: scene.height >= 1000 ? 110 : 56
-        x: scene.width >= 1800 ? 150 : 64; y: m
-        width: scene.width - x - (scene.width >= 1800 ? 120 : 64); height: scene.height - 2 * m
-        z: 23
-        radius: 40
-        color: Qt.rgba(0.086, 0.086, 0.118, 0.8)
-        border { width: 1; color: Qt.rgba(1, 1, 1, 0.13) }
-        opacity: shown ? 1 : 0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 380 * graphite.motion } }
-    }
-    GameSettingsPage {
-        id: gameSettingsPage
-        x: glassPanel.x; y: glassPanel.y; width: glassPanel.width; height: glassPanel.height
-        clip: true
-        z: 24
-        theme: win.theme
-        advanced: prefs.controlsAdvanced
-        game: win.pageGame
-        languages: gamePage.gameLanguages
-        versions: gamePage.playable
-        versionLabel: function (v) { return gamePage.versionLabel(v) }
-        versionDetail: function (v) { return gamePage.versionDetail(v) }
-        currentLang: gamePage.currentLang
-        languageName: function (c) { return gamePage.languageName(c) }
-        regionName: function (c) { return win.regionName(c) }
-        hasVideo: gamePage.hasTrailer && win.trailers
-        videoSound: gamePage.sound
-        onAction: (id, payload) => win.gameSettingsAction(id, payload)
-    }
-    SettingsPage {
-        id: settingsPage
-        x: glassPanel.x; y: glassPanel.y; width: glassPanel.width; height: glassPanel.height
-        clip: true
-        z: 25
-        visible: win.overlay === "settings"
-        theme: win.theme
-        settings: win.settings
-        status: win.status
-        version: win.coreVersion
-        reportPaths: win.reportPaths
-        prefs: prefs
-        onAction: (id, payload) => win.settingsAction(id, payload)
     }
 
     // UI sounds (theme.soundSet), short and quiet; off in the settings.

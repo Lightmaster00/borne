@@ -381,7 +381,7 @@ function storeCards(rows, consoles) {
     const newest = compare("added")
     return (consoles || []).filter(c => store[c.slug] && store[c.slug].length).map(c => {
         const list = store[c.slug].sort(newest)
-        return { slug: c.slug, name: c.name, logo: c.logo || "", count: list.length, installed: installed[c.slug] || 0,
+        return { slug: c.slug, name: c.name, logo: c.logo || "", photo: c.photo || "", count: list.length, installed: installed[c.slug] || 0,
                  covers: list.slice(0, 3).map(g => g.cover || ""), first: list[0].rom_id,
                  made: madeBy(c.slug) ? madeBy(c.slug) + (madeIn(c.slug) ? ", " + madeIn(c.slug) : "") : "" }
     })

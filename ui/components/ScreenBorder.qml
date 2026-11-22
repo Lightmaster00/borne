@@ -1,6 +1,6 @@
 // The border round the screen, in the colour of the console of the game you are on (or of the
 // console filtered), with a soft glow inside. A tab hangs from its top edge with the console's
-// logo, large (ScreenScraper's, in white), its name when there is none. The colour and the logo change
+// logo, small (ScreenScraper's, in white), its name when there is none. The colour and the logo change
 // with a fade as you move from one console's game to another's.
 import QtQuick
 import QtQuick.Effects
@@ -46,9 +46,9 @@ Item {
     Rectangle {
         id: tab
         visible: frame.name !== ""
-        readonly property real r: 30 * frame.unit
-        width: 520 * frame.unit
-        height: 88 * frame.unit + r
+        readonly property real r: 18 * frame.unit
+        width: 260 * frame.unit
+        height: 50 * frame.unit + r
         x: (frame.width - width) / 2
         y: -r
         radius: r
@@ -88,9 +88,9 @@ Item {
             anchors.centerIn: parent
             visible: status === Image.Ready && face.logo !== ""
             source: face.logo
-            height: 58 * frame.unit
-            width: Math.min(face.width - 80 * frame.unit, implicitWidth * height / Math.max(1, implicitHeight))
-            sourceSize.height: 160
+            height: 28 * frame.unit
+            width: Math.min(face.width - 56 * frame.unit, implicitWidth * height / Math.max(1, implicitHeight))
+            sourceSize.height: 96
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             // In white on the console's colour (black on a light one).
@@ -102,7 +102,7 @@ Item {
             visible: !logoImg.visible
             text: face.label
             color: frame.ink
-            font { family: "Bricolage Grotesque"; pixelSize: 38 * frame.unit; weight: Font.ExtraBold; letterSpacing: -0.8 * frame.unit }
+            font { family: "Bricolage Grotesque"; pixelSize: 22 * frame.unit; weight: Font.ExtraBold; letterSpacing: -0.3 * frame.unit }
         }
     }
 }

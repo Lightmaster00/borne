@@ -34,6 +34,7 @@ Version 1.8 — November 2026
 | 1.8 | Emulators managed by Borne, saves on RomM, cheats, system files, display settings; 3D cel-shaded cases from ScreenScraper scans; gamepad or keyboard only (no mouse); a game settings page with per-game emulator options; interface preferences; downloads that pause; updates by parts (only what changed is downloaded) and releases ready to install; the Borne logo and pictogram, and a website. |
 | 1.11 | A calmer, more even library: three layouts of large covers to choose from (a grid scrolling down, one large row with the selected game above it, two rows), no console badges on the covers and no large card; the Store opens on its consoles as large cards; the Consoles menu (X) orders the consoles (most played, most games, release date, name, maker, or your own order) and its button stands out; a larger logo in the border's tab; one kind of keycap everywhere; the library's video off by default. The game page airier, Y opens its settings, which start with Version and language and the Controller: the controller the game sees (Switch Pro Controller, Joy-Con pair or handheld; Wii Remote with Nunchuk, alone, sideways or Classic Controller; Wii U GamePad or Pro Controller), chosen per console or per game, with a map of what each of your buttons does. Settings regrouped (Library, Controllers, Language, Games and saves, Emulators, Screen and sound…). |
 | 1.12 | A console's home: over the selected game's art, blurred, a glass rail (profile, Home, Store, Downloads, Settings, Quit), the games played lately in a row (the selected one large, its name under it), then collections as folders (Favourites, Two players, one per console); "See all", a collection or a console of the Store opens a glass folder with a grid of its games. The Store shows its consoles as slanted cards, the selected one wide on three of its games; LT / RT move it. The game page is a glass window: the game's art and trailer in large, its name and summary, Play / Install, the heart, its settings and its fact sheet, and a gallery (trailer, screenshots). A footer says where you are. Settings in a glass panel. The Consoles menu (X), the quick filters, the genres and the three layouts are gone. |
+| 1.13 | Larger covers with tighter corners, a small tab for the console's logo, a sharp background (the game's art drifting under dark scrims, no blur). The Store's cards show a picture of the console, and a narrow card its logo along its length. A game's page: its case in 3D, swaying, turned with the arrows; its video behind the page, in full screen with its sound after a few seconds. Settings redrawn: one line per setting, its value between arrows changed with left and right. |
 | 1.10 | New interface: *My library* (games ready here) and the *Store* (the server's others, by console); games in groups set by the order (Resume, This week, A – F, the 1990s…), covers at their own proportions; Filter (consoles as a fan of cards, quick filters, genres) and Sort apart; a border in the colour of the selected game's console with its logo; the game page as a sheet with the players' rating, play time and a table of facts. 3D cases removed. |
 | 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
 
@@ -264,14 +265,17 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   looping (GameVideo.qml): filling the screen when its proportions are within 18 % of the screen's,
   else shown whole (a handheld's tall or square picture, a 4:3 capture) over a blurred, darker copy of
   itself filling the rest, the same on the game page; it fades in on its first frames and stays off with trailers off (and in
-  safe mode), on the game page and in menus. Until it plays, or when the game has no video: the game's
-  art blurred (its fan art, else a screenshot, else its blank Steam grid / marquee; less blurred
-  behind its page), else its cover blurred, enlarged and drifting slowly. One dark filter (about
-  35 % over the art, 60 % over a cover) and a deeper bottom keep the covers and the text readable. The background has no setting.
+  safe mode) and in menus. Until it plays, or when the game has no video: the game's art, sharp,
+  filling the screen and drifting very slowly (its fan art, else a screenshot, else its blank Steam
+  grid / marquee; on a game's page, the screenshot selected in its gallery), under scrims that
+  darken the left side, the top and the floor where the text stands; a game without art: a deep
+  gradient in its console's colour with a soft light (`Ambience.qml`, since 1.13: no blurred
+  picture). The background has no setting.
 - Attract: after 5 s without input on the library (Settings → Library → Video in full screen: 5 s, 15 s,
   30 s, 1 min or never), once the video plays, the library (covers, header and
   hints) fades out and the filter lightens, leaving the video; any input or the stick brings
-  it back at once, and that input only wakes it.
+  it back at once, and that input only wakes it. On a game's page the same happens with its
+  video (on by default), which then plays with its sound.
 - Home (`LibraryHome.qml`, since 1.12): a console's home over the selected game's art. Every game is
   loaded once (`/api/v1/library`); what is shown is built in the UI (`Shelf.js`). On the left a glass
   rail (`HomeChrome.qml`): the profile (its initial, to change profile), Home, Store, Downloads
@@ -279,7 +283,7 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   shown beside it. Top right: the downloads under way, the server's state, the time.
   - Recently played: the games ready here (downloaded or played from RomM through the mount), the last
     played first (`Shelf.recents`, at most 12), then a "See all" tile. The selected cover grows
-    (340 → 380 units, the others 265, OutCubic) with a ring; the first, when played, says "In progress".
+    (420 → 460 units, the others 336, OutCubic) with a ring, corners of 14 units; the first, when played, says "In progress".
     Under the row: its console and when it was played, its name in large (66 units), play time,
     genres, year.
   - Collections (down): folders of four covers: Favourites (always, empty it says how to fill it),
@@ -287,14 +291,16 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
     (`Shelf.collections`). Going down raises the page (300 units), the row dimmed above.
   - A on a game opens its page; A on "See all", a collection or a console of the Store opens a folder:
     a glass panel over the home (dimmed behind) with its name, the game selected and its count, a
-    grid of large covers (six to a line, at most 270 units high, `Shelf.build` with `tileH`), the
+    grid of large covers (five to a line, at most 330 units high, corners of 12 units, `Shelf.build` with `tileH`), the
     groups of its order when there are several, LT / RT between them, Y its order (Last played,
     Added, Name, Play time, Release date; My library and the Store keep their own, `prefs.sortHome`,
     `prefs.sortStore`), B back. The filters of earlier versions (Consoles menu X, quick filters,
     genres) and the three layouts are gone: the collections and the Store's consoles replace them.
 - Store (RB, or the rail): the server's consoles with games to discover as slanted cards (skewed
   9°) in their colour, in the consoles' order (`Shelf.storeCards`); the one selected opens wide
-  (150 → 560 units) on three of its newest games and its logo in white (its name without one), under
+  (150 → 640 units) on a picture of the console (ScreenScraper's system `photo`, else
+  `illustration`; without one, three of its newest games) and its logo in white across its foot;
+  a narrow card carries its logo along its length, slanted with it (its name without one). Under
   them its name, games to discover, how many are in My library, maker and year. A opens its games
   (a folder); LT / RT move it (your own order, `prefs.consoleCustom`); Y the consoles' order
   (`prefs.consoleOrder`, also in Settings → Library): most played, most games, release date, name,
@@ -303,34 +309,45 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   they do. Select opens the search (on-screen keyboard or the physical keyboard, where typing any
   letter starts it); a result opens in its folder (All my games, or its console in the Store),
   selected.
-- Game page (`GamePage.qml`, since 1.12): a glass window over the game's art. Its header: the
+- Game page (`GamePage.qml`, since 1.13): over the game's art and its video (the background), the
   console's logo (its name without one), where it was opened from, the game's state and download
-  progress. Then the game's art in large (fan art, else a screenshot; the trailer plays there after a
-  moment, muted), and on its left the name, three lines of summary, the studio, release year,
+  progress; then its name, a few lines of summary (as many as fit), the studio, release year,
   players and rating, and what to know before playing (what the console needs that this machine
   lacks, the file's own note, the controller a game is known to want: the Pokémon Let's Go games
   take Joy-Con only; New Super Mario Bros. Wii, Kirby's Return to Dream Land, Super Paper Mario,
-  WarioWare: Smooth Moves the Wii Remote sideways; `controls::wanted_device`). At its foot the
+  WarioWare: Smooth Moves the Wii Remote sideways; `controls::wanted_device`). Under them the
   buttons, left / right: Play (or Download, Play from the network, Retry…) in white with its name,
   the heart (favourites), the game's settings (also Y) and the fact sheet (i), which takes the
   summary's place: studios, series, release date, players, rating, play time, last played, modes,
-  age rating, regions, languages, versions, file size, emulator, controller. A line beside the
-  buttons says what the one selected does (play time and last time, size, what the game is set to).
-  Down: the gallery, the trailer first (A: its sound on or off), then up to eight screenshots (A:
-  in large, left / right through them); the art above follows the one selected. B goes back.
+  age rating, regions, languages, versions, file size, emulator, controller. A line under the
+  buttons says what the one selected does. On the right the game's case in 3D (`Box3D.qml`, Qt
+  Quick alone: six faces placed by projected matrices, those turned away hidden, shaded by how much
+  they face you): the front scan, the back scan, the spine scan on both sides (else the case's colour
+  with the game's logo or name), the spine's colour on top and bottom, at the front scan's
+  proportions and the real case's thickness (`Cases.js`), swaying slowly; up from the buttons
+  selects it and the arrows turn it (A or B lets it go). Down: the gallery, the video first (A: in
+  full screen with its sound), then up to eight screenshots (A: in large, left / right through
+  them); the background shows the one selected. The video (RomM's trailer, else ScreenScraper's
+  capture of the game being played) plays behind the page, muted; after a few seconds without a
+  press (Settings → Library → Video in full screen) the page fades out and it plays in full screen
+  with its sound; any press brings the page back. B goes back.
   The versions are chosen in the game's settings (Version and language). The trailer is RomM's
   `path_video`, a path under `/assets/romm/resources/`, downloaded by the core with the profile's
   token through `POST /api/v1/games/{id}/trailer`, cached in `media/videos` and pruned beyond 2 GB;
   when the shown version has none, another version of the same game is used. `/api/v1/games/{id}`
   adds the profile's `last_played`, `play_seconds`, the `emulator`, the `device` its console sees and
   the `device_wanted`; `/facts` adds `game_modes`, `age_ratings` and `rating` (RomM's `average_rating`).
-- Settings, Borne's and a game's, stand in a glass panel over the game's art.
-- The home, its folders and the game's page are drawn for a screen 1080 units high, whatever the
-  interface size (`stage` in `Main.qml`); the other screens follow the interface size.
+- Settings, Borne's and a game's, stand in a glass panel over the game's art, drawn like the home
+  for a screen 1080 units high. Each setting is a line (`SettingRow.qml`): its name and a sentence on
+  the left; on the right its value between arrows, with a dot per choice: left and right (or A)
+  change it at once; or its buttons, or its state and a chevron for a line that opens a page. The
+  line selected is light, its text dark.
+- The home, its folders, the game's page and the settings are drawn for a screen 1080 units high,
+  whatever the interface size (`stage` in `Main.qml`); the other screens follow the interface size.
 - Border and accent (`ScreenBorder.qml`): the screen sits in a border in the colour of the console
   of the game selected (else the folder's console, the Store's card selected, the collection's console: `Cases.js`),
-  with a soft glow inside and a tab hanging from its top edge (520 × 88 units) with the console's
-  logo in white, 58 units high (ScreenScraper's `logo-mono` / `logo`), its name without one; the colour
+  with a soft glow inside and a small tab hanging from its top edge (260 × 50 units) with the
+  console's logo in white, 28 units high (ScreenScraper's `logo-mono` / `logo`), its name without one; the colour
   and the logo change with a fade as the selection crosses from one console's game to another's
   (on the Store's cards, the card chosen). The tab steps aside over a game's settings. That colour is
   the accent. Keycaps are all alike (`KeyCap.qml`): light with a

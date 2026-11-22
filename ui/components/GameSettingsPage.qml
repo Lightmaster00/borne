@@ -29,8 +29,6 @@ Item {
     property var versionDetail: function (v) { return "" }
     property string currentLang: ""
     property var languageName: function (c) { return c }
-    property bool hasVideo: false
-    property bool videoSound: false
 
     signal action(string id, var payload)
 
@@ -187,11 +185,6 @@ Item {
                          selected: images.chosen || "", items: [{ id: "", label: qsTr("Automatic") }].concat(regions.map(x => ({ id: x, label: regionName(x) }))) })
             r.push({ id: "ss-search", kind: "buttons", title: qsTr("Not the right game?"), desc: qsTr("Search ScreenScraper by name and choose the right one"),
                      items: [{ id: "ss-search", label: qsTr("Search") }] })
-            if (hasVideo) {
-                r.push(group(qsTr("Video")))
-                r.push({ id: "sound", kind: "chips", title: qsTr("Video sound"), desc: qsTr("The trailer on this game's page"),
-                         selected: videoSound ? "on" : "off", items: [{ id: "on", label: qsTr("On") }, { id: "off", label: qsTr("Off") }] })
-            }
             return r
         }
         const r = []
@@ -266,6 +259,8 @@ Item {
         const r = rows[Math.min(row, rows.length - 1)]
         if (!r) return
         const n = r.items.length
+        // A choice: left and right (and A) change it at once.
+        if (r.kind === "chips" && (a === "left" || a === "right" || a === "a")) { cycle(r, a === "left" ? -1 : 1); return }
         if (a === "up") row = step(row, -1)
         else if (a === "down") row = step(row, 1)
         else if (a === "left") { if (colOf(r.id) === 0) inRows = false; else setCol(r.id, colOf(r.id) - 1) }
@@ -273,6 +268,18 @@ Item {
         else if (a === "a") activate(r, colOf(r.id))
     }
     function focused(id, i) { return !!(inRows && rows[row] && rows[row].id === id && colOf(id) === i) }
+    // The next (d = 1) or previous (-1) choice of a line that can be chosen, applied.
+    function cycle(r, d) {
+        const n = r.items.length
+        if (n < 2) return
+        let i = Math.max(0, r.items.findIndex(x => String(x.id) === String(r.selected)))
+        for (let k = 0; k < n; k++) {
+            i = (i + d + n) % n
+            if (!r.items[i].disabled) break
+        }
+        setCol(r.id, i)
+        activate(r, i)
+    }
 
     // ---------- sections ----------
     Rectangle {
@@ -355,7 +362,7 @@ Item {
                     onCurrentChanged: if (current) rowsView.ensure(rowItem)
                     Component.onCompleted: if (current) Qt.callLater(function () { if (rowItem && rowItem.current && rowItem.parent && rowsView) rowsView.ensure(rowItem) })
                     width: parent.width
-                    height: kind === "header" ? 58 : kind === "note" ? noteText.height + 8 : Math.max(96, line.height + 52)
+                    height: kind === "header" ? 58 : kind === "note" ? noteText.height + 8 : line.implicitHeight
 
                     Item {
                         visible: rowItem.kind === "header"
@@ -382,74 +389,19 @@ Item {
                         color: theme.fgMuted
                         font { family: theme.fontFamily; pixelSize: 17 }
                     }
-                    Rectangle {
-                        visible: rowItem.kind === "chips" || rowItem.kind === "buttons"
-                        anchors.fill: parent
-                        radius: 26
-                        color: rowItem.current ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.045)
-                        Behavior on color { ColorAnimation { duration: theme.focusMs } }
-                    }
-                    Item {
+                    SettingRow {
                         id: line
                         visible: rowItem.kind === "chips" || rowItem.kind === "buttons"
-                        x: 32
-                        width: parent.width - 64
-                        height: Math.max(texts.height, choices.height)
-                        anchors.verticalCenter: parent.verticalCenter
-                        Column {
-                            id: texts
-                            width: Math.max(220, parent.width - choices.width - 32)
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 4
-                            Text { width: parent.width; text: rowItem.modelData.title || ""; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontFamily; pixelSize: 20; weight: Font.DemiBold } }
-                            Text {
-                                visible: text !== ""
-                                width: parent.width
-                                text: rowItem.modelData.desc || ""
-                                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                                color: theme.fgMuted
-                                font { family: theme.fontFamily; pixelSize: 18 }
-                            }
-                        }
-                        Flow {
-                            id: choices
-                            anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            width: Math.min(implicitW, line.width - 252)
-                            readonly property real implicitW: {
-                                let w = 0
-                                for (let i = 0; i < rep.count; i++) { const it = rep.itemAt(i); if (it) w += it.width + 10 }
-                                return Math.max(0, w - 10)
-                            }
-                            spacing: 10
-                            Repeater {
-                                id: rep
-                                model: rowItem.modelData.items
-                                Item {
-                                    required property var modelData
-                                    required property int index
-                                    width: rowItem.kind === "buttons" ? btn.width : chip.width
-                                    height: rowItem.kind === "buttons" ? btn.height : chip.height
-                                    PageButton {
-                                        id: btn
-                                        visible: rowItem.kind === "buttons"
-                                        implicitHeight: 52
-                                        theme: page.theme
-                                        text: modelData.label
-                                        primary: !!modelData.primary
-                                        disabled: !!modelData.disabled
-                                        focused: page.focused(rowItem.modelData.id, index)
-                                    }
-                                    Chip {
-                                        id: chip
-                                        visible: rowItem.kind === "chips"
-                                        theme: page.theme
-                                        text: modelData.label
-                                        selected: modelData.id === rowItem.modelData.selected
-                                        focused: page.focused(rowItem.modelData.id, index)
-                                    }
-                                }
-                            }
-                        }
+                        width: parent.width
+                        height: rowItem.height
+                        theme: page.theme
+                        kind: rowItem.kind
+                        title: rowItem.modelData.title || ""
+                        desc: rowItem.modelData.desc || ""
+                        items: rowItem.modelData.items || []
+                        selected: rowItem.modelData.selected !== undefined && rowItem.modelData.selected !== null ? String(rowItem.modelData.selected) : ""
+                        current: rowItem.current
+                        focusedCol: page.colOf(rowItem.modelData.id)
                     }
                 }
             }

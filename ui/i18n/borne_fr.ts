@@ -1670,18 +1670,6 @@
         <translation>Pas encore de résumé pour ce jeu.</translation>
     </message>
     <message>
-        <source>The trailer cannot be played: %1</source>
-        <translation>La bande-annonce ne peut pas être lue : %1</translation>
-    </message>
-    <message>
-        <source>Trailer unavailable: %1</source>
-        <translation>Bande-annonce indisponible : %1</translation>
-    </message>
-    <message>
-        <source>Loading the trailer…</source>
-        <translation>Chargement de la bande-annonce…</translation>
-    </message>
-    <message>
         <source>Remove from favourites</source>
         <translation>Retirer des favoris</translation>
     </message>
@@ -1838,14 +1826,6 @@
         <translation>Galerie</translation>
     </message>
     <message>
-        <source>Sound off</source>
-        <translation>Couper le son</translation>
-    </message>
-    <message>
-        <source>Sound on</source>
-        <translation>Mettre le son</translation>
-    </message>
-    <message>
         <source>View</source>
         <translation>Voir</translation>
     </message>
@@ -1870,24 +1850,44 @@
         <translation>Joueurs :</translation>
     </message>
     <message>
-        <source>A to turn the sound off</source>
-        <translation>A pour couper le son</translation>
-    </message>
-    <message>
-        <source>A to hear the trailer</source>
-        <translation>A pour entendre la bande-annonce</translation>
-    </message>
-    <message>
         <source>Screenshot %1 of %2 · A to see it in large</source>
         <translation>Capture %1 sur %2 · A pour la voir en grand</translation>
     </message>
     <message>
-        <source>Trailer</source>
-        <translation>Bande-annonce</translation>
-    </message>
-    <message>
         <source>Screenshot %1</source>
         <translation>Capture %1</translation>
+    </message>
+    <message>
+        <source>Turn the case</source>
+        <translation>Tourner la boîte</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Terminé</translation>
+    </message>
+    <message>
+        <source>The case</source>
+        <translation>La boîte</translation>
+    </message>
+    <message>
+        <source>Watch</source>
+        <translation>Regarder</translation>
+    </message>
+    <message>
+        <source>Turn the case with the arrows</source>
+        <translation>Fais tourner la boîte avec les flèches</translation>
+    </message>
+    <message>
+        <source>A to watch the video in full screen, with its sound</source>
+        <translation>A pour voir la vidéo en plein écran, avec le son</translation>
+    </message>
+    <message>
+        <source>Video</source>
+        <translation>Vidéo</translation>
+    </message>
+    <message>
+        <source>Video · loading…</source>
+        <translation>Vidéo · chargement…</translation>
     </message>
 </context>
 <context>
@@ -2071,18 +2071,6 @@
     <message>
         <source>Search</source>
         <translation>Rechercher</translation>
-    </message>
-    <message>
-        <source>Video</source>
-        <translation>Vidéo</translation>
-    </message>
-    <message>
-        <source>Video sound</source>
-        <translation>Son de la vidéo</translation>
-    </message>
-    <message>
-        <source>The trailer on this game's page</source>
-        <translation>La bande-annonce sur la page de ce jeu</translation>
     </message>
     <message>
         <source>Delete from this device</source>
@@ -3312,6 +3300,10 @@
     <message>
         <source>Collections</source>
         <translation>Collections</translation>
+    </message>
+    <message>
+        <source>The video is still loading.</source>
+        <translation>La vidéo se charge encore.</translation>
     </message>
 </context>
 <context>

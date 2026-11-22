@@ -1,12 +1,11 @@
-// Background: a video of the selected game being played (ScreenScraper's gameplay capture, else
-// RomM's trailer), muted and looping once the selection rests, over the game's art (its fan art,
-// else a screenshot, else ScreenScraper's blank Steam grid or marquee), blurred, else the game's
-// cover, blurred, enlarged and drifting slowly, which shows while the video loads or when a game
-// has none.
-// One dark filter over all of it keeps the cases and the text the subject; in attract mode (the
-// library faded out to show the video) it lightens.
+// Background: the selected game's art, sharp, filling the screen and drifting very slowly (its fan
+// art, else a screenshot, else ScreenScraper's blank Steam grid or marquee; `override` shows another
+// picture, a screenshot chosen on the game's page), under scrims that darken the left side and the
+// floor where the text stands. A game without art: a deep gradient in its console's colour.
+// Over it, once the selection rests, a video of the game (its trailer or ScreenScraper's gameplay
+// capture), muted unless `sound`; in attract mode (the page faded out to show the video) the scrims
+// lift.
 import QtQuick
-import QtQuick.Shapes
 import QtMultimedia
 import QtQuick.Effects
 import "Cases.js" as Cases
@@ -15,43 +14,53 @@ Item {
     id: amb
     property QtObject theme
     property var game: null
+    property string override: ""      // a picture shown instead of the game's art
     property color tint: Cases.tint(game ? game.platform_slug : "")
     Behavior on tint { ColorAnimation { duration: 700 } }
-    property bool trailers: true      // videos may play (the library is on top, trailers allowed)
-    property string videoUrl: ""      // "video" style: local file of the game being played
+    property bool trailers: true      // videos may play
+    property string videoUrl: ""      // local file of the game's video
+    property bool sound: false        // the video's sound
     property bool paused: false
     property bool rest: false         // attract over: the video goes on, dimmed behind the games (economy)
     property real dim: 0              // extra darkening for pages drawn over it
     property bool scrims: true
-    property bool attract: false      // the library has faded out: the video is the subject
-    property real blur: 1             // the art's blur, 0 to 1
+    property bool attract: false      // the page has faded out: the video is the subject
     readonly property bool videoShown: gameplay.shown
     property int framesDecoded: 0
-    readonly property string cover: game && game.cover ? game.cover : ""
     readonly property color accent: theme.accent
 
-    // ---------- shared base ----------
+    // ---------- without art: the console's colour, deep ----------
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#121419" }
-            GradientStop { position: 1.0; color: "#07080a" }
+            orientation: Gradient.Vertical
+            GradientStop { position: 0.0; color: Qt.rgba(amb.tint.r * 0.32, amb.tint.g * 0.32, amb.tint.b * 0.32, 1) }
+            GradientStop { position: 0.65; color: Qt.rgba(amb.tint.r * 0.1 + 0.02, amb.tint.g * 0.1 + 0.02, amb.tint.b * 0.1 + 0.025, 1) }
+            GradientStop { position: 1.0; color: "#050608" }
         }
     }
+    // A wide soft light in the console's colour, top right.
+    Rectangle {
+        x: parent.width * 0.45; y: -parent.height * 0.55
+        width: parent.width; height: width; radius: width / 2
+        color: amb.tint
+        opacity: 0.16
+        layer.enabled: true
+        layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 64 }
+    }
 
-    // ---------- the game's art without text (ScreenScraper's blank Steam grid or marquee) ----------
+    // ---------- the art ----------
     function hasArt(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
-    readonly property string still: hasArt("backdrop") ? game.art + "backdrop" : hasArt("steamgrid") ? game.art + "steamgrid"
+    readonly property string still: override !== "" ? override
+                                  : hasArt("backdrop") ? game.art + "backdrop" : hasArt("steamgrid") ? game.art + "steamgrid"
                                   : hasArt("marquee") ? game.art + "marquee" : ""
     Item {
         id: stillLayer
         anchors.fill: parent
-        visible: gameplay.opacity < 1 && amb.still !== ""
-        layer.enabled: amb.blur > 0 && visible
-        layer.effect: MultiEffect { autoPaddingEnabled: false; blurEnabled: true; blur: amb.blur; blurMax: 64; blurMultiplier: 0.6; saturation: 0.15 }
+        visible: gameplay.opacity < 1
         property bool useA: true
         property string shown: ""
-        Timer { id: stillDelay; interval: 350; onTriggered: stillLayer.swap() }
+        Timer { id: stillDelay; interval: 250; onTriggered: stillLayer.swap() }
         Connections { target: amb; function onStillChanged() { stillDelay.restart() } }
         Component.onCompleted: swap()
         function swap() {
@@ -60,76 +69,37 @@ Item {
             if (useA) stillB.source = amb.still; else stillA.source = amb.still
             useA = !useA
         }
-        Image { id: stillA; anchors { fill: parent; margins: -40 } fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1280
-                opacity: stillLayer.useA && status === Image.Ready ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 600 } } }
-        Image { id: stillB; anchors { fill: parent; margins: -40 } fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 1280
-                opacity: !stillLayer.useA && status === Image.Ready ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 600 } } }
-    }
-
-    // ---------- the cover, blurred and enlarged, drifting slowly ----------
-    Item {
-        id: glow
-        anchors.fill: parent
-        visible: gameplay.opacity < 1 && amb.still === ""
-        property bool useA: true
-        property string shown: ""
-        Timer { id: glowDelay; interval: 300; onTriggered: glow.swap() }
-        Connections { target: amb; function onCoverChanged() { glowDelay.restart() } }
-        Component.onCompleted: swap()
-        function swap() {
-            if (amb.cover === shown) return
-            shown = amb.cover
-            if (useA) glowB.source = amb.cover; else glowA.source = amb.cover
-            useA = !useA
-        }
-        // A slow push in and out, so the still background breathes.
-        property real drift       // driven by the animation below
+        // A slow push in and out, so the picture breathes.
+        property real drift
         SequentialAnimation on drift {
             loops: Animation.Infinite
-            running: glow.visible && amb.visible && !amb.paused
-            NumberAnimation { from: 0; to: 1; duration: 16000; easing.type: Easing.InOutSine }
-            NumberAnimation { from: 1; to: 0; duration: 16000; easing.type: Easing.InOutSine }
+            running: stillLayer.visible && amb.visible && !amb.paused
+            NumberAnimation { from: 0; to: 1; duration: 24000; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 1; to: 0; duration: 24000; easing.type: Easing.InOutSine }
         }
-        Item {
-            id: glowSrc
-            anchors.fill: parent
-            visible: false
-            component GlowImage: Image {
-                property bool front: false
-                anchors.centerIn: parent
-                width: parent.width * (1.15 + 0.08 * glow.drift); height: parent.height * (1.15 + 0.08 * glow.drift)
-                fillMode: Image.PreserveAspectCrop
-                sourceSize.width: 72
-                asynchronous: true
-                opacity: front && status === Image.Ready ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
-            }
-            GlowImage { id: glowA; front: glow.useA }
-            GlowImage { id: glowB; front: !glow.useA }
+        component Still: Image {
+            property bool front: false
+            anchors.centerIn: parent
+            width: parent.width * (1.04 + 0.04 * stillLayer.drift); height: parent.height * (1.04 + 0.04 * stillLayer.drift)
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            sourceSize.width: 1920
+            opacity: front && status === Image.Ready && source.toString() !== "" ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 800; easing.type: Easing.InOutQuad } }
         }
-        MultiEffect {
-            anchors.fill: parent
-            source: glowSrc
-            autoPaddingEnabled: false
-            blurEnabled: true
-            blur: 1
-            blurMax: 64
-            blurMultiplier: 1.5
-            saturation: 0.25
-            brightness: -0.08
-        }
+        Still { id: stillA; front: stillLayer.useA }
+        Still { id: stillB; front: !stillLayer.useA }
     }
 
-    // ---------- "video": the game being played ----------
+    // ---------- the video ----------
     Item {
         id: gameplay
         anchors.fill: parent
-        readonly property bool live: amb.trailers && amb.visible && !amb.paused
-                                     && amb.videoUrl !== ""
+        readonly property bool live: amb.trailers && amb.visible && !amb.paused && amb.videoUrl !== ""
         readonly property bool shown: live && gpPlayer.playbackState === MediaPlayer.PlayingState && amb.framesDecoded > 0
         visible: opacity > 0
         opacity: shown ? (amb.rest ? 0.45 : 1) : 0
-        Behavior on opacity { NumberAnimation { duration: 700; easing.type: Easing.InOutQuad } }
+        Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
         onLiveChanged: sync()
         Connections { target: amb; function onRestChanged() { gameplay.sync() } }
         Connections { target: amb; function onVideoUrlChanged() { gameplay.sync() } }
@@ -148,7 +118,7 @@ Item {
         MediaPlayer {
             id: gpPlayer
             loops: MediaPlayer.Infinite
-            audioOutput: null
+            audioOutput: AudioOutput { muted: !amb.sound; volume: 0.8 }
             videoOutput: gpOut.output
         }
         // Whole when its proportions are far from the screen's (handhelds), never cut to nothing.
@@ -162,39 +132,42 @@ Item {
         }
     }
 
-    // ---------- the dark filter, vignette and page dimming ----------
-    Rectangle {
+    // ---------- scrims: the left side and the floor, where the text stands ----------
+    Item {
         anchors.fill: parent
-        color: "#07080a"
-        opacity: amb.attract ? 0.12 : amb.still !== "" ? 0.36 : 0.58
-        Behavior on opacity { NumberAnimation { duration: amb.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
-    }
-    // Darker toward the floor, under the cases and the game's name.
-    Rectangle {
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-        height: parent.height * 0.5
         opacity: amb.attract ? 0 : 1
         Behavior on opacity { NumberAnimation { duration: amb.attract ? 1200 : 350; easing.type: Easing.InOutQuad } }
-        gradient: Gradient {
-            GradientStop { position: 0; color: "transparent" }
-            GradientStop { position: 0.55; color: Qt.rgba(0.027, 0.031, 0.039, 0.6) }
-            GradientStop { position: 1; color: Qt.rgba(0.027, 0.031, 0.039, 0.92) }
+        Rectangle {
+            anchors.fill: parent
+            color: "#06070a"
+            opacity: amb.scrims ? 0.22 : 0.12
         }
-    }
-    Shape {
-        anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
-        ShapePath {
-            strokeWidth: -1
-            fillGradient: RadialGradient {
-                centerX: amb.width / 2; centerY: amb.height * 0.5
-                focalX: centerX; focalY: centerY
-                centerRadius: Math.max(amb.width, amb.height) * 0.75
-                focalRadius: 0
-                GradientStop { position: 0.55; color: "transparent" }
-                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.55) }
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: Qt.rgba(0.02, 0.024, 0.035, 0.88) }
+                GradientStop { position: 0.38; color: Qt.rgba(0.02, 0.024, 0.035, 0.55) }
+                GradientStop { position: 0.7; color: Qt.rgba(0.02, 0.024, 0.035, 0.08) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.02, 0.024, 0.035, 0.0) }
             }
-            PathRectangle { x: 0; y: 0; width: amb.width; height: amb.height }
+        }
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: parent.height * 0.62
+            gradient: Gradient {
+                GradientStop { position: 0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(0.02, 0.024, 0.035, 0.6) }
+                GradientStop { position: 1; color: Qt.rgba(0.02, 0.024, 0.035, 0.96) }
+            }
+        }
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; top: parent.top }
+            height: parent.height * 0.22
+            gradient: Gradient {
+                GradientStop { position: 0; color: Qt.rgba(0.02, 0.024, 0.035, 0.6) }
+                GradientStop { position: 1; color: "transparent" }
+            }
         }
     }
     Rectangle {

@@ -1670,18 +1670,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>The trailer cannot be played: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Trailer unavailable: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Loading the trailer…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Remove from favourites</source>
         <translation type="unfinished" />
     </message>
@@ -1838,14 +1826,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Sound off</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Sound on</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>View</source>
         <translation type="unfinished" />
     </message>
@@ -1870,23 +1850,43 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>A to turn the sound off</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>A to hear the trailer</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Screenshot %1 of %2 · A to see it in large</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Trailer</source>
+        <source>Screenshot %1</source>
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Screenshot %1</source>
+        <source>Turn the case</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The case</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Watch</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Turn the case with the arrows</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A to watch the video in full screen, with its sound</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Video · loading…</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2070,18 +2070,6 @@
     </message>
     <message>
         <source>Search</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Video</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Video sound</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The trailer on this game's page</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -3311,6 +3299,10 @@
     </message>
     <message>
         <source>Collections</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The video is still loading.</source>
         <translation type="unfinished" />
     </message>
 </context>

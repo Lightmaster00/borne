@@ -612,6 +612,8 @@ Item {
         }
         const r = rows[Math.min(row, rows.length - 1)]
         const n = itemsOf(r).length
+        // A choice: left and right (and A) change it at once.
+        if (r.kind === "chips" && (a === "left" || a === "right" || a === "a")) { cycle(r, a === "left" ? -1 : 1); return }
         if (a === "up") row = step(row, -1)
         else if (a === "down") row = step(row, 1)
         else if (a === "left") { if (colOf(r.id) > 0) setCol(r.id, colOf(r.id) - 1); else if (consoleSlug) closeConsole(); else inRows = false }
@@ -619,6 +621,19 @@ Item {
         else if (a === "a") activate(r, colOf(r.id))
     }
     function focused(id, i) { return inRows && rows[row] && rows[row].id === id && colOf(id) === i }
+    // The next (d = 1) or previous (-1) choice of a line that can be chosen, applied.
+    function cycle(r, d) {
+        const items = itemsOf(r)
+        const n = items.length
+        if (n < 2) return
+        let i = Math.max(0, items.findIndex(x => String(x.id) === String(r.selected)))
+        for (let k = 0; k < n; k++) {
+            i = (i + d + n) % n
+            if (!items[i].disabled && items[i].id !== "none") break
+        }
+        setCol(r.id, i)
+        activate(r, i)
+    }
 
 
     // ---------- sections ----------
@@ -681,13 +696,6 @@ Item {
     }
 
     // ---------- rows, in a floating panel (scroll to follow the selection when there are many) ----------
-    Rectangle {
-        x: rowsView.x - 44; y: rowsView.y - 40
-        width: rowsView.width + 88; height: rowsView.height + 64
-        radius: 34
-        color: Qt.rgba(1, 1, 1, 0.045)
-        border { width: 1; color: Qt.rgba(1, 1, 1, 0.08) }
-    }
     Flickable {
         id: rowsView
         x: side.width + 84; y: 104
@@ -742,7 +750,7 @@ Item {
                 Component.onCompleted: if (current) Qt.callLater(function () { if (rowItem && rowItem.current && rowItem.parent && rowsView) rowsView.ensure(rowItem) })
                 width: parent.width
                 height: modelData.kind === "cards" ? cards.height : modelData.kind === "header" ? 58
-                        : modelData.kind === "note" ? noteText.height + 8 : Math.max(modelData.kind === "link" ? 84 : 96, line.height + 44)
+                        : modelData.kind === "note" ? noteText.height + 8 : line.implicitHeight
 
                 // A group title: small capitals, a thin line after it; never focused.
                 Item {
@@ -807,108 +815,23 @@ Item {
                     }
                 }
 
-                // Each setting is a card, as in the redesign; the current one stands out.
-                Rectangle {
-                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header" && rowItem.modelData.kind !== "note"
-                    anchors.fill: parent
-                    radius: 26
-                    // A line that opens something: the focus rings it, as a button.
-                    border.width: rowItem.modelData.kind === "link" && rowItem.current && page.inRows ? 3 : 0
-                    border.color: theme.focusRing
-                    color: rowItem.current ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.045)
-                    Behavior on color { ColorAnimation { duration: 150 } }
-                }
-                // A setting: title and explanation, choices or buttons on the right.
-                Item {
+                // A setting: its name and sentence, its value, buttons or state on the right.
+                SettingRow {
                     id: line
                     visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header" && rowItem.modelData.kind !== "note"
-                    x: 32
-                    width: parent.width - 64
-                    // Many choices: under the title and its explanation rather than beside them.
-                    readonly property bool stacked: choices.natural > width - 380
-                    height: stacked ? texts.height + 16 + choices.height : Math.max(texts.height, choices.height)
-                    anchors.verticalCenter: parent.verticalCenter
-                    Column {
-                        id: texts
-                        width: line.stacked ? parent.width : parent.width - choices.width - 32
-                        y: line.stacked ? 0 : (line.height - height) / 2
-                        spacing: 4
-                        Text { text: rowItem.modelData.title || ""; color: theme.fg; font { family: theme.fontFamily; pixelSize: 20; weight: Font.DemiBold } }
-                        Text {
-                            visible: text !== ""
-                            width: parent.width
-                            text: rowItem.modelData.desc || ""
-                            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                            color: theme.fgMuted
-                            font { family: theme.fontFamily; pixelSize: 18 }
-                        }
-                    }
-                    Flow {
-                        id: choices
-                        // Its width on one line; wrapped to the row's width when stacked.
-                        readonly property real natural: {
-                            let w = 0, n = 0
-                            for (let i = 0; i < children.length; i++) {
-                                const c = children[i]
-                                if (c.visible && c.width > 0) { w += c.width; n++ }
-                            }
-                            return w + Math.max(0, n - 1) * spacing
-                        }
-                        width: line.stacked ? line.width : natural
-                        x: line.stacked ? 0 : line.width - width
-                        y: line.stacked ? texts.height + 16 : (line.height - height) / 2
-                        spacing: 10
-                        // A line that opens something: its state as a small badge, then a chevron.
-                        Rectangle {
-                            visible: rowItem.modelData.kind === "link" && (rowItem.modelData.badge || "") !== ""
-                            height: 34; radius: 17
-                            width: badgeText.implicitWidth + 28
-                            readonly property string tone: rowItem.modelData.tone || ""
-                            color: tone === "bad" ? theme.badTint : tone === "ok" ? theme.accentSoft : Qt.rgba(1, 1, 1, 0.08)
-                            Text {
-                                id: badgeText
-                                anchors.centerIn: parent
-                                text: rowItem.modelData.badge || ""
-                                color: parent.tone === "bad" ? theme.badSoft : parent.tone === "ok" ? theme.accent : theme.fgMuted
-                                font { family: theme.fontFamily; pixelSize: 17; weight: Font.Bold }
-                            }
-                        }
-                        Text {
-                            visible: rowItem.modelData.kind === "link"
-                            text: "›"
-                            color: rowItem.current && page.inRows ? theme.fg : theme.fgFaint
-                            font { family: theme.fontFamily; pixelSize: 34; weight: Font.Medium }
-                        }
-                        Repeater {
-                            model: rowItem.modelData.kind === "cards" || rowItem.modelData.kind === "link" ? [] : rowItem.modelData.items
-                            Item {
-                                required property var modelData
-                                required property int index
-                                width: rowItem.modelData.kind === "buttons" ? btn.width : chip.width
-                                height: rowItem.modelData.kind === "buttons" ? btn.height : chip.height
-                                PageButton {
-                                    id: btn
-                                    visible: rowItem.modelData.kind === "buttons"
-                                    implicitHeight: 52
-                                    theme: page.theme
-                                    text: modelData.label
-                                    primary: !!modelData.primary
-                                    disabled: !!modelData.disabled
-                                    focused: page.focused(rowItem.modelData.id, index)
-                                }
-                                Chip {
-                                    id: chip
-                                    visible: rowItem.modelData.kind === "chips"
-                                    theme: page.theme
-                                    text: modelData.label
-                                    selected: modelData.id === rowItem.modelData.selected
-                                    focused: page.focused(rowItem.modelData.id, index)
-                                }
-                            }
-                        }
-                    }
+                    width: parent.width
+                    height: rowItem.height
+                    theme: page.theme
+                    kind: rowItem.modelData.kind
+                    title: rowItem.modelData.title || ""
+                    desc: rowItem.modelData.desc || ""
+                    items: rowItem.modelData.kind === "chips" || rowItem.modelData.kind === "buttons" ? rowItem.modelData.items : []
+                    selected: rowItem.modelData.selected !== undefined ? String(rowItem.modelData.selected) : ""
+                    current: rowItem.current && page.inRows
+                    focusedCol: page.colOf(rowItem.modelData.id)
+                    badge: rowItem.modelData.badge || ""
+                    tone: rowItem.modelData.tone || ""
                 }
-
             }
         }
     }
