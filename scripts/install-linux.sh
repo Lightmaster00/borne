@@ -42,6 +42,7 @@ Comment=Your RomM game library, played from the couch
 Exec=$DEST/borne
 Icon=$DEST/resources/borne.png
 Terminal=false
+StartupWMClass=Borne
 Categories=Game;Emulator;
 DESKTOP
 command -v update-desktop-database >/dev/null && update-desktop-database "$APPS" >/dev/null 2>&1 || true

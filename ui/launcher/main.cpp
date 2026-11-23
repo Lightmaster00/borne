@@ -11,6 +11,7 @@
 #include <QFont>
 #include <QFontDatabase>
 #include <QGuiApplication>
+#include <QIcon>
 #include <QLocale>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -178,6 +179,12 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     QGuiApplication::setApplicationName(QStringLiteral("Borne"));
     QGuiApplication::setOrganizationName(QStringLiteral("Borne"));
+#ifndef Q_OS_MACOS
+    // Wayland and X11 match the window to borne.desktop (its icon and name) by this id; the
+    // window carries the icon too, for desktops that look there.
+    QGuiApplication::setDesktopFileName(QStringLiteral("borne"));
+    QGuiApplication::setWindowIcon(QIcon(QCoreApplication::applicationDirPath() + QStringLiteral("/../resources/borne.png")));
+#endif
 
 #ifdef Q_OS_MACOS
     // Borne.app/Contents/MacOS/borne-ui -> Borne.app/Contents/Resources/ui

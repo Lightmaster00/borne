@@ -30,12 +30,13 @@ cp -R "$HERE/ui/Main.qml" "$HERE/ui/components" "$HERE/ui/imports" "$HERE/ui/fon
 for ts in "$HERE"/ui/i18n/*.ts; do "$QT_PREFIX/bin/lrelease" -silent "$ts" -qm "$UI/i18n/$(basename "${ts%.ts}").qm"; done
 cp -R "$HERE/resources/." "$APP/Contents/Resources/resources/"
 
-# App icon, from resources/borne.png.
+# App icon, from resources/borne-macos.png: the pictogram on a dark plate filling macOS's rounded
+# square, so the system shows it as is rather than on a grey plate.
 ICONSET="$OUT/Borne.iconset"
 mkdir -p "$ICONSET"
 for s in 16 32 128 256 512; do
-  sips -z $s $s "$HERE/resources/borne.png" --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
-  sips -z $((s * 2)) $((s * 2)) "$HERE/resources/borne.png" --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+  sips -z $s $s "$HERE/resources/borne-macos.png" --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+  sips -z $((s * 2)) $((s * 2)) "$HERE/resources/borne-macos.png" --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
 done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/borne.icns"
 rm -rf "$ICONSET"
