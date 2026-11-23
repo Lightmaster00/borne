@@ -210,10 +210,10 @@ pub fn cut_hinge(img: &DynamicImage) -> DynamicImage {
         if hinge - darkest >= 3.0 {
             let threshold = darkest + 0.15 * (hinge - darkest);
             let x = (from..=to).find(|&x| smooth(x) <= threshold).unwrap_or(excess);
-            // As far into the band as 4.5 %, but stopping 1.5 % before its logo (where the band
+            // As far into the band as 3.5 %, but stopping 2 % before its logo (where the band
             // brightens again).
             let logo = (x..mean.len()).find(|&k| smooth(k) > darkest + 0.5 * (hinge - darkest).max(20.0)).unwrap_or(mean.len());
-            (x + w * 45 / 1000).min(logo.saturating_sub(w * 15 / 1000)).max(x)
+            (x + w * 35 / 1000).min(logo.saturating_sub(w * 20 / 1000)).max(x)
         } else {
             excess
         }

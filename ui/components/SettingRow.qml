@@ -18,7 +18,7 @@ Rectangle {
     property string tone: ""             // link: "bad" | "ok" | ""
 
     readonly property bool lit: current && kind !== "buttons"
-    readonly property int pick: Math.max(0, items.findIndex(x => x.id === selected))
+    readonly property int pick: Math.max(0, items.findIndex(x => String(x.id) === selected))
     readonly property var picked: items[pick] || null
     readonly property color ink: lit ? "#121216" : theme.fg
     readonly property color soft: lit ? Qt.rgba(0.07, 0.07, 0.09, 0.62) : theme.fgMuted

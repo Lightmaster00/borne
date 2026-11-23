@@ -168,7 +168,8 @@ Item {
     function programButtons(p) {
         const busy = !!(emus && emus.task && emus.task.running)
         const b = []
-        if (p.installable) b.push({ id: "emu-install:" + p.id, label: p.managed ? qsTr("Update now") : qsTr("Install"), primary: !p.found, disabled: busy })
+        const mine = busy && emus.task.id === p.id
+        if (p.installable) b.push({ id: "emu-install:" + p.id, label: mine ? (p.managed ? qsTr("Updating…") : qsTr("Installing…")) : p.managed ? qsTr("Update now") : qsTr("Install"), primary: !p.found, disabled: busy })
         if (p.user_provided || p.user_path) b.push({ id: "emu-path:" + p.id, label: p.user_path ? qsTr("Change program") : qsTr("Choose program"), primary: !p.found && !p.installable })
         if (p.user_path) b.push({ id: "emu-forget:" + p.id, label: qsTr("Forget this program") })
         return b

@@ -1,8 +1,7 @@
 // What Borne shows while it starts. The same dark room as the rest of the app, its logo in the
-// middle with a hairline of light under it, and one quiet line saying what is going on (or what
+// middle with a loading ring under it, and one quiet line saying what is going on (or what
 // went wrong). When the profiles come next, the logo glides up to the place it holds on that
 // screen and the rest fades, so the start runs on into the first screen without a cut.
-// progress < 0: no measure (the light runs along the line); 0..1: the line fills.
 import QtQuick
 
 Item {
@@ -11,7 +10,6 @@ Item {
     property bool shown: true
     property string message: ""
     property bool failed: false
-    property real progress: -1
     property real motion: 1
     // The screen that follows has the logo at its top (the profiles).
     property bool toTop: false
@@ -73,40 +71,17 @@ Item {
     // ---------- the hairline and the line of text ----------
     Column {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: logo.y + logo.height * logo.scale + 34
+        y: logo.y + logo.height * logo.scale + 40
         spacing: 22
         opacity: boot.on ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 240 * boot.motion } }
 
-        Item {
+        Spinner {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 180; height: 1
             visible: !boot.failed
-            Rectangle { anchors.fill: parent; color: Qt.rgba(1, 1, 1, 0.09) }
-            Rectangle {
-                visible: boot.progress >= 0
-                height: parent.height; color: Qt.rgba(1, 1, 1, 0.7)
-                width: parent.width * Math.max(0, Math.min(1, boot.progress))
-                Behavior on width { NumberAnimation { duration: 300 } }
-            }
-            Item {
-                anchors.fill: parent
-                clip: true
-                visible: boot.progress < 0
-                Rectangle {
-                    id: runner
-                    width: parent.width * 0.4; height: parent.height
-                    gradient: Gradient { orientation: Gradient.Horizontal
-                        GradientStop { position: 0; color: "transparent" }
-                        GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.75) }
-                        GradientStop { position: 1; color: "transparent" } }
-                    NumberAnimation on x {
-                        running: boot.visible && boot.progress < 0
-                        from: -runner.width; to: runner.parent.width
-                        duration: 1600; loops: Animation.Infinite; easing.type: Easing.InOutSine
-                    }
-                }
-            }
+            size: 30; thickness: 2.5
+            color: Qt.rgba(1, 1, 1, 0.8)
+            running: boot.visible
         }
 
         Text {

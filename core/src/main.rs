@@ -212,6 +212,7 @@ fn main() {
         std::thread::spawn(move || {
             screenscraper::cut_stored_hinges(&app);
             screenscraper::trim_stored_spines(&app);
+            screenscraper::recut_cd_fronts(&app);
         });
     }
     emuinstall::set_http_cache(app.paths.root.join("cache/releases"));

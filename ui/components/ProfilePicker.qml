@@ -9,6 +9,9 @@ Item {
     property int index: 0
     property string serverUrl: ""
     property bool online: false
+    // The profile whose library is opening: its avatar stays, ringed by a loading ring; the rest
+    // steps back.
+    property string loading: ""
     signal choose(var profile)
     signal add()
     signal options(var profile)
@@ -20,6 +23,7 @@ Item {
         index = i >= 0 ? i : 0
     }
     function handle(a) {
+        if (loading !== "") return
         if (a === "left") index = Math.max(0, index - 1)
         else if (a === "right") index = Math.min(count - 1, index + 1)
         else if (a === "a") { if (index < profiles.length) choose(profiles[index]); else add() }
@@ -34,7 +38,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         y: Math.max((parent.height - height) / 2, brand.y + brand.height + 40)
         spacing: 40
-        Text { anchors.horizontalCenter: parent.horizontalCenter; text: qsTr("Who's playing?"); color: theme.fg; font { family: theme.displayFont; pixelSize: 64; weight: Font.ExtraBold; letterSpacing: -1.5 } }
+        Text { opacity: picker.loading === "" ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 300 } } anchors.horizontalCenter: parent.horizontalCenter; text: qsTr("Who's playing?"); color: theme.fg; font { family: theme.displayFont; pixelSize: 64; weight: Font.ExtraBold; letterSpacing: -1.5 } }
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 48
@@ -45,13 +49,22 @@ Item {
                     readonly property bool isAdd: index >= picker.profiles.length
                     readonly property var p: isAdd ? null : picker.profiles[index]
                     readonly property bool cur: index === picker.index
+                    readonly property bool opening: !isAdd && picker.loading !== "" && p.id === picker.loading
                     width: 240; height: 320
+                    opacity: picker.loading === "" || opening ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 300 } }
+                    Spinner {
+                        anchors.centerIn: avatar
+                        visible: parent.opening
+                        size: 246; thickness: 4
+                        color: theme.focusRing
+                    }
                     Rectangle {
                         id: avatar
                         width: 200; height: 200; radius: 100
                         anchors.horizontalCenter: parent.horizontalCenter
                         color: parent.isAdd ? theme.glass : Qt.hsla(((parent.p.name.charCodeAt(0) * 37) % 360) / 360, 0.35, 0.36, 1)
-                        border { width: parent.cur ? 4 : 1; color: parent.cur ? theme.focusRing : theme.glassEdge }
+                        border { width: parent.cur && !parent.opening ? 4 : 1; color: parent.cur && !parent.opening ? theme.focusRing : theme.glassEdge }
                         scale: parent.cur ? 1.08 : 1
                         Behavior on scale { NumberAnimation { duration: theme.focusMs; easing.type: Easing.OutCubic } }
                         Text {
@@ -73,7 +86,8 @@ Item {
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
                             visible: !parent.parent.isAdd
-                            text: parent.parent.p ? (parent.parent.p.paired ? qsTr("RomM: %1").arg(parent.parent.p.romm_user) : qsTr("Not paired")) : ""
+                            text: parent.parent.opening ? qsTr("Opening your library…")
+                                  : parent.parent.p ? (parent.parent.p.paired ? qsTr("RomM: %1").arg(parent.parent.p.romm_user) : qsTr("Not paired")) : ""
                             color: parent.parent.p && !parent.parent.p.paired ? theme.bad : theme.fgMuted
                             font { family: theme.fontFamily; pixelSize: 18 }
                         }
@@ -82,12 +96,16 @@ Item {
             }
         }
         Text {
+            opacity: picker.loading === "" ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 300 } }
             anchors.horizontalCenter: parent.horizontalCenter
             text: (picker.serverUrl ? picker.serverUrl + "  ·  " + (picker.online ? qsTr("online") : qsTr("offline")) : "")
             color: picker.online ? theme.fgFaint : theme.bad
             font { family: theme.fontFamily; pixelSize: 18 }
         }
         HintBar {
+            opacity: picker.loading === "" ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 300 } }
             anchors.horizontalCenter: parent.horizontalCenter
             theme: picker.theme
             hints: [["A", qsTr("Choose"), "a"], ["Y", qsTr("Profile options"), "y"], ["Start", qsTr("Settings"), "start"]]

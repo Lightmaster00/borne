@@ -328,7 +328,8 @@ Window {
         const seq = ++libSeq
         api("GET", "/api/v1/library?lang=" + uiLang + "&sort=name", null, function (list, err) {
             if (seq !== libSeq) return
-            if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); return }
+            // Unavailable: said, and the (empty) library shown rather than a loading screen forever.
+            if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); ready = true; return }
             const r = list.map(toRow)
             const idx = {}
             r.forEach((x, i) => idx[x.rom_id] = i)
@@ -801,7 +802,21 @@ Window {
             r.update = Object.assign({}, r.update, { update: lastUpd })
         return r
     }
-    function loadSettings() { api("GET", "/api/v1/settings", null, function (r) { if (r) settings = freshUpd(r) }) }
+    function loadSettings() { api("GET", "/api/v1/settings", null, function (r) { if (r) { settings = freshUpd(r); emuInstallSeen(r.emulators) } }) }
+    // "Update now" / "Install" on an emulator: said when pressed, and its outcome said when done.
+    property string emuAsked: ""
+    function emuInstallSeen(e) {
+        const t = e ? e.task : null
+        if (emuAsked === "" || !t || t.id !== emuAsked || t.running) return
+        const p = (e.programs || []).find(x => x.id === emuAsked)
+        const name = p ? p.name : emuAsked
+        emuAsked = ""
+        const d = t.done
+        if (t.error) toasts.show(qsTr("%1: %2").arg(name).arg(CoreText.tr(t.error)), "error")
+        else if (d && d.what === "uptodate") toasts.show(qsTr("%1 is already up to date (version %2).").arg(name).arg(d.version), "ok")
+        else if (d && d.what === "updated") toasts.show(d.version === "flatpak" ? qsTr("%1 updated with Flathub.").arg(name) : qsTr("%1 updated to version %2.").arg(name).arg(d.version), "ok")
+        else if (d && d.what === "installed") toasts.show(qsTr("%1 installed.").arg(name), "ok")
+    }
     function settingsMenu() {
         loadSettings()
         refreshStatus()
@@ -919,7 +934,16 @@ Window {
         })
         else if (id === "emu-dismiss") api("POST", "/api/v1/emulators/task/dismiss", {}, function () { loadSettings() })
         else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
-        else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        else if (id.startsWith("emu-install:")) {
+            const pid = id.substring(12)
+            const p = settings && settings.emulators ? (settings.emulators.programs || []).find(x => x.id === pid) : null
+            api("POST", "/api/v1/emulators/" + pid + "/install", {}, function (r, err) {
+                if (err) { toasts.show(CoreText.tr(err), "error"); return }
+                emuAsked = pid
+                toasts.show(p && p.managed ? qsTr("Looking for a newer %1…").arg(p.name) : qsTr("Installing %1…").arg(p ? p.name : pid), "info")
+                loadSettings()
+            })
+        }
         else if (id.startsWith("emu-forget:")) api("POST", "/api/v1/emulators/" + id.substring(11) + "/path", { path: "" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         // Developer mode (Settings → Help, then Developer).
         else if (id === "dev-mode") api("POST", "/api/v1/dev", { on: payload === "on" }, function (r, err) {
@@ -1224,11 +1248,16 @@ Window {
             screen = "profiles"
         })
     }
+    // The profile chosen on the profiles screen whose library is opening ("" otherwise).
+    property string enteringProfile: ""
+    onReadyChanged: if (ready) enteringProfile = ""
     function enterLibrary(profile) {
         api("POST", "/api/v1/profiles/" + profile.id + "/activate", {}, function (r, err) {
-            if (err) { toasts.show(err, "error"); return }
+            if (err) { enteringProfile = ""; toasts.show(err, "error"); return }
             refreshStatus()
             loadSettings()
+            // Another profile's library: what is shown waits for it.
+            if (enteringProfile !== "") ready = false
             screen = "library"
             libTab = "home"; folder = null; homeZone = "row"; rowIndex = 0; shelfIndex = 0; focusRom = -1; wallIndex = 0
             loadPlatforms()
@@ -1393,7 +1422,30 @@ Window {
         else if (a === "r3") openDownloads()
         else if (a === "lt") { if (folder) jumpGroup(-1); else if (wallMode && homeZone === "wall") moveConsole(-1) }
         else if (a === "rt") { if (folder) jumpGroup(1); else if (wallMode && homeZone === "wall") moveConsole(1) }
+        else if (a === "x" && !folder && libTab === "store" && homeZone === "wall" && wall.length) nextConsolePicture(wall[wallIndex])
         else move(a)
+    }
+
+    // The Store's console: its next picture among ScreenScraper's (X), kept as its choice.
+    property bool picBusy: false
+    function nextConsolePicture(c) {
+        if (!c || picBusy) return
+        const pics = settings && settings.system_pics ? settings.system_pics[c.slug] : null
+        const list = pics ? pics.choices : []
+        if (list.length < 2) { toasts.show(qsTr("ScreenScraper has no other picture of this console."), "info"); return }
+        const firstPhoto = Math.max(0, list.findIndex(p => p.type === "photo"))
+        const cur = /^[0-9]+$/.test(pics.chosen) ? Number(pics.chosen) : firstPhoto
+        const n = (cur + 1) % list.length
+        const kinds = { photo: qsTr("Photo"), illustration: qsTr("Illustration"), BoitierConsole3D: qsTr("Its box"), controller: qsTr("Controller") }
+        const p = list[n]
+        picBusy = true
+        sfx.play("move")
+        api("POST", "/api/v1/systems/" + c.slug + "/picture", { n: n }, function (r, err) {
+            picBusy = false
+            if (err) { toasts.show(CoreText.tr(err), "error"); return }
+            toasts.show(qsTr("Picture %1 of %2: %3").arg(n + 1).arg(list.length).arg((kinds[p.type] || p.type) + (p.region ? " (" + String(p.region).toUpperCase() + ")" : "")), "info")
+            loadSettings(); loadPlatforms()
+        })
     }
 
     // ---------- Library helpers ----------
@@ -1434,7 +1486,7 @@ Window {
             else if (m.type === "play_failed") { if (!win.gameMode) toasts.show(CoreText.tr(m.error), "error") }
             // The save of the game just ended, sent after it (another game can start meanwhile).
             else if (m.type === "saves") win.onSaves(m.note)
-            else if (m.type === "emulators" || m.type === "systemfiles") { if (win.overlay === "settings") loadSettings() }
+            else if (m.type === "emulators" || m.type === "systemfiles") { if (win.overlay === "settings" || win.emuAsked !== "") loadSettings() }
             else if (m.type === "facts") { if (win.page && win.overlay === "game") win.loadFacts(win.page.game.rom_id) }
             else if (m.type === "update") win.onUpdateEvent(m.update)
             else if (m.type === "screenscraper") { if (win.overlay === "settings") loadSettings() }
@@ -1690,7 +1742,7 @@ Window {
                 else if (e.key === Qt.Key_Backspace) search.backspace()
                 else if (e.key === Qt.Key_Up) search.step(-1)
                 else if (e.key === Qt.Key_Down) search.step(1)
-                else if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32) { search.showKeyboard = false; search.typeText(e.text) }
+                else if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32) search.typeText(e.text)
                 else if (search.showKeyboard) e.accepted = false
                 if (e.accepted) return
             }
@@ -1829,7 +1881,7 @@ Window {
                 if (win.homeZone === "rail") return [["A", qsTr("Choose"), "a"], ["▶", qsTr("Games"), "right"], ["LB RB", qsTr("Home / Store"), "lb"]]
                 if (win.libTab === "store") {
                     if (!win.wall.length) return [["LB RB", qsTr("Home / Store"), "lb"]]
-                    const h = [["A", qsTr("See its games"), "a"], ["Y", qsTr("Order"), "y"]]
+                    const h = [["A", qsTr("See its games"), "a"], ["X", qsTr("Picture"), "x"], ["Y", qsTr("Order"), "y"]]
                     if (win.wall.length > 1) h.push(["LT RT", qsTr("Move"), "lt"])
                     h.push(["LB RB", qsTr("Home / Store"), "lb"])
                     return h
@@ -2039,11 +2091,18 @@ Window {
     ProfilePicker {
         id: picker
         anchors.fill: parent
-        visible: win.screen === "profiles" && win.overlay !== "settings"
+        // Stays while the chosen profile's library opens (its avatar ringed by a loading ring),
+        // then fades onto it.
+        readonly property bool shown: (win.screen === "profiles" || (win.screen === "library" && !win.ready && win.enteringProfile !== ""))
+                                      && win.overlay !== "settings"
+        opacity: shown ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 380 * graphite.motion; easing.type: Easing.InOutQuad } }
+        loading: win.enteringProfile
         theme: win.theme
         serverUrl: win.status && win.status.server_url ? win.status.server_url : ""
         online: win.status ? win.status.online : false
-        onChoose: (p) => p.paired ? win.enterLibrary(p) : win.startPairing(p)
+        onChoose: (p) => { if (p.paired) { win.enteringProfile = p.id; win.enterLibrary(p) } else win.startPairing(p) }
         onAdd: win.addProfile()
         onOptions: (p) => win.profileOptions(p)
         onSettings: win.settingsMenu()
@@ -2066,7 +2125,7 @@ Window {
         z: 59
         theme: win.theme
         motion: graphite.motion
-        shown: win.screen === "boot" || (win.screen === "library" && !win.ready)
+        shown: win.screen === "boot" || (win.screen === "library" && !win.ready && win.enteringProfile === "")
         toTop: win.screen === "profiles"
         failed: !!win.fatal || !win.apiBase
         message: win.fatal || (win.apiBase ? (win.screen === "library" ? qsTr("Opening your library…") : qsTr("Starting…"))

@@ -3536,6 +3536,58 @@
         <source>none found</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>%1 is already up to date (version %2).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 updated with Flathub.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 updated to version %2.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 installed.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Looking for a newer %1…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installing %1…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ScreenScraper has no other picture of this console.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Photo</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Illustration</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Its box</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture %1 of %2: %3</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3659,6 +3711,10 @@
     </message>
     <message>
         <source>Settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Opening your library…</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -5275,6 +5331,10 @@
     </message>
     <message>
         <source>A picture file on this computer (PNG with a transparent background looks best)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Updating…</source>
         <translation type="unfinished" />
     </message>
 </context>

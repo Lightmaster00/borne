@@ -486,7 +486,8 @@ Item {
             Item { width: 1; height: 4 }
             Row {
                 id: btnRow
-                spacing: 14
+                // Wide enough for the focused one's ring and growth to stay off its neighbours.
+                spacing: 26
                 Repeater {
                     model: page.buttons
                     Item {
@@ -498,17 +499,17 @@ Item {
                         readonly property bool primary: !!modelData.primary
                         width: labelled ? btnLabel.implicitWidth + (modelData.icon ? 30 : 0) + 64 : 64
                         height: 64
-                        scale: on ? 1.08 : 1
+                        scale: on ? 1.05 : 1
                         Behavior on scale { NumberAnimation { duration: 250 * theme.motion; easing.type: Easing.OutCubic } }
                         opacity: modelData.disabled ? 0.45 : 1
                         Accessible.role: Accessible.Button
                         Accessible.name: modelData.label
                         Rectangle {
                             visible: bt.on
-                            anchors { fill: parent; margins: -8 }
+                            anchors { fill: parent; margins: -7 }
                             radius: height / 2
                             color: "transparent"
-                            border { width: 4; color: theme.fg }
+                            border { width: 3; color: theme.fg }
                         }
                         Rectangle {
                             anchors.fill: parent

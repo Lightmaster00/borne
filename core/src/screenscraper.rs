@@ -567,7 +567,8 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
     // Frames came later than the logos: look once for every console already fetched.
     let frames_asked = app.db.setting("ss_system_frames").is_some();
     // The consoles' other pictures (to choose from) came later still: once for all.
-    let pics_asked = app.db.setting("ss_system_pics_v1").is_some();
+    // v2: the console's first photo by default (its first model), taken once for all.
+    let pics_asked = app.db.setting("ss_system_pics_v2").is_some();
     if slugs.is_empty() || !(again || !frames_asked || !pics_asked || slugs.iter().any(|(s, _)| missing(s))) {
         return;
     }
@@ -576,7 +577,7 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
     let frame_types: Vec<&str> = frame_types.iter().map(String::as_str).collect();
     let Ok(v) = call(c, "systemesListe.php", &[]) else { return };
     app.db.set_setting("ss_system_frames", "1");
-    app.db.set_setting("ss_system_pics_v1", "1");
+    app.db.set_setting("ss_system_pics_v2", "1");
     let systems = v["response"]["systemes"].as_array().cloned().unwrap_or_default();
     let regions = ui_regions(&ui_lang(app));
     for (slug, id) in slugs {
@@ -617,7 +618,10 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
             if kind == "photo" && own_pic {
                 continue;
             }
-            let Some(url) = pick(&medias, types, &regions) else { continue };
+            // The console's picture: ScreenScraper's first photo of it (its first model, as it
+            // lists them), the player choosing another in the Store (X) or the settings.
+            let first = if kind == "photo" { first_photo(&medias) } else { None };
+            let Some(url) = first.or_else(|| pick(&medias, types, &regions)) else { continue };
             let stamp = format!("ss|{url}");
             if !again && app.db.media(&key, kind).map(|m| m.stamp == stamp && std::path::Path::new(&m.path).is_file()).unwrap_or(false) {
                 continue;
@@ -629,6 +633,14 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
         }
     }
     app.emit(json!({ "type": "platforms" }));
+}
+
+/// A console's first photo as ScreenScraper lists them (whatever the region), else None.
+fn first_photo(medias: &[Value]) -> Option<&str> {
+    medias
+        .iter()
+        .find(|m| m["type"].as_str() == Some("photo") && m["parent"].as_str().unwrap_or("jeu") == "jeu")
+        .and_then(|m| m["url"].as_str())
 }
 
 /// The kinds of ScreenScraper's pictures of a console that can stand in the Store.
@@ -682,7 +694,7 @@ pub fn choose_system_pic(app: &Shared, slug: &str, choice: &Value) -> Result<(),
         let medias: Vec<Value> =
             list.iter().map(|m| json!({ "type": m["type"], "region": m["region"], "url": m["url"], "parent": "jeu" })).collect();
         let regions = ui_regions(&ui_lang(app));
-        match pick(&medias, &["photo", "illustration"], &regions) {
+        match first_photo(&medias).or_else(|| pick(&medias, &["photo", "illustration"], &regions)) {
             Some(u) => (u.to_string(), String::new()),
             None => {
                 app.db.set_setting(&setting, "");
@@ -959,6 +971,37 @@ pub fn cut_stored_hinges(app: &Shared) {
         }
         app.db.set_setting(&format!("hinge_cut3.{key}"), "1");
         app.db.set_setting(&format!("hinge_more1.{key}"), "1");
+    }
+}
+
+/// Fronts of CD cases cut by the 4.5 % margin, a little too far into the band: their scan is
+/// taken again from ScreenScraper once and cut with today's margin (3.5 %).
+pub fn recut_cd_fronts(app: &Shared) {
+    let Some(c) = credentials(app) else { return };
+    for key in app.db.group_keys() {
+        let flag = format!("hinge_less1.{key}");
+        if !crate::media::cd_case(&key) || app.db.setting(&flag).is_some() {
+            continue;
+        }
+        let Some(m) = app.db.media(&key, "front") else {
+            app.db.set_setting(&flag, "1");
+            continue;
+        };
+        let Some(url) = m.stamp.strip_prefix("ss|") else {
+            app.db.set_setting(&flag, "1");
+            continue;
+        };
+        match download(&c, url) {
+            Ok(bytes) => {
+                if let Ok((path, w, h)) = crate::media::store(app, &key, "front", &bytes) {
+                    app.db.set_media(&key, "front", &path.to_string_lossy(), w, h, &m.stamp);
+                    app.emit(json!({ "type": "media", "group_key": key }));
+                }
+                app.db.set_setting(&flag, "1");
+            }
+            // Quota or network: tried again at the next start.
+            Err(_) => return,
+        }
     }
 }
 

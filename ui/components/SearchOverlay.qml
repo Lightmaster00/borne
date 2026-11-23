@@ -7,7 +7,8 @@ Item {
     id: root
     property QtObject theme
     property var model: null          // the library ListModel
-    property bool showKeyboard: true  // hidden when the user types on a physical keyboard
+    // One search page: the on-screen keyboard stays, a physical keyboard types into the same field.
+    property bool showKeyboard: true
     property int selected: 0
     property var results: []          // [{ index, name, sub, cover }]
     readonly property string query: kb.text
@@ -22,7 +23,7 @@ Item {
     function open(initial, fromKeyboard) {
         kb.text = initial || ""
         kb.row = 1; kb.col = 0; kb.shift = false
-        showKeyboard = !fromKeyboard
+        showKeyboard = true
         selected = 0
         refresh()
         visible = true

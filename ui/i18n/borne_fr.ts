@@ -3536,6 +3536,58 @@
         <source>none found</source>
         <translation>aucune trouvée</translation>
     </message>
+    <message>
+        <source>%1 is already up to date (version %2).</source>
+        <translation>%1 est déjà à jour (version %2).</translation>
+    </message>
+    <message>
+        <source>%1 updated with Flathub.</source>
+        <translation>%1 mis à jour avec Flathub.</translation>
+    </message>
+    <message>
+        <source>%1 updated to version %2.</source>
+        <translation>%1 mis à jour en version %2.</translation>
+    </message>
+    <message>
+        <source>%1 installed.</source>
+        <translation>%1 installé.</translation>
+    </message>
+    <message>
+        <source>Looking for a newer %1…</source>
+        <translation>Recherche d'une version plus récente de %1…</translation>
+    </message>
+    <message>
+        <source>Installing %1…</source>
+        <translation>Installation de %1…</translation>
+    </message>
+    <message>
+        <source>ScreenScraper has no other picture of this console.</source>
+        <translation>ScreenScraper n'a pas d'autre image de cette console.</translation>
+    </message>
+    <message>
+        <source>Photo</source>
+        <translation>Photo</translation>
+    </message>
+    <message>
+        <source>Illustration</source>
+        <translation>Illustration</translation>
+    </message>
+    <message>
+        <source>Its box</source>
+        <translation>Sa boîte</translation>
+    </message>
+    <message>
+        <source>Controller</source>
+        <translation>Manette</translation>
+    </message>
+    <message>
+        <source>Picture %1 of %2: %3</source>
+        <translation>Image %1 sur %2 : %3</translation>
+    </message>
+    <message>
+        <source>Picture</source>
+        <translation>Image</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -3660,6 +3712,10 @@
     <message>
         <source>Settings</source>
         <translation>Paramètres</translation>
+    </message>
+    <message>
+        <source>Opening your library…</source>
+        <translation>Ouverture de votre bibliothèque…</translation>
     </message>
 </context>
 <context>
@@ -5276,6 +5332,10 @@
     <message>
         <source>A picture file on this computer (PNG with a transparent background looks best)</source>
         <translation>Un fichier image sur cet ordinateur (un PNG à fond transparent rend le mieux)</translation>
+    </message>
+    <message>
+        <source>Updating…</source>
+        <translation>Mise à jour…</translation>
     </message>
 </context>
 <context>
