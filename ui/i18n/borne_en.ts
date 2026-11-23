@@ -3524,6 +3524,10 @@
         <source>The consoles of your library this emulator plays: it is offered beside Borne's for them, and for each of their games. A to choose, Start to confirm.</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Full path of the picture</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -5227,6 +5231,42 @@
     </message>
     <message>
         <source>The background's light and the Store's cards, changed over the Store itself: each value as you like it, and back to Borne's with X. Your values stay as you leave them.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Photo</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Illustration</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Its box</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Yours</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Picture in the Store</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Another of ScreenScraper's pictures of this console (a model, a region)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your own picture</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A picture file on this computer (PNG with a transparent background looks best)</source>
         <translation type="unfinished" />
     </message>
 </context>

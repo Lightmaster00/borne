@@ -60,6 +60,8 @@
 //!   DELETE /api/v1/system-files/<console>/<item>  removes it
 //!   GET    /api/v1/display[?console=]  POST {console?, key, value | "default"}   for all games or a console
 //!   GET    /api/v1/games/<rom_id>/display  POST {key, value | "default"}   this game's own
+//!   POST   /api/v1/systems/<slug>/picture {n | path | auto}  the console's picture in the Store
+//!   POST   /api/v1/systems/pick-picture            the system's file chooser, for a picture
 //!   GET    /api/v1/systems/<slug>/art/<kind>      a console's logo, logo-mono, photo or frame (ScreenScraper)
 //!   GET    /api/v1/session                        the running game, if any
 //!   POST   /api/v1/session/ask                   pauses the game and asks whether to quit (as the chord)
@@ -253,7 +255,8 @@ fn settings(app: &Shared) -> Value {
             "system_files": crate::systemfiles::status(app),
             "display": crate::gamesettings::view(app, crate::gamesettings::Scope::All, ""),
             "save_sync": crate::savesync::enabled(app),
-            "dev": crate::devmode::view(app) })
+            "dev": crate::devmode::view(app),
+            "system_pics": crate::screenscraper::system_pics(app) })
 }
 
 /// The interface's language, as the library is asked in it: the language games are played in
@@ -707,18 +710,42 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     let joined = library::JOINED.iter().find(|(main, parts)| *main == p.slug || parts.contains(&p.slug.as_str()));
                     let tab = joined.map(|(main, _)| main.to_string()).unwrap_or_else(|| p.slug.clone());
                     v["ready_count"] = json!(ready.get(&tab).map(|s| s.len()).unwrap_or(0));
-                    let kinds: Vec<String> = app
+                    let media: Vec<_> = app
                         .db
                         .media_of(&format!("system:{}", p.slug))
                         .into_iter()
                         .filter(|m| std::path::Path::new(&m.path).is_file())
-                        .map(|m| m.kind)
                         .collect();
+                    // Which picture of the console it is, so a new choice is not taken from a cache.
+                    v["photo_rev"] = json!(media
+                        .iter()
+                        .find(|m| m.kind == "photo")
+                        .map(|m| format!("{:08x}", crc32fast::hash(m.stamp.as_bytes())))
+                        .unwrap_or_default());
+                    let kinds: Vec<String> = media.into_iter().map(|m| m.kind).collect();
                     v["art_kinds"] = json!(kinds);
                     v
                 })
                 .collect();
             ok(req, json!(list))
+        }
+        // The picture of a console in the Store: another of ScreenScraper's, one's own, or back to
+        // Borne's choice ({n} | {path} | {auto: true}).
+        (Method::Post, ["api", "v1", "systems", slug, "picture"]) => {
+            let b = body_json(&mut req);
+            match crate::screenscraper::choose_system_pic(app, slug, &b) {
+                Ok(()) => {
+                    app.emit(json!({ "type": "platforms" }));
+                    ok(req, json!({ "system_pics": crate::screenscraper::system_pics(app) }))
+                }
+                Err(e) => err(req, 400, &e),
+            }
+        }
+        (Method::Post, ["api", "v1", "systems", "pick-picture"]) => {
+            match crate::systemfiles::pick_file("Choose a picture of the console") {
+                Ok(path) => ok(req, json!({ "path": path })),
+                Err(e) => err(req, 400, &e),
+            }
         }
         (Method::Get, ["api", "v1", "systems", slug, "art", kind]) => {
             match app.db.media(&format!("system:{slug}"), kind).filter(|m| std::path::Path::new(&m.path).is_file()) {

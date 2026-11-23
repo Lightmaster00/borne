@@ -60,7 +60,7 @@ Item {
     readonly property bool onStore: tab === "store"
     // How the cards look (Settings → Developer → Light and cards, prefs.look*): card style
     // ("studio" | "lacquer" | "glass"), key light, floor and shadow strength (0–100).
-    property var look: ({ card: "studio", key: 50, floor: 40, shadow: 60 })
+    property var look: ({ card: "lacquer", key: 40, floor: 0, shadow: 0 })
     // What the room's light takes its colours from: the console's picture in the Store.
     readonly property string glowSource: onStore && wall[wallIndex] ? (wall[wallIndex].photo || "") : ""
     // Where the room's light falls (Ambience.lightX): over the console chosen in the Store, over
@@ -738,8 +738,11 @@ Item {
         Behavior on y { NumberAnimation { duration: 620 * root.tK; easing.type: Easing.OutCubic } }
         // The console: leaves toward where you come from, the next one arrives from where you go,
         // a moment after its card has started opening.
-        onOnChanged: if (on) { photoOut.stop(); photoIn.restart() } else { photoIn.stop(); photoOut.restart() }
-        Component.onCompleted: if (on) photo.enter = 1
+        onOnChanged: {
+            if (on) { photoOut.stop(); photoIn.restart() } else { photoIn.stop(); photoOut.restart() }
+            logos(false)
+        }
+        Component.onCompleted: { if (on) photo.enter = 1; logos(true) }
         SequentialAnimation {
             id: photoIn
             ScriptAction { script: { photo.enter = 0; photo.dx = root.wallDir * 90 } }
@@ -953,32 +956,54 @@ Item {
             id: wideLogo
             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 56 }
             width: 400; height: 92
-            opacity: card.on ? 1 : 0
-            visible: opacity > 0
-            Behavior on opacity { SequentialAnimation {
-                PauseAnimation { duration: card.on ? 200 * root.tK : 0 }
-                NumberAnimation { duration: (card.on ? 420 : 160) * root.tK; easing.type: Easing.OutCubic } } }
+            property real rise: 22
+            opacity: 0
+            visible: opacity > 0.01
             // Rising into place under the console.
-            transform: Translate {
-                y: card.on ? 0 : 22
-                Behavior on y { SequentialAnimation {
-                    PauseAnimation { duration: card.on ? 200 * root.tK : 0 }
-                    NumberAnimation { duration: 520 * root.tK; easing.type: Easing.OutCubic } } }
-            }
+            transform: Translate { y: wideLogo.rise }
             Logo { anchors.fill: parent; c: card.c; size: 54 }
         }
+        // Its name along the card when it is narrow: gone at once when the card opens, back only
+        // once the card has closed round it (never seen while the card changes width).
         Item {
+            id: narrowLogo
             anchors.centerIn: parent
             anchors.verticalCenterOffset: 20
             width: card.height * 0.62; height: 70
             rotation: -81
-            opacity: card.on ? 0 : 1
-            visible: opacity > 0
-            // Back once the card has closed round it.
-            Behavior on opacity { SequentialAnimation {
-                PauseAnimation { duration: card.on ? 0 : 240 * root.tK }
-                NumberAnimation { duration: (card.on ? 140 : 360) * root.tK } } }
+            opacity: 1
+            visible: opacity > 0.01
             Logo { anchors.fill: parent; c: card.c; size: 30 }
+        }
+        function logos(now) {
+            logoIn.stop(); logoOut.stop()
+            if (now) {
+                narrowLogo.opacity = card.on ? 0 : 1
+                wideLogo.opacity = card.on ? 1 : 0
+                wideLogo.rise = card.on ? 0 : 22
+            } else if (card.on) {
+                narrowLogo.opacity = 0
+                logoIn.restart()
+            } else {
+                logoOut.restart()
+            }
+        }
+        SequentialAnimation {
+            id: logoIn
+            ScriptAction { script: { wideLogo.opacity = 0; wideLogo.rise = 22 } }
+            PauseAnimation { duration: 220 * root.tK }
+            ParallelAnimation {
+                NumberAnimation { target: wideLogo; property: "opacity"; to: 1; duration: 420 * root.tK; easing.type: Easing.OutCubic }
+                NumberAnimation { target: wideLogo; property: "rise"; to: 0; duration: 520 * root.tK; easing.type: Easing.OutCubic }
+            }
+        }
+        SequentialAnimation {
+            id: logoOut
+            NumberAnimation { target: wideLogo; property: "opacity"; to: 0; duration: 120 * root.tK; easing.type: Easing.InQuad }
+            ScriptAction { script: { wideLogo.rise = 22; narrowLogo.opacity = 0 } }
+            // The card's closing (420 ms) is over.
+            PauseAnimation { duration: 330 * root.tK }
+            NumberAnimation { target: narrowLogo; property: "opacity"; to: 1; duration: 300 * root.tK; easing.type: Easing.OutQuad }
         }
     }
     component Logo: Item {

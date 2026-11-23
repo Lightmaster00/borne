@@ -291,7 +291,7 @@ Window {
                 const logo = kinds.indexOf("logo-mono") >= 0 ? "logo-mono" : kinds.indexOf("logo") >= 0 ? "logo" : ""
                 out.push({ slug: Shelf.tabOf(p.slug), name: shortNames[p.slug] || p.name,
                            logo: logo ? apiBase + "/api/v1/systems/" + p.slug + "/art/" + logo : "",
-                           photo: kinds.indexOf("photo") >= 0 ? apiBase + "/api/v1/systems/" + p.slug + "/art/photo" : "",
+                           photo: kinds.indexOf("photo") >= 0 ? apiBase + "/api/v1/systems/" + p.slug + "/art/photo?r=" + (p.photo_rev || "") : "",
                            ready: p.ready_count || 0, total: p.rom_count || 0 })
             }
             Cases.setRatios(shapes)
@@ -921,6 +921,24 @@ Window {
         else if (id === "dev-mode") api("POST", "/api/v1/dev", { on: payload === "on" }, function (r, err) {
             if (err) toasts.show(err, "error"); else { settings = freshUpd(r); if (payload === "on") toasts.show(qsTr("Developer mode is on: see Settings → Developer."), "info") }
         })
+        else if (id === "system-pic") {
+            const body = payload.choice === "auto" ? { auto: true } : { n: Number(payload.choice) }
+            api("POST", "/api/v1/systems/" + payload.slug + "/picture", body, function (r, err) {
+                if (err) toasts.show(CoreText.tr(err), "error"); else { loadSettings(); loadPlatforms() }
+            })
+        }
+        else if (id.startsWith("spic-own:")) {
+            const slug = id.substring(9)
+            const send = function (p) {
+                api("POST", "/api/v1/systems/" + slug + "/picture", { path: p }, function (r, err) {
+                    if (err) toasts.show(CoreText.tr(err), "error"); else { loadSettings(); loadPlatforms() }
+                })
+            }
+            api("POST", "/api/v1/systems/pick-picture", {}, function (r, err) {
+                if (!err && r && r.path) send(r.path)
+                else nameEntry.open(qsTr("Full path of the picture"), "", send, "/home/…/console.png", false, 600)
+            })
+        }
         else if (id === "dev-tune") { overlay = ""; setTab("store"); homeZone = "wall"; designTuner.open() }
         else if (id.startsWith("dev-open:")) api("POST", "/api/v1/dev/open/" + id.substring(9), {}, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error") })
         else if (id.startsWith("dev-args:")) {
@@ -2471,14 +2489,14 @@ Window {
         property string background: "lights"  // behind the home: "lights" (the console's colour) | "art" (the game's)
         property bool videoMuted: false       // a game's video in full screen plays without its sound
         // Light and cards (Settings → Developer → Tune live; DesignTuner): 0–100 but lookCard.
-        property int lookGlow: 40
-        property int lookSoft: 70
-        property int lookVignette: 45
-        property int lookGrain: 30
-        property string lookCard: "studio"     // "studio" | "lacquer" | "glass"
-        property int lookKey: 50
-        property int lookFloor: 40
-        property int lookShadow: 60
+        property int lookGlow: 60
+        property int lookSoft: 100
+        property int lookVignette: 0
+        property int lookGrain: 0
+        property string lookCard: "lacquer"    // "studio" | "lacquer" | "glass"
+        property int lookKey: 40
+        property int lookFloor: 0
+        property int lookShadow: 0
         property int moveSpeed: 100            // the move between consoles: speed %, bounce, the console's delay
         property int moveBounce: 30
         property int moveDelay: 40

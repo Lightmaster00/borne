@@ -14,15 +14,15 @@ Item {
 
     // key in prefs, label, values (numbers step 5 from 0 to 100, or named choices), Borne's value.
     readonly property var params: [
-        { key: "lookGlow", label: qsTr("Background: colour from the picture"), def: 40 },
-        { key: "lookSoft", label: qsTr("Background: softness"), def: 70 },
-        { key: "lookVignette", label: qsTr("Background: dark edges"), def: 45 },
-        { key: "lookGrain", label: qsTr("Background: grain"), def: 30 },
-        { key: "lookCard", label: qsTr("Cards: style"), def: "studio",
+        { key: "lookGlow", label: qsTr("Background: colour from the picture"), def: 60 },
+        { key: "lookSoft", label: qsTr("Background: softness"), def: 100 },
+        { key: "lookVignette", label: qsTr("Background: dark edges"), def: 0 },
+        { key: "lookGrain", label: qsTr("Background: grain"), def: 0 },
+        { key: "lookCard", label: qsTr("Cards: style"), def: "lacquer",
           choices: [["studio", qsTr("Studio")], ["lacquer", qsTr("Lacquer")], ["glass", qsTr("Glass")]] },
-        { key: "lookKey", label: qsTr("Cards: light"), def: 50 },
-        { key: "lookFloor", label: qsTr("Cards: floor"), def: 40 },
-        { key: "lookShadow", label: qsTr("Cards: shadow under the console"), def: 60 },
+        { key: "lookKey", label: qsTr("Cards: light"), def: 40 },
+        { key: "lookFloor", label: qsTr("Cards: floor"), def: 0 },
+        { key: "lookShadow", label: qsTr("Cards: shadow under the console"), def: 0 },
         { key: "moveSpeed", label: qsTr("Transition: speed (%)"), def: 100, min: 40, max: 200, step: 10 },
         { key: "moveBounce", label: qsTr("Transition: bounce"), def: 30 },
         { key: "moveDelay", label: qsTr("Transition: console's delay"), def: 40 }

@@ -3524,6 +3524,10 @@
         <source>The consoles of your library this emulator plays: it is offered beside Borne's for them, and for each of their games. A to choose, Start to confirm.</source>
         <translation>Les consoles de votre bibliothèque que cet émulateur joue : il est proposé à côté de ceux de Borne pour elles, et pour chacun de leurs jeux. A pour choisir, Start pour confirmer.</translation>
     </message>
+    <message>
+        <source>Full path of the picture</source>
+        <translation>Chemin complet de l'image</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -4699,7 +4703,7 @@
     </message>
     <message>
         <source>Borne's choice</source>
-        <translation>choix de Borne</translation>
+        <translation>Choix de Borne</translation>
     </message>
     <message>
         <source>Back to Borne's choices</source>
@@ -5228,6 +5232,42 @@
     <message>
         <source>The background's light and the Store's cards, changed over the Store itself: each value as you like it, and back to Borne's with X. Your values stay as you leave them.</source>
         <translation>La lumière du fond et les cartes du Store, réglées par-dessus le Store lui-même : chaque valeur à votre goût, et retour à celle de Borne avec X. Vos valeurs restent telles que vous les laissez.</translation>
+    </message>
+    <message>
+        <source>Photo</source>
+        <translation>Photo</translation>
+    </message>
+    <message>
+        <source>Illustration</source>
+        <translation>Illustration</translation>
+    </message>
+    <message>
+        <source>Its box</source>
+        <translation>Sa boîte</translation>
+    </message>
+    <message>
+        <source>Controller</source>
+        <translation>Manette</translation>
+    </message>
+    <message>
+        <source>Yours</source>
+        <translation>La vôtre</translation>
+    </message>
+    <message>
+        <source>Picture in the Store</source>
+        <translation>Image dans le Store</translation>
+    </message>
+    <message>
+        <source>Another of ScreenScraper's pictures of this console (a model, a region)</source>
+        <translation>Une autre image de cette console sur ScreenScraper (un modèle, une région)</translation>
+    </message>
+    <message>
+        <source>Your own picture</source>
+        <translation>Votre propre image</translation>
+    </message>
+    <message>
+        <source>A picture file on this computer (PNG with a transparent background looks best)</source>
+        <translation>Un fichier image sur cet ordinateur (un PNG à fond transparent rend le mieux)</translation>
     </message>
 </context>
 <context>

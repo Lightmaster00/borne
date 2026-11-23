@@ -41,7 +41,7 @@ Item {
     property string glowSource: ""
     // Settings → Developer → Light and cards (prefs.look*): glow 0–100 (how much colour), soft
     // 0–100 (how diffuse), vignette 0–100, grain 0–100.
-    property var look: ({ glow: 40, soft: 70, vignette: 45, grain: 30 })
+    property var look: ({ glow: 60, soft: 100, vignette: 0, grain: 0 })
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {

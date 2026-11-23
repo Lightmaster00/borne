@@ -559,7 +559,9 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
     let missing = |slug: &str| app.db.media(&format!("system:{slug}"), "logo").is_none();
     // Frames came later than the logos: look once for every console already fetched.
     let frames_asked = app.db.setting("ss_system_frames").is_some();
-    if slugs.is_empty() || !(again || !frames_asked || slugs.iter().any(|(s, _)| missing(s))) {
+    // The consoles' other pictures (to choose from) came later still: once for all.
+    let pics_asked = app.db.setting("ss_system_pics_v1").is_some();
+    if slugs.is_empty() || !(again || !frames_asked || !pics_asked || slugs.iter().any(|(s, _)| missing(s))) {
         return;
     }
     let mut frame_types = system_blank_types(c, &["steam"]);
@@ -567,6 +569,7 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
     let frame_types: Vec<&str> = frame_types.iter().map(String::as_str).collect();
     let Ok(v) = call(c, "systemesListe.php", &[]) else { return };
     app.db.set_setting("ss_system_frames", "1");
+    app.db.set_setting("ss_system_pics_v1", "1");
     let systems = v["response"]["systemes"].as_array().cloned().unwrap_or_default();
     let regions = ui_regions(&ui_lang(app));
     for (slug, id) in slugs {
@@ -588,12 +591,25 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
             })
             .collect();
         let key = format!("system:{slug}");
+        // Every picture of the console ScreenScraper has, for the player to choose another
+        // (Settings → Consoles → the console → Picture in the Store).
+        let pics: Vec<Value> = medias
+            .iter()
+            .filter(|m| PIC_TYPES.contains(&m["type"].as_str().unwrap_or("")))
+            .map(|m| json!({ "type": m["type"], "region": m["region"], "url": m["url"] }))
+            .collect();
+        app.db.set_setting(&format!("ss_system_pics.{slug}"), &Value::Array(pics).to_string());
+        let own_pic = app.db.setting(&format!("system_pic.{slug}")).is_some_and(|v| !v.is_empty());
         for (kind, types) in [
             ("logo", &["wheel", "wheel-hd"][..]),
             ("logo-mono", &["logo-monochrome", "wheel-carbon"][..]),
             ("photo", &["photo", "illustration"][..]),
             ("frame", &frame_types[..]),
         ] {
+            // A picture the player chose stays.
+            if kind == "photo" && own_pic {
+                continue;
+            }
             let Some(url) = pick(&medias, types, &regions) else { continue };
             let stamp = format!("ss|{url}");
             if !again && app.db.media(&key, kind).map(|m| m.stamp == stamp && std::path::Path::new(&m.path).is_file()).unwrap_or(false) {
@@ -606,6 +622,78 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
         }
     }
     app.emit(json!({ "type": "platforms" }));
+}
+
+/// The kinds of ScreenScraper's pictures of a console that can stand in the Store.
+const PIC_TYPES: &[&str] = &["photo", "illustration", "BoitierConsole3D", "controller"];
+
+/// The pictures each console of the library can have: {slug: {choices: [{n, type, region}],
+/// chosen: "auto" | "<n>" | "own"}}.
+pub fn system_pics(app: &Shared) -> Value {
+    let mut out = serde_json::Map::new();
+    for p in app.db.platforms() {
+        let list: Vec<Value> = app
+            .db
+            .setting(&format!("ss_system_pics.{}", p.slug))
+            .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+            .and_then(|v| v.as_array().cloned())
+            .unwrap_or_default();
+        let choices: Vec<Value> =
+            list.iter().enumerate().map(|(n, m)| json!({ "n": n, "type": m["type"], "region": m["region"] })).collect();
+        let chosen = app.db.setting(&format!("system_pic.{}", p.slug)).filter(|v| !v.is_empty()).unwrap_or_else(|| "auto".into());
+        out.insert(p.slug.clone(), json!({ "choices": choices, "chosen": chosen }));
+    }
+    Value::Object(out)
+}
+
+/// Sets a console's picture: {n} one of ScreenScraper's (system_pics), {path} a picture file of
+/// one's own, {auto: true} Borne's choice again.
+pub fn choose_system_pic(app: &Shared, slug: &str, choice: &Value) -> Result<(), String> {
+    let key = format!("system:{slug}");
+    let setting = format!("system_pic.{slug}");
+    let list: Vec<Value> = app
+        .db
+        .setting(&format!("ss_system_pics.{slug}"))
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| v.as_array().cloned())
+        .unwrap_or_default();
+    if let Some(path) = choice["path"].as_str() {
+        let p = std::path::Path::new(path.trim());
+        if !p.is_absolute() || !p.is_file() {
+            return Err("this path is not a file".into());
+        }
+        let bytes = std::fs::read(p).map_err(|e| e.to_string())?;
+        if bytes.len() > 30 * 1024 * 1024 {
+            return Err("this picture is too large (30 MB at most)".into());
+        }
+        let (stored, w, h) = crate::media::store(app, &key, "photo", &bytes)?;
+        app.db.set_media(&key, "photo", &stored.to_string_lossy(), w, h, &format!("own|{path}"));
+        app.db.set_setting(&setting, "own");
+        return Ok(());
+    }
+    let (url, mark) = if choice["auto"] == true {
+        let medias: Vec<Value> =
+            list.iter().map(|m| json!({ "type": m["type"], "region": m["region"], "url": m["url"], "parent": "jeu" })).collect();
+        let regions = ui_regions(&ui_lang(app));
+        match pick(&medias, &["photo", "illustration"], &regions) {
+            Some(u) => (u.to_string(), String::new()),
+            None => {
+                app.db.set_setting(&setting, "");
+                return Ok(());
+            }
+        }
+    } else {
+        let n = choice["n"].as_u64().ok_or("no picture chosen")? as usize;
+        let m = list.get(n).ok_or("this picture is not on ScreenScraper any more")?;
+        (m["url"].as_str().ok_or("no address for this picture")?.to_string(), n.to_string())
+    };
+    let c = credentials(app).ok_or("connect a ScreenScraper account first (Settings → RomM & images)")?;
+    let bytes = download(&c, &url)?;
+    let (stored, w, h) = crate::media::store(app, &key, "photo", &bytes)?;
+    app.db.set_media(&key, "photo", &stored.to_string_lossy(), w, h, &format!("ss|{url}"));
+    // Only once the picture is here: a failed download leaves the choice as it was.
+    app.db.set_setting(&setting, &mark);
+    Ok(())
 }
 
 /// Fetches and stores one game's media from its ScreenScraper record.

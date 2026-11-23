@@ -264,6 +264,20 @@ Item {
         consoleIssues(c).forEach((i, n) => rows.push(note("issue:" + n, (i.tone === "bad" ? "⚠ " : "") + i.text)))
         // What its games need that this computer lacks.
         Needs.warnings(c.warnings).forEach((t, n) => rows.push(note("need:" + n, "⚠ " + t)))
+        // Its picture in the Store: ScreenScraper's (another of them), or one's own.
+        const pics = settings && settings.system_pics ? settings.system_pics[c.slug] : null
+        if (pics) {
+            const kinds = { photo: qsTr("Photo"), illustration: qsTr("Illustration"), BoitierConsole3D: qsTr("Its box"), controller: qsTr("Controller") }
+            const items = [{ id: "auto", label: qsTr("Borne's choice") }]
+            pics.choices.forEach(p => items.push({ id: String(p.n), label: (kinds[p.type] || p.type) + (p.region ? " (" + String(p.region).toUpperCase() + ")" : "") }))
+            if (pics.chosen === "own") items.push({ id: "own", label: qsTr("Yours") })
+            rows.push(group(qsTr("Picture in the Store")))
+            if (items.length > 1)
+                rows.push({ id: "spic:" + c.slug, kind: "chips", title: qsTr("Picture"), desc: qsTr("Another of ScreenScraper's pictures of this console (a model, a region)"),
+                            selected: pics.chosen, items: items })
+            rows.push({ id: "spic-own:" + c.slug, kind: "buttons", title: qsTr("Your own picture"), desc: qsTr("A picture file on this computer (PNG with a transparent background looks best)"),
+                        items: [{ id: "spic-own:" + c.slug, label: qsTr("Choose a file") }] })
+        }
         rows.push(group(qsTr("Emulator")))
         // A choice only when there is one to make.
         if (c.choices.length > 1)
@@ -652,6 +666,7 @@ Item {
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
         else if (r.id === "dev-mode") page.action("dev-mode", item.id)
+        else if (r.id.startsWith("spic:")) { if (item.id !== "own") page.action("system-pic", { slug: r.id.substring(5), choice: item.id }) }
         else page.action(item.id, null)
     }
     // Whose controls the rows change: the console open, else every game.
