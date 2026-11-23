@@ -242,6 +242,7 @@ Item {
                             required property int index
                             c: modelData
                             on: root.zone === "shelf" && root.onHome && !root.folderOpen && index === root.shelfIndex
+                            near: index >= root.shelfIndex - 3 && index <= root.shelfIndex + 8
                         }
                     }
                 }
@@ -290,6 +291,7 @@ Item {
                         // The console stays open behind its folder: nothing behind moves or turns.
                         on: index === root.wallIndex && root.onStore
                         lit: on && root.zone === "wall" && !root.folderOpen
+                        near: index >= root.wallIndex - 3 && index <= root.wallIndex + 10
                     }
                 }
             }
@@ -602,6 +604,9 @@ Item {
         id: fo
         property var c
         property bool on: false
+        // On screen or about to be: only then are its covers drawn through effects (each one
+        // an offscreen layer, costly when a library with many consoles first appears).
+        property bool near: true
         width: 300; height: 230
         scale: on ? 1.05 : 1
         z: on ? 2 : 1
@@ -641,11 +646,11 @@ Item {
                         Behavior on x { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
                         Behavior on rotation { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
                         Behavior on y { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutCubic } }
-                        layer.enabled: fo.visible
+                        layer.enabled: fo.visible && fo.near
                         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.55; shadowBlur: 0.6; shadowVerticalOffset: 6 }
                         Item {
                             anchors.fill: parent
-                            layer.enabled: fo.visible
+                            layer.enabled: fo.visible && fo.near
                             layer.effect: MultiEffect { maskEnabled: true; maskSource: fanMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                             Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.3) }
                             Image {
@@ -656,9 +661,10 @@ Item {
                                 asynchronous: true
                             }
                         }
-                        Rectangle { id: fanMask; anchors.fill: parent; radius: 8; visible: false; layer.enabled: true }
                     }
                 }
+                // One mask for its three covers (they are the same size).
+                Rectangle { id: fanMask; width: 88; height: 120; radius: 8; visible: false; layer.enabled: fo.near }
                 // Empty: its sign, large.
                 Icon {
                     visible: fo.c.covers.length === 0
@@ -727,6 +733,8 @@ Item {
         property var c
         property bool on: false
         property bool lit: false
+        // On screen or about to be: only then is its face drawn through its mask (a layer each).
+        property bool near: true
         readonly property color tint: Cases.tint(c.slug)
         readonly property real k: 0.158      // tan(9°)
         readonly property bool hasPhoto: photo.status === Image.Ready
@@ -776,7 +784,7 @@ Item {
                 anchors.fill: parent
                 readonly property real kH: card.tint.hslHue
                 readonly property real kS: card.tint.hslSaturation
-                layer.enabled: true
+                layer.enabled: card.near
                 layer.effect: MultiEffect { maskEnabled: true; maskSource: faceMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                 // Studio: a seamless backdrop in the console's colour, muted, bending from the
                 // wall to the floor under one large soft light from the upper left.
@@ -865,7 +873,7 @@ Item {
                 anchors.fill: parent
                 radius: 16
                 visible: false
-                layer.enabled: true
+                layer.enabled: card.near
             }
             // Its edge: a hairline, lighter on top where the light comes from.
             Rectangle {
@@ -1099,7 +1107,7 @@ Item {
                 }
             }
         }
-        Rectangle { id: tileMask; width: tile.width; height: tile.t.h; radius: 12; visible: false; layer.enabled: true }
+        Rectangle { id: tileMask; width: tile.width; height: tile.t.h; radius: 12; visible: false; layer.enabled: tile.visible }
         Column {
             visible: tile.t.caption
             y: tile.t.h + 12

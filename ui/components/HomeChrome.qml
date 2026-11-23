@@ -102,12 +102,11 @@ Item {
         }
     }
 
-    // Borne's name, discreet, top left.
+    // Borne's logo, top left: its red pictogram and name, present without taking the eye.
     Brand {
-        x: 58; y: 46
-        lettering: true
-        size: 22
-        opacity: 0.5
+        x: 58; y: 44
+        size: 26
+        opacity: 0.92
     }
 
     // ---------- status ----------
