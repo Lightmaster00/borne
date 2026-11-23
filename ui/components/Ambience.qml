@@ -1,6 +1,6 @@
-// Background: a dark room lit from above, over the console or the game in front (`lightX`): a
-// lamp in the console's colour washed toward warm white, shafts of light swaying through haze,
-// dust drifting in them, a pool of light on the floor, a fine grain; or, when chosen (`artShown`), the
+// Background: a dark room whose only light comes from what is in front (`lightX`): the console's
+// photo or the game's cover, blurred until only its colours are left, spread wide and faint; a
+// vignette and a fine grain (all tuned in Settings → Developer → Light and cards); or, when chosen (`artShown`), the
 // game's art, sharp, drifting very slowly (its fan art, else a screenshot, else ScreenScraper's
 // blank Steam grid or marquee), under scrims that darken the left side and the floor where the text
 // stands.
@@ -21,15 +21,6 @@ Item {
     property bool artShown: false     // the game's art rather than the lights
     property color tint: Cases.tint(game ? game.platform_slug : "")
     Behavior on tint { ColorAnimation { duration: 1400; easing.type: Easing.InOutSine } }
-    // Another console: the lights swell a moment as their colour changes.
-    readonly property color goal: Cases.tint(game ? game.platform_slug : "")
-    property real flash: 0
-    onGoalChanged: if (theme && theme.motion > 0.5) swell.restart()
-    SequentialAnimation {
-        id: swell
-        NumberAnimation { target: amb; property: "flash"; to: 1; duration: 700; easing.type: Easing.InOutSine }
-        NumberAnimation { target: amb; property: "flash"; to: 0; duration: 1800; easing.type: Easing.InOutSine }
-    }
     property bool trailers: true      // videos may play
     property string videoUrl: ""      // local file of the game's video
     property bool sound: false        // the video's sound
@@ -42,165 +33,107 @@ Item {
     property int framesDecoded: 0
     readonly property color accent: theme.accent
 
-    // ---------- without art: a dark room lit from above ----------
-    // Where the light falls (stage pixels): over the console or the game in front.
+    // ---------- without art: a dark room taking its light from what is in front ----------
+    // Where the light gathers (stage pixels), and the picture it takes its colours from (the
+    // console's photo, else the game's cover).
     property real lightX: width * 0.5
-    Behavior on lightX { NumberAnimation { duration: 1400; easing.type: Easing.InOutCubic } }
+    Behavior on lightX { NumberAnimation { duration: 1200; easing.type: Easing.InOutCubic } }
+    property string glowSource: ""
+    // Settings → Developer → Light and cards (prefs.look*): glow 0–100 (how much colour), soft
+    // 0–100 (how diffuse), vignette 0–100, grain 0–100.
+    property var look: ({ glow: 40, soft: 70, vignette: 45, grain: 30 })
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: Qt.rgba(amb.tint.r * 0.16 + 0.012, amb.tint.g * 0.16 + 0.012, amb.tint.b * 0.16 + 0.016, 1) }
-            GradientStop { position: 0.6; color: Qt.rgba(amb.tint.r * 0.05 + 0.014, amb.tint.g * 0.05 + 0.014, amb.tint.b * 0.05 + 0.018, 1) }
-            GradientStop { position: 1.0; color: "#040406" }
+            GradientStop { position: 0.0; color: Qt.rgba(amb.tint.r * 0.10 + 0.020, amb.tint.g * 0.10 + 0.020, amb.tint.b * 0.10 + 0.026, 1) }
+            GradientStop { position: 1.0; color: Qt.rgba(amb.tint.r * 0.03 + 0.012, amb.tint.g * 0.03 + 0.012, amb.tint.b * 0.03 + 0.016, 1) }
         }
     }
     Item {
         id: lights
         anchors.fill: parent
         visible: !amb.artShown || stillLayer.shown === ""
-        readonly property bool moving: amb.visible && !amb.paused && amb.theme && amb.theme.motion > 0.5
-        // The light's colour: the console's, washed toward a warm white, as a lamp through tinted glass.
-        readonly property color lamp: Qt.rgba(0.62 + amb.tint.r * 0.38, 0.58 + amb.tint.g * 0.38, 0.52 + amb.tint.b * 0.38, 1)
-        readonly property real cx: amb.lightX
-        readonly property real cy: -height * 0.18
-
-        // The haze the light passes through: a tall soft cone.
-        Shape {
-            id: haze
-            anchors.fill: parent
-            preferredRendererType: Shape.CurveRenderer
-            opacity: 0.55 + 0.25 * amb.flash
-            ShapePath {
-                strokeWidth: -1
-                fillGradient: RadialGradient {
-                    centerX: lights.cx; centerY: lights.height * 0.1; focalX: lights.cx; focalY: lights.cy
-                    centerRadius: lights.height * 0.95; focalRadius: 0
-                    GradientStop { position: 0; color: Qt.rgba(lights.lamp.r, lights.lamp.g, lights.lamp.b, 0.20) }
-                    GradientStop { position: 0.5; color: Qt.rgba(amb.tint.r, amb.tint.g, amb.tint.b, 0.07) }
-                    GradientStop { position: 1; color: Qt.rgba(amb.tint.r, amb.tint.g, amb.tint.b, 0) }
-                }
-                PathRectangle { x: 0; y: 0; width: lights.width; height: lights.height }
+        // The picture, tiny and blurred until only its colours are left, spread wide behind
+        // what is in front; two layers crossfade when it changes. No picture: the console's colour.
+        property bool useA: true
+        property string shown: ""
+        function swap() {
+            const src = amb.glowSource !== "" ? amb.glowSource : (amb.game && amb.game.cover ? amb.game.cover : "")
+            if (src === shown) return
+            shown = src
+            if (useA) glowB.source = src; else glowA.source = src
+            useA = !useA
+        }
+        Timer { id: glowDelay; interval: 180; onTriggered: lights.swap() }
+        Connections { target: amb; function onGlowSourceChanged() { glowDelay.restart() } function onGameChanged() { glowDelay.restart() } }
+        Component.onCompleted: swap()
+        readonly property real spread: 0.75 + 0.5 * amb.look.soft / 100
+        Item {
+            id: glowBox
+            width: lights.width * lights.spread
+            height: lights.height * (0.9 + 0.4 * amb.look.soft / 100)
+            x: amb.lightX - width / 2
+            y: lights.height * 0.42 - height / 2
+            opacity: amb.look.glow / 100
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: true; blur: 1.0; blurMax: 64; blurMultiplier: 1 + amb.look.soft / 50
+                saturation: 0.25
+                maskEnabled: true; maskSource: glowMask; maskThresholdMin: 0.0; maskSpreadAtMin: 1.0
             }
-        }
-        // Shafts of light: thin uneven wedges fanning down from the lamp, fading as they go, in two
-        // sets swaying slowly at different paces, so they shimmer like light through dust.
-        readonly property var rays: {
-            const out = []
-            let r = 7
-            const rnd = () => { r = (r * 16807) % 2147483647; return (r % 10000) / 10000 }
-            for (let i = 0; i < 22; i++)
-                out.push({ a: -34 + 68 * rnd(), w: 14 + 70 * rnd() * rnd(), k: 0.35 + 0.65 * rnd(), set: i % 2 })
-            return out
-        }
-        property real sway0
-        property real sway1
-        SequentialAnimation on sway0 {
-            loops: Animation.Infinite; running: lights.moving
-            NumberAnimation { from: -2.2; to: 2.2; duration: 23000; easing.type: Easing.InOutSine }
-            NumberAnimation { from: 2.2; to: -2.2; duration: 23000; easing.type: Easing.InOutSine }
-        }
-        SequentialAnimation on sway1 {
-            loops: Animation.Infinite; running: lights.moving
-            NumberAnimation { from: 2.6; to: -1.6; duration: 31000; easing.type: Easing.InOutSine }
-            NumberAnimation { from: -1.6; to: 2.6; duration: 31000; easing.type: Easing.InOutSine }
-        }
-        Repeater {
-            model: lights.rays
-            Shape {
-                id: ray
-                required property var modelData
-                anchors.fill: parent
-                preferredRendererType: Shape.CurveRenderer
-                readonly property real ang: (modelData.a + (modelData.set ? lights.sway1 : lights.sway0)) * Math.PI / 180
-                readonly property real len: lights.height * 1.25
-                readonly property real ex: lights.cx + Math.sin(ang) * len
-                readonly property real ey: lights.cy + Math.cos(ang) * len
-                readonly property real px: Math.cos(ang) * modelData.w / 2
-                readonly property real py: -Math.sin(ang) * modelData.w / 2
-                opacity: (0.095 + 0.045 * amb.flash) * modelData.k
-                ShapePath {
-                    strokeWidth: -1
-                    fillGradient: LinearGradient {
-                        x1: lights.cx; y1: lights.cy; x2: ray.ex; y2: ray.ey
-                        GradientStop { position: 0.1; color: Qt.rgba(lights.lamp.r, lights.lamp.g, lights.lamp.b, 1) }
-                        GradientStop { position: 0.55; color: Qt.rgba(lights.lamp.r, lights.lamp.g, lights.lamp.b, 0.45) }
-                        GradientStop { position: 1; color: Qt.rgba(lights.lamp.r, lights.lamp.g, lights.lamp.b, 0) }
-                    }
-                    startX: lights.cx; startY: lights.cy
-                    PathLine { x: ray.ex + ray.px; y: ray.ey + ray.py }
-                    PathLine { x: ray.ex - ray.px; y: ray.ey - ray.py }
-                    PathLine { x: lights.cx; y: lights.cy }
-                }
-            }
-        }
-        // The lamp itself, just above the screen: a bright bloom where the rays start.
-        Shape {
-            anchors.fill: parent
-            preferredRendererType: Shape.CurveRenderer
-            opacity: 0.85 + 0.15 * amb.flash
-            ShapePath {
-                strokeWidth: -1
-                fillGradient: RadialGradient {
-                    centerX: lights.cx; centerY: -20; focalX: lights.cx; focalY: -20
-                    centerRadius: 300; focalRadius: 0
-                    GradientStop { position: 0; color: Qt.rgba(lights.lamp.r, lights.lamp.g, lights.lamp.b, 0.30) }
-                    GradientStop { position: 0.4; color: Qt.rgba(lights.lamp.r, lights.lamp.g, lights.lamp.b, 0.08) }
-                    GradientStop { position: 1; color: Qt.rgba(lights.lamp.r, lights.lamp.g, lights.lamp.b, 0) }
-                }
-                PathRectangle { x: lights.cx - 300; y: 0; width: 600; height: 300 }
-            }
-        }
-        // Where the light lands: a soft pool on the floor.
-        Shape {
-            anchors.fill: parent
-            preferredRendererType: Shape.CurveRenderer
-            ShapePath {
-                strokeWidth: -1
-                fillGradient: RadialGradient {
-                    centerX: lights.cx; centerY: lights.height * 0.86; focalX: lights.cx; focalY: lights.height * 0.86
-                    centerRadius: lights.width * 0.34; focalRadius: 0
-                    GradientStop { position: 0; color: Qt.rgba(amb.tint.r, amb.tint.g, amb.tint.b, 0.16 + 0.08 * amb.flash) }
-                    GradientStop { position: 1; color: Qt.rgba(amb.tint.r, amb.tint.g, amb.tint.b, 0) }
-                }
-                PathRectangle { x: 0; y: lights.height * 0.6; width: lights.width; height: lights.height * 0.4 }
-            }
-        }
-        // Dust in the light: a few motes rising slowly, catching it as they pass.
-        Repeater {
-            model: lights.moving ? 22 : 0
+            // The console's colour, under the picture (and alone when there is none).
             Rectangle {
-                id: mote
-                required property int index
-                readonly property real seed: ((index * 7919) % 1000) / 1000
-                readonly property real seed2: ((index * 104729) % 1000) / 1000
-                width: 2 + seed2 * 3; height: width; radius: width / 2
-                color: lights.lamp
-                property real p: seed
-                NumberAnimation on p {
-                    from: mote.seed; to: mote.seed + 1; duration: 26000 + mote.seed2 * 22000
-                    loops: Animation.Infinite; running: lights.moving
+                anchors.centerIn: parent
+                width: parent.width * 0.6; height: parent.height * 0.6; radius: width / 2
+                color: Qt.rgba(amb.tint.r, amb.tint.g, amb.tint.b, 0.55)
+            }
+            component Glow: Image {
+                property bool front: false
+                anchors.centerIn: parent
+                width: parent.width * 0.62; height: parent.height * 0.62
+                fillMode: Image.PreserveAspectFit
+                sourceSize.width: 48
+                smooth: true
+                asynchronous: true
+                opacity: front && status === Image.Ready ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 900; easing.type: Easing.InOutQuad } }
+            }
+            Glow { id: glowA; front: lights.useA }
+            Glow { id: glowB; front: !lights.useA }
+        }
+        // The glow fades out softly at its edges.
+        Shape {
+            id: glowMask
+            width: glowBox.width; height: glowBox.height
+            visible: false
+            layer.enabled: true
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                strokeWidth: -1
+                fillGradient: RadialGradient {
+                    centerX: glowMask.width / 2; centerY: glowMask.height / 2; focalX: centerX; focalY: centerY
+                    centerRadius: Math.min(glowMask.width, glowMask.height) * 0.5; focalRadius: 0
+                    GradientStop { position: 0; color: "white" }
+                    GradientStop { position: 0.6; color: Qt.rgba(1, 1, 1, 0.5) }
+                    GradientStop { position: 1; color: "transparent" }
                 }
-                readonly property real f: p % 1
-                // Inside the cone, spread with height, drifting sideways a little.
-                x: lights.cx + (seed - 0.5) * (120 + (1 - f) * lights.width * 0.42) + Math.sin(f * 6.28 * (1 + seed2)) * 22
-                y: lights.height * (0.95 - f * 0.85)
-                opacity: Math.sin(f * Math.PI) * (0.25 + 0.45 * seed2) * (0.6 + 0.4 * Math.sin(f * 40 * (0.5 + seed)))
+                PathRectangle { x: 0; y: 0; width: glowMask.width; height: glowMask.height }
             }
         }
     }
     // The edges of the room, darker.
     Shape {
         anchors.fill: parent
-        visible: lights.visible
+        visible: lights.visible && amb.look.vignette > 0
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
             strokeWidth: -1
             fillGradient: RadialGradient {
                 centerX: amb.width / 2; centerY: amb.height * 0.45; focalX: centerX; focalY: centerY
-                centerRadius: amb.width * 0.75; focalRadius: amb.width * 0.25
+                centerRadius: amb.width * 0.75; focalRadius: amb.width * 0.2
                 GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0) }
-                GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.55) }
+                GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.9 * amb.look.vignette / 100) }
             }
             PathRectangle { x: 0; y: 0; width: amb.width; height: amb.height }
         }
@@ -208,10 +141,10 @@ Item {
     // A fine grain over it all, against banding in the dark gradients.
     Image {
         anchors.fill: parent
-        visible: lights.visible
+        visible: lights.visible && amb.look.grain > 0
         source: "../brand/grain.png"
         fillMode: Image.Tile
-        opacity: 0.05
+        opacity: 0.12 * amb.look.grain / 100
         smooth: false
     }
 

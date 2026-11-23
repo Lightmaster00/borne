@@ -1156,6 +1156,61 @@
     </message>
 </context>
 <context>
+    <name>DesignTuner</name>
+    <message>
+        <source>Background: colour from the picture</source>
+        <translation>Fond : couleur tirée de l'image</translation>
+    </message>
+    <message>
+        <source>Background: softness</source>
+        <translation>Fond : douceur</translation>
+    </message>
+    <message>
+        <source>Background: dark edges</source>
+        <translation>Fond : bords sombres</translation>
+    </message>
+    <message>
+        <source>Background: grain</source>
+        <translation>Fond : grain</translation>
+    </message>
+    <message>
+        <source>Cards: style</source>
+        <translation>Cartes : style</translation>
+    </message>
+    <message>
+        <source>Studio</source>
+        <translation>Studio</translation>
+    </message>
+    <message>
+        <source>Lacquer</source>
+        <translation>Laque</translation>
+    </message>
+    <message>
+        <source>Glass</source>
+        <translation>Verre</translation>
+    </message>
+    <message>
+        <source>Cards: light</source>
+        <translation>Cartes : lumière</translation>
+    </message>
+    <message>
+        <source>Cards: floor</source>
+        <translation>Cartes : sol</translation>
+    </message>
+    <message>
+        <source>Cards: shadow under the console</source>
+        <translation>Cartes : ombre sous la console</translation>
+    </message>
+    <message>
+        <source>Light and cards</source>
+        <translation>Lumière et cartes</translation>
+    </message>
+    <message>
+        <source>▲ ▼ choose · ◀ ▶ change · X Borne's value · LB RB Home / Store · LT RT consoles · B close</source>
+        <translation>▲ ▼ choisir · ◀ ▶ changer · X valeur de Borne · LB RB Accueil / Store · LT RT consoles · B fermer</translation>
+    </message>
+</context>
+<context>
     <name>Devices</name>
     <message>
         <source>Wii U Pro Controller</source>
@@ -5145,6 +5200,22 @@
     <message>
         <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
         <translation>Ajoute une section Développeur : ouvrir les émulateurs sur leur propre interface, leur donner des arguments, ajouter vos propres émulateurs. Borne garde une copie de ce que vous changez ; désactivé, il joue comme avant.</translation>
+    </message>
+    <message>
+        <source>Light and cards</source>
+        <translation>Lumière et cartes</translation>
+    </message>
+    <message>
+        <source>Tune live</source>
+        <translation>Régler en direct</translation>
+    </message>
+    <message>
+        <source>Tune</source>
+        <translation>Régler</translation>
+    </message>
+    <message>
+        <source>The background's light and the Store's cards, changed over the Store itself: each value as you like it, and back to Borne's with X. Your values stay as you leave them.</source>
+        <translation>La lumière du fond et les cartes du Store, réglées par-dessus le Store lui-même : chaque valeur à votre goût, et retour à celle de Borne avec X. Vos valeurs restent telles que vous les laissez.</translation>
     </message>
 </context>
 <context>

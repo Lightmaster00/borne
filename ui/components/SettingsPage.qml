@@ -444,7 +444,11 @@ Item {
     readonly property var dev: settings && settings.dev ? settings.dev : null
     function when(t) { return new Date(t * 1000).toLocaleString(Qt.locale(), Locale.ShortFormat) }
     function devRows() {
-        const rows = [group(qsTr("Borne's emulators"))]
+        const rows = [group(qsTr("Light and cards")),
+                      { id: "dev-tune", kind: "buttons", title: qsTr("Tune live"),
+                        desc: qsTr("The background's light and the Store's cards, changed over the Store itself: each value as you like it, and back to Borne's with X. Your values stay as you leave them."),
+                        items: [{ id: "dev-tune", label: qsTr("Tune"), primary: true }] },
+                      group(qsTr("Borne's emulators"))]
         const progs = dev ? dev.programs : []
         if (!progs.length) rows.push(note("dev-none", qsTr("No emulator is installed yet: they appear here once Borne has installed them (or you gave their program).")))
         progs.forEach(p => {

@@ -921,6 +921,7 @@ Window {
         else if (id === "dev-mode") api("POST", "/api/v1/dev", { on: payload === "on" }, function (r, err) {
             if (err) toasts.show(err, "error"); else { settings = freshUpd(r); if (payload === "on") toasts.show(qsTr("Developer mode is on: see Settings → Developer."), "info") }
         })
+        else if (id === "dev-tune") { overlay = ""; setTab("store"); homeZone = "wall"; designTuner.open() }
         else if (id.startsWith("dev-open:")) api("POST", "/api/v1/dev/open/" + id.substring(9), {}, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error") })
         else if (id.startsWith("dev-args:")) {
             const prog = id.substring(9)
@@ -1331,6 +1332,11 @@ Window {
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
         if (search.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return search.handle(a) }
+        if (designTuner.visible) {
+            const r = designTuner.handle(a)
+            if (r === "back") sfx.play("back"); else if (r === "move") sfx.play("move")
+            return
+        }
         if (downloadsPanel.shown) {
             if (a === "r3") { sfx.play("back"); downloadsPanel.close(); return }
             const r = downloadsPanel.handle(a)
@@ -1613,7 +1619,9 @@ Window {
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.ambientGame
             artShown: prefs.background === "art"
-            lightX: win.overlay === "game" ? width * 0.72 : home.lightX
+            lightX: win.overlay === "game" ? width * 0.72 : home.lightX * stage.s
+            glowSource: win.overlay === "game" ? "" : home.glowSource
+            look: ({ glow: prefs.lookGlow, soft: prefs.lookSoft, vignette: prefs.lookVignette, grain: prefs.lookGrain })
             // The library's video (off by default), and on a game's page its trailer.
             trailers: win.overlay === "game" ? win.trailers : win.bgVideos && win.screen === "library" && win.overlay === ""
             videoUrl: win.overlay === "game" ? win.pageTrailer : win.bgVideo
@@ -1695,6 +1703,7 @@ Window {
         LibraryHome {
             id: home
             anchors.fill: parent
+            look: ({ card: prefs.lookCard, key: prefs.lookKey, floor: prefs.lookFloor, shadow: prefs.lookShadow })
             // Faded under the Downloads and the Settings, which stand where a folder does.
             opacity: win.attract ? 0 : (downloadsPanel.shown || (glassPanel.shown && glassPanel.besideRail)) ? 0.25 : 1
             Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
@@ -1767,7 +1776,7 @@ Window {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             opacity: win.attract ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
-            visible: win.screen === "library" && win.ready && !win.gameMode
+            visible: win.screen === "library" && win.ready && !win.gameMode && !designTuner.visible
                      && (win.overlay === "" || win.overlay === "game" || win.overlay === "settings")
             theme: win.theme
             where: {
@@ -1899,6 +1908,16 @@ Window {
             }
         }
 
+        // Developer mode: the light and the cards tuned live over the screen they change.
+        DesignTuner {
+            id: designTuner
+            anchors.fill: parent
+            z: 45
+            theme: win.theme
+            prefs: prefs
+            onTab: (t) => win.setTab(t)
+            onStep: (d) => { if (win.libTab === "store" && win.wall.length) win.wallIndex = Math.max(0, Math.min(win.wall.length - 1, win.wallIndex + d)) }
+        }
         // The settings stand in a glass panel over the game's art.
         Rectangle {
             anchors.fill: parent
@@ -2450,6 +2469,15 @@ Window {
         property string sortStore: "added"   // the Store's
         property string background: "lights"  // behind the home: "lights" (the console's colour) | "art" (the game's)
         property bool videoMuted: false       // a game's video in full screen plays without its sound
+        // Light and cards (Settings → Developer → Tune live; DesignTuner): 0–100 but lookCard.
+        property int lookGlow: 40
+        property int lookSoft: 70
+        property int lookVignette: 45
+        property int lookGrain: 30
+        property string lookCard: "studio"     // "studio" | "lacquer" | "glass"
+        property int lookKey: 50
+        property int lookFloor: 40
+        property int lookShadow: 60
         property int notifiedBuild: 0
     }
 

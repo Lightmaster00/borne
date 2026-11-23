@@ -1156,6 +1156,61 @@
     </message>
 </context>
 <context>
+    <name>DesignTuner</name>
+    <message>
+        <source>Background: colour from the picture</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Background: softness</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Background: dark edges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Background: grain</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cards: style</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Studio</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Lacquer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Glass</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cards: light</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cards: floor</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cards: shadow under the console</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Light and cards</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>▲ ▼ choose · ◀ ▶ change · X Borne's value · LB RB Home / Store · LT RT consoles · B close</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
     <name>Devices</name>
     <message>
         <source>Wii U Pro Controller</source>
@@ -5144,6 +5199,22 @@
     </message>
     <message>
         <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Light and cards</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Tune live</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Tune</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The background's light and the Store's cards, changed over the Store itself: each value as you like it, and back to Borne's with X. Your values stay as you leave them.</source>
         <translation type="unfinished" />
     </message>
 </context>
