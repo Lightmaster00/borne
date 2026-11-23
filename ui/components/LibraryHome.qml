@@ -287,8 +287,9 @@ Item {
                         required property var modelData
                         required property int index
                         c: modelData
-                        on: index === root.wallIndex && root.onStore && !root.folderOpen
-                        lit: on && root.zone === "wall"
+                        // The console stays open behind its folder: nothing behind moves or turns.
+                        on: index === root.wallIndex && root.onStore
+                        lit: on && root.zone === "wall" && !root.folderOpen
                     }
                 }
             }
@@ -335,7 +336,7 @@ Item {
     // ================= a folder =================
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0.024, 0.024, 0.04, 0.55)
+        color: Qt.rgba(0.02, 0.02, 0.035, 0.72)
         opacity: root.folderOpen ? 1 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 450 * root.motion } }

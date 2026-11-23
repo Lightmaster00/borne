@@ -1828,8 +1828,9 @@ Window {
             id: chrome
             anchors.fill: parent
             z: 21
-            opacity: win.attract ? 0 : 1
-            Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
+            // A console's folder open: the rail and the status step back with the rest.
+            opacity: win.attract ? 0 : (win.folder && win.overlay === "" && !downloadsPanel.shown) ? 0.28 : 1
+            Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 400) * graphite.motion; easing.type: Easing.InOutQuad } }
             visible: win.screen === "library" && win.ready && !win.gameMode
             theme: win.theme
             items: win.railItems
