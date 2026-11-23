@@ -29,7 +29,19 @@ Item {
     // The way the selection last moved among the Store's consoles: 1 right, -1 left.
     property int wallDir: 1
     property int lastWall: 0
-    onWallIndexChanged: { wallDir = wallIndex >= lastWall ? 1 : -1; lastWall = wallIndex }
+    onWallIndexChanged: {
+        wallDir = wallIndex >= lastWall ? 1 : -1; lastWall = wallIndex
+        const now = Date.now(); rapid = now - lastWallAt < 260; lastWallAt = now
+    }
+    // The move from one console to the next (Settings → Developer → Light and cards): speed in
+    // % (higher is quicker), bounce 0–100 (how far the card overshoots and settles), photo delay
+    // 0–100 (×3 ms: the console arrives once its card has started opening).
+    property var motionLook: ({ speed: 100, bounce: 30, delay: 40 })
+    // Consoles passing quickly (the stick held): every move shorter, so nothing lags behind.
+    property bool rapid: false
+    property double lastWallAt: 0
+    readonly property real tK: motion * 100 / Math.max(25, motionLook.speed) * (rapid ? 0.5 : 1)
+    readonly property real overshoot: motionLook.bounce / 100 * 1.4
     property string storeLine: ""
     // A folder open: { kind, slug, name } and its grid (Shelf.build, "grid").
     property var folder: null
@@ -268,7 +280,7 @@ Item {
                 x: 80 - Math.max(0, (root.wallIndex - 1) * 172)
                 y: 40
                 spacing: 22
-                Behavior on x { NumberAnimation { duration: 600 * root.motion; easing.type: Easing.OutCubic } }
+                Behavior on x { NumberAnimation { duration: 640 * root.tK; easing.type: Easing.OutBack; easing.overshoot: root.overshoot * 0.6 } }
                 Repeater {
                     model: root.wall
                     Card {
@@ -721,8 +733,27 @@ Item {
         height: 520
         y: on ? -14 : 0
         z: on ? 2 : 1
-        Behavior on width { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
+        // Opening: with a slight overshoot that settles; closing: quicker, without.
+        Behavior on width { NumberAnimation { duration: (card.on ? 620 : 420) * root.tK; easing.type: card.on ? Easing.OutBack : Easing.OutCubic; easing.overshoot: root.overshoot } }
+        Behavior on y { NumberAnimation { duration: 620 * root.tK; easing.type: Easing.OutCubic } }
+        // The console: leaves toward where you come from, the next one arrives from where you go,
+        // a moment after its card has started opening.
+        onOnChanged: if (on) { photoOut.stop(); photoIn.restart() } else { photoIn.stop(); photoOut.restart() }
+        Component.onCompleted: if (on) photo.enter = 1
+        SequentialAnimation {
+            id: photoIn
+            ScriptAction { script: { photo.enter = 0; photo.dx = root.wallDir * 90 } }
+            PauseAnimation { duration: root.motionLook.delay * 3 * root.tK }
+            ParallelAnimation {
+                NumberAnimation { target: photo; property: "enter"; to: 1; duration: 560 * root.tK; easing.type: Easing.OutBack; easing.overshoot: root.overshoot }
+                NumberAnimation { target: photo; property: "dx"; to: 0; duration: 680 * root.tK; easing.type: Easing.OutCubic }
+            }
+        }
+        ParallelAnimation {
+            id: photoOut
+            NumberAnimation { target: photo; property: "enter"; to: 0; duration: 200 * root.tK; easing.type: Easing.InQuad }
+            NumberAnimation { target: photo; property: "dx"; to: -root.wallDir * 60; duration: 240 * root.tK; easing.type: Easing.InQuad }
+        }
         Accessible.role: Accessible.Button
         Accessible.name: c.name
         // The slanted shape (skewed round its middle) with the ring.
@@ -873,11 +904,11 @@ Item {
             sourceSize.height: 600
             fillMode: Image.PreserveAspectFit
             asynchronous: true
-            opacity: card.on && status === Image.Ready ? 1 : 0
-            visible: opacity > 0
-            scale: card.on ? 1 : 0.85
-            Behavior on opacity { NumberAnimation { duration: 450 * root.motion } }
-            Behavior on scale { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
+            property real enter: 0
+            property real dx: 0
+            opacity: status === Image.Ready ? Math.min(1, enter) : 0
+            visible: opacity > 0.01
+            scale: 0.9 + 0.1 * enter
             layer.enabled: visible
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 1.0; shadowVerticalOffset: 10 }
             // Floating, slowly.
@@ -888,11 +919,7 @@ Item {
                 NumberAnimation { from: 0; to: -10; duration: 2600; easing.type: Easing.InOutSine }
                 NumberAnimation { from: -10; to: 0; duration: 2600; easing.type: Easing.InOutSine }
             }
-            transform: Translate {
-                y: photo.bob
-                x: card.on ? 0 : root.wallDir * 90
-                Behavior on x { NumberAnimation { duration: 650 * root.motion; easing.type: Easing.OutCubic } }
-            }
+            transform: Translate { y: photo.bob; x: photo.dx }
         }
         // No picture: three of its games.
         Row {
@@ -928,7 +955,16 @@ Item {
             width: 400; height: 92
             opacity: card.on ? 1 : 0
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 350 * root.motion } }
+            Behavior on opacity { SequentialAnimation {
+                PauseAnimation { duration: card.on ? 200 * root.tK : 0 }
+                NumberAnimation { duration: (card.on ? 420 : 160) * root.tK; easing.type: Easing.OutCubic } } }
+            // Rising into place under the console.
+            transform: Translate {
+                y: card.on ? 0 : 22
+                Behavior on y { SequentialAnimation {
+                    PauseAnimation { duration: card.on ? 200 * root.tK : 0 }
+                    NumberAnimation { duration: 520 * root.tK; easing.type: Easing.OutCubic } } }
+            }
             Logo { anchors.fill: parent; c: card.c; size: 54 }
         }
         Item {
@@ -938,7 +974,10 @@ Item {
             rotation: -81
             opacity: card.on ? 0 : 1
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 350 * root.motion } }
+            // Back once the card has closed round it.
+            Behavior on opacity { SequentialAnimation {
+                PauseAnimation { duration: card.on ? 0 : 240 * root.tK }
+                NumberAnimation { duration: (card.on ? 140 : 360) * root.tK } } }
             Logo { anchors.fill: parent; c: card.c; size: 30 }
         }
     }

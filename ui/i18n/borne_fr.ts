@@ -1209,6 +1209,18 @@
         <source>▲ ▼ choose · ◀ ▶ change · X Borne's value · LB RB Home / Store · LT RT consoles · B close</source>
         <translation>▲ ▼ choisir · ◀ ▶ changer · X valeur de Borne · LB RB Accueil / Store · LT RT consoles · B fermer</translation>
     </message>
+    <message>
+        <source>Transition: speed (%)</source>
+        <translation>Transition : vitesse (%)</translation>
+    </message>
+    <message>
+        <source>Transition: bounce</source>
+        <translation>Transition : rebond</translation>
+    </message>
+    <message>
+        <source>Transition: console's delay</source>
+        <translation>Transition : retard de la console</translation>
+    </message>
 </context>
 <context>
     <name>Devices</name>

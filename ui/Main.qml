@@ -1704,6 +1704,7 @@ Window {
             id: home
             anchors.fill: parent
             look: ({ card: prefs.lookCard, key: prefs.lookKey, floor: prefs.lookFloor, shadow: prefs.lookShadow })
+            motionLook: ({ speed: prefs.moveSpeed, bounce: prefs.moveBounce, delay: prefs.moveDelay })
             // Faded under the Downloads and the Settings, which stand where a folder does.
             opacity: win.attract ? 0 : (downloadsPanel.shown || (glassPanel.shown && glassPanel.besideRail)) ? 0.25 : 1
             Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
@@ -2478,6 +2479,9 @@ Window {
         property int lookKey: 50
         property int lookFloor: 40
         property int lookShadow: 60
+        property int moveSpeed: 100            // the move between consoles: speed %, bounce, the console's delay
+        property int moveBounce: 30
+        property int moveDelay: 40
         property int notifiedBuild: 0
     }
 

@@ -1209,6 +1209,18 @@
         <source>▲ ▼ choose · ◀ ▶ change · X Borne's value · LB RB Home / Store · LT RT consoles · B close</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Transition: speed (%)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Transition: bounce</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Transition: console's delay</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>Devices</name>

@@ -651,6 +651,7 @@ Item {
         else if (r.id === "ctl-reset") page.action("controls", { scope: ctlScope(), key: "*", value: "default" })
         else if (r.id === "emu-auto") page.action("emu-auto", item.id === "on")
         else if (r.id === "lb") page.action("lb-enabled", item.id === "on")
+        else if (r.id === "dev-mode") page.action("dev-mode", item.id)
         else page.action(item.id, null)
     }
     // Whose controls the rows change: the console open, else every game.

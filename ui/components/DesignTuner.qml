@@ -1,4 +1,4 @@
-// Developer mode: the light and the Store's cards tuned live, over the screen they change.
+// Developer mode: the light, the Store's cards and the move between consoles tuned live, over the screen they change.
 // ▲ ▼ choose a setting, ◀ ▶ change it, X puts it back to Borne's value, LB RB switch Home and
 // Store, LT RT move along the consoles, B closes. Every value is kept (prefs.look*).
 import QtQuick
@@ -22,7 +22,10 @@ Item {
           choices: [["studio", qsTr("Studio")], ["lacquer", qsTr("Lacquer")], ["glass", qsTr("Glass")]] },
         { key: "lookKey", label: qsTr("Cards: light"), def: 50 },
         { key: "lookFloor", label: qsTr("Cards: floor"), def: 40 },
-        { key: "lookShadow", label: qsTr("Cards: shadow under the console"), def: 60 }
+        { key: "lookShadow", label: qsTr("Cards: shadow under the console"), def: 60 },
+        { key: "moveSpeed", label: qsTr("Transition: speed (%)"), def: 100, min: 40, max: 200, step: 10 },
+        { key: "moveBounce", label: qsTr("Transition: bounce"), def: 30 },
+        { key: "moveDelay", label: qsTr("Transition: console's delay"), def: 40 }
     ]
     function value(p) { return prefs ? prefs[p.key] : p.def }
     function shownValue(p) {
@@ -37,7 +40,7 @@ Item {
             const i = Math.max(0, p.choices.findIndex(x => x[0] === prefs[p.key]))
             prefs[p.key] = p.choices[(i + d + p.choices.length) % p.choices.length][0]
         } else {
-            prefs[p.key] = Math.max(0, Math.min(100, prefs[p.key] + d * 5))
+            prefs[p.key] = Math.max(p.min ?? 0, Math.min(p.max ?? 100, prefs[p.key] + d * (p.step ?? 5)))
         }
     }
     function open() { row = 0; visible = true }
