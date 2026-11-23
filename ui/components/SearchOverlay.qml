@@ -47,15 +47,29 @@ Item {
             }
             out.sort((a, b) => a.score - b.score || a.index - b.index)
         }
-        results = out.slice(0, 6)
+        // Every match (up to 200), six shown at a time around the one selected.
+        results = out.slice(0, 200)
         total = out.length
         selected = 0
+        first = 0
         if (results.length) picked(results[0].index)
     }
     property int total: 0
+    // The first of the six results shown.
+    property int first: 0
+    readonly property int shown: 6
+    readonly property var visibleResults: results.slice(first, first + shown)
+    // How many consoles the matches come from.
+    readonly property int consoles: {
+        const seen = {}
+        for (const r of results) seen[r.sub.split(" · ")[0]] = true
+        return Object.keys(seen).length
+    }
     function step(d) {
         if (!results.length) return
         selected = (selected + d + results.length) % results.length
+        if (selected < first) first = selected
+        else if (selected >= first + shown) first = selected - shown + 1
         picked(results[selected].index)
     }
     function confirm() {
@@ -111,7 +125,9 @@ Item {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: root.query.length > 0
-                    text: root.total === 0 ? qsTr("No game found") : qsTr("%n game(s)", "", root.total)
+                    text: root.total === 0 ? qsTr("No game found")
+                        : root.consoles > 1 ? qsTr("%n game(s)", "", root.total) + " · " + qsTr("%n console(s)", "", root.consoles)
+                        : qsTr("%n game(s)", "", root.total)
                     color: root.theme.fgMuted
                     font { family: root.theme.fontFamily; pixelSize: 18; weight: Font.Medium }
                 }
@@ -169,12 +185,12 @@ Item {
                     }
 
                     Repeater {
-                        model: root.results
+                        model: root.visibleResults
                         delegate: Rectangle {
                             id: row
                             required property var modelData
                             required property int index
-                            readonly property bool cur: index === root.selected
+                            readonly property bool cur: index + root.first === root.selected
                             width: parent.width; height: 72; radius: 12
                             color: cur ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
                             border { color: cur ? Qt.rgba(1, 1, 1, 0.35) : "transparent"; width: 1 }
@@ -216,6 +232,12 @@ Item {
                 }
             }
 
+            Text {
+                visible: root.total > root.shown
+                text: qsTr("%1 of %2").arg(root.selected + 1).arg(Math.min(root.total, root.results.length))
+                color: root.theme.fgMuted
+                font { family: root.theme.fontFamily; pixelSize: 16; weight: Font.Medium }
+            }
             HintBar {
                 theme: root.theme
                 hints: root.showKeyboard

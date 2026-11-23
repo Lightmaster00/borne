@@ -3795,6 +3795,14 @@
         <source>Esc</source>
         <translation>Esc</translation>
     </message>
+    <message numerus="yes">
+        <source>%n console(s)</source>
+        <translation><numerusform>%n consola</numerusform><numerusform>%n consolas</numerusform></translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 de %2</translation>
+    </message>
 </context>
 <context>
     <name>ServerSetup</name>

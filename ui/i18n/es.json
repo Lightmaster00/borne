@@ -43,6 +43,7 @@
  "%1 min played": "%1 min jugados",
  "%1 missing from the archive: %2": "Falta %1 en el archivo: %2",
  "%1 not found: choose its program": "%1 no encontrado: elige su programa",
+ "%1 of %2": "%1 de %2",
  "%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.": "%1 de %2 juegos encontrados en ScreenScraper (%3 aún sin consultar). Sus imágenes tienen prioridad sobre las de RomM; los juegos nuevos se buscan tras cada sincronización.",
  "%1 of %2 ready to play": "%1 de %2 listos para jugar",
  "%1 options": "Opciones de %1",

@@ -43,6 +43,7 @@
  "%1 min played": "已玩 %1 分钟",
  "%1 missing from the archive: %2": "压缩包中缺少 %1：%2",
  "%1 not found: choose its program": "未找到 %1：请选择其程序",
+ "%1 of %2": "%1 / %2",
  "%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.": "在 ScreenScraper 上找到 %2 款中的 %1 款（%3 款尚未查询）。其图片优先于 RomM 的图片；每次同步后会获取新游戏。",
  "%1 of %2 ready to play": "%2 款中 %1 款可游玩",
  "%1 options": "%1 选项",

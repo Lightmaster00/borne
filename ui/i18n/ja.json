@@ -43,6 +43,7 @@
  "%1 min played": "%1 分プレイ",
  "%1 missing from the archive: %2": "アーカイブに %1 がありません：%2",
  "%1 not found: choose its program": "%1 が見つかりません：プログラムを選んでください",
+ "%1 of %2": "%1 / %2",
  "%1 of %2 games found on ScreenScraper (%3 not asked yet). Their images take precedence over RomM's; new games are fetched after each sync.": "ScreenScraper で %2 本中 %1 本が見つかりました（%3 本は未照会）。その画像は RomM の画像より優先されます。新しいゲームは同期のたびに取得されます。",
  "%1 of %2 ready to play": "%2 本中 %1 本がプレイ可能",
  "%1 options": "%1 のオプション",
