@@ -3,9 +3,30 @@
 // fine here.
 .pragma library
 
-// w: {code, missing} (+ threads, ram_gb for "power").
+// The accessory a game is made for (core/src/equipment.rs), by its code.
+function accessory(code) {
+    return ({ guitar: qsTr("a guitar controller"), turntable: qsTr("a DJ Hero turntable"), bongos: qsTr("DK Bongos"),
+              buzzers: qsTr("Buzz! buzzers"), microphone: qsTr("a microphone"), balance_board: qsTr("a Wii Balance Board"),
+              wii_motion: qsTr("a Wii Remote (or a pad with motion sensors)"), motionplus: qsTr("a Wii MotionPlus (or a pad with motion sensors)"),
+              joycon_motion: qsTr("Joy-Con (or a pad with motion sensors)"), ps_move: qsTr("PlayStation Move controllers"),
+              psvr: qsTr("PlayStation VR"), kinect: qsTr("Kinect"), ring_con: qsTr("the Ring-Con"), labo: qsTr("Nintendo Labo cardboard"),
+              camera: qsTr("a PlayStation camera"), rocksmith: qsTr("a real guitar and its Rocksmith cable") })[code] || code
+}
+
+// w: {code, missing} (+ threads, ram_gb for "power"; kind for a game's accessory).
 function text(w) {
     const missing = w.missing
+    if (w.game) {
+        const a = accessory(w.code)
+        if (w.kind === "unsupported")
+            return qsTr("This game is made for %1, which its emulator cannot stand in for: it most likely cannot be played here.").arg(a)
+        if (!missing) return qsTr("Made for %1: found.").arg(a)
+        if (w.kind === "made_for")
+            return qsTr("This game is made for %1: none was found. It plays with a pad, less comfortably.").arg(a)
+        if (w.code === "balance_board" || w.code === "ps_move")
+            return qsTr("This game needs %1. Borne cannot see one (it connects to the emulator directly): without it, the game cannot be played.").arg(a)
+        return qsTr("This game needs %1: none was found, and without it the game cannot be played.").arg(a)
+    }
     switch (w.code) {
     case "touch":
         return missing ? qsTr("Many games are played on the lower touch screen: there is none here, the pointer moves with the right stick (slower, some games are hard).")

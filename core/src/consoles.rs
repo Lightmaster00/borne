@@ -80,32 +80,47 @@ pub fn warnings(slug: &str, hw: &Hardware) -> Vec<Value> {
         .collect()
 }
 
-/// Before a game: the needs of its console this machine lacks, when the player has not seen them
-/// yet ({running: false, needs: [...], console}); None to play. Power is told on the game's page,
-/// not asked: a game may run well enough.
+/// Before a game: what it is made for (an accessory, equipment.rs) and what its console's games
+/// need, when this machine lacks them and the player has not answered yet ({running: false,
+/// needs: [...], console, game}); None to play. Power is told on the game's page, not asked: a
+/// game may run well enough. Never a lock: {anyway} records the answer and the game starts.
 pub fn before_play(app: &Shared, rom_id: i64, anyway: bool) -> Option<Value> {
     let g = app.db.game(rom_id)?;
     let slug = g.platform_slug.clone();
+    let hw = hardware(app);
+    let mut needs: Vec<Value> = vec![];
+    if let Some(n) = crate::equipment::before_play(app, &g.group_key, &slug, &g.name, &hw, anyway) {
+        needs.push(n);
+    }
     let mut seen: Vec<String> = app.db.setting(SEEN).unwrap_or_default().split(',').filter(|s| !s.is_empty()).map(String::from).collect();
-    if seen.contains(&slug) {
+    if !seen.contains(&slug) {
+        let missing: Vec<Value> = warnings(&slug, &hw).into_iter().filter(|w| w["missing"] == true && w["code"] != "power").collect();
+        if !missing.is_empty() {
+            if anyway {
+                seen.push(slug.clone());
+                app.db.set_setting(SEEN, &seen.join(","));
+            } else {
+                needs.extend(missing);
+            }
+        }
+    }
+    if needs.is_empty() {
         return None;
     }
-    let missing: Vec<Value> =
-        warnings(&slug, &hardware(app)).into_iter().filter(|w| w["missing"] == true && w["code"] != "power").collect();
-    if missing.is_empty() {
-        return None;
-    }
-    if anyway {
-        seen.push(slug);
-        app.db.set_setting(SEEN, &seen.join(","));
-        return None;
-    }
-    Some(json!({ "running": false, "needs": missing, "console": g.platform_name, "rom_id": rom_id }))
+    Some(json!({ "running": false, "needs": needs, "console": g.platform_name, "game": g.name, "rom_id": rom_id }))
+}
+
+/// Forgets which consoles' needs were answered (asked again before their next game).
+pub fn forget_seen(app: &Shared) {
+    app.db.set_setting(SEEN, "");
 }
 
 pub fn hardware(app: &Shared) -> Hardware {
-    let ids = app.pads.lock().unwrap_or_else(|e| e.into_inner()).ids.clone();
-    crate::hardware::detect(&ids)
+    let (ids, names) = {
+        let p = app.pads.lock().unwrap_or_else(|e| e.into_inner());
+        (p.ids.clone(), p.pads.iter().chain(p.os_names.iter()).cloned().collect::<Vec<_>>())
+    };
+    crate::hardware::detect(&ids, &names)
 }
 
 /// Every console of the RomM library: shown or not, its games, whether Borne plays it, and its

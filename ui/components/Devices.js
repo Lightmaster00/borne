@@ -33,6 +33,7 @@ function hint(id) {
 // Why a game takes another controller than its console's usual one.
 function wantedNote(id, console) {
     if (id === "dual") return qsTr("This game does not take the Pro Controller: it plays with a pair of Joy-Con, which Borne shows it.")
+    if (id === "handheld") return qsTr("This game does not take the Pro Controller: Borne runs it as a Switch held in hand (undocked), where it plays with the buttons alone.")
     if (id === "sideways") return qsTr("This game is played with the Wii Remote held sideways: Borne shows it one, 1 and 2 on your bottom and left buttons.")
     return ""
 }

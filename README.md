@@ -75,9 +75,12 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   emulator, controller); its screenshots from RomM and ScreenScraper.
 - **Each game its controller**: the version and the language, and the controller the console sees,
   per console or per game: a Switch Pro Controller, a pair of Joy-Con or the console in hand (the
-  Pokémon Let's Go games get the Joy-Con by themselves); a Wii Remote with its Nunchuk, alone, held
+  Pokémon Let's Go games get the console in hand, undocked, by themselves); a Wii Remote with its Nunchuk, alone, held
   sideways or a Classic Controller; a Wii U GamePad or Pro Controller. A map shows what each of your
   buttons (Xbox, PlayStation or Nintendo) does in the game, and every button can be changed.
+- **Games made for an accessory** (a guitar, a Balance Board, PlayStation VR, Kinect, Joy-Con
+  shaken…) are recognised by name and checked against what is plugged in: when it is missing, the
+  game's page says so and Borne asks once before playing. Never a lock: Play anyway is remembered.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network**: on Linux only the games you pick are mounted, read from RomM on demand;
   on macOS they are downloaded as temporary copies, the least recently played removed first past

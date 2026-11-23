@@ -150,7 +150,12 @@ Item {
             if (t.step === "unpack") return qsTr("Installing…")
             return qsTr("Preparing…")
         }
-        return t.error ? qsTr("Installation failed: %1").arg(CoreText.tr(t.error)) : ""
+        if (t.error) return qsTr("Installation failed: %1").arg(CoreText.tr(t.error))
+        const d = t.done
+        if (d && d.what === "uptodate") return qsTr("Already up to date: version %1 is the latest").arg(d.version)
+        if (d && d.what === "updated") return d.version === "flatpak" ? qsTr("Updated with Flathub") : qsTr("Updated to version %1").arg(d.version)
+        if (d && d.what === "installed") return d.version === "flatpak" ? qsTr("Installed from Flathub") : qsTr("Installed: version %1").arg(d.version)
+        return ""
     }
     function programText(p) {
         const t = emuTaskText(p.id)
@@ -239,7 +244,10 @@ Item {
                        desc: qsTr("Add or leave out consoles of your RomM library; what their games need of this computer is said for each"),
                        items: [{ id: "pick-consoles", label: qsTr("Choose"), primary: true }] }
         if (!consoles.length) return [pick, note("no-consoles", qsTr("The consoles of your library appear here after a sync."))]
-        const rows = [pick, group(qsTr("In your library"))]
+        const ask = { id: "needs-ask", kind: "buttons", title: qsTr("Questions before playing"),
+                      desc: qsTr("Before a game made for an accessory Borne does not find (a guitar, a Balance Board, PlayStation VR…), or a console's first game when this computer lacks what it needs, Borne asks once. Never a lock: Play anyway is remembered."),
+                      items: [{ id: "needs-forget", label: qsTr("Ask again") }] }
+        const rows = [pick, ask, group(qsTr("In your library"))]
         consoles.forEach(c => {
             const issues = consoleIssues(c)
             const bad = issues.find(i => i.tone === "bad")
@@ -709,7 +717,7 @@ Item {
         x: side.width + 40; y: 52
         width: Math.min(1500, parent.width - x - 60)
         height: parent.height - y - 24
-        contentHeight: rowsCol.height + 40
+        contentHeight: rowsCol.height + 50
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         Behavior on contentY { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -721,7 +729,9 @@ Item {
         Connections { target: page; function onSectionChanged() { rowsView.contentY = 0 } function onConsoleSlugChanged() { rowsView.contentY = 0 } }
     Column {
         id: rowsCol
-        width: parent.width
+        // A margin all round, for the focus ring (and a focused card's growth) not to be cut.
+        x: 14; y: 10
+        width: parent.width - 28
         spacing: 18
 
         Column {

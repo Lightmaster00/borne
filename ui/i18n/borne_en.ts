@@ -81,6 +81,90 @@
         <source>Power: this computer should run these games.</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>a guitar controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a DJ Hero turntable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>DK Bongos</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Buzz! buzzers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a microphone</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a Wii Balance Board</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a Wii Remote (or a pad with motion sensors)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a Wii MotionPlus (or a pad with motion sensors)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Joy-Con (or a pad with motion sensors)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PlayStation Move controllers</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>PlayStation VR</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Kinect</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>the Ring-Con</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Nintendo Labo cardboard</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a PlayStation camera</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>a real guitar and its Rocksmith cable</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game is made for %1, which its emulator cannot stand in for: it most likely cannot be played here.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Made for %1: found.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game is made for %1: none was found. It plays with a pad, less comfortably.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game needs %1. Borne cannot see one (it connects to the emulator directly): without it, the game cannot be played.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game needs %1: none was found, and without it the game cannot be played.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>ConsolePicker</name>
@@ -1163,6 +1247,10 @@
     </message>
     <message>
         <source>Nunchuk stick</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This game does not take the Pro Controller: Borne runs it as a Switch held in hand (undocked), where it plays with the buttons alone.</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -3325,6 +3413,14 @@
         <source>Starting…</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Asked once for this game. If Borne is wrong, play anyway: it will not ask again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne asks again before those games.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -4880,6 +4976,38 @@
     </message>
     <message>
         <source>Close</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Already up to date: version %1 is the latest</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Updated with Flathub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Updated to version %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installed from Flathub</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Installed: version %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Questions before playing</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Before a game made for an accessory Borne does not find (a guitar, a Balance Board, PlayStation VR…), or a console's first game when this computer lacks what it needs, Borne asks once. Never a lock: Play anyway is remembered.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Ask again</source>
         <translation type="unfinished" />
     </message>
 </context>

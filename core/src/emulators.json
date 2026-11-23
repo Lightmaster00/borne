@@ -978,6 +978,242 @@
         "!vita3k",
         "Vita3K"
       ]
+    ],
+    "neo-geo-pocket": [
+      [
+        "mednafen_ngp",
+        "Beetle NeoPop"
+      ]
+    ],
+    "neo-geo-pocket-color": [
+      [
+        "mednafen_ngp",
+        "Beetle NeoPop"
+      ]
+    ],
+    "genesis-slash-megadrive": [
+      [
+        "genesis_plus_gx",
+        "Genesis Plus GX"
+      ],
+      [
+        "picodrive",
+        "PicoDrive"
+      ]
+    ],
+    "megadrive": [
+      [
+        "genesis_plus_gx",
+        "Genesis Plus GX"
+      ],
+      [
+        "picodrive",
+        "PicoDrive"
+      ]
+    ],
+    "pc-engine": [
+      [
+        "mednafen_pce_fast",
+        "Beetle PCE Fast"
+      ]
+    ],
+    "turbografx16--1": [
+      [
+        "mednafen_pce_fast",
+        "Beetle PCE Fast"
+      ]
+    ],
+    "turbografx-cd": [
+      [
+        "mednafen_pce_fast",
+        "Beetle PCE Fast"
+      ]
+    ],
+    "supergrafx": [
+      [
+        "mednafen_supergrafx",
+        "Beetle SuperGrafx"
+      ]
+    ],
+    "pc-fx": [
+      [
+        "mednafen_pcfx",
+        "Beetle PC-FX"
+      ]
+    ],
+    "sg1000": [
+      [
+        "genesis_plus_gx",
+        "Genesis Plus GX"
+      ]
+    ],
+    "atari5200": [
+      [
+        "a5200",
+        "a5200"
+      ]
+    ],
+    "atari800": [
+      [
+        "atari800",
+        "Atari800"
+      ]
+    ],
+    "atari8bit": [
+      [
+        "atari800",
+        "Atari800"
+      ]
+    ],
+    "atari-st": [
+      [
+        "hatari",
+        "Hatari"
+      ]
+    ],
+    "amiga": [
+      [
+        "puae",
+        "PUAE"
+      ]
+    ],
+    "c64": [
+      [
+        "vice_x64sc",
+        "VICE x64sc"
+      ]
+    ],
+    "c128": [
+      [
+        "vice_x128",
+        "VICE x128"
+      ]
+    ],
+    "vic-20": [
+      [
+        "vice_xvic",
+        "VICE xvic"
+      ]
+    ],
+    "acpc": [
+      [
+        "cap32",
+        "Caprice32"
+      ]
+    ],
+    "zxs": [
+      [
+        "fuse",
+        "Fuse"
+      ]
+    ],
+    "zx81": [
+      [
+        "81",
+        "EightyOne"
+      ]
+    ],
+    "intellivision": [
+      [
+        "freeintv",
+        "FreeIntv"
+      ]
+    ],
+    "videopac": [
+      [
+        "o2em",
+        "O2EM"
+      ]
+    ],
+    "odyssey-2": [
+      [
+        "o2em",
+        "O2EM"
+      ]
+    ],
+    "odyssey-2-slash-videopac-g7000": [
+      [
+        "o2em",
+        "O2EM"
+      ]
+    ],
+    "dos": [
+      [
+        "dosbox_pure",
+        "DOSBox Pure"
+      ]
+    ],
+    "g-and-w": [
+      [
+        "gw",
+        "Game & Watch"
+      ]
+    ],
+    "supervision": [
+      [
+        "potator",
+        "Potator"
+      ]
+    ],
+    "satellaview": [
+      [
+        "snes9x",
+        "Snes9x"
+      ]
+    ],
+    "sufami-turbo": [
+      [
+        "snes9x",
+        "Snes9x"
+      ]
+    ],
+    "sgb": [
+      [
+        "mgba",
+        "mGBA"
+      ]
+    ],
+    "cps1": [
+      [
+        "fbneo",
+        "FinalBurn Neo"
+      ]
+    ],
+    "cps2": [
+      [
+        "fbneo",
+        "FinalBurn Neo"
+      ]
+    ],
+    "cps3": [
+      [
+        "fbneo",
+        "FinalBurn Neo"
+      ]
+    ],
+    "fairchild-channel-f": [
+      [
+        "freechaf",
+        "FreeChaF"
+      ]
+    ],
+    "tic-80": [
+      [
+        "tic80",
+        "TIC-80"
+      ]
+    ],
+    "arduboy": [
+      [
+        "arduous",
+        "Arduous"
+      ]
+    ],
+    "mega-duck-slash-cougar-boy": [
+      [
+        "sameduck",
+        "SameDuck"
+      ]
     ]
   }
 }

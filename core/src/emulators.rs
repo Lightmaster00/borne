@@ -763,7 +763,12 @@ fn command(
     let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
     let group = app.db.game(rom_id).map(|g| g.group_key).unwrap_or_default();
     let display = crate::gamesettings::resolve(app, system, &group);
-    let options = crate::gamesettings::emu_options(app, &p.id, &group);
+    let mut options = crate::gamesettings::emu_options(app, &p.id, &group);
+    // A Switch game shown the handheld console runs undocked: docked, the handheld controller is
+    // not connected and the game waits for one.
+    if matches!(p.id.as_str(), "eden" | "citron" | "ryubing") && crate::controls::device(app, &group) == "handheld" {
+        options.insert("docked".into(), serde_json::json!("off"));
+    }
     // The console's language: the game's choice, else the interface's when the version has it.
     let language = {
         let chosen = app.active_profile().and_then(|pr| app.db.game_prefs(&pr.id).get(&group).and_then(|x| x.1.clone()));

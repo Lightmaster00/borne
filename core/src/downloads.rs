@@ -20,6 +20,9 @@ const MAIN_EXT: &[&str] = &[
     "wua", "wud", "wux", "rpx", "m3u", "cue", "gdi", "cdi", "chd", "iso", "rvz", "gcz", "wbfs", "ciso", "nsp", "xci", "nes", "fds", "md",
     "gen", "smd", "bin", "sfc", "smc", "gb", "gbc", "gba", "n64", "z64", "v64", "nds", "3ds", "cci", "cxi", "gg", "sms", "32x", "pce",
     "ws", "wsc", "ngp", "ngc", "a26", "lnx", "vb", "cso", "pbp", "a78", "j64", "col", "rom", "mx1", "mx2", "vec", "min", "cia", "vpk",
+    // Home computers and the consoles added in 1.16: disks and tapes first, programs after.
+    "hdf", "lha", "adf", "ipf", "st", "msa", "stx", "d64", "t64", "crt", "prg", "dsk", "cdt", "tzx", "tap", "z80", "sna", "p", "atr", "xex",
+    "a52", "car", "cas", "int", "sg", "sc", "tic", "arduboy", "hex", "mgw", "sv", "bs", "chf",
 ];
 /// The size of a folder's files (links not followed).
 pub fn dir_size(dir: &Path) -> u64 {
@@ -32,6 +35,8 @@ pub fn dir_size(dir: &Path) -> u64 {
 pub fn keeps_archive(platform: &str, archive: &Path) -> bool {
     match platform {
         "arcade" | "neogeo" | "neogeoaes" | "neogeomvs" | "cps1" | "cps2" | "cps3" | "mame" | "fbneo" | "naomi" | "atomiswave" => true,
+        // DOSBox Pure plays a DOS game from its zip, as it was put together.
+        "dos" => archive.extension().map(|e| e.eq_ignore_ascii_case("zip")).unwrap_or(false),
         // PS Vita: a .zip stays as it was downloaded. At launch Vita3K gets it as it is when the
         // game is at its root, else it is extracted once next to it (see `vita_content`); never
         // deleted and downloaded again.

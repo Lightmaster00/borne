@@ -332,7 +332,7 @@ Item {
         x: side.width + 40; y: 52
         width: Math.min(1200, parent.width - x - asidePanel.width - 96)
         height: parent.height - y - 24
-        contentHeight: rowsCol.height + 40
+        contentHeight: rowsCol.height + 50
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         Behavior on contentY { NumberAnimation { duration: theme.scrollMs; easing.type: Easing.OutCubic } }
@@ -344,7 +344,8 @@ Item {
         Connections { target: page; function onSectionChanged() { rowsView.contentY = 0 } }
         Column {
             id: rowsCol
-            width: parent.width
+            x: 14; y: 10
+            width: parent.width - 28
             spacing: 18
             Text { text: page.sections[Math.min(page.section, page.sections.length - 1)].name; color: theme.fg; font { family: theme.displayFont; pixelSize: 34; weight: Font.Bold } }
             Repeater {

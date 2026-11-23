@@ -25,6 +25,7 @@ mod discover;
 mod downloads;
 mod emuinstall;
 mod emulators;
+mod equipment;
 mod events;
 mod gamesettings;
 mod hardware;

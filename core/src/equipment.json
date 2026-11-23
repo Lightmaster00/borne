@@ -1,0 +1,288 @@
+{
+  "_comment": "Games made for an accessory. Each rule: consoles (Borne's slugs), titles matched on the game's name squeezed to lower-case letters and digits (é → e): has (contains), start, end, is (whole name); except (none of these); needs (equipment.rs CODES). The first rule that matches wins, so the narrower come first. A wrong match only asks once before playing: Play anyway is remembered for the game.",
+  "rules": [
+    { "consoles": [
+        "wii"
+      ],
+      "has": [
+        "wiisportsresort",
+        "wiiplaymotion",
+        "redsteel2",
+        "skywardsword"
+      ],
+      "needs": "motionplus"
+    },
+    { "consoles": [
+        "wii",
+        "wiiu"
+      ],
+      "has": [
+        "wiifit"
+      ],
+      "needs": "balance_board"
+    },
+    { "consoles": [
+        "wii"
+      ],
+      "has": [
+        "shaunwhitesnowboardingworldstage",
+        "familyski",
+        "wewiski",
+        "skateitall"
+      ],
+      "needs": "balance_board"
+    },
+    { "consoles": [
+        "ps2",
+        "ps3",
+        "ps4",
+        "wii",
+        "wiiu",
+        "xbox360"
+      ],
+      "has": [
+        "djhero"
+      ],
+      "needs": "turntable"
+    },
+    { "consoles": [
+        "ps3",
+        "ps4",
+        "xbox360"
+      ],
+      "has": [
+        "rocksmith"
+      ],
+      "needs": "rocksmith"
+    },
+    { "consoles": [
+        "ps2",
+        "ps3",
+        "ps4",
+        "wii",
+        "wiiu",
+        "xbox360"
+      ],
+      "has": [
+        "guitarhero",
+        "rockband",
+        "bandhero",
+        "powergig"
+      ],
+      "except": [
+        "ontour",
+        "unplugged",
+        "rockbandreloaded"
+      ],
+      "needs": "guitar"
+    },
+    { "consoles": [
+        "ngc"
+      ],
+      "has": [
+        "donkeykonga"
+      ],
+      "needs": "bongos"
+    },
+    { "consoles": [
+        "ps2",
+        "ps3"
+      ],
+      "has": [
+        "singstar",
+        "karaokerevolution"
+      ],
+      "needs": "microphone"
+    },
+    { "consoles": [
+        "xbox360"
+      ],
+      "is": [
+        "lips"
+      ],
+      "start": [
+        "lipsnumberone",
+        "lipsparty",
+        "lipsiloveth",
+        "lipscanta",
+        "lipsdeutsch"
+      ],
+      "needs": "microphone"
+    },
+    { "consoles": [
+        "ps2",
+        "ps3"
+      ],
+      "start": [
+        "buzz"
+      ],
+      "except": [
+        "lightyear"
+      ],
+      "needs": "buzzers"
+    },
+    { "consoles": [
+        "ps2"
+      ],
+      "has": [
+        "eyetoy"
+      ],
+      "needs": "camera"
+    },
+    { "consoles": [
+        "ps3"
+      ],
+      "has": [
+        "eyepet",
+        "eyecreate",
+        "eyeofjudgment"
+      ],
+      "needs": "camera"
+    },
+    { "consoles": [
+        "ps3"
+      ],
+      "has": [
+        "sportschampions",
+        "starttheparty",
+        "kungfurider",
+        "movefitness",
+        "theshoot",
+        "tvsuperstars",
+        "medievalmoves",
+        "racketsportsps",
+        "movestreetcricket",
+        "beatsketch"
+      ],
+      "needs": "ps_move"
+    },
+    { "consoles": [
+        "ps4"
+      ],
+      "has": [
+        "astrobotrescuemission",
+        "farpoint",
+        "bloodandtruth",
+        "beatsaber",
+        "batmanarkhamvr",
+        "firewallzerohour",
+        "rushofblood",
+        "vrworlds",
+        "playroomvr",
+        "superhotvr",
+        "doomvfr",
+        "skyrimvr",
+        "ironmanvr",
+        "tetheredps",
+        "wipeoutomegacollectionvr",
+        "dreadhalls",
+        "thevrkit"
+      ],
+      "end": [
+        "vr"
+      ],
+      "is": [
+        "moss",
+        "mossbookii",
+        "tethered",
+        "thepersistence",
+        "statik",
+        "eagleflight",
+        "rigs",
+        "rigsmechanizedcombatleague"
+      ],
+      "needs": "psvr"
+    },
+    { "consoles": [
+        "xbox360"
+      ],
+      "has": [
+        "kinect",
+        "dancecentral",
+        "yourshapefitnessevolved",
+        "gunstringer",
+        "fablethejourney",
+        "riseofnightmares",
+        "steelbattalionheavyarmor",
+        "justdance",
+        "zumbafitness",
+        "thebiggestloserultimateworkout",
+        "nikekinecttraining",
+        "harrypotterforkinect"
+      ],
+      "needs": "kinect"
+    },
+    { "consoles": [
+        "switch"
+      ],
+      "has": [
+        "ringfitadventure"
+      ],
+      "needs": "ring_con"
+    },
+    { "consoles": [
+        "switch"
+      ],
+      "has": [
+        "nintendolabo"
+      ],
+      "needs": "labo"
+    },
+    { "consoles": [
+        "switch"
+      ],
+      "has": [
+        "supermarioparty",
+        "12switch",
+        "nintendoswitchsports",
+        "justdance",
+        "fitnessboxing",
+        "wariowaremoveit",
+        "jumpropechallenge",
+        "zumbaburnitup"
+      ],
+      "except": [
+        "jamboree",
+        "superstars"
+      ],
+      "needs": "joycon_motion"
+    },
+    { "consoles": [
+        "wii"
+      ],
+      "has": [
+        "wiisports",
+        "wiiplay",
+        "wiiparty",
+        "wiimusic",
+        "redsteel",
+        "boomblox",
+        "zackandwiki",
+        "wariowaresmoothmoves",
+        "justdance",
+        "zumbafitness",
+        "ravingrabbids",
+        "traumacenter",
+        "excitetruck",
+        "elebits",
+        "deadspaceextraction",
+        "residentevilumbrella",
+        "residentevildarkside",
+        "houseofthedead",
+        "metroidprime3",
+        "metroidprimetrilogy",
+        "conduit"
+      ],
+      "needs": "wii_motion"
+    },
+    { "consoles": [
+        "wiiu"
+      ],
+      "has": [
+        "wiisportsclub",
+        "wiipartyu"
+      ],
+      "needs": "wii_motion"
+    }
+  ]
+}

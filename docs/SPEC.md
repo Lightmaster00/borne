@@ -37,6 +37,7 @@ Version 1.8 — November 2026
 | 1.13 | Larger covers with tighter corners, a small tab for the console's logo, a sharp background (the game's art drifting under dark scrims, no blur). The Store's cards show a picture of the console, and a narrow card its logo along its length. A game's page: its case in 3D, swaying, turned with the arrows; its video behind the page, in full screen with its sound after a few seconds. Settings redrawn: one line per setting, its value between arrows changed with left and right. |
 | 1.14 | Lights in the console's colour behind the home (the game's art as an option); selected covers cast their console's light and a band of light crosses them; the rail's items spring and a light bar follows the page shown; new icons. The game's case turned with the right stick or W A S D (30° at most, back when let go); its screenshots from RomM and ScreenScraper; the video at its original size, X for full screen and, there, for its sound. Front scans as covers (no PlayStation hinge, Switch cases whole). Folders' lines fill their width. The consoles' order by maker then release, or maker then name. |
 | 1.15 | B on the home goes back to the rail (no more profile screen); search only from the rail or Select (typing no longer starts it). The rail without its light bar, a new gear icon, items lit by their own glow. The border without its island: the console's colour stays, Borne's lettering in the top-left corner. Collections as coloured folders with three fanned covers; the Store's consoles under a spotlight, with their year and a reflection, arriving from the side they come from. Downloads and Settings as glass pages beside the rail, their buttons in the foot bar (Settings › section); Downloads in progress and finished, with covers, percent, speed and time left. A launch screen: the logo, a running light, what is going on. |
+| 1.16 | Games made for an accessory (guitar, turntable, Balance Board, Wii MotionPlus, Joy-Con motion, PlayStation Move / VR / camera, Kinect, Ring-Con, Labo, microphone, buzzers, bongos) found by name (`equipment.json`) and checked against what is plugged in (guitars and turntables by USB id or name, a microphone, motion pads, Wii Remotes): asked once per game before playing, never locked. Pokémon Let's Go runs as a handheld Switch, undocked. Update now says what came of it (updated, already the latest). More consoles: PC Engine CD, SuperGrafx, PC-FX, SG-1000, Atari 5200 / 8-bit / ST, Amiga, C64 / C128 / VIC-20, Amstrad CPC, ZX Spectrum / ZX81, Intellivision, Odyssey² / Videopac, DOS, Game & Watch, Supervision, Satellaview, Sufami Turbo, Super Game Boy, CPS 1-3, Channel F, TIC-80, Arduboy, Mega Duck; RomM's own slugs for Neo Geo Pocket and Mega Drive; system files for FDS, 3DO, Lynx, ColecoVision and the new consoles. Settings' focus ring no longer cut. |
 | 1.10 | New interface: *My library* (games ready here) and the *Store* (the server's others, by console); games in groups set by the order (Resume, This week, A – F, the 1990s…), covers at their own proportions; Filter (consoles as a fan of cards, quick filters, genres) and Sort apart; a border in the colour of the selected game's console with its logo; the game page as a sheet with the players' rating, play time and a table of facts. 3D cases removed. |
 | 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
 
@@ -317,8 +318,9 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   console's logo (its name without one), where it was opened from, the game's state and download
   progress; then its name, a few lines of summary (as many as fit), the studio, release year,
   players and rating, and what to know before playing (what the console needs that this machine
-  lacks, the file's own note, the controller a game is known to want: the Pokémon Let's Go games
-  take Joy-Con only; New Super Mario Bros. Wii, Kirby's Return to Dream Land, Super Paper Mario,
+  lacks, the accessory it is made for, the file's own note, the controller a game is known to
+  want: the Pokémon Let's Go games refuse the Pro Controller and are shown the console in hand,
+  undocked, where they play with the buttons alone (docked, a single Joy-Con is shaken to throw); New Super Mario Bros. Wii, Kirby's Return to Dream Land, Super Paper Mario,
   WarioWare: Smooth Moves the Wii Remote sideways; `controls::wanted_device`). Under them the
   buttons, left / right: Play (or Download, Play from the network, Retry…) in white with its name,
   the heart (favourites), the game's settings (also Y) and the fact sheet (i), which takes the
@@ -798,6 +800,17 @@ blocks a launch just because a game was not tested or a community database rates
   Wii Remote, motion sensors, Joy-Con; not power), `POST /games/<id>/play` answers
   `{running: false, needs, console}` and the interface asks "Play anyway" / "Not now"; Play anyway
   sends `{anyway: true}`, remembered per console (`consoles.needs_seen`).
+- Games made for an accessory (`equipment.rs`, `equipment.json`, since 1.16): rules per console
+  match the game's name squeezed to letters and digits (`has`, `start`, `end`, `is`, `except`; the
+  first rule wins). Each need is `made_for` (playable on a pad: guitar, turntable, buzzers, bongos),
+  `required` (Balance Board, Wii motion and MotionPlus, Joy-Con motion, PlayStation Move,
+  microphone) or `unsupported` (the emulator cannot give it: PlayStation VR, Kinect, Ring-Con,
+  Labo, cameras, Rocksmith). Found here: guitars and turntables by USB id or a name saying so,
+  motion pads and Wii Remotes for motion, a sound card that records for a microphone; a Balance
+  Board or a Move talks to the emulator directly and is never seen. When missing, the game's page
+  says so first, and Play asks once per game (`equipment.seen`, game groups), together with the
+  console's needs; Play anyway is remembered, so a wrong match costs one question. Settings →
+  Consoles → Questions before playing → Ask again forgets both (`POST /api/v1/needs/forget`).
 - Dolphin binds a pad by its name, and its SDL may name it otherwise than Borne (the system's name,
   SDL's own for a known pad, "Steam Virtual Gamepad" under Steam): every binding names each
   possible name (`` `SDL/0/A:Button S` | `SDL/0/B:Button S` ``). Dolphin hears the pad in the
@@ -910,8 +923,8 @@ blocks a launch just because a game was not tested or a community database rates
 | Case | Expected checks |
 |---|---|
 | Zelda TotK | Keys, firmware, game version, ASTC profile, VRAM, shader cache. |
-| Pokémon Let's Go | Specific controls (motion); report if unconfirmed. |
-| Guitar Hero | Detect guitar/adapter; warn if hardware is missing. |
+| Pokémon Let's Go | Shown the handheld console, run undocked (`controls::wanted_device`; emulators.rs forces docked off with the handheld). |
+| Guitar Hero | Guitar found by USB id or name (`hardware.rs`); otherwise asked once before playing (`equipment.rs`). |
 | Wii | Detect a Wiimote or emulated configuration; check pointer/motion. |
 | PS3 | Warn about high requirements, firmware and the title's compatibility status. |
 

@@ -24,12 +24,48 @@ const MOTION_PADS: &[(u16, u16)] = &[
 /// Wii Remotes (and a DolphinBar, which shows them as such).
 const WIIMOTES: &[(u16, u16)] = &[(0x057e, 0x0306), (0x057e, 0x0330)];
 
+/// Rhythm game guitars (and drum kits, which play the same games): Guitar Hero and Rock Band for
+/// PlayStation 3, Wii and Xbox 360 (their dongles), by maker; their names say the rest.
+const GUITARS: &[(u16, u16)] = &[
+    (0x12ba, 0x0100),
+    (0x12ba, 0x0120),
+    (0x12ba, 0x0200),
+    (0x12ba, 0x0210),
+    (0x1bad, 0x0002),
+    (0x1bad, 0x0003),
+    (0x1bad, 0x0004),
+    (0x1bad, 0x0005),
+    (0x1bad, 0x3010),
+    (0x1bad, 0x3110),
+    (0x1430, 0x4748),
+    (0x1430, 0x474b),
+    (0x1430, 0x474c),
+];
+const TURNTABLES: &[(u16, u16)] = &[(0x12ba, 0x0140), (0x1430, 0x4734)];
+
+/// What a device's name says it is: a guitar or drum kit, a DJ turntable.
+fn by_name(names: &[String]) -> (bool, bool) {
+    let has = |words: &[&str]| {
+        names.iter().any(|n| {
+            let n = n.to_lowercase();
+            words.iter().any(|w| n.contains(w))
+        })
+    };
+    (has(&["guitar", "drum", "rock band", "rockband"]), has(&["turntable", "dj hero"]))
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct Hardware {
     pub touchscreen: bool,
     pub mouse: bool,
     pub motion_pad: bool,
     pub wiimote: bool,
+    /// A rhythm game guitar or drum kit.
+    pub guitar: bool,
+    /// A DJ Hero turntable.
+    pub turntable: bool,
+    /// Something to sing into (a sound card's input).
+    pub microphone: bool,
     pub bluetooth: bool,
     /// "desktop" | "laptop" | "handheld" | "steamdeck" | "unknown"
     pub machine: String,
@@ -50,8 +86,8 @@ fn has_bit(words: &str, bit: usize) -> bool {
 }
 
 #[cfg(target_os = "linux")]
-fn input_devices() -> (bool, bool, Vec<(u16, u16)>) {
-    let (mut touch, mut mouse, mut ids) = (false, false, vec![]);
+fn input_devices() -> (bool, bool, Vec<(u16, u16)>, Vec<String>) {
+    let (mut touch, mut mouse, mut ids, mut names) = (false, false, vec![], vec![]);
     for e in std::fs::read_dir("/sys/class/input").into_iter().flatten().flatten() {
         let name = e.file_name().to_string_lossy().into_owned();
         if !name.starts_with("input") {
@@ -72,14 +108,23 @@ fn input_devices() -> (bool, bool, Vec<(u16, u16)>) {
         }
         let hex = |f: &str| u16::from_str_radix(&read(&format!("{p}/id/{f}")), 16).unwrap_or(0);
         ids.push((hex("vendor"), hex("product")));
+        names.push(read(&format!("{p}/name")));
     }
-    (touch, mouse, ids)
+    (touch, mouse, ids, names)
+}
+
+/// A sound card that records (ALSA lists its capture devices).
+#[cfg(target_os = "linux")]
+fn microphone() -> bool {
+    read("/proc/asound/pcm").lines().any(|l| l.contains("capture"))
 }
 
 #[cfg(target_os = "linux")]
-pub fn detect(pads: &[(u16, u16)]) -> Hardware {
-    let (touchscreen, mouse, mut ids) = input_devices();
+pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
+    let (touchscreen, mouse, mut ids, mut names) = input_devices();
     ids.extend_from_slice(pads);
+    names.extend_from_slice(pad_names);
+    let (guitar_named, turntable_named) = by_name(&names);
     let product = read("/sys/class/dmi/id/product_name").to_lowercase();
     let chassis: u32 = read("/sys/class/dmi/id/chassis_type").parse().unwrap_or(0);
     let machine = if product.contains("jupiter") || product.contains("galileo") {
@@ -103,6 +148,9 @@ pub fn detect(pads: &[(u16, u16)]) -> Hardware {
         mouse,
         motion_pad: ids.iter().any(|i| MOTION_PADS.contains(i)) || machine == "steamdeck",
         wiimote: ids.iter().any(|i| WIIMOTES.contains(i)),
+        guitar: guitar_named || ids.iter().any(|i| GUITARS.contains(i)),
+        turntable: turntable_named || ids.iter().any(|i| TURNTABLES.contains(i)),
+        microphone: microphone(),
         bluetooth: std::fs::read_dir("/sys/class/bluetooth").map(|d| d.count() > 0).unwrap_or(false),
         machine: machine.into(),
         threads: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
@@ -111,7 +159,8 @@ pub fn detect(pads: &[(u16, u16)]) -> Hardware {
 }
 
 #[cfg(not(target_os = "linux"))]
-pub fn detect(pads: &[(u16, u16)]) -> Hardware {
+pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
+    let (guitar_named, turntable_named) = by_name(pad_names);
     let sysctl = |k: &str| {
         std::process::Command::new("sysctl").arg("-n").arg(k).output().ok().map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
     };
@@ -123,6 +172,10 @@ pub fn detect(pads: &[(u16, u16)]) -> Hardware {
         mouse: true,
         motion_pad: pads.iter().any(|i| MOTION_PADS.contains(i)),
         wiimote: pads.iter().any(|i| WIIMOTES.contains(i)),
+        guitar: guitar_named || pads.iter().any(|i| GUITARS.contains(i)),
+        turntable: turntable_named || pads.iter().any(|i| TURNTABLES.contains(i)),
+        // Every Mac records sound (built in, or the headset's).
+        microphone: true,
         bluetooth: true,
         machine: if model.contains("book") { "laptop".into() } else { "desktop".into() },
         threads: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
@@ -133,6 +186,7 @@ pub fn detect(pads: &[(u16, u16)]) -> Hardware {
 pub fn to_json(h: &Hardware) -> Value {
     json!({
         "touchscreen": h.touchscreen, "mouse": h.mouse, "motion_pad": h.motion_pad, "wiimote": h.wiimote,
+        "guitar": h.guitar, "turntable": h.turntable, "microphone": h.microphone,
         "bluetooth": h.bluetooth, "machine": h.machine, "threads": h.threads, "ram_gb": h.ram_gb,
     })
 }

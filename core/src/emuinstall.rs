@@ -390,12 +390,16 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
             let what = p.downcast_ref::<String>().cloned().or_else(|| p.downcast_ref::<&str>().map(|s| s.to_string()));
             Err(format!("the installation stopped on an internal error ({})", what.unwrap_or_default()))
         });
-        let error = r.err();
+        // What came of it, told under the emulator: updated to a version, or already the latest.
+        let (error, done) = match r {
+            Ok(d) => (None, d),
+            Err(e) => (Some(e), Value::Null),
+        };
         if let Some(e) = &error {
             app.db.log("emulators", &format!("{program}: {e}"));
         }
         let name = crate::emulators::program(&program).map(|p| p.name).unwrap_or_else(|| program.clone());
-        set_task(&app, json!({ "id": program, "name": name, "running": false, "error": error }));
+        set_task(&app, json!({ "id": program, "name": name, "running": false, "error": error, "done": done }));
         // The game waiting for this emulator starts now; after a failure it is forgotten (the
         // error is shown with the installation).
         // A game waiting for another emulator (this one was installed for the library) is not
@@ -410,15 +414,23 @@ pub fn start(app: &Shared, program: &str, cores: Vec<String>) -> Result<(), Stri
     Ok(())
 }
 
-fn run(app: &Shared, program: &str, cores: &[String]) -> Result<(), String> {
+/// Installs or updates an emulator (and cores). Ok: {what: "installed" | "updated" | "uptodate",
+/// version}, or null when only cores were asked.
+fn run(app: &Shared, program: &str, cores: &[String]) -> Result<Value, String> {
     let p = crate::emulators::program(program).ok_or("unknown emulator")?;
+    let mut done = Value::Null;
     if let Some(spec) = p.install_spec() {
         let (version, url, digest) = latest(&spec)?;
         let current = installed(app, program).and_then(|v| v["version"].as_str().map(String::from));
         if spec["type"] == "flatpak" {
+            let was = current.is_some();
             flatpak(app, program, spec["id"].as_str().unwrap_or(""))?;
+            done = json!({ "what": if was { "updated" } else { "installed" }, "version": "flatpak" });
         } else if current.as_deref() != Some(version.as_str()) {
             unpack_release(app, program, &version, &url, digest.as_deref())?;
+            done = json!({ "what": if current.is_some() { "updated" } else { "installed" }, "version": version });
+        } else {
+            done = json!({ "what": "uptodate", "version": version });
         }
     }
     if !cores.is_empty() {
@@ -454,7 +466,7 @@ fn run(app: &Shared, program: &str, cores: &[String]) -> Result<(), String> {
             return Err(format!("RetroArch core not installed: {}", failed.join(", ")));
         }
     }
-    Ok(())
+    Ok(done)
 }
 
 fn flatpak(app: &Shared, program: &str, id: &str) -> Result<(), String> {

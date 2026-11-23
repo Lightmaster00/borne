@@ -262,6 +262,248 @@
           "PSP2UPDAT.PUP"
         ]
       }
+    ],
+    "fds": [
+      {
+        "id": "bios",
+        "name": "Famicom Disk System BIOS (disksys.rom)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "disksys.rom"
+        ],
+        "size": 8192
+      }
+    ],
+    "3do": [
+      {
+        "id": "bios",
+        "name": "3DO BIOS",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "panafz10.bin",
+          "panafz1.bin",
+          "panafz10-norsa.bin",
+          "goldstar.bin",
+          "sanyotry.bin"
+        ],
+        "size": 1048576
+      }
+    ],
+    "lynx": [
+      {
+        "id": "bios",
+        "name": "Atari Lynx boot ROM (lynxboot.img)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "lynxboot.img"
+        ],
+        "size": 512
+      }
+    ],
+    "colecovision": [
+      {
+        "id": "bios",
+        "name": "ColecoVision BIOS (colecovision.rom)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "colecovision.rom"
+        ],
+        "size": 8192
+      }
+    ],
+    "turbografx-cd": [
+      {
+        "id": "bios",
+        "name": "PC Engine CD System Card (syscard3.pce)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "syscard3.pce",
+          "syscard2.pce",
+          "syscard1.pce"
+        ],
+        "size": 262144
+      }
+    ],
+    "pc-fx": [
+      {
+        "id": "bios",
+        "name": "PC-FX BIOS (pcfx.rom)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "pcfx.rom"
+        ],
+        "size": 1048576
+      }
+    ],
+    "atari5200": [
+      {
+        "id": "bios",
+        "name": "Atari 5200 BIOS (5200.rom)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "5200.rom"
+        ],
+        "size": 2048
+      }
+    ],
+    "atari-st": [
+      {
+        "id": "bios",
+        "name": "Atari ST TOS (tos.img)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "tos.img"
+        ]
+      }
+    ],
+    "amiga": [
+      {
+        "id": "bios",
+        "name": "Amiga Kickstart (better compatibility than the built-in replacement)",
+        "kind": "bios",
+        "required": false,
+        "multi": true,
+        "names": [
+          "kick34005.A500",
+          "kick40063.A600",
+          "kick40068.A1200"
+        ]
+      }
+    ],
+    "intellivision": [
+      {
+        "id": "exec",
+        "name": "Intellivision Executive ROM (exec.bin)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "exec.bin"
+        ],
+        "size": 8192
+      },
+      {
+        "id": "grom",
+        "name": "Intellivision Graphics ROM (grom.bin)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "grom.bin"
+        ],
+        "size": 2048
+      }
+    ],
+    "videopac": [
+      {
+        "id": "bios",
+        "name": "Odyssey² / Videopac BIOS (o2rom.bin)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "o2rom.bin"
+        ],
+        "size": 1024
+      }
+    ],
+    "satellaview": [
+      {
+        "id": "bios",
+        "name": "Satellaview BIOS (BS-X.bin)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "BS-X.bin"
+        ]
+      }
+    ],
+    "sufami-turbo": [
+      {
+        "id": "bios",
+        "name": "Sufami Turbo BIOS (STBIOS.bin)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "STBIOS.bin"
+        ]
+      }
+    ],
+    "fairchild-channel-f": [
+      {
+        "id": "bios",
+        "name": "Channel F BIOS (sl31253.bin, sl31254.bin)",
+        "kind": "bios",
+        "required": true,
+        "multi": true,
+        "names": [
+          "sl31253.bin",
+          "sl31254.bin",
+          "sl90025.bin"
+        ],
+        "size": 1024
+      }
+    ],
+    "odyssey-2": [
+      {
+        "id": "bios",
+        "name": "Odyssey² / Videopac BIOS (o2rom.bin)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "o2rom.bin"
+        ],
+        "size": 1024
+      }
+    ],
+    "odyssey-2-slash-videopac-g7000": [
+      {
+        "id": "bios",
+        "name": "Odyssey² / Videopac BIOS (o2rom.bin)",
+        "kind": "bios",
+        "required": true,
+        "names": [
+          "o2rom.bin"
+        ],
+        "size": 1024
+      }
+    ],
+    "atari800": [
+      {
+        "id": "bios",
+        "name": "Atari 8-bit system ROMs (ATARIXL.ROM, ATARIBAS.ROM…), for games that need the real ones",
+        "kind": "bios",
+        "required": false,
+        "multi": true,
+        "names": [
+          "ATARIXL.ROM",
+          "ATARIBAS.ROM",
+          "ATARIOSA.ROM",
+          "ATARIOSB.ROM",
+          "ATARI5200.ROM"
+        ]
+      }
+    ],
+    "atari8bit": [
+      {
+        "id": "bios",
+        "name": "Atari 8-bit system ROMs (ATARIXL.ROM, ATARIBAS.ROM…), for games that need the real ones",
+        "kind": "bios",
+        "required": false,
+        "multi": true,
+        "names": [
+          "ATARIXL.ROM",
+          "ATARIBAS.ROM",
+          "ATARIOSA.ROM",
+          "ATARIOSB.ROM",
+          "ATARI5200.ROM"
+        ]
+      }
     ]
   }
 }

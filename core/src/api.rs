@@ -68,6 +68,7 @@
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
 //!   POST   /api/v1/emulators/<id>/path {path}     the user's own program for an emulator ("" to forget)
 //!   POST   /api/v1/emulators/<id>/install         installs or updates it (Borne's own copy)
+//!   POST   /api/v1/needs/forget               asks again before games made for an accessory and consoles' first games
 //!   POST   /api/v1/emulators/task/dismiss         puts away a failed installation's notice
 //!   POST   /api/v1/consoles/<slug>/emulator {engine}  the emulator chosen for a console
 //!   POST   /api/v1/emulators/auto-update {on}     updates installed by themselves (default on)
@@ -847,6 +848,16 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 // the one the game is known to want.
                 let device = crate::controls::device(app, &g.group_key);
                 let device_wanted = crate::controls::wanted_device(&g.platform_slug, &g.name);
+                // What this console's games need that this machine lacks, the accessory the game
+                // is made for first; and that accessory, found here or not.
+                let hw = crate::consoles::hardware(app);
+                let equipment = crate::equipment::view(&g.platform_slug, &g.name, &hw);
+                let warnings: Vec<Value> = equipment
+                    .clone()
+                    .into_iter()
+                    .chain(crate::consoles::warnings(&g.platform_slug, &hw))
+                    .filter(|w| w["missing"] == true)
+                    .collect();
                 ok(
                     req,
                     json!({
@@ -857,9 +868,8 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                             .map(library::version_json)
                             .collect::<Vec<_>>(),
                         "emu_language": prefs.1.unwrap_or_else(|| "auto".into()),
-                        // What this console's games need that this machine lacks.
-                        "warnings": crate::consoles::warnings(game["platform_slug"].as_str().unwrap_or(""), &crate::consoles::hardware(app))
-                            .into_iter().filter(|w| w["missing"] == true).collect::<Vec<_>>(),
+                        "warnings": warnings,
+                        "equipment": equipment,
                         "emu_languages": library::EMU_LANGUAGES,
                         "languages": library::game_languages(&all),
                         "install_mode": install_mode(app),
@@ -1172,6 +1182,11 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(()) => ok(req, crate::emulators::list(app)),
                 Err(e) => err(req, 400, &e),
             }
+        }
+        (Method::Post, ["api", "v1", "needs", "forget"]) => {
+            crate::equipment::forget(app);
+            crate::consoles::forget_seen(app);
+            ok(req, json!({ "ok": true }))
         }
         (Method::Post, ["api", "v1", "emulators", "auto-update"]) => {
             let b = body_json(&mut req);

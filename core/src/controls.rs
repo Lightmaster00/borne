@@ -157,18 +157,14 @@ pub fn devices(console: &str) -> &'static [&'static str] {
 }
 
 /// The controller a game is known to want, when it does not take the console's usual one: the
-/// Pokémon Let's Go games take the Joy-Con only; these Wii games are played sideways.
+/// Pokémon Let's Go games refuse the Pro Controller and, on a TV, want a single Joy-Con shaken to
+/// throw a Poké Ball; in hand (undocked) they play with the buttons alone, so they are shown the
+/// handheld console (and run undocked, emulators.rs). These Wii games are played sideways.
 pub fn wanted_device(console: &str, name: &str) -> Option<&'static str> {
-    let n = name.to_lowercase().replace('’', "'");
+    let n = name.to_lowercase().replace(['’', '‘'], "'").replace("pokémon", "pokemon");
+    let squeezed: String = n.chars().filter(|c| c.is_alphanumeric()).collect();
     match console {
-        "switch"
-            if n.contains("let's go, pikachu")
-                || n.contains("let's go, eevee")
-                || n.contains("let's go pikachu")
-                || n.contains("let's go eevee") =>
-        {
-            Some("dual")
-        }
+        "switch" if squeezed.contains("letsgopikachu") || squeezed.contains("letsgoeevee") => Some("handheld"),
         "wii"
             if n.contains("new super mario bros. wii")
                 || n.contains("new super mario bros wii")
@@ -543,7 +539,8 @@ mod tests {
         assert_eq!(devices("switch")[0], "pro");
         assert_eq!(devices("wii"), &["nunchuk", "remote", "sideways", "classic"]);
         assert!(devices("snes").is_empty());
-        assert_eq!(wanted_device("switch", "Pokémon: Let’s Go, Pikachu!"), Some("dual"));
+        assert_eq!(wanted_device("switch", "Pokémon: Let’s Go, Pikachu!"), Some("handheld"));
+        assert_eq!(wanted_device("switch", "Pokemon - Lets Go Eevee! (Europe)"), Some("handheld"));
         assert_eq!(wanted_device("wii", "New Super Mario Bros. Wii"), Some("sideways"));
         assert_eq!(wanted_device("wii", "Mario Kart Wii"), None);
         assert_eq!(wanted_device("switch", "Super Mario Odyssey"), None);

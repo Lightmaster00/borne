@@ -594,8 +594,11 @@ Window {
             if (r && r.needs) {
                 launchPhase = ""
                 needsAsk.game = g
-                needsAsk.title = qsTr("Before playing %1").arg(r.console)
+                const forGame = r.needs.some(n => n.game)
+                needsAsk.title = qsTr("Before playing %1").arg(forGame ? r.game : r.console)
                 needsAsk.body = ConsoleNeeds.warnings(r.needs).join("\n\n")
+                needsAsk.footer = forGame ? qsTr("Asked once for this game. If Borne is wrong, play anyway: it will not ask again.")
+                                          : qsTr("Asked once for this console.")
                 needsAsk.shown = true
                 return
             }
@@ -818,6 +821,9 @@ Window {
         else if (id === "channel") post({ update_channel: payload })
         else if (id === "auto") post({ update_auto: payload })
         else if (id === "savesync") post({ save_sync: payload })
+        else if (id === "needs-forget") api("POST", "/api/v1/needs/forget", {}, function (r, err) {
+            if (err) toasts.show(err, "error"); else toasts.show(qsTr("Borne asks again before those games."), "info")
+        })
         else if (id === "pref") prefs[payload.key] = payload.value
         else if (id === "sf-all") api("POST", "/api/v1/system-files/from-romm", {}, function (r, err) {
             if (err) toasts.show(err, "error")
@@ -2148,7 +2154,6 @@ Window {
         theme: win.theme
         stayText: qsTr("Not now")
         goText: qsTr("Play anyway")
-        footer: qsTr("Asked once for this console.")
         onAnswered: function (go) {
             shown = false
             sfx.play(go ? "accept" : "back")

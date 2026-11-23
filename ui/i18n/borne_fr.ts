@@ -81,6 +81,90 @@
         <source>Power: this computer should run these games.</source>
         <translation>Puissance : cet ordinateur devrait faire tourner ces jeux.</translation>
     </message>
+    <message>
+        <source>a guitar controller</source>
+        <translation>une manette guitare</translation>
+    </message>
+    <message>
+        <source>a DJ Hero turntable</source>
+        <translation>une platine DJ Hero</translation>
+    </message>
+    <message>
+        <source>DK Bongos</source>
+        <translation>les DK Bongos</translation>
+    </message>
+    <message>
+        <source>Buzz! buzzers</source>
+        <translation>les buzzers Buzz!</translation>
+    </message>
+    <message>
+        <source>a microphone</source>
+        <translation>un micro</translation>
+    </message>
+    <message>
+        <source>a Wii Balance Board</source>
+        <translation>une Wii Balance Board</translation>
+    </message>
+    <message>
+        <source>a Wii Remote (or a pad with motion sensors)</source>
+        <translation>une Wiimote (ou une manette avec détecteurs de mouvement)</translation>
+    </message>
+    <message>
+        <source>a Wii MotionPlus (or a pad with motion sensors)</source>
+        <translation>un Wii MotionPlus (ou une manette avec détecteurs de mouvement)</translation>
+    </message>
+    <message>
+        <source>Joy-Con (or a pad with motion sensors)</source>
+        <translation>des Joy-Con (ou une manette avec détecteurs de mouvement)</translation>
+    </message>
+    <message>
+        <source>PlayStation Move controllers</source>
+        <translation>des manettes PlayStation Move</translation>
+    </message>
+    <message>
+        <source>PlayStation VR</source>
+        <translation>le PlayStation VR</translation>
+    </message>
+    <message>
+        <source>Kinect</source>
+        <translation>Kinect</translation>
+    </message>
+    <message>
+        <source>the Ring-Con</source>
+        <translation>le Ring-Con</translation>
+    </message>
+    <message>
+        <source>Nintendo Labo cardboard</source>
+        <translation>les cartons Nintendo Labo</translation>
+    </message>
+    <message>
+        <source>a PlayStation camera</source>
+        <translation>une caméra PlayStation</translation>
+    </message>
+    <message>
+        <source>a real guitar and its Rocksmith cable</source>
+        <translation>une vraie guitare et son câble Rocksmith</translation>
+    </message>
+    <message>
+        <source>This game is made for %1, which its emulator cannot stand in for: it most likely cannot be played here.</source>
+        <translation>Ce jeu est conçu pour %1, que son émulateur ne sait pas remplacer : il ne pourra très probablement pas être joué ici.</translation>
+    </message>
+    <message>
+        <source>Made for %1: found.</source>
+        <translation>Conçu pour %1 : trouvé.</translation>
+    </message>
+    <message>
+        <source>This game is made for %1: none was found. It plays with a pad, less comfortably.</source>
+        <translation>Ce jeu est conçu pour %1 : aucun n'a été trouvé. Il se joue à la manette, moins confortablement.</translation>
+    </message>
+    <message>
+        <source>This game needs %1. Borne cannot see one (it connects to the emulator directly): without it, the game cannot be played.</source>
+        <translation>Ce jeu demande %1. Borne ne peut pas le voir (il se connecte directement à l'émulateur) : sans lui, le jeu ne peut pas être joué.</translation>
+    </message>
+    <message>
+        <source>This game needs %1: none was found, and without it the game cannot be played.</source>
+        <translation>Ce jeu demande %1 : rien de tel n'a été trouvé, et sans cela le jeu ne peut pas être joué.</translation>
+    </message>
 </context>
 <context>
     <name>ConsolePicker</name>
@@ -1164,6 +1248,10 @@
     <message>
         <source>Nunchuk stick</source>
         <translation>Stick du Nunchuk</translation>
+    </message>
+    <message>
+        <source>This game does not take the Pro Controller: Borne runs it as a Switch held in hand (undocked), where it plays with the buttons alone.</source>
+        <translation>Ce jeu n'accepte pas la manette Pro : Borne le lance comme une Switch tenue en main (hors dock), où il se joue avec les boutons seuls.</translation>
     </message>
 </context>
 <context>
@@ -3325,6 +3413,14 @@
         <source>Starting…</source>
         <translation>Démarrage…</translation>
     </message>
+    <message>
+        <source>Asked once for this game. If Borne is wrong, play anyway: it will not ask again.</source>
+        <translation>Demandé une fois pour ce jeu. Si Borne se trompe, jouez quand même : il ne redemandera pas.</translation>
+    </message>
+    <message>
+        <source>Borne asks again before those games.</source>
+        <translation>Borne redemandera avant ces jeux.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -4881,6 +4977,38 @@
     <message>
         <source>Close</source>
         <translation>Fermer</translation>
+    </message>
+    <message>
+        <source>Already up to date: version %1 is the latest</source>
+        <translation>Déjà à jour : la version %1 est la dernière</translation>
+    </message>
+    <message>
+        <source>Updated with Flathub</source>
+        <translation>Mis à jour avec Flathub</translation>
+    </message>
+    <message>
+        <source>Updated to version %1</source>
+        <translation>Mis à jour en version %1</translation>
+    </message>
+    <message>
+        <source>Installed from Flathub</source>
+        <translation>Installé depuis Flathub</translation>
+    </message>
+    <message>
+        <source>Installed: version %1</source>
+        <translation>Installé : version %1</translation>
+    </message>
+    <message>
+        <source>Questions before playing</source>
+        <translation>Questions avant de jouer</translation>
+    </message>
+    <message>
+        <source>Before a game made for an accessory Borne does not find (a guitar, a Balance Board, PlayStation VR…), or a console's first game when this computer lacks what it needs, Borne asks once. Never a lock: Play anyway is remembered.</source>
+        <translation>Avant un jeu conçu pour un accessoire que Borne ne trouve pas (une guitare, une Balance Board, le PlayStation VR…), ou avant le premier jeu d'une console quand cet ordinateur n'a pas ce qu'il lui faut, Borne demande une fois. Jamais de blocage : « Jouer quand même » est retenu.</translation>
+    </message>
+    <message>
+        <source>Ask again</source>
+        <translation>Redemander</translation>
     </message>
 </context>
 <context>
