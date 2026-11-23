@@ -56,7 +56,7 @@ Item {
                     Spinner {
                         anchors.centerIn: avatar
                         visible: parent.opening
-                        size: 246; thickness: 4
+                        size: 292; thickness: 4
                         color: theme.focusRing
                     }
                     Rectangle {
@@ -65,7 +65,7 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         color: parent.isAdd ? theme.glass : Qt.hsla(((parent.p.name.charCodeAt(0) * 37) % 360) / 360, 0.35, 0.36, 1)
                         border { width: parent.cur && !parent.opening ? 4 : 1; color: parent.cur && !parent.opening ? theme.focusRing : theme.glassEdge }
-                        scale: parent.cur ? 1.08 : 1
+                        scale: parent.cur && !parent.opening ? 1.08 : 1
                         Behavior on scale { NumberAnimation { duration: theme.focusMs; easing.type: Easing.OutCubic } }
                         Text {
                             anchors.centerIn: parent
@@ -75,7 +75,8 @@ Item {
                         }
                     }
                     Column {
-                        anchors { top: avatar.bottom; topMargin: 18; horizontalCenter: parent.horizontalCenter }
+                        anchors { top: avatar.bottom; topMargin: parent.opening ? 62 : 18; horizontalCenter: parent.horizontalCenter }
+                        Behavior on anchors.topMargin { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                         spacing: 4
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter

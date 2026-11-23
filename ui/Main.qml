@@ -327,7 +327,9 @@ Window {
         // Only the latest request's answer is shown (answers can cross).
         const seq = ++libSeq
         api("GET", "/api/v1/library?lang=" + uiLang + "&sort=name", null, function (list, err) {
-            if (seq !== libSeq) return
+            // A newer request's answer comes later; but while nothing is shown yet, an older one
+            // is shown at once (a library being synced asks again and again).
+            if (seq !== libSeq && ready) return
             // Unavailable: said, and the (empty) library shown rather than a loading screen forever.
             if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); ready = true; return }
             const r = list.map(toRow)
@@ -1251,13 +1253,16 @@ Window {
     // The profile chosen on the profiles screen whose library is opening ("" otherwise).
     property string enteringProfile: ""
     onReadyChanged: if (ready) enteringProfile = ""
+    // Never held there long: a library slow to answer is shown as it comes.
+    onEnteringProfileChanged: if (enteringProfile !== "") enterCap.restart()
+    Timer { id: enterCap; interval: 6000; onTriggered: if (win.enteringProfile !== "") { win.ready = true; win.enteringProfile = "" } }
     function enterLibrary(profile) {
         api("POST", "/api/v1/profiles/" + profile.id + "/activate", {}, function (r, err) {
             if (err) { enteringProfile = ""; toasts.show(err, "error"); return }
             refreshStatus()
             loadSettings()
-            // Another profile's library: what is shown waits for it.
-            if (enteringProfile !== "") ready = false
+            // A library already loaded shows at once; it is refreshed for this profile behind.
+            if (ready) enteringProfile = ""
             screen = "library"
             libTab = "home"; folder = null; homeZone = "row"; rowIndex = 0; shelfIndex = 0; focusRom = -1; wallIndex = 0
             loadPlatforms()
