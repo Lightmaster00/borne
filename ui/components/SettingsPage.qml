@@ -16,6 +16,9 @@ Item {
     property QtObject theme
     property var settings: null          // GET /api/v1/settings
     property var status: null            // GET /api/v1/status
+    // The interface's languages, each in its own name (ui/i18n/<code>.json).
+    readonly property var uiLanguages: [["en", "English"], ["fr", "Français"], ["es", "Español"], ["it", "Italiano"], ["de", "Deutsch"],
+                                        ["pt", "Português"], ["ja", "日本語"], ["zh", "中文（简体）"]]
     property QtObject prefs: null        // the interface's own preferences (Main.qml, prefs)
     property string version: ""
     property var reportPaths: []
@@ -90,7 +93,7 @@ Item {
     function languageRows() {
         return [
             pref("language", qsTr("Language"), qsTr("Borne's menus; also the version and the language a game starts in, when it has several"),
-                 [["auto", qsTr("As the system")], ["fr", "Français"], ["en", "English"]]),
+                 [["auto", qsTr("As the system")]].concat(page.uiLanguages)),
             note("lang-game", qsTr("One game in another version or language: open its page, then Y (Game settings) → Version and language."))
         ]
     }
@@ -438,7 +441,7 @@ Item {
           intro: qsTr("How your games are shown: the order of the consoles, the clock and the videos.") },
         { id: "controls", name: qsTr("Controllers"), hint: qsTr("Buttons, the consoles' controllers"),
           intro: qsTr("The controllers connected, how their buttons play in every game, and which controller each console's games see.") },
-        { id: "language", name: qsTr("Language"), hint: prefs && prefs.language !== "auto" ? (prefs.language === "fr" ? "Français" : "English") : qsTr("As the system"),
+        { id: "language", name: qsTr("Language"), hint: prefs && prefs.language !== "auto" ? ((page.uiLanguages.find(l => l[0] === prefs.language) || [0, prefs.language])[1]) : qsTr("As the system"),
           intro: qsTr("Borne's language, which also picks the version and the language of the games.") },
         { id: "games", name: qsTr("Games and saves"), hint: qsTr("Installation, saves, picture"),
           intro: qsTr("How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.") },

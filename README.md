@@ -123,7 +123,9 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 - **Settings in plain words**: installation and saves, the interface (videos, size, animations,
   clock, sounds, buttons shown), the picture in games, emulators, system files, game images, RomM,
   updates, help (diagnostics report without any password or token).
-- **English and French**, following the system (`BORNE_LANG=fr|en` forces one).
+- **English, French, Spanish, Italian, German, Portuguese, Japanese and Simplified Chinese**, following
+  the system or chosen in Settings → Language (`BORNE_LANG=es` and so on forces one). Japanese and Chinese
+  use the system's CJK fonts (on Linux, `noto-fonts-cjk`).
 
 Borne talks to nothing but your RomM server, ScreenScraper (game images) and GitHub (its own updates
 and the emulators' releases).
