@@ -457,8 +457,6 @@ Item {
             Rectangle {
                 id: note
                 readonly property string text: {
-                    const w = Needs.warnings(page.needs)
-                    if (w.length) return "⚠ " + w[0]
                     if (page.fileNote && !page.fileNote.ok) return "⚠ " + CoreText.tr(page.fileNote.text)
                     if (page.deviceWanted !== "" && page.device === page.deviceWanted)
                         return Devices.wantedNote(page.deviceWanted, page.game ? page.game.platform_slug : "")

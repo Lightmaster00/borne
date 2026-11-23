@@ -103,10 +103,22 @@ Item {
     }
 
     // Borne's logo, top left: its red pictogram and name, present without taking the eye.
-    Brand {
+    Row {
         x: 58; y: 44
-        size: 26
+        height: 26
+        spacing: 10      // a little more air than the drawn logo between the two
         opacity: 0.92
+        Image {
+            width: 26; height: 26
+            source: "../brand/picto.svg"
+            sourceSize: Qt.size(52, 52)
+            smooth: true
+        }
+        Brand {
+            anchors.verticalCenter: parent.verticalCenter
+            lettering: true
+            size: Math.round(26 * 250 / 330)
+        }
     }
 
     // ---------- status ----------

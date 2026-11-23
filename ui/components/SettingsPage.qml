@@ -266,8 +266,6 @@ Item {
         if (!c) return [note("gone", qsTr("This console is no longer in the library."))]
         const rows = []
         consoleIssues(c).forEach((i, n) => rows.push(note("issue:" + n, (i.tone === "bad" ? "⚠ " : "") + i.text)))
-        // What its games need that this computer lacks.
-        Needs.warnings(c.warnings).forEach((t, n) => rows.push(note("need:" + n, "⚠ " + t)))
         // Its picture in the Store: ScreenScraper's (another of them), or one's own.
         const pics = settings && settings.system_pics ? settings.system_pics[c.slug] : null
         if (pics) {
