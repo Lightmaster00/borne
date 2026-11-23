@@ -56,7 +56,7 @@ Item {
                     Spinner {
                         anchors.centerIn: avatar
                         visible: parent.opening
-                        size: 292; thickness: 4
+                        size: 214; thickness: 4
                         color: theme.focusRing
                     }
                     Rectangle {
@@ -75,7 +75,7 @@ Item {
                         }
                     }
                     Column {
-                        anchors { top: avatar.bottom; topMargin: parent.opening ? 62 : 18; horizontalCenter: parent.horizontalCenter }
+                        anchors { top: avatar.bottom; topMargin: parent.opening ? 26 : 18; horizontalCenter: parent.horizontalCenter }
                         Behavior on anchors.topMargin { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
                         spacing: 4
                         Text {

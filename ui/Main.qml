@@ -321,6 +321,7 @@ Window {
     onScreenChanged: checkImport()
     Timer { id: importCap; interval: 120000; onTriggered: { win.importing = false; win.maybeAskConsoles() } }
     property int libSeq: 0
+    property double libShownAt: 0
     // Loads every game (the shelf sorts and filters them); keeps the selection.
     function loadLibrary(resetFocus) {
         const t0 = Date.now()
@@ -330,6 +331,9 @@ Window {
             // A newer request's answer comes later; but while nothing is shown yet, an older one
             // is shown at once (a library being synced asks again and again).
             if (seq !== libSeq && ready) return
+            // A refresh landing while the player moves would stall the shelf: it waits until they
+            // pause (asked again a moment later).
+            if (ready && !resetFocus && Date.now() - lastActivity < 900) { libReload.restart(); return }
             // Unavailable: said, and the (empty) library shown rather than a loading screen forever.
             if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); ready = true; return }
             const r = list.map(toRow)
@@ -346,7 +350,9 @@ Window {
                 libModel.clear()
                 libModel.append(r)
             }
-            if (resetFocus) focusRom = -1
+            // The first shown keeps the place; a later answer doesn't send the player back.
+            if (resetFocus && !(libShownAt > t0)) focusRom = -1
+            libShownAt = Date.now()
             rows = r
             loadMs = Date.now() - t0
             ready = true
