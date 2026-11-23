@@ -31,22 +31,6 @@ Item {
         radius: 48
         color: Qt.rgba(0.047, 0.047, 0.063, 0.42)
         border { width: 1; color: Qt.rgba(1, 1, 1, 0.1) }
-        // The page shown: a light bar beside its item, gliding from one to the other.
-        Rectangle {
-            readonly property int at: Math.max(0, chrome.items.findIndex(x => x.id === chrome.here))
-            x: 6; width: 4; height: 30; radius: 2
-            y: col.y + at * (64 + col.spacing) + 17
-            color: theme.accent
-            Behavior on y { NumberAnimation { duration: 450 * chrome.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
-            Rectangle {
-                anchors { fill: parent; margins: -6 }
-                radius: 6
-                color: theme.accent
-                opacity: 0.45
-                layer.enabled: true
-                layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 16 }
-            }
-        }
         Column {
             id: col
             anchors.centerIn: parent
@@ -116,6 +100,14 @@ Item {
                 }
             }
         }
+    }
+
+    // Borne's name, discreet, top left.
+    Brand {
+        x: 58; y: 46
+        lettering: true
+        size: 22
+        opacity: 0.5
     }
 
     // ---------- status ----------

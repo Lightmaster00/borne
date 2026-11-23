@@ -284,21 +284,20 @@ Item {
     // ---------- sections ----------
     Rectangle {
         id: side
-        width: page.width >= 1500 ? 480 : 420
+        width: 420
         height: parent.height
         color: "transparent"
-        Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Qt.rgba(1, 1, 1, 0.1) }
         Column {
-            x: 64; y: 64
-            width: parent.width - 104
-            spacing: 6
+            x: 56; y: 44
+            width: parent.width - 88
+            spacing: 4
             Text { text: qsTr("Game settings"); color: theme.fg; font { family: theme.displayFont; pixelSize: 40; weight: Font.ExtraBold; letterSpacing: -1 } }
             Text { width: parent.width; text: page.game ? page.game.name : ""; elide: Text.ElideRight; color: theme.fgMuted; font { family: theme.fontFamily; pixelSize: 18; weight: Font.Medium } }
         }
         Column {
-            x: 64; y: 180
-            width: parent.width - 104
-            spacing: 8
+            x: 40; y: 150
+            width: parent.width - 72
+            spacing: 6
             Repeater {
                 model: page.sections
                 Rectangle {
@@ -307,23 +306,20 @@ Item {
                     required property int index
                     readonly property bool current: page.section === index
                     readonly property bool focusedHere: current && !page.inRows
-                    width: parent.width; height: 72
-                    radius: 14
-                    color: focusedHere ? Qt.rgba(1, 1, 1, 0.14) : current ? Qt.rgba(1, 1, 1, 0.06) : "transparent"
+                    width: parent.width; height: current && sec.modelData.hint ? 70 : 48
+                    Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    radius: current ? 22 : 16
+                    color: focusedHere ? theme.fg : current ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
                     Behavior on color { ColorAnimation { duration: theme.focusMs } }
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 4; height: parent.height - 24; radius: 2
-                        color: theme.accent
-                        opacity: sec.focusedHere ? 1 : sec.current ? 0.45 : 0
-                    }
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
+                    clip: true
                     Column {
-                        x: 20; anchors.verticalCenter: parent.verticalCenter
+                        x: 22; anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 44
                         spacing: 2
-                        Text { text: sec.modelData.name; color: sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: Font.DemiBold } }
-                        Text { visible: text !== ""; text: sec.modelData.hint; color: theme.fgFaint; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
+                        Text { width: parent.width; elide: Text.ElideRight; text: sec.modelData.name; color: sec.focusedHere ? theme.bg : sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: sec.current ? Font.ExtraBold : Font.DemiBold } }
+                        Text { visible: sec.current && text !== ""; width: parent.width; elide: Text.ElideRight; text: sec.modelData.hint; color: sec.focusedHere ? Qt.rgba(0, 0, 0, 0.6) : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 16; weight: Font.Medium } }
                     }
                 }
             }
@@ -333,9 +329,9 @@ Item {
     // ---------- rows ----------
     Flickable {
         id: rowsView
-        x: side.width + 64; y: 64
-        width: Math.min(1200, parent.width - x - asidePanel.width - 112)
-        height: parent.height - y - 110
+        x: side.width + 40; y: 52
+        width: Math.min(1200, parent.width - x - asidePanel.width - 96)
+        height: parent.height - y - 24
         contentHeight: rowsCol.height + 40
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -450,10 +446,6 @@ Item {
     }
 
     // ---------- hints ----------
-    HintBar {
-        anchors { left: side.right; leftMargin: 64; bottom: parent.bottom; bottomMargin: 40 }
-        theme: page.theme
-        hints: page.inRows ? [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"], ["◀ ▶", qsTr("Change value"), "right"]]
-                           : [["A", qsTr("Open"), "a"], ["B", qsTr("Back to the game"), "b"]]
-    }
+    readonly property var hints: inRows ? [["A", qsTr("Choose"), "a"], ["◀ ▶", qsTr("Change value"), "right"], ["B", qsTr("Back"), "b"]]
+                                        : [["A", qsTr("Open"), "a"], ["B", qsTr("Back to the game"), "b"]]
 }

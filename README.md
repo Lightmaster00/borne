@@ -60,13 +60,13 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   in a row (the one selected large, its name under it), then your collections as folders:
   Favourites, Two players, one per console. A rail on the left for your profile, the Store,
   downloads and settings. "See all", a collection or a console opens a glass folder with its games,
-  sorted by last played, newest, name, play time or release date; search as you type, in titles
-  from every region.
+  sorted by last played, newest, name, play time or release date; search (from the rail or Select)
+  in titles from every region. B on the home goes back to the rail.
 - **The Store**: your server's consoles as slanted cards in their colours, the one selected opening
   wide on a picture of the console; ordered by play time, number of games, release date, name, maker (then
   release or name) or your own order (LT / RT move a console).
 - **A border in your console's colours**: the screen is framed in the colour of the console of the
-  game you are on, its logo large on top; a video of the selected game can play behind (off by
+  game you are on, Borne's lettering discreet in the top-left corner; a video of the selected game can play behind (off by
   default).
 - **Game page**: its video playing behind (X, or a few seconds without a press, for full screen
   with its sound; X again to mute it); its case in 3D, turned with the right stick or W A S D; Play
@@ -128,10 +128,9 @@ and the emulators' releases).
 |---|---|---|
 | D-pad / left stick | Arrows | Move |
 | A | Enter | Open / choose |
-| B | Escape | Back (from a folder, a game's page, the rail) |
+| B | Escape | Back (from a folder or a game's page; on the home, to the rail) |
 | Y | T or Y | In a folder its order; on the home and the Store, the consoles' order; on a game's page, its settings |
 | Select | F2, Ctrl+F or / | Search (on the profile screen, Y: profile options) |
-| — | Any letter or digit | Start a search with it |
 | LB / RB | Page Up / Page Down, Q / E | Home / Store |
 | LT / RT | R / C, Home / End | In a folder, previous / next group; in the Store, move the console selected |
 | R3 | Tab | Downloads |

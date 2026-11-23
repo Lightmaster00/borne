@@ -1280,14 +1280,6 @@
         <translation>Téléchargements</translation>
     </message>
     <message>
-        <source>No recent downloads.</source>
-        <translation>Aucun téléchargement récent.</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>Fermer</translation>
-    </message>
-    <message>
         <source>Paused</source>
         <translation>En pause</translation>
     </message>
@@ -1316,8 +1308,48 @@
         <translation>Choisir</translation>
     </message>
     <message>
-        <source>Pause or cancel</source>
-        <translation>Pause ou annuler</translation>
+        <source>%1/s</source>
+        <translation>%1/s</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Retour</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n in progress</source>
+        <translation><numerusform>%n en cours</numerusform><numerusform>%n en cours</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n download(s)</source>
+        <translation><numerusform>%n téléchargement</numerusform><numerusform>%n téléchargements</numerusform></translation>
+    </message>
+    <message>
+        <source>No downloads</source>
+        <translation>Aucun téléchargement</translation>
+    </message>
+    <message>
+        <source>The games you install from the Store appear here.</source>
+        <translation>Les jeux que vous installez depuis le Store apparaissent ici.</translation>
+    </message>
+    <message>
+        <source>In progress</source>
+        <translation>En cours</translation>
+    </message>
+    <message>
+        <source>Finished</source>
+        <translation>Terminés</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n s left</source>
+        <translation><numerusform>%n s restante</numerusform><numerusform>%n s restantes</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n min left</source>
+        <translation><numerusform>%n min restante</numerusform><numerusform>%n min restantes</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n h left</source>
+        <translation><numerusform>%n h restante</numerusform><numerusform>%n h restantes</numerusform></translation>
     </message>
 </context>
 <context>
@@ -2478,10 +2510,6 @@
         <translation>Connecté à RomM (%1).</translation>
     </message>
     <message>
-        <source>Loading…</source>
-        <translation>Chargement…</translation>
-    </message>
-    <message>
         <source>Start through borne (BORNE_API / BORNE_WS variables missing).</source>
         <translation>Lancer via borne (variables BORNE_API / BORNE_WS absentes).</translation>
     </message>
@@ -3142,10 +3170,6 @@
         <translation>%1 sera installé après %2, en cours d’installation. Le jeu se lance dès qu’il est prêt.</translation>
     </message>
     <message>
-        <source>Every console</source>
-        <translation>Toutes les consoles</translation>
-    </message>
-    <message>
         <source>No game installed yet. Open the Store with %1 to download one.</source>
         <translation>Aucun jeu installé pour l’instant. Ouvre la boutique avec %1 pour en télécharger un.</translation>
     </message>
@@ -3284,6 +3308,22 @@
     <message>
         <source>Sound on</source>
         <translation>Mettre le son</translation>
+    </message>
+    <message>
+        <source>Game settings</source>
+        <translation>Paramètres du jeu</translation>
+    </message>
+    <message>
+        <source>Menu</source>
+        <translation>Menu</translation>
+    </message>
+    <message>
+        <source>Opening your library…</source>
+        <translation>Ouverture de votre bibliothèque…</translation>
+    </message>
+    <message>
+        <source>Starting…</source>
+        <translation>Démarrage…</translation>
     </message>
 </context>
 <context>
@@ -4829,6 +4869,18 @@
     <message>
         <source>Without a press for this long, the page fades out and leaves the game's video, with its sound on a game's page</source>
         <translation>Sans appui pendant ce temps, la page s’efface et laisse la vidéo du jeu, avec le son sur la fiche d’un jeu</translation>
+    </message>
+    <message>
+        <source>Move</source>
+        <translation>Déplacer</translation>
+    </message>
+    <message>
+        <source>Sections</source>
+        <translation>Sections</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
     </message>
 </context>
 <context>

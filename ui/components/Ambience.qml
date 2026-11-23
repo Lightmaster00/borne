@@ -20,6 +20,15 @@ Item {
     property bool artShown: false     // the game's art rather than the lights
     property color tint: Cases.tint(game ? game.platform_slug : "")
     Behavior on tint { ColorAnimation { duration: 700 } }
+    // Another console: the lights swell a moment as their colour changes.
+    readonly property color goal: Cases.tint(game ? game.platform_slug : "")
+    property real flash: 0
+    onGoalChanged: if (theme && theme.motion > 0.5) swell.restart()
+    SequentialAnimation {
+        id: swell
+        NumberAnimation { target: amb; property: "flash"; to: 1; duration: 260; easing.type: Easing.OutQuad }
+        NumberAnimation { target: amb; property: "flash"; to: 0; duration: 1100; easing.type: Easing.InOutSine }
+    }
     property bool trailers: true      // videos may play
     property string videoUrl: ""      // local file of the game's video
     property bool sound: false        // the video's sound
@@ -74,12 +83,12 @@ Item {
             }
         }
         Glow {
-            c: amb.tint; r: lights.width * 0.42; a: 0.42
+            c: amb.tint; r: lights.width * (0.42 + 0.04 * amb.flash); a: 0.42 + 0.2 * amb.flash
             x: lights.width * (0.72 + 0.12 * Math.sin(lights.t * 3)) - r
             y: lights.height * (0.12 + 0.1 * Math.cos(lights.t * 2)) - r
         }
         Glow {
-            c: lights.warm; r: lights.width * 0.3; a: 0.28
+            c: lights.warm; r: lights.width * 0.3; a: 0.28 + 0.12 * amb.flash
             x: lights.width * (0.3 + 0.18 * Math.cos(lights.t * 2)) - r
             y: lights.height * (0.78 + 0.08 * Math.sin(lights.t * 4)) - r
         }

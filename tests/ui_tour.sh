@@ -2,7 +2,7 @@
 # Walks through every screen of a running Borne with the debug pad (BORNE_DEBUG_INPUT=1) and fails
 # on any QML error in its log: the home (recent games, collections, the rail), a folder and its
 # order, the Store's consoles and one console's games, game page (fact sheet, screenshots, video) and its
-# settings, search, every Settings section row by row. Needs a paired profile (see integration_romm.py).
+# settings, search, the downloads, every Settings section row by row. Needs a paired profile (see integration_romm.py).
 #
 #   tests/ui_tour.sh <log of the running Borne>
 set -uo pipefail
@@ -28,6 +28,7 @@ done
 pad b sleep:0.5 b sleep:1
 pad y sleep:1 down a sleep:1 y sleep:1 up a sleep:1  # sort: by name, then back
 pad select sleep:1 b                             # search
+pad r3 sleep:1 down up right x b sleep:1         # the downloads
 pad start sleep:2                                # settings
 for section in 1 2 3 4 5 6 7 8 9 10 11; do
   pad right; for _ in $(seq 1 14); do pad down; done; pad b down sleep:0.5

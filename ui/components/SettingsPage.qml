@@ -640,20 +640,20 @@ Item {
     // ---------- sections ----------
     Item {
         id: side
-        width: 480
+        width: 420
         height: parent.height
 
         Text {
-            x: 64; y: 72
+            x: 56; y: 48
             text: qsTr("Settings")
             color: theme.fg
-            font { family: theme.displayFont; pixelSize: 48; weight: Font.ExtraBold; letterSpacing: -1 }
+            font { family: theme.displayFont; pixelSize: 44; weight: Font.ExtraBold; letterSpacing: -1 }
         }
         Column {
             id: sectionsCol
-            x: 64; y: 160
-            width: parent.width - 104
-            spacing: 8
+            x: 40; y: 124
+            width: parent.width - 72
+            spacing: 6
             Repeater {
                 model: page.sections
                 Rectangle {
@@ -661,47 +661,54 @@ Item {
                     required property var modelData
                     required property int index
                     readonly property bool current: page.section === index
-                    // Shorter on a short screen (a larger interface size): every section fits above the version.
-                    width: parent.width; height: Math.max(52, Math.min(72, (side.height - 160 - 160) / page.sections.length - 8))
-                    radius: height / 2
+                    // The open section shows its hint under its name; the others, their name alone.
+                    width: parent.width; height: current ? 70 : 44
+                    Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                    radius: current ? 22 : 16
                     // The open section: a pill, white while the focus is on the list.
                     readonly property bool focusedHere: current && !page.inRows
                     color: focusedHere ? theme.fg : current ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
                     Behavior on color { ColorAnimation { duration: theme.focusMs } }
                     Accessible.role: Accessible.PageTab
                     Accessible.name: modelData.name
+                    clip: true
                     Column {
-                        x: 26; anchors.verticalCenter: parent.verticalCenter
+                        x: 22; anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 60
                         spacing: 2
-                        Text { text: sec.modelData.name; color: sec.focusedHere ? theme.bg : sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: sec.current ? Font.ExtraBold : Font.DemiBold } }
-                        Text { text: sec.modelData.hint; color: sec.modelData.warn ? theme.bad : sec.focusedHere ? Qt.rgba(0, 0, 0, 0.6) : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 17; weight: Font.Medium } }
+                        Text { width: parent.width; elide: Text.ElideRight; text: sec.modelData.name; color: sec.focusedHere ? theme.bg : sec.current ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 21; weight: sec.current ? Font.ExtraBold : Font.DemiBold } }
+                        Text { visible: sec.current; width: parent.width; elide: Text.ElideRight; text: sec.modelData.hint; color: sec.modelData.warn ? theme.bad : sec.focusedHere ? Qt.rgba(0, 0, 0, 0.6) : theme.fgFaint; font { family: theme.fontFamily; pixelSize: 16; weight: Font.Medium } }
+                    }
+                    // Something to fix there.
+                    Rectangle {
+                        visible: !!sec.modelData.warn
+                        anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
+                        width: 10; height: 10; radius: 5; color: theme.bad
                     }
                 }
             }
         }
-        // Borne's lettering, its version and the server, at the foot of the sections (when they
-        // leave room: a large interface size fills the column).
-        readonly property bool footRoom: sectionsCol.y + sectionsCol.height + 24 < footBrand.y
-        Brand { id: footBrand; visible: side.footRoom; x: 64; anchors { bottom: footText.top; bottomMargin: 12 } lettering: true; size: 22; opacity: 0.85 }
+        // The version and the server, at the foot of the sections (when they leave room).
+        readonly property bool footRoom: sectionsCol.y + sectionsCol.height + 24 < footText.y
         Text {
             id: footText
             visible: side.footRoom
-            x: 64; anchors { bottom: parent.bottom; bottomMargin: 32 }
-            width: parent.width - 104
+            x: 56; anchors { bottom: parent.bottom; bottomMargin: 30 }
+            width: parent.width - 88
             text: qsTr("Version %1").arg(page.version) + (page.status && page.status.server_url ? "\n" + page.status.server_url : "")
             wrapMode: Text.WrapAnywhere
-            lineHeight: 1.5
+            lineHeight: 1.4
             color: theme.fgFaint
-            font { family: theme.fontFamily; pixelSize: 17 }
+            font { family: theme.fontFamily; pixelSize: 15 }
         }
     }
 
     // ---------- rows, in a floating panel (scroll to follow the selection when there are many) ----------
     Flickable {
         id: rowsView
-        x: side.width + 84; y: 104
-        width: Math.min(1500, parent.width - x - 140)
-        height: parent.height - y - 150
+        x: side.width + 40; y: 52
+        width: Math.min(1500, parent.width - x - 60)
+        height: parent.height - y - 24
         contentHeight: rowsCol.height + 40
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -838,16 +845,16 @@ Item {
     }
     }
 
-    // ---------- hints ----------
-    Item {
-        anchors { left: side.right; right: parent.right; bottom: parent.bottom; bottomMargin: 20 }
-        height: 48
-        HintBar {
-            x: 64; anchors.verticalCenter: parent.verticalCenter
-            theme: page.theme
-            hints: page.inRows && page.rows[page.row] && page.rows[page.row].kind === "link"
-                   ? [["A", qsTr("Open"), "a"], ["B", qsTr("Back"), "b"]]
-                   : [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"], ["◀ ▶", qsTr("Change value"), "right"]]
-        }
+    // The buttons, shown in the app's foot bar, and where you are.
+    readonly property var hints: inRows && rows[row] && rows[row].kind === "link"
+                                 ? [["A", qsTr("Open"), "a"], ["B", qsTr("Back"), "b"]]
+                                 : inRows && rows[row] && rows[row].kind === "chips"
+                                   ? [["◀ ▶", qsTr("Change value"), "right"], ["B", qsTr("Back"), "b"]]
+                                   : inRows ? [["A", qsTr("Choose"), "a"], ["◀ ▶", qsTr("Move"), "right"], ["B", qsTr("Back"), "b"]]
+                                            : [["▲ ▼", qsTr("Sections"), "down"], ["A", qsTr("Open"), "a"], ["B", qsTr("Close"), "b"]]
+    readonly property string where: {
+        const t = [sections[section] ? sections[section].name : ""]
+        if (consoleSlug && consoleOf(consoleSlug)) t.push(consoleOf(consoleSlug).name)
+        return t.join("  ›  ")
     }
 }

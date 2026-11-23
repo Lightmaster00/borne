@@ -382,14 +382,14 @@ function recents(rows, n) {
 // [{ id, kind: "fav" | "multi" | "console", slug, name, count, covers: [up to 4 cover URLs] }]
 function collections(rows, consoles) {
     const home = (rows || []).filter(ready).sort(compare("played"))
-    const make = (id, kind, slug, name, list) => ({ id, kind, slug, name, count: list.length,
-                                                    covers: list.slice(0, 4).map(g => g.cover || "") })
+    const make = (id, kind, slug, name, list, logo) => ({ id, kind, slug, name, logo: logo || "", count: list.length,
+                                                          covers: list.slice(0, 4).map(g => g.cover || "") })
     const out = [make("fav", "fav", "", qsTr("Favourites"), home.filter(g => !!g.favourite))]
     const multi = home.filter(g => maxPlayers(g) >= 2)
     if (multi.length) out.push(make("multi", "multi", "", qsTr("Two players"), multi))
     for (const c of consoles || []) {
         const list = home.filter(g => tabOf(g.platform_slug) === c.slug)
-        if (list.length) out.push(make("c:" + c.slug, "console", c.slug, c.name, list))
+        if (list.length) out.push(make("c:" + c.slug, "console", c.slug, c.name, list, c.logo))
     }
     return out
 }
@@ -409,6 +409,7 @@ function storeCards(rows, consoles) {
         const list = store[c.slug].sort(newest)
         return { slug: c.slug, name: c.name, logo: c.logo || "", photo: c.photo || "", count: list.length, installed: installed[c.slug] || 0,
                  covers: list.slice(0, 3).map(g => g.cover || ""), first: list[0].rom_id,
-                 made: madeBy(c.slug) ? madeBy(c.slug) + (madeIn(c.slug) ? ", " + madeIn(c.slug) : "") : "" }
+                 made: madeBy(c.slug) ? madeBy(c.slug) + (madeIn(c.slug) ? ", " + madeIn(c.slug) : "") : "",
+                 year: madeIn(c.slug) || 0 }
     })
 }

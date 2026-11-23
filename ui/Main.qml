@@ -369,7 +369,7 @@ Window {
         const name = i !== undefined && i < libModel.count ? libModel.get(i).name : qsTr("The game")
         if (m.state === "done") toasts.show(qsTr("%1 is installed.").arg(name), "ok")
         if (m.state === "failed") toasts.show(qsTr("%1: %2").arg(name).arg(m.error ? CoreText.tr(m.error) : qsTr("download failed")), "error")
-        if (downloadsPanel.visible) downloadsRefresh.restart()
+        if (downloadsPanel.shown) downloadsRefresh.restart()
         if (page && page.versions.some(v => v.rom_id === m.rom_id)) pageReload.restart()
     }
 
@@ -485,7 +485,7 @@ Window {
     property double lastActivity: Date.now()
     property bool attract: false
     readonly property bool attractAllowed: prefs.attractDelay > 0 && screen === "library" && (overlay === "" || (overlay === "game" && !gameSettingsPage.visible)) && ready && !gameMode
-                                           && !menu.visible && !search.visible && !downloadsPanel.visible
+                                           && !menu.visible && !search.visible && !downloadsPanel.shown
                                            && !nameEntry.visible && !sortMenu.visible
                                            && libModel.count > 0 && ambience.videoShown && !videoRested
     onAttractAllowedChanged: if (!attractAllowed) attract = false
@@ -1032,6 +1032,7 @@ Window {
         { id: "profile", label: activeProfile ? qsTr("%1 · change profile").arg(activeProfile.name) : qsTr("Profiles"), icon: "" },
         { id: "home", label: qsTr("Home"), icon: "home" },
         { id: "store", label: qsTr("Store"), icon: "store" },
+        { id: "search", label: qsTr("Search"), icon: "search" },
         { id: "downloads", label: qsTr("Downloads"), icon: "download" },
         { id: "settings", label: qsTr("Settings"), icon: "settings" },
         { id: "quit", label: qsTr("Quit Borne"), icon: "power" }
@@ -1040,6 +1041,7 @@ Window {
         if (id === "home") setTab("home")
         else if (id === "store") setTab("store")
         else if (id === "downloads") { sfx.play("accept"); openDownloads() }
+        else if (id === "search") openSearch("", false)
         else if (id === "settings") settingsMenu()
         else if (id === "profile") { sfx.play("back"); showProfiles() }
         else if (id === "quit") menu.open(qsTr("Quit Borne?"), "", [{ id: "yes", label: qsTr("Quit") }, { id: "no", label: qsTr("Cancel") }],
@@ -1278,7 +1280,12 @@ Window {
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
         if (search.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return search.handle(a) }
-        if (downloadsPanel.visible) return a === "r3" ? (downloadsPanel.visible = false) : downloadsPanel.handle(a)
+        if (downloadsPanel.shown) {
+            if (a === "r3") { sfx.play("back"); downloadsPanel.close(); return }
+            const r = downloadsPanel.handle(a)
+            if (r === "back") sfx.play("back"); else if (r === "move") sfx.play("move")
+            return
+        }
         if (sortMenu.visible) return handleSort(a)
         if (overlay === "diag") return diag.handle(a)
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
@@ -1299,10 +1306,9 @@ Window {
             closeFolder()
             if (f.kind === "store") wallIndex = Math.max(0, wall.findIndex(c => c.slug === f.slug))
         }
+        // Back: to the menu on the left (and from it, to the games).
         else if (a === "b" && homeZone === "rail") { sfx.play("move"); homeZone = libTab === "store" ? "wall" : "row" }
-        else if (a === "b" && homeZone === "shelf") { sfx.play("move"); homeZone = "row" }
-        else if (a === "b" && libTab === "store") setTab("home")
-        else if (a === "b") { sfx.play("back"); showProfiles() }
+        else if (a === "b") { sfx.play("back"); railIndex = Math.max(0, railItems.findIndex(r => r.id === libTab)); homeZone = "rail" }
         else if (a === "lb") setTab("home")
         else if (a === "rb") setTab("store")
         else if (a === "r3") openDownloads()
@@ -1539,7 +1545,7 @@ Window {
             videoUrl: win.overlay === "game" ? win.pageTrailer : win.bgVideo
             // A game's video in full screen plays with its sound.
             sound: win.overlay === "game" && win.attract && !prefs.videoMuted
-            paused: menu.visible || downloadsPanel.visible || bench.running || nameEntry.visible || gameSettingsPage.visible
+            paused: menu.visible || downloadsPanel.shown || bench.running || nameEntry.visible || gameSettingsPage.visible
                     || !!(win.session && win.session.running)
             rest: win.videoRested
             scrims: win.overlay === ""
@@ -1584,14 +1590,10 @@ Window {
                 else if (search.showKeyboard) e.accepted = false
                 if (e.accepted) return
             }
-            // In the library, Ctrl+F, F or / open the search; other letters start it with that letter.
-            if (screen === "library" && overlay === "" && !menu.visible && !nameEntry.visible && !downloadsPanel.visible) {
+            // In the library, Ctrl+F or / open the search (typing elsewhere does nothing).
+            if (screen === "library" && overlay === "" && !menu.visible && !nameEntry.visible && !downloadsPanel.shown) {
                 const f = e.key === Qt.Key_Slash || (e.key === Qt.Key_F && (e.modifiers & Qt.ControlModifier))
                 if (f) { e.accepted = true; openSearch("", true); return }
-                const shortcut = [Qt.Key_X, Qt.Key_T, Qt.Key_Y, Qt.Key_M, Qt.Key_Q, Qt.Key_E, Qt.Key_R, Qt.Key_C].indexOf(e.key) >= 0
-                if (!shortcut && !(e.modifiers & (Qt.ControlModifier | Qt.AltModifier)) && e.text && e.text.length === 1 && (e.text.toLowerCase() !== e.text.toUpperCase() || /[0-9]/.test(e.text))) {
-                    e.accepted = true; openSearch(e.text, true); return
-                }
             }
             const map = {}
             map[Qt.Key_Up] = "up"; map[Qt.Key_Down] = "down"; map[Qt.Key_Left] = "left"; map[Qt.Key_Right] = "right"
@@ -1619,7 +1621,8 @@ Window {
         LibraryHome {
             id: home
             anchors.fill: parent
-            opacity: win.attract ? 0 : 1
+            // Faded under the Downloads and the Settings, which stand where a folder does.
+            opacity: win.attract ? 0 : (downloadsPanel.shown || (glassPanel.shown && glassPanel.besideRail)) ? 0.25 : 1
             Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
             visible: win.screen === "library" && win.ready && !win.gameMode && win.overlay !== "game" && win.overlay !== "settings"
             theme: win.theme
@@ -1658,12 +1661,12 @@ Window {
             z: 21
             opacity: win.attract ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
-            visible: win.screen === "library" && win.ready && !win.gameMode && win.overlay !== "settings" && !gameSettingsPage.visible
+            visible: win.screen === "library" && win.ready && !win.gameMode
             theme: win.theme
             items: win.railItems
             index: win.railIndex
-            focused: win.homeZone === "rail" && !win.folder && win.overlay === ""
-            here: win.libTab
+            focused: win.homeZone === "rail" && !win.folder && win.overlay === "" && !downloadsPanel.shown
+            here: win.overlay === "settings" ? "settings" : downloadsPanel.shown ? "downloads" : win.libTab
             profileName: win.activeProfile ? win.activeProfile.name : ""
             profileColor: win.activeProfile && win.activeProfile.name ? Qt.hsla(((win.activeProfile.name.charCodeAt(0) * 37) % 360) / 360, 0.35, 0.36, 1) : "#5A5C66"
             downloading: win.rows.some(g => ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0)
@@ -1690,10 +1693,13 @@ Window {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             opacity: win.attract ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 350) * graphite.motion; easing.type: Easing.InOutQuad } }
-            visible: win.screen === "library" && win.ready && !win.gameMode && win.overlay !== "settings" && !gameSettingsPage.visible
-                     && (win.overlay === "" || win.overlay === "game")
+            visible: win.screen === "library" && win.ready && !win.gameMode
+                     && (win.overlay === "" || win.overlay === "game" || win.overlay === "settings")
             theme: win.theme
             where: {
+                if (win.overlay === "settings") return qsTr("Settings") + "  ›  " + settingsPage.where
+                if (downloadsPanel.shown) return qsTr("Downloads")
+                if (gameSettingsPage.visible) return (win.pageGame ? win.pageGame.name + "  ›  " : "") + qsTr("Game settings")
                 const tab = win.libTab === "store" ? qsTr("Store") : qsTr("Home")
                 const trail = [tab]
                 if (win.folder) trail.push(win.folder.name)
@@ -1701,6 +1707,9 @@ Window {
                 return trail.join("  ›  ")
             }
             hints: {
+                if (win.overlay === "settings") return settingsPage.hints
+                if (downloadsPanel.shown) return downloadsPanel.hints
+                if (gameSettingsPage.visible) return gameSettingsPage.hints
                 if (win.overlay === "game") return gamePage.hints
                 if (sortMenu.visible) return [["▲ ▼", qsTr("Choose"), "down"], ["A", qsTr("Apply"), "a"], ["B", qsTr("Close"), "b"]]
                 if (win.folder) {
@@ -1711,7 +1720,7 @@ Window {
                     h.push(["B", qsTr("Back"), "b"])
                     return h
                 }
-                if (win.homeZone === "rail") return [["A", qsTr("Choose"), "a"], ["▶", qsTr("Games"), "right"]]
+                if (win.homeZone === "rail") return [["A", qsTr("Choose"), "a"], ["▶", qsTr("Games"), "right"], ["LB RB", qsTr("Home / Store"), "lb"]]
                 if (win.libTab === "store") {
                     if (!win.wall.length) return [["LB RB", qsTr("Home / Store"), "lb"]]
                     const h = [["A", qsTr("See its games"), "a"], ["Y", qsTr("Order"), "y"]]
@@ -1719,8 +1728,8 @@ Window {
                     h.push(["LB RB", qsTr("Home / Store"), "lb"])
                     return h
                 }
-                if (win.homeZone === "shelf") return [["A", qsTr("Open"), "a"], ["▲", qsTr("Recently played"), "up"], ["Y", qsTr("Order"), "y"]]
-                return [["A", qsTr("Open"), "a"], ["▼", qsTr("Collections"), "down"], ["Select", qsTr("Search"), "select"], ["LB RB", qsTr("Home / Store"), "lb"]]
+                if (win.homeZone === "shelf") return [["A", qsTr("Open"), "a"], ["▲", qsTr("Recently played"), "up"], ["Y", qsTr("Order"), "y"], ["B", qsTr("Menu"), "b"]]
+                return [["A", qsTr("Open"), "a"], ["▼", qsTr("Collections"), "down"], ["LB RB", qsTr("Home / Store"), "lb"], ["B", qsTr("Menu"), "b"]]
             }
         }
 
@@ -1760,7 +1769,7 @@ Window {
             trailerUrl: win.pageTrailer
             trailerState: win.pageTrailerState
             // Nothing plays while a game runs (its sound would play under the game's).
-            paused: menu.visible || downloadsPanel.visible || !visible || win.gameMode || !!(win.session && win.session.running)
+            paused: menu.visible || downloadsPanel.shown || !visible || win.gameMode || !!(win.session && win.session.running)
             facts: win.pageFacts
             shotBase: win.pageGame ? win.apiBase + "/api/v1/games/" + win.pageGame.rom_id + "/screenshots/" : ""
             readonly property var pageConsole: win.pageGame ? win.consoles.find(c => c.slug === Shelf.tabOf(win.pageGame.platform_slug)) || null : null
@@ -1795,12 +1804,44 @@ Window {
             }
         }
 
+        DownloadsPanel {
+            id: downloadsPanel
+            theme: win.theme
+            motion: graphite.motion
+            // At a folder's place, beside the rail.
+            x: home.panelX; y: 110; width: home.panelW; height: home.panelH
+            z: 20.5
+            gameOf: function (romId) { return win.rows.find(r => r.rom_id === romId) || null }
+            onAct: (d, what) => {
+                sfx.play("accept")
+                const done = function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); win.refreshDownloads() }
+                if (what === "cancel") win.api("DELETE", "/api/v1/downloads/" + d.id, null, done)
+                else if (what === "retry") win.api("POST", "/api/v1/games/" + d.rom_id + "/download", {}, done)
+                else win.api("POST", "/api/v1/downloads/" + d.id + "/" + what, {}, done)
+            }
+            onClear: {
+                sfx.play("accept")
+                win.api("DELETE", "/api/v1/downloads", null, function (r, err) { if (r) downloadsPanel.downloads = r.downloads; else win.refreshDownloads() })
+            }
+        }
+
         // The settings stand in a glass panel over the game's art.
+        Rectangle {
+            anchors.fill: parent
+            z: 20.49
+            color: Qt.rgba(0.024, 0.024, 0.04, 0.6)
+            opacity: glassPanel.shown && glassPanel.besideRail ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 380 * graphite.motion } }
+        }
         Rectangle {
             id: glassPanel
             readonly property bool shown: win.overlay === "settings" || gameSettingsPage.visible
-            x: 120; y: 96
-            width: stage.width - x - 110; height: stage.height - y - 96
+            // Beside the rail, at a folder's place (in the library); else the whole room.
+            readonly property bool besideRail: chrome.visible
+            x: besideRail ? home.panelX : 120; y: besideRail ? 110 : 96
+            width: besideRail ? home.panelW : stage.width - x - 110
+            height: besideRail ? home.panelH : stage.height - y - 96
             z: 23
             radius: 28
             color: Qt.rgba(0.07, 0.075, 0.095, 0.9)
@@ -1904,12 +1945,15 @@ Window {
         onRetry: win.startPairing(win.pairingProfile)
         onBack: { win.api("DELETE", "/api/v1/pairing", null, null); win.showProfiles() }
     }
-    Text {
-        visible: win.screen === "boot" || (win.screen === "library" && !win.ready)
-        anchors.centerIn: parent
-        text: win.fatal || (win.apiBase ? qsTr("Loading…") : qsTr("Start through borne (BORNE_API / BORNE_WS variables missing)."))
-        color: win.fatal ? theme.bad : theme.fgMuted
-        font { family: theme.fontFamily; pixelSize: 18 }
+    BootScreen {
+        anchors.fill: parent
+        z: 59
+        theme: win.theme
+        motion: graphite.motion
+        shown: win.screen === "boot" || (win.screen === "library" && !win.ready)
+        failed: !!win.fatal || !win.apiBase
+        message: win.fatal || (win.apiBase ? (win.screen === "library" ? qsTr("Opening your library…") : qsTr("Starting…"))
+                                           : qsTr("Start through borne (BORNE_API / BORNE_WS variables missing)."))
     }
 
     // The first import (see importing).
@@ -2164,22 +2208,6 @@ Window {
     SoundEffect { id: sAccept; source: theme.soundSet ? sfx.base + "accept.wav" : ""; volume: theme.soundVolume }
     SoundEffect { id: sBack; source: theme.soundSet ? sfx.base + "back.wav" : ""; volume: theme.soundVolume }
 
-    DownloadsPanel {
-        id: downloadsPanel
-        theme: win.theme
-        z: 60
-        onAct: (d, what) => {
-            sfx.play("accept")
-            const done = function (r, err) { if (err) toasts.show(CoreText.tr(err), "error"); win.refreshDownloads() }
-            if (what === "cancel") win.api("DELETE", "/api/v1/downloads/" + d.id, null, done)
-            else if (what === "retry") win.api("POST", "/api/v1/games/" + d.rom_id + "/download", {}, done)
-            else win.api("POST", "/api/v1/downloads/" + d.id + "/" + what, {}, done)
-        }
-        onClear: {
-            sfx.play("accept")
-            win.api("DELETE", "/api/v1/downloads", null, function (r, err) { if (r) downloadsPanel.downloads = r.downloads; else win.refreshDownloads() })
-        }
-    }
     SearchOverlay {
         id: search
         anchors.fill: parent
@@ -2296,7 +2324,7 @@ Window {
     }
     }
 
-    // The border round the screen, in the colour of the console you are on, its logo on top.
+    // The border round the screen, in the colour of the console you are on.
     ScreenBorder {
         anchors.fill: parent
         visible: win.framed
@@ -2305,8 +2333,6 @@ Window {
         radius: Math.round(34 * scene.k)
         unit: scene.k
         // Not over the settings (theirs or a game's): they fill the screen.
-        name: ((win.screen === "library" && win.overlay !== "settings") || win.overlay === "game") && !gameSettingsPage.visible ? (win.consoleInfo ? win.consoleInfo.name : win.consoleSlug ? (win.shortNames[win.consoleSlug] || win.consoleSlug) : qsTr("Every console")) : ""
-        logo: win.consoleInfo ? win.consoleInfo.logo : ""
         fadeMs: Math.round(650 * graphite.motion)
     }
 

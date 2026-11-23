@@ -36,6 +36,7 @@ Version 1.8 — November 2026
 | 1.12 | A console's home: over the selected game's art, blurred, a glass rail (profile, Home, Store, Downloads, Settings, Quit), the games played lately in a row (the selected one large, its name under it), then collections as folders (Favourites, Two players, one per console); "See all", a collection or a console of the Store opens a glass folder with a grid of its games. The Store shows its consoles as slanted cards, the selected one wide on three of its games; LT / RT move it. The game page is a glass window: the game's art and trailer in large, its name and summary, Play / Install, the heart, its settings and its fact sheet, and a gallery (trailer, screenshots). A footer says where you are. Settings in a glass panel. The Consoles menu (X), the quick filters, the genres and the three layouts are gone. |
 | 1.13 | Larger covers with tighter corners, a small tab for the console's logo, a sharp background (the game's art drifting under dark scrims, no blur). The Store's cards show a picture of the console, and a narrow card its logo along its length. A game's page: its case in 3D, swaying, turned with the arrows; its video behind the page, in full screen with its sound after a few seconds. Settings redrawn: one line per setting, its value between arrows changed with left and right. |
 | 1.14 | Lights in the console's colour behind the home (the game's art as an option); selected covers cast their console's light and a band of light crosses them; the rail's items spring and a light bar follows the page shown; new icons. The game's case turned with the right stick or W A S D (30° at most, back when let go); its screenshots from RomM and ScreenScraper; the video at its original size, X for full screen and, there, for its sound. Front scans as covers (no PlayStation hinge, Switch cases whole). Folders' lines fill their width. The consoles' order by maker then release, or maker then name. |
+| 1.15 | B on the home goes back to the rail (no more profile screen); search only from the rail or Select (typing no longer starts it). The rail without its light bar, a new gear icon, items lit by their own glow. The border without its island: the console's colour stays, Borne's lettering in the top-left corner. Collections as coloured folders with three fanned covers; the Store's consoles under a spotlight, with their year and a reflection, arriving from the side they come from. Downloads and Settings as glass pages beside the rail, their buttons in the foot bar (Settings › section); Downloads in progress and finished, with covers, percent, speed and time left. A launch screen: the logo, a running light, what is going on. |
 | 1.10 | New interface: *My library* (games ready here) and the *Store* (the server's others, by console); games in groups set by the order (Resume, This week, A – F, the 1990s…), covers at their own proportions; Filter (consoles as a fan of cards, quick filters, genres) and Sort apart; a border in the colour of the selected game's console with its logo; the game page as a sheet with the players' rating, play time and a table of facts. 3D cases removed. |
 | 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
 
@@ -309,8 +310,8 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   maker then release (each maker's consoles from the first to the latest), maker then name
   (`Shelf.MADE`), or your own. LB / RB switch Home and Store; B on the Store goes Home.
 - The footer (`Footer.qml`): where you are (Home › Favourites › the game), then the buttons and what
-  they do. Select opens the search (on-screen keyboard or the physical keyboard, where typing any
-  letter starts it); a result opens in its folder (All my games, or its console in the Store),
+  they do. Select (or the rail's Search, Ctrl+F, /) opens the search (on-screen keyboard or the
+  physical keyboard; typing elsewhere does not start it, since 1.15); a result opens in its folder (All my games, or its console in the Store),
   selected.
 - Game page (`GamePage.qml`, since 1.13): over the game's art and its video (the background), the
   console's logo (its name without one), where it was opened from, the game's state and download
@@ -378,8 +379,13 @@ effort thin, and a user QML theme is code that runs with the UI's rights.
   not used: the launcher hides the pointer and drops mouse, wheel and touch events.
 - Button hints, and texts that name a button (`theme.key(action)`), follow the device in use (`theme.input`): the gamepad's buttons, or the keyboard's
   keys from the first key press (Enter, Esc, T, M, F2, Q E, R C, Tab), back to the gamepad on its
-  next button. The downloads panel has its own button, shown on its pill in the top bar: R3 (right
-  stick click), Tab on the keyboard.
+  next button. The Downloads page has its own button: R3 (right stick click), Tab on the keyboard.
+- Launch screen (`BootScreen.qml`, since 1.15): Borne's logo in the dark over a breathing light, a
+  slim bar with a running light, and what is going on (Starting…, Opening your library…, or the
+  error in red); shown at least a moment, then faded into the first screen.
+- Profiles: recently played, play time and favourites (`play_stats`, per profile and game group)
+  and saves and save states (`savesync.rs`, `profiles/<id>/`) belong to each profile; installed
+  games, settings and emulators are shared.
 - Original synthesized UI sounds; bundled OFL font.
 
 ### 5.5 Media and trailers
@@ -453,8 +459,12 @@ reports the offline state and syncs on reconnection according to section 6.4.
   removed. Consoles without games are left out of Filter (`ready_count`, `rom_count` in
   `/api/v1/platforms`).
 - On-demand downloads with resume, size/hash verification and error handling.
-- Downloads panel (R3 / Tab): per download a Pause (Resume when paused, Retry when failed) and a Cancel
-  button; X or the button at the top clears finished and cancelled ones (`DELETE /api/v1/downloads`).
+- Downloads page (`DownloadsPanel.qml`, R3 / Tab or the rail; since 1.15 a glass page beside the
+  rail, at a folder's place): the downloads in progress, then the finished ones, each with its cover,
+  console, size, percent, speed and time left (measured between two refreshes) and a bar with a
+  running light; per download a Pause (Resume when paused, Retry when failed) and a Cancel button
+  (◀ ▶ to choose, A to press); X clears finished and cancelled ones (`DELETE /api/v1/downloads`).
+  Its buttons are shown in the foot bar, like Settings' (`hints`, Settings › section).
   A paused download (`POST /api/v1/downloads/<id>/pause`, state `paused`) keeps its partial files and
   resumes with a Range request (`POST …/resume`, or Download again from its page); cancelling one that
   is not running removes them.

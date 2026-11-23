@@ -1280,14 +1280,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>No recent downloads.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Close</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Paused</source>
         <translation type="unfinished" />
     </message>
@@ -1316,8 +1308,48 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Pause or cancel</source>
+        <source>%1/s</source>
         <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Back</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n in progress</source>
+        <translation><numerusform>%n in progress</numerusform><numerusform>%n in progress</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n download(s)</source>
+        <translation><numerusform>%n download</numerusform><numerusform>%n downloads</numerusform></translation>
+    </message>
+    <message>
+        <source>No downloads</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The games you install from the Store appear here.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>In progress</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Finished</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n s left</source>
+        <translation><numerusform>%n s left</numerusform><numerusform>%n s left</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n min left</source>
+        <translation><numerusform>%n min left</numerusform><numerusform>%n min left</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <source>%n h left</source>
+        <translation><numerusform>%n h left</numerusform><numerusform>%n h left</numerusform></translation>
     </message>
 </context>
 <context>
@@ -2490,10 +2522,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Loading…</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Start through borne (BORNE_API / BORNE_WS variables missing).</source>
         <translation type="unfinished" />
     </message>
@@ -3142,10 +3170,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Every console</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>No game installed yet. Open the Store with %1 to download one.</source>
         <translation type="unfinished" />
     </message>
@@ -3283,6 +3307,22 @@
     </message>
     <message>
         <source>Sound on</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Game settings</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Menu</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Opening your library…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Starting…</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4828,6 +4868,18 @@
     </message>
     <message>
         <source>Without a press for this long, the page fades out and leaves the game's video, with its sound on a game's page</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Move</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Sections</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Close</source>
         <translation type="unfinished" />
     </message>
 </context>

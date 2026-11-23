@@ -7,6 +7,7 @@
 // Everything here is drawn from Main's state (zone, indexes, folder); Main handles the input.
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 import "Cases.js" as Cases
 
 Item {
@@ -25,6 +26,10 @@ Item {
     // Store: the consoles' cards (Shelf.storeCards).
     property var wall: []
     property int wallIndex: 0
+    // The way the selection last moved among the Store's consoles: 1 right, -1 left.
+    property int wallDir: 1
+    property int lastWall: 0
+    onWallIndexChanged: { wallDir = wallIndex >= lastWall ? 1 : -1; lastWall = wallIndex }
     property string storeLine: ""
     // A folder open: { kind, slug, name } and its grid (Shelf.build, "grid").
     property var folder: null
@@ -147,9 +152,14 @@ Item {
             }
 
             // ---------- the selected game, under the row ----------
-            Column {
+            Reveal {
                 x: root.leftX; y: 726
-                width: Math.min(1300, parent.width - root.leftX - 140)
+                key: root.rowIndex
+                motion: root.motion
+                dy: 0
+                dx: 24
+            Column {
+                width: Math.min(1300, root.width - root.leftX - 140)
                 spacing: 8
                 opacity: root.zone === "row" ? 1 : 0.35
                 Behavior on opacity { NumberAnimation { duration: 250 * root.motion } }
@@ -187,6 +197,7 @@ Item {
                 }
             }
 
+            }
             // ---------- the collections ----------
             Text {
                 x: root.leftX; y: 886
@@ -199,7 +210,7 @@ Item {
                 width: parent.width - x - 14; height: 280
                 clip: true
                 Row {
-                    x: 20 - Math.max(0, (root.shelfIndex + 1) * 276 - (parent.width - 160))
+                    x: 20 - Math.max(0, (root.shelfIndex + 1) * 326 - (parent.width - 160))
                     y: 20
                     spacing: 26
                     Behavior on x { NumberAnimation { duration: 450 * root.motion; easing.type: Easing.OutCubic } }
@@ -270,8 +281,13 @@ Item {
             color: theme.fgSoft
             font { family: theme.fontFamily; pixelSize: 24; weight: Font.DemiBold }
         }
-        Column {
+        Reveal {
             x: root.leftX; y: 862
+            key: root.wallIndex
+            motion: root.motion
+            dx: root.wallDir * 40
+            dy: 0
+        Column {
             spacing: 8
             readonly property var w: root.wall[root.wallIndex] || null
             Text {
@@ -291,6 +307,7 @@ Item {
                 color: Qt.rgba(1, 1, 1, 0.78)
                 font { family: theme.fontFamily; pixelSize: 19; weight: Font.DemiBold }
             }
+        }
         }
     }
 
@@ -476,6 +493,7 @@ Item {
             ringColor: theme.fg
             radius: cov.radius
             motion: root.motion
+            source: cov.g ? cov.g.cover : ""
         }
         Rectangle {
             z: -2
@@ -555,63 +573,128 @@ Item {
         Accessible.name: all ? qsTr("See all") : g ? g.name : ""
     }
 
-    // A collection: four of its covers and its name.
+    // A collection: a card in its colour (the console's; warm for Favourites, cool for Two players),
+    // three of its covers fanned out (wider when selected), its sign (heart, two players, the
+    // console's logo), its name and count.
     component Folder: Item {
         id: fo
         property var c
         property bool on: false
-        width: 250; height: 214
-        scale: on ? 1.06 : 1
+        width: 300; height: 230
+        scale: on ? 1.05 : 1
         z: on ? 2 : 1
-        Behavior on scale { NumberAnimation { duration: 300 * root.motion; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 320 * root.motion; easing.type: Easing.OutBack; easing.overshoot: 1.6 } }
         Accessible.role: Accessible.Button
         Accessible.name: c.name
-        FocusGlow { on: fo.on; tint: fo.c.slug ? Cases.tint(fo.c.slug) : theme.fg; ringColor: theme.fg; radius: 20; gap: 9; line: 4; motion: root.motion }
+        readonly property color hue: c.kind === "fav" ? "#C2405E" : c.kind === "multi" ? "#2E8C9A" : Cases.tint(c.slug)
+        FocusGlow { on: fo.on; tint: fo.hue; ringColor: theme.fg; radius: 22; gap: 9; line: 4; motion: root.motion }
         Rectangle {
             anchors.fill: parent
-            radius: 20
+            radius: 22
             clip: true
-            color: Qt.rgba(1, 1, 1, fo.on ? 0.16 : 0.1)
-            border { width: 1; color: Qt.rgba(1, 1, 1, 0.1) }
-            Shine { active: fo.on; motion: root.motion; strength: 0.18 }
-        }
-        Grid {
-            x: 16; y: 16
-            columns: 2; spacing: 8
-            Repeater {
-                model: 4
-                Item {
-                    required property int index
-                    width: 105; height: 59
-                    layer.enabled: fo.visible
-                    layer.effect: MultiEffect { maskEnabled: true; maskSource: miniMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
-                    Rectangle { anchors.fill: parent; color: Qt.rgba(1, 1, 1, 0.08) }
-                    Image {
-                        anchors.fill: parent
-                        source: fo.c.covers[index] || ""
-                        sourceSize.width: 220
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0; color: Qt.rgba(fo.hue.r, fo.hue.g, fo.hue.b, fo.on ? 0.72 : 0.42) }
+                GradientStop { position: 1; color: Qt.rgba(fo.hue.r * 0.25, fo.hue.g * 0.25, fo.hue.b * 0.25, 0.9) }
+            }
+            border { width: 1; color: Qt.rgba(1, 1, 1, fo.on ? 0.25 : 0.1) }
+            // Three covers fanned out.
+            Item {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 22
+                width: 200; height: 130
+                Repeater {
+                    model: Math.min(3, fo.c.covers.length)
+                    Item {
+                        id: fan
+                        required property int index
+                        readonly property int k: index === 0 ? 0 : index === 1 ? -1 : 1   // the first in the middle
+                        readonly property real spread: fo.on ? 1 : 0.6
+                        width: 88; height: 120
+                        x: (parent.width - width) / 2 + k * 62 * spread
+                        y: Math.abs(k) * 10 * spread
+                        z: 3 - Math.abs(k)
+                        rotation: k * 10 * spread
+                        transformOrigin: Item.Bottom
+                        Behavior on x { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
+                        Behavior on rotation { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
+                        Behavior on y { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutCubic } }
+                        layer.enabled: fo.visible
+                        layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.55; shadowBlur: 0.6; shadowVerticalOffset: 6 }
+                        Item {
+                            anchors.fill: parent
+                            layer.enabled: fo.visible
+                            layer.effect: MultiEffect { maskEnabled: true; maskSource: fanMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
+                            Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.3) }
+                            Image {
+                                anchors.fill: parent
+                                source: fo.c.covers[fan.index] || ""
+                                sourceSize.height: 240
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                            }
+                        }
+                        Rectangle { id: fanMask; anchors.fill: parent; radius: 8; visible: false; layer.enabled: true }
                     }
-                    Rectangle { id: miniMask; anchors.fill: parent; radius: 7; visible: false; layer.enabled: true }
+                }
+                // Empty: its sign, large.
+                Icon {
+                    visible: fo.c.covers.length === 0
+                    anchors.centerIn: parent
+                    name: fo.c.kind === "multi" ? "people" : "heart"
+                    size: 64
+                    stroke: 2
+                    color: Qt.rgba(1, 1, 1, 0.5)
                 }
             }
+            Shine { active: fo.on; motion: root.motion; strength: 0.2 }
         }
-        Text {
-            x: 18; y: 160
-            width: parent.width - 36 - countLabel.implicitWidth - 8
-            elide: Text.ElideRight
-            text: fo.c.name
-            color: theme.fg
-            font { family: theme.fontFamily; pixelSize: 18; weight: Font.ExtraBold }
+        // Its sign, its name, its count.
+        Row {
+            x: 18; y: 172
+            width: parent.width - 36
+            spacing: 10
+            Item {
+                anchors.verticalCenter: parent.verticalCenter
+                width: fo.c.kind === "console" ? (signLogo.status === Image.Ready ? 0 : 0) : 26
+                height: 26
+                visible: fo.c.kind !== "console"
+                Icon { anchors.centerIn: parent; name: fo.c.kind === "multi" ? "people" : "heart"; size: 22; filled: fo.c.kind === "fav"; stroke: 2; color: "#ffffff" }
+            }
+            Image {
+                id: signLogo
+                visible: fo.c.kind === "console" && status === Image.Ready
+                anchors.verticalCenter: parent.verticalCenter
+                height: 26
+                width: Math.min(150, implicitWidth * 26 / Math.max(1, implicitHeight))
+                source: fo.c.kind === "console" ? fo.c.logo || "" : ""
+                sourceSize.height: 80
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+                layer.enabled: visible
+                layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
+            }
+            Text {
+                visible: !signLogo.visible
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - 36 - countLabel.implicitWidth - 20
+                elide: Text.ElideRight
+                text: fo.c.name
+                color: "#ffffff"
+                font { family: theme.fontFamily; pixelSize: 19; weight: Font.ExtraBold }
+            }
         }
-        Text {
-            id: countLabel
-            anchors { right: parent.right; rightMargin: 18 }
-            y: 163
-            text: String(fo.c.count)
-            color: Qt.rgba(1, 1, 1, 0.65)
-            font { family: theme.fontFamily; pixelSize: 14; weight: Font.Bold }
+        Rectangle {
+            anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.top; verticalCenterOffset: 185 }
+            width: countLabel.implicitWidth + 20; height: 28; radius: 14
+            color: Qt.rgba(0, 0, 0, 0.35)
+            Text {
+                id: countLabel
+                anchors.centerIn: parent
+                text: String(fo.c.count)
+                color: "#ffffff"
+                font { family: theme.fontFamily; pixelSize: 14; weight: Font.ExtraBold }
+            }
         }
     }
 
@@ -671,7 +754,40 @@ Item {
                 }
             }
         }
-        // The console itself, upright.
+        // Its year, very large and faint, behind the console.
+        Text {
+            visible: card.c.year > 0
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 60 }
+            text: card.c.year > 0 ? String(card.c.year) : ""
+            color: "#ffffff"
+            opacity: card.on ? 0.09 : 0
+            Behavior on opacity { NumberAnimation { duration: 700 * root.motion } }
+            font { family: theme.displayFont; pixelSize: 220; weight: Font.Black; letterSpacing: -10 }
+        }
+        // A spotlight from above onto the console.
+        Shape {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 520; height: 420
+            opacity: card.on ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 700 * root.motion } }
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                strokeWidth: -1
+                fillGradient: LinearGradient {
+                    x1: 260; y1: 0; x2: 260; y2: 420
+                    GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.26) }
+                    GradientStop { position: 0.7; color: Qt.rgba(1, 1, 1, 0.05) }
+                    GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 0) }
+                }
+                startX: 190; startY: 0
+                PathLine { x: 330; y: 0 }
+                PathLine { x: 520; y: 420 }
+                PathLine { x: 0; y: 420 }
+                PathLine { x: 190; y: 0 }
+            }
+        }
+        // The console itself, upright, arriving from the side you come from.
         Image {
             id: photo
             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 34 }
@@ -695,7 +811,42 @@ Item {
                 NumberAnimation { from: 0; to: -10; duration: 2600; easing.type: Easing.InOutSine }
                 NumberAnimation { from: -10; to: 0; duration: 2600; easing.type: Easing.InOutSine }
             }
-            transform: Translate { y: photo.bob }
+            transform: Translate {
+                y: photo.bob
+                x: card.on ? 0 : root.wallDir * 90
+                Behavior on x { NumberAnimation { duration: 650 * root.motion; easing.type: Easing.OutCubic } }
+            }
+        }
+        // Its reflection on the floor, fading.
+        Item {
+            anchors { horizontalCenter: parent.horizontalCenter; top: photo.bottom; topMargin: 4 }
+            width: photo.paintedWidth; height: 70
+            clip: true
+            opacity: photo.opacity * 0.22
+            visible: opacity > 0.01
+            layer.enabled: visible
+            layer.effect: MultiEffect { maskEnabled: true; maskSource: reflMask; maskThresholdMin: 0.0; maskSpreadAtMin: 1.0 }
+            Image {
+                width: parent.width; height: photo.paintedHeight
+                source: photo.source
+                sourceSize.height: 300
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+                transform: Scale { yScale: -1; origin.y: photo.paintedHeight / 2 }
+            }
+        }
+        Item {
+            id: reflMask
+            width: photo.paintedWidth; height: 70
+            visible: false
+            layer.enabled: true
+            Rectangle {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "white" }
+                    GradientStop { position: 1; color: "transparent" }
+                }
+            }
         }
         // No picture: three of its games.
         Row {
@@ -798,7 +949,7 @@ Item {
         Accessible.name: g ? g.name : ""
         Item {
             width: tile.width; height: tile.t.h
-            FocusGlow { on: tile.cur; tint: tile.g ? Cases.tint(tile.g.platform_slug) : theme.fg; ringColor: theme.fg; radius: 12; gap: 9; line: 4; motion: root.motion }
+            FocusGlow { on: tile.cur; tint: tile.g ? Cases.tint(tile.g.platform_slug) : theme.fg; ringColor: theme.fg; radius: 12; gap: 9; line: 4; motion: root.motion; source: tile.g ? tile.g.cover : "" }
         }
         Item {
             width: tile.width; height: tile.t.h

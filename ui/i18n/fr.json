@@ -55,6 +55,7 @@
  "%1 · change profile": "%1 · changer de profil",
  "%1 · never played": "%1 · jamais joué",
  "%1 · played %2": "%1 · joué %2",
+ "%1/s": "%1/s",
  "%1: %2": "%1 : %2",
  "%1: no core in the archive": "%1 : aucun cœur dans l’archive",
  "%n already in your library": [
@@ -113,6 +114,18 @@
   "%n jeu à découvrir",
   "%n jeux à découvrir"
  ],
+ "%n h left": [
+  "%n h restante",
+  "%n h restantes"
+ ],
+ "%n in progress": [
+  "%n en cours",
+  "%n en cours"
+ ],
+ "%n min left": [
+  "%n min restante",
+  "%n min restantes"
+ ],
  "%n month(s) ago": [
   "il y a %n mois",
   "il y a %n mois"
@@ -128,6 +141,10 @@
  "%n result(s) for “%1”": [
   "%n résultat pour « %1 »",
   "%n résultats pour « %1 »"
+ ],
+ "%n s left": [
+  "%n s restante",
+  "%n s restantes"
  ],
  "%n system file(s) missing": [
   "%n fichier système manquant",
@@ -439,6 +456,7 @@
  "Files missing": "Fichiers manquants",
  "Fill the screen": "Plein écran étiré",
  "Filter": "Filtrer",
+ "Finished": "Terminés",
  "Fixes missing graphics in some games; slower": "Corrige des graphismes manquants dans certains jeux ; plus lent",
  "Flatpak is not available on this system": "Flatpak n’est pas disponible sur ce système",
  "For every game": "Pour tous les jeux",
@@ -589,6 +607,7 @@
  "Measurements": "Mesures",
  "Medium": "Moyen",
  "Mega-CD / Sega CD BIOS": "BIOS Mega-CD / Sega CD",
+ "Menu": "Menu",
  "Missing — needed to play": "Manquant — nécessaire pour jouer",
  "Missing: %1": "Manquant : %1",
  "Modes": "Modes",
@@ -629,6 +648,7 @@
  "No cheats for this version of the game in the public databases.": "Aucun cheat pour cette version du jeu dans les bases publiques.",
  "No console of the library needs a BIOS, keys or firmware.": "Aucune console de la bibliothèque n'a besoin de BIOS, de clés ou de firmware.",
  "No controller connected: the keyboard plays.": "Aucune manette connectée : le clavier joue.",
+ "No downloads": "Aucun téléchargement",
  "No emulator can run these games yet": "Aucun émulateur ne fait encore tourner ces jeux",
  "No emulator runs this game yet.": "Aucun émulateur ne lance encore ce jeu.",
  "No favourite yet. On a game's page, the heart adds it here.": "Pas encore de favori. Sur la fiche d’un jeu, le cœur l’ajoute ici.",
@@ -688,6 +708,7 @@
  "Open": "Ouvrir",
  "Open a game to search ScreenScraper for it": "Ouvrez un jeu pour le chercher sur ScreenScraper",
  "Open on GitHub": "Ouvrir sur GitHub",
+ "Opening your library…": "Ouverture de votre bibliothèque…",
  "Optional": "Facultatif",
  "Options": "Options",
  "Options for this game": "Options pour ce jeu",
@@ -862,6 +883,7 @@
  "Search ScreenScraper": "Chercher sur ScreenScraper",
  "Search ScreenScraper by name and choose the right one": "Chercher sur ScreenScraper par nom et choisir le bon",
  "Searching ScreenScraper…": "Recherche sur ScreenScraper…",
+ "Sections": "Sections",
  "See all": "Tout voir",
  "See its games": "Voir ses jeux",
  "See the report": "Voir le bilan",
@@ -919,6 +941,7 @@
  "Start through borne (BORNE_API / BORNE_WS variables missing).": "Lancer via borne (variables BORNE_API / BORNE_WS absentes).",
  "Starting %1…": "Lancement de %1…",
  "Starting the game…": "Lancement du jeu…",
+ "Starting…": "Démarrage…",
  "Starts in seconds, even for large games": "Démarre en quelques secondes, même pour les gros jeux",
  "Starts the version of the game in this language": "Lance la version du jeu dans cette langue",
  "Steadier 3D, without wobbling polygons": "Une 3D plus stable, sans polygones qui tremblent",
@@ -980,6 +1003,7 @@
  "The game's art": "L’illustration du jeu",
  "The game's own shape, or forced": "Le format du jeu, ou un format imposé",
  "The games that need it will not start until it is added again.": "Les jeux qui en ont besoin ne démarreront plus tant qu’il n’aura pas été ajouté de nouveau.",
+ "The games you install from the Store appear here.": "Les jeux que vous installez depuis le Store apparaissent ici.",
  "The hints at the bottom show the gamepad's buttons or the keyboard's keys": "L’aide en bas affiche les boutons de la manette ou les touches du clavier",
  "The library could not be synced: %1": "La bibliothèque n'a pas pu être synchronisée : %1",
  "The one launched; the others stay on the server": "Celle qui est lancée ; les autres restent sur le serveur",

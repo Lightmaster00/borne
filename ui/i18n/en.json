@@ -55,6 +55,18 @@
   "%n game to discover",
   "%n games to discover"
  ],
+ "%n h left": [
+  "%n h left",
+  "%n h left"
+ ],
+ "%n in progress": [
+  "%n in progress",
+  "%n in progress"
+ ],
+ "%n min left": [
+  "%n min left",
+  "%n min left"
+ ],
  "%n month(s) ago": [
   "%n month ago",
   "%n months ago"
@@ -70,6 +82,10 @@
  "%n result(s) for “%1”": [
   "%n result for “%1”",
   "%n results for “%1”"
+ ],
+ "%n s left": [
+  "%n s left",
+  "%n s left"
  ],
  "%n system file(s) missing": [
   "%n system file missing",
