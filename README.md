@@ -135,6 +135,7 @@ and the emulators' releases).
 | D-pad / left stick | Arrows | Move |
 | A | Enter | Open / choose |
 | B | Escape | Back (from a folder or a game's page; on the home, to the rail) |
+| X | X | In the Store, the console's next picture; on a game's page, its video |
 | Y | T or Y | In a folder its order; on the home and the Store, the consoles' order; on a game's page, its settings |
 | Select | F2, Ctrl+F or / | Search (on the profile screen, Y: profile options) |
 | LB / RB | Page Up / Page Down, Q / E | Home / Store |
