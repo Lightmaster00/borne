@@ -15,7 +15,7 @@ ui/
   components/         views and pieces (library shelf, game page, settings, filter, border…)
   imports/Borne/Theme the look: colours, type, sizes, motion
   launcher/           minimal C++ launcher of the QML UI (borne-ui)
-  i18n/               translations (.ts generated; edit en.json / fr.json)
+  i18n/               translations (.ts generated; edit the <code>.json files)
   brand/              the logo, the pictogram and the lettering (Logo.qml, Brand.qml draw them)
   fonts/ sounds/      bundled assets
 resources/            bundled with the package (app icon: the pictogram, cut-outs transparent, borne.svg → borne.png)
@@ -92,8 +92,10 @@ Useful variables: `BORNE_DATA_DIR` (data folder), `BORNE_LANG` (UI language),
 
 ## Translations
 
-Wrap every visible string in `qsTr("…")`, run `scripts/i18n/update.sh`, add the French text to
-`ui/i18n/fr.json` (plural forms in `en.json` and `fr.json` as `[singular, plural]`), run it again.
+Wrap every visible string in `qsTr("…")`, run `scripts/i18n/update.sh`, add the text to each
+`ui/i18n/<code>.json` (fr, es, it, de, pt, ja, zh; plural forms as `[singular, plural]`, one form for
+ja and zh; `en.json` holds English plurals only), run it again. A new language is a new
+`<code>.json` plus its entry in SettingsPage's `uiLanguages`.
 CI fails when a translation is missing or `ui/i18n` is stale. Core messages shown to the user are
 translated by `ui/components/CoreText.js`.
 
