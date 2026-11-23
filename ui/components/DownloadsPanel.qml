@@ -42,8 +42,9 @@ Item {
             seen[d.id] = { r: d.received, t: now }
         }
         lastSeen = seen; speeds = sp
-        if (index >= ordered.length) index = Math.max(0, ordered.length - 1)
-        pick = Math.min(pick, Math.max(0, buttonsOf(ordered[index]).length - 1))
+        const o = ordered || []   // not yet bound while the page is built
+        if (index >= o.length) index = Math.max(0, o.length - 1)
+        pick = Math.min(pick, Math.max(0, buttonsOf(o[index]).length - 1))
     }
     readonly property real totalSpeed: Object.keys(speeds).reduce((a, k) => a + speeds[k], 0)
 
@@ -70,7 +71,7 @@ Item {
     }
     readonly property var hints: {
         const h = []
-        const b = buttonsOf(ordered[index])
+        const b = buttonsOf((ordered || [])[index])
         if (b.length) h.push(["A", b[Math.min(pick, b.length - 1)].label, "a"])
         if (b.length > 1) h.push(["◀ ▶", qsTr("Choose"), "right"])
         if (finishedAny) h.push(["X", qsTr("Clear finished"), "x"])
