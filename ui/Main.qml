@@ -1613,6 +1613,7 @@ Window {
             visible: !win.gameMode && (win.screen === "library" || win.overlay !== "")
             game: win.overlay === "game" && win.pageGame ? win.pageGame : win.ambientGame
             artShown: prefs.background === "art"
+            lightX: win.overlay === "game" ? width * 0.72 : home.lightX
             // The library's video (off by default), and on a game's page its trailer.
             trailers: win.overlay === "game" ? win.trailers : win.bgVideos && win.screen === "library" && win.overlay === ""
             videoUrl: win.overlay === "game" ? win.pageTrailer : win.bgVideo

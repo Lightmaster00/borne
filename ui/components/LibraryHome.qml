@@ -46,6 +46,10 @@ Item {
     readonly property real leftX: 196
     readonly property bool onHome: tab === "home"
     readonly property bool onStore: tab === "store"
+    // Where the room's light falls (Ambience.lightX): over the console chosen in the Store, over
+    // the games on the home, over the collections when they have the focus.
+    readonly property real lightX: onStore ? 150 + 80 + (wallIndex === 0 ? 0 : 172) + 320
+                                 : zone === "shelf" ? width * 0.5 : leftX + 260
     readonly property bool folderOpen: folder !== null
     readonly property real motion: theme ? theme.motion : 1
 
@@ -728,63 +732,138 @@ Item {
                 border { width: 4; color: theme.fg }
             }
             Rectangle {
+                id: face
                 anchors.fill: parent
                 radius: 16
                 clip: true
+                // Lacquer: the console's colour, deep, darkening to the floor.
                 gradient: Gradient {
                     orientation: Gradient.Vertical
-                    GradientStop { position: 0; color: Qt.lighter(card.tint, 1.15) }
-                    GradientStop { position: 1; color: Qt.darker(card.tint, 2.8) }
+                    GradientStop { position: 0; color: Qt.hsla(card.tint.hslHue, Math.min(1, card.tint.hslSaturation * 0.9), 0.36, 1) }
+                    GradientStop { position: 0.55; color: Qt.hsla(card.tint.hslHue, Math.min(1, card.tint.hslSaturation * 0.85), 0.17, 1) }
+                    GradientStop { position: 1; color: Qt.hsla(card.tint.hslHue, card.tint.hslSaturation * 0.6, 0.06, 1) }
                 }
-                // A soft light behind the console.
+                // The room's light falling on its top.
+                Shape {
+                    anchors.fill: parent
+                    opacity: card.on ? 1 : 0.35
+                    Behavior on opacity { NumberAnimation { duration: 600 * root.motion } }
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        strokeWidth: -1
+                        fillGradient: RadialGradient {
+                            centerX: face.width / 2; centerY: -40; focalX: face.width / 2; focalY: -40
+                            centerRadius: Math.max(260, face.width * 0.75); focalRadius: 0
+                            GradientStop { position: 0; color: Qt.rgba(1, 0.96, 0.9, 0.34) }
+                            GradientStop { position: 0.45; color: Qt.hsla(card.tint.hslHue, card.tint.hslSaturation, 0.7, 0.14) }
+                            GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 0) }
+                        }
+                        PathRectangle { x: 0; y: 0; width: face.width; height: face.height }
+                    }
+                }
+                // A glaze across the lacquer, as on a polished surface.
                 Rectangle {
-                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 40 }
-                    width: Math.min(parent.width * 0.8, 320); height: width; radius: width / 2
-                    color: Qt.rgba(1, 1, 1, 0.14)
-                    opacity: card.on ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 400 * root.motion } }
+                    width: face.width * 0.5; height: face.height * 2
+                    x: face.width * 0.08; y: -face.height * 0.5
+                    rotation: 24
+                    opacity: 0.6
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0) }
+                        GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.06) }
+                        GradientStop { position: 0.56; color: Qt.rgba(1, 1, 1, 0.015) }
+                        GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 0) }
+                    }
                 }
-                Shine { active: card.lit; motion: root.motion; strength: 0.22 }
+                Shine { active: card.lit; motion: root.motion; strength: 0.16 }
+                // Narrow: in the shade.
                 Rectangle {
                     anchors.fill: parent
                     radius: 16
                     color: "#000000"
-                    opacity: card.on ? 0 : 0.3
+                    opacity: card.on ? 0 : 0.42
                     Behavior on opacity { NumberAnimation { duration: 400 * root.motion } }
                 }
             }
-        }
-        // Its year, very large and faint, behind the console.
-        Text {
-            visible: card.c.year > 0
-            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 60 }
-            text: card.c.year > 0 ? String(card.c.year) : ""
-            color: "#ffffff"
-            opacity: card.on ? 0.09 : 0
-            Behavior on opacity { NumberAnimation { duration: 700 * root.motion } }
-            font { family: theme.displayFont; pixelSize: 220; weight: Font.Black; letterSpacing: -10 }
-        }
-        // A spotlight from above onto the console.
-        Shape {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 520; height: 420
-            opacity: card.on ? 1 : 0
-            visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 700 * root.motion } }
-            preferredRendererType: Shape.CurveRenderer
-            ShapePath {
-                strokeWidth: -1
-                fillGradient: LinearGradient {
-                    x1: 260; y1: 0; x2: 260; y2: 420
-                    GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.26) }
-                    GradientStop { position: 0.7; color: Qt.rgba(1, 1, 1, 0.05) }
+            // Its top edge catching the light.
+            Rectangle {
+                x: 18; y: 1
+                width: parent.width - 36; height: 1.5
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0) }
+                    GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, card.on ? 0.55 : 0.18) }
                     GradientStop { position: 1; color: Qt.rgba(1, 1, 1, 0) }
                 }
-                startX: 190; startY: 0
-                PathLine { x: 330; y: 0 }
-                PathLine { x: 520; y: 420 }
-                PathLine { x: 0; y: 420 }
-                PathLine { x: 190; y: 0 }
+            }
+            // The chosen console: a light running round its edge, as on a foil card.
+            Item {
+                anchors.fill: parent
+                opacity: card.lit ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: 500 * root.motion } }
+                layer.enabled: visible
+                layer.effect: MultiEffect { maskEnabled: true; maskSource: edgeMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
+                Shape {
+                    id: edgeLight
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
+                    property real turn
+                    NumberAnimation on turn {
+                        from: 0; to: 360; duration: 8000; loops: Animation.Infinite
+                        running: card.lit && root.motion > 0.5
+                    }
+                    ShapePath {
+                        strokeWidth: -1
+                        fillGradient: ConicalGradient {
+                            centerX: card.width / 2; centerY: card.height / 2
+                            angle: edgeLight.turn
+                            GradientStop { position: 0.00; color: Qt.rgba(1, 1, 1, 0) }
+                            GradientStop { position: 0.06; color: Qt.rgba(1, 0.97, 0.92, 0.95) }
+                            GradientStop { position: 0.14; color: Qt.hsla(card.tint.hslHue, 0.9, 0.72, 0.6) }
+                            GradientStop { position: 0.26; color: Qt.rgba(1, 1, 1, 0.06) }
+                            GradientStop { position: 0.50; color: Qt.rgba(1, 1, 1, 0.06) }
+                            GradientStop { position: 0.56; color: Qt.hsla((card.tint.hslHue + 0.5) % 1, 0.7, 0.75, 0.5) }
+                            GradientStop { position: 0.62; color: Qt.rgba(1, 1, 1, 0.7) }
+                            GradientStop { position: 0.72; color: Qt.rgba(1, 1, 1, 0.06) }
+                            GradientStop { position: 1.00; color: Qt.rgba(1, 1, 1, 0) }
+                        }
+                        PathRectangle { x: 0; y: 0; width: card.width; height: card.height }
+                    }
+                }
+            }
+            Rectangle {
+                id: edgeMask
+                anchors.fill: parent
+                radius: 16
+                color: "transparent"
+                border { width: 2; color: "white" }
+                visible: false
+                layer.enabled: true
+            }
+        }
+        // Where it stands: a soft shadow on the floor of the card, under the console (a round
+        // shade flattened into an ellipse).
+        Shape {
+            id: standShade
+            readonly property real w: Math.max(120, photo.paintedWidth * 0.95)
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: photo.y + photo.height / 2 + photo.paintedHeight / 2 - 4 - w / 2
+            width: w; height: w
+            opacity: photo.opacity * (0.8 + 0.3 * (photo.bob / 10))
+            visible: opacity > 0.01
+            preferredRendererType: Shape.CurveRenderer
+            transform: Scale { origin.x: standShade.w / 2; origin.y: standShade.w / 2; yScale: 40 / Math.max(1, standShade.w) }
+            ShapePath {
+                strokeWidth: -1
+                fillGradient: RadialGradient {
+                    centerX: standShade.w / 2; centerY: standShade.w / 2; focalX: centerX; focalY: centerY
+                    centerRadius: standShade.w / 2; focalRadius: 0
+                    GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0.75) }
+                    GradientStop { position: 0.6; color: Qt.rgba(0, 0, 0, 0.25) }
+                    GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0) }
+                }
+                PathRectangle { x: 0; y: 0; width: standShade.w; height: standShade.w }
             }
         }
         // The console itself, upright, arriving from the side you come from.
@@ -802,7 +881,7 @@ Item {
             Behavior on opacity { NumberAnimation { duration: 450 * root.motion } }
             Behavior on scale { NumberAnimation { duration: 560 * root.motion; easing.type: Easing.OutCubic } }
             layer.enabled: visible
-            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.6; shadowBlur: 0.8; shadowVerticalOffset: 18 }
+            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 1.0; shadowVerticalOffset: 10 }
             // Floating, slowly.
             property real bob
             SequentialAnimation on bob {
@@ -815,37 +894,6 @@ Item {
                 y: photo.bob
                 x: card.on ? 0 : root.wallDir * 90
                 Behavior on x { NumberAnimation { duration: 650 * root.motion; easing.type: Easing.OutCubic } }
-            }
-        }
-        // Its reflection on the floor, fading.
-        Item {
-            anchors { horizontalCenter: parent.horizontalCenter; top: photo.bottom; topMargin: 4 }
-            width: photo.paintedWidth; height: 70
-            clip: true
-            opacity: photo.opacity * 0.22
-            visible: opacity > 0.01
-            layer.enabled: visible
-            layer.effect: MultiEffect { maskEnabled: true; maskSource: reflMask; maskThresholdMin: 0.0; maskSpreadAtMin: 1.0 }
-            Image {
-                width: parent.width; height: photo.paintedHeight
-                source: photo.source
-                sourceSize.height: 300
-                fillMode: Image.PreserveAspectFit
-                asynchronous: true
-                transform: Scale { yScale: -1; origin.y: photo.paintedHeight / 2 }
-            }
-        }
-        Item {
-            id: reflMask
-            width: photo.paintedWidth; height: 70
-            visible: false
-            layer.enabled: true
-            Rectangle {
-                anchors.fill: parent
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "white" }
-                    GradientStop { position: 1; color: "transparent" }
-                }
             }
         }
         // No picture: three of its games.
