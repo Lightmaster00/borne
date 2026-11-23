@@ -77,6 +77,21 @@ pub fn programs() -> Vec<Program> {
     manifest().programs
 }
 pub fn program(id: &str) -> Option<Program> {
+    if let Some(o) = crate::devmode::own_program(id) {
+        return Some(Program {
+            id: o.id,
+            name: o.name,
+            args: crate::devmode::split_args(&o.args).unwrap_or_default(),
+            install: BTreeMap::new(),
+            cores: BTreeMap::new(),
+            binaries: vec![],
+            mac_apps: vec![],
+            user_provided: true,
+            fails: vec![],
+            rename_ext: BTreeMap::new(),
+            logs: vec![],
+        });
+    }
     programs().into_iter().find(|p| p.id == id)
 }
 
@@ -98,7 +113,16 @@ fn engine(id: &str, name: &str) -> Engine {
 
 /// The consoles Borne plays (an emulator in its list).
 pub fn known_consoles() -> Vec<String> {
-    manifest().consoles.into_iter().filter(|(_, v)| !v.is_empty()).map(|(k, _)| k).collect()
+    let mut v: Vec<String> = manifest().consoles.into_iter().filter(|(_, v)| !v.is_empty()).map(|(k, _)| k).collect();
+    // Consoles played by an emulator of the player's own (developer mode).
+    for o in crate::devmode::own() {
+        for c in o.consoles {
+            if !v.contains(&c) {
+                v.push(c);
+            }
+        }
+    }
+    v
 }
 
 pub fn engines(system: &str) -> Vec<Engine> {
@@ -109,6 +133,12 @@ pub fn engines(system: &str) -> Vec<Engine> {
         if let Some(i) = list.iter().position(|e| e.program == "ryubing") {
             let r = list.remove(i);
             list.insert(0, r);
+        }
+    }
+    // The player's own emulators for this console (developer mode), after Borne's.
+    for o in crate::devmode::own() {
+        if o.consoles.iter().any(|c| c == system) {
+            list.push(Engine { id: format!("!{}", o.id), name: o.name.clone(), program: o.id.clone(), core: None });
         }
     }
     list
@@ -267,6 +297,11 @@ pub fn which(name: &str) -> Option<PathBuf> {
     std::env::split_paths(&path).map(|d| d.join(name)).find(|p| is_executable(p))
 }
 
+/// Whether this file is a program that can be started.
+pub fn is_program(p: &Path) -> bool {
+    is_executable(p)
+}
+
 fn is_executable(p: &Path) -> bool {
     use std::os::unix::fs::PermissionsExt;
     p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false)
@@ -334,6 +369,9 @@ fn user_path_key(id: &str) -> String {
 
 /// Where a program is, if it is available.
 pub fn find(app: &Shared, id: &str) -> Option<Found> {
+    if let Some(o) = crate::devmode::own_program(id) {
+        return program_at(Path::new(&o.exe));
+    }
     let p = program(id)?;
     if let Some(v) = crate::emuinstall::installed(app, id) {
         if let Some(exe) = v["exe"].as_str() {
@@ -346,12 +384,7 @@ pub fn find(app: &Shared, id: &str) -> Option<Found> {
         }
     }
     if let Some(path) = app.db.setting(&user_path_key(id)).filter(|s| !s.is_empty()) {
-        let path = PathBuf::from(path);
-        if path.extension().map(|x| x == "app").unwrap_or(false) {
-            let macos = path.join("Contents/MacOS");
-            return std::fs::read_dir(&macos).ok()?.flatten().map(|f| f.path()).find(|f| is_executable(f)).map(Found::Program);
-        }
-        return is_executable(&path).then_some(Found::Program(path));
+        return program_at(Path::new(&path));
     }
     for b in &p.binaries {
         if let Some(found) = which(b) {
@@ -381,6 +414,15 @@ pub fn find(app: &Shared, id: &str) -> Option<Found> {
         }
     }
     None
+}
+
+/// A program given by its path: the file itself, or a macOS .app's program.
+fn program_at(path: &Path) -> Option<Found> {
+    if path.extension().map(|x| x == "app").unwrap_or(false) {
+        let macos = path.join("Contents/MacOS");
+        return std::fs::read_dir(&macos).ok()?.flatten().map(|f| f.path()).find(|f| is_executable(f)).map(Found::Program);
+    }
+    is_executable(path).then(|| Found::Program(path.to_path_buf()))
 }
 
 /// Where an emulator keeps its configuration, saves and system files for a profile. On Linux it is
@@ -611,6 +653,8 @@ struct Session {
     flatpak: Option<String>,
     /// Started by `open` (macOS): the emulator's processes are found by their bundle.
     via_open: bool,
+    /// The emulator opened on its own interface (developer mode), no game.
+    tool: bool,
 }
 
 /// Sends a signal to the game: its process group, and with `open`, the emulator's own processes.
@@ -666,7 +710,7 @@ pub fn playing_rom() -> Option<i64> {
 pub fn session() -> Value {
     match SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
         Some(s) => {
-            json!({ "running": true, "rom_id": s.rom_id, "name": s.name, "emulator": s.emulator, "seconds": s.started.elapsed().as_secs(), "paused": s.paused })
+            json!({ "running": true, "rom_id": s.rom_id, "name": s.name, "emulator": s.emulator, "seconds": s.started.elapsed().as_secs(), "paused": s.paused, "tool": s.tool })
         }
         None => json!({ "running": false }),
     }
@@ -932,8 +976,19 @@ fn command(
         }
         args.push(v);
     }
-    // A game's own emulator options given as flags go before the game.
-    let extra = crate::gamesettings::emu_args(&p.id, &options);
+    // A game's own emulator options given as flags go before the game; in developer mode, the
+    // player's own arguments for the emulator, and RetroArch's settings of their own.
+    let mut extra = crate::gamesettings::emu_args(&p.id, &options);
+    if p.id == "retroarch" {
+        if let Some(user) = crate::devmode::retroarch_append(app) {
+            extra.extend(["--appendconfig".to_string(), user.to_string_lossy().into_owned()]);
+        }
+    }
+    extra.extend(crate::devmode::extra_args(app, &p.id));
+    // An emulator of one's own given no {rom}: the game last.
+    if crate::devmode::own_program(&p.id).is_some() && !p.args.iter().any(|a| a.contains("{rom}")) {
+        args.push(rom.to_string_lossy().into_owned());
+    }
     if !extra.is_empty() {
         let at = args.len().saturating_sub(1);
         args.splice(at..at, extra);
@@ -2081,6 +2136,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
             Found::Flatpak(id) => Some(id.clone()),
             _ => None,
         },
+        tool: false,
     });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
@@ -2101,6 +2157,114 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     let own: Vec<PathBuf> = dirs.iter().flat_map(|d| p.logs.iter().map(move |l| d.join(l))).collect();
     let app = app.clone();
     std::thread::spawn(move || follow(app, log, own, fails));
+    Ok(s)
+}
+
+/// The arguments an emulator opens on its own interface with (no game): only those that point it
+/// at Borne's folders for the profile.
+fn ui_args(app: &Shared, program: &str, profile: &str) -> Result<Vec<String>, String> {
+    let userdir = app.paths.profiles().join(profile).join(program);
+    Ok(match program {
+        "retroarch" => {
+            let game_cfg = retroarch_config(app, profile, "_open", vec![])?;
+            let cfg = crate::devmode::retroarch_prepare_open(app, &game_cfg)?;
+            vec!["--config".into(), cfg.to_string_lossy().into_owned()]
+        }
+        "dolphin" => vec!["-u".into(), userdir.to_string_lossy().into_owned()],
+        "xenia" => vec![format!("--content_root={}/content", data_dir(app, profile, program).to_string_lossy())],
+        _ => vec![],
+    })
+}
+
+/// Developer mode: opens an emulator on its own interface, with Borne's setup for the active
+/// profile (its folders, BIOS and keys), for the player to change what they like. Its settings
+/// are copied aside first (devmode::undo). Borne steps aside as for a game until it is closed.
+pub fn open_ui(app: &Shared, id: &str) -> Result<Value, String> {
+    if !crate::devmode::on() {
+        return Err("developer mode is off".into());
+    }
+    if playing() {
+        return Err("a game is running: quit it first".into());
+    }
+    let p = program(id).ok_or("unknown emulator")?;
+    let found = find(app, &p.id).ok_or_else(|| format!("{} is not installed", p.name))?;
+    let profile = app.active_profile().map(|p| p.id).unwrap_or_else(|| "default".into());
+    if let Err(e) = crate::devmode::snapshot(app, &p.id) {
+        app.db.log("developer", &format!("{}: no copy of its settings ({e})", p.id));
+    }
+    let mut args = ui_args(app, &p.id, &profile)?;
+    args.extend(crate::devmode::extra_args(app, &p.id).into_iter().filter(|a| !a.contains("{rom}")));
+    let mut cmd = match &found {
+        Found::Program(exe) => {
+            let mut c = Command::new(exe);
+            c.args(&args);
+            c
+        }
+        Found::Flatpak(fid) => {
+            flatpak_kill(fid);
+            let mut c = Command::new("flatpak");
+            c.args(["run", "--die-with-parent"]);
+            c.arg(format!("--filesystem={}", app.paths.profiles().to_string_lossy()));
+            c.arg(fid).args(&args);
+            c
+        }
+    };
+    cmd.env("APPIMAGE_EXTRACT_AND_RUN", "1");
+    if cfg!(target_os = "linux") && std::env::var_os("SDL_JOYSTICK_HIDAPI").is_none() {
+        cmd.env("SDL_JOYSTICK_HIDAPI", "0");
+    }
+    cmd.envs(xdg_env(app, &profile, &p.id));
+    // Its BIOS and keys where it reads them, for each console it plays.
+    let exe = match &found {
+        Found::Program(x) => Some(x.as_path()),
+        Found::Flatpak(_) => None,
+    };
+    // (The consoles of the library it plays; one still missing a file is left as it is.)
+    let library: Vec<String> = app.db.platforms().into_iter().map(|p| p.slug).collect();
+    let consoles: Vec<String> = manifest()
+        .consoles
+        .iter()
+        .filter(|(k, v)| library.contains(k) && v.iter().any(|(e, _)| engine(e, "").program == p.id))
+        .map(|(k, _)| k.clone())
+        .collect();
+    for c in consoles {
+        let _ = crate::systemfiles::prepare(app, &c, &p.id, &data_dir(app, &profile, &p.id), exe, &xdg_env(app, &profile, &p.id));
+    }
+    let log = emulator_log(app);
+    let _ = std::fs::create_dir_all(log.parent().unwrap());
+    let out = std::fs::File::create(&log).map_err(|e| e.to_string())?;
+    let err = out.try_clone().map_err(|e| e.to_string())?;
+    cmd.stdin(Stdio::null()).stdout(out).stderr(err);
+    std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
+    let bundle =
+        Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)).map(Path::to_path_buf);
+    let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
+    app.db.log("developer", &format!("{} opened on its own interface ({})", p.name, found.describe()));
+    *SESSION.lock().unwrap_or_else(|e| e.into_inner()) = Some(Session {
+        rom_id: 0,
+        name: p.name.clone(),
+        emulator: p.name.clone(),
+        program: p.id.clone(),
+        group_key: String::new(),
+        system: String::new(),
+        started: Instant::now(),
+        child,
+        stopping: false,
+        sync: None,
+        failure: None,
+        paused: false,
+        bundle,
+        via_open: false,
+        flatpak: match &found {
+            Found::Flatpak(id) => Some(id.clone()),
+            _ => None,
+        },
+        tool: true,
+    });
+    let s = session();
+    app.emit(json!({ "type": "session", "session": s }));
+    let app = app.clone();
+    std::thread::spawn(move || follow(app, log, vec![], vec![]));
     Ok(s)
 }
 
@@ -2226,6 +2390,18 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                             continue;
                         }
                     }
+                }
+                // An emulator opened on its own interface: nothing to save, time or stand in for.
+                if s.tool {
+                    let (program_id, played) = (s.program.clone(), s.started.elapsed().as_secs());
+                    let _ = std::fs::copy(&log, log.with_file_name(format!("emulator-{}.log", s.program)));
+                    *g = None;
+                    drop(g);
+                    let kept = if program_id == "retroarch" { crate::devmode::retroarch_collect(&app) } else { 0 };
+                    app.db.log("developer", &format!("{program_id} closed after {played} s"));
+                    app.emit(json!({ "type": "session", "session": { "running": false, "rom_id": 0, "tool": true, "seconds": played, "error": null, "kept": kept } }));
+                    app.emit(json!({ "type": "emulators" }));
+                    return;
                 }
                 let quick = s.started.elapsed() < Duration::from_secs(8) && !s.stopping;
                 let failure = s.failure.take().or_else(|| {

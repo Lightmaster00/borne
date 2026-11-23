@@ -20,6 +20,7 @@ mod cheats;
 mod consoles;
 mod controls;
 mod db;
+mod devmode;
 mod diag;
 mod discover;
 mod downloads;
@@ -214,6 +215,7 @@ fn main() {
         });
     }
     emuinstall::set_http_cache(app.paths.root.join("cache/releases"));
+    devmode::load(&app);
     emulators::migrate(&app);
     emuinstall::start_updates(&app);
     if app.client().is_some() {

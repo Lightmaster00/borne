@@ -3421,6 +3421,42 @@
         <source>Borne asks again before those games.</source>
         <translation type="unfinished" />
     </message>
+    <message numerus="yes">
+        <source>RetroArch: %n setting(s) of your own kept, added on top of Borne's before each game.</source>
+        <translation><numerusform>RetroArch: %n setting of your own kept, added on top of Borne's before each game.</numerusform><numerusform>RetroArch: %n settings of your own kept, added on top of Borne's before each game.</numerusform></translation>
+    </message>
+    <message>
+        <source>Developer mode is on: see Settings → Developer.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Extra arguments, given before the game</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>Settings put back as they were before it was opened (%n file(s)).</source>
+        <translation><numerusform>Settings put back as they were before it was opened (%n file).</numerusform><numerusform>Settings put back as they were before it was opened (%n files).</numerusform></translation>
+    </message>
+    <message>
+        <source>Name of the emulator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Name</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Arguments ({rom}: the game's file)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Consoles %1 plays</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The consoles of your library this emulator plays: it is offered beside Borne's for them, and for each of their games. A to choose, Start to confirm.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -5008,6 +5044,106 @@
     </message>
     <message>
         <source>Ask again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Emulators opened, your own</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Open an emulator on its own interface with Borne's setup and change what you like, give it extra arguments, or add emulators of your own. Borne copies an emulator's settings before opening it: Undo my changes puts them back. Turned off (Help), Borne plays as before and keeps what you did here for next time.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne's emulators</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No emulator is installed yet: they appear here once Borne has installed them (or you gave their program).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Settings in %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Extra arguments: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message numerus="yes">
+        <source>%n setting(s) of your own on top of Borne's</source>
+        <translation><numerusform>%n setting of your own on top of Borne's</numerusform><numerusform>%n settings of your own on top of Borne's</numerusform></translation>
+    </message>
+    <message>
+        <source>Copy of its settings from %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Arguments</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Undo my changes</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RetroArch opens on its menu. What you change there is kept apart and added on top of Borne's configuration before each game (Borne's folders stay Borne's).</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your own emulators</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>not found</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Arguments: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Plays: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Plays no console yet: choose its consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Program</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add an emulator</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Any program: give its path, then its arguments ({rom} stands for the game's file) and the consoles it plays. It is offered beside Borne's for those consoles, and for each game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>For the curious</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Developer mode</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
         <translation type="unfinished" />
     </message>
 </context>

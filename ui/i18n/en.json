@@ -87,6 +87,10 @@
   "%n s left",
   "%n s left"
  ],
+ "%n setting(s) of your own on top of Borne's": [
+  "%n setting of your own on top of Borne's",
+  "%n settings of your own on top of Borne's"
+ ],
  "%n system file(s) missing": [
   "%n system file missing",
   "%n system files missing"
@@ -107,9 +111,17 @@
   "%n year ago",
   "%n years ago"
  ],
+ "RetroArch: %n setting(s) of your own kept, added on top of Borne's before each game.": [
+  "RetroArch: %n setting of your own kept, added on top of Borne's before each game.",
+  "RetroArch: %n settings of your own kept, added on top of Borne's before each game."
+ ],
  "Safe mode: trailers and sounds off (the UI crashed %n time(s))": [
   "Safe mode: trailers and sounds off (the UI crashed once)",
   "Safe mode: trailers and sounds off (the UI crashed %n times)"
+ ],
+ "Settings put back as they were before it was opened (%n file(s)).": [
+  "Settings put back as they were before it was opened (%n file).",
+  "Settings put back as they were before it was opened (%n files)."
  ],
  "Synced at %1 · %n game(s)": [
   "Synced at %1 · %n game",

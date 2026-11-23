@@ -3421,6 +3421,42 @@
         <source>Borne asks again before those games.</source>
         <translation>Borne redemandera avant ces jeux.</translation>
     </message>
+    <message numerus="yes">
+        <source>RetroArch: %n setting(s) of your own kept, added on top of Borne's before each game.</source>
+        <translation><numerusform>RetroArch : %n réglage à vous gardé, ajouté par-dessus ceux de Borne avant chaque jeu.</numerusform><numerusform>RetroArch : %n réglages à vous gardés, ajoutés par-dessus ceux de Borne avant chaque jeu.</numerusform></translation>
+    </message>
+    <message>
+        <source>Developer mode is on: see Settings → Developer.</source>
+        <translation>Le mode développeur est activé : voir Paramètres → Développeur.</translation>
+    </message>
+    <message>
+        <source>Extra arguments, given before the game</source>
+        <translation>Arguments en plus, donnés avant le jeu</translation>
+    </message>
+    <message numerus="yes">
+        <source>Settings put back as they were before it was opened (%n file(s)).</source>
+        <translation><numerusform>Réglages remis comme avant son ouverture (%n fichier).</numerusform><numerusform>Réglages remis comme avant son ouverture (%n fichiers).</numerusform></translation>
+    </message>
+    <message>
+        <source>Name of the emulator</source>
+        <translation>Nom de l'émulateur</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nom</translation>
+    </message>
+    <message>
+        <source>Arguments ({rom}: the game's file)</source>
+        <translation>Arguments ({rom} : le fichier du jeu)</translation>
+    </message>
+    <message>
+        <source>Consoles %1 plays</source>
+        <translation>Consoles jouées par %1</translation>
+    </message>
+    <message>
+        <source>The consoles of your library this emulator plays: it is offered beside Borne's for them, and for each of their games. A to choose, Start to confirm.</source>
+        <translation>Les consoles de votre bibliothèque que cet émulateur joue : il est proposé à côté de ceux de Borne pour elles, et pour chacun de leurs jeux. A pour choisir, Start pour confirmer.</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>
@@ -5009,6 +5045,106 @@
     <message>
         <source>Ask again</source>
         <translation>Redemander</translation>
+    </message>
+    <message>
+        <source>Developer</source>
+        <translation>Développeur</translation>
+    </message>
+    <message>
+        <source>Emulators opened, your own</source>
+        <translation>Émulateurs ouverts, les vôtres</translation>
+    </message>
+    <message>
+        <source>Open an emulator on its own interface with Borne's setup and change what you like, give it extra arguments, or add emulators of your own. Borne copies an emulator's settings before opening it: Undo my changes puts them back. Turned off (Help), Borne plays as before and keeps what you did here for next time.</source>
+        <translation>Ouvrez un émulateur sur sa propre interface avec la configuration de Borne et changez ce que vous voulez, donnez-lui des arguments en plus, ou ajoutez vos propres émulateurs. Borne copie les réglages d'un émulateur avant de l'ouvrir : « Annuler mes changements » les remet. Désactivé (Aide), Borne joue comme avant et garde ce que vous avez fait ici pour la prochaine fois.</translation>
+    </message>
+    <message>
+        <source>Borne's emulators</source>
+        <translation>Émulateurs de Borne</translation>
+    </message>
+    <message>
+        <source>No emulator is installed yet: they appear here once Borne has installed them (or you gave their program).</source>
+        <translation>Aucun émulateur installé pour l'instant : ils apparaissent ici une fois installés par Borne (ou quand vous avez donné leur programme).</translation>
+    </message>
+    <message>
+        <source>Settings in %1</source>
+        <translation>Réglages dans %1</translation>
+    </message>
+    <message>
+        <source>Extra arguments: %1</source>
+        <translation>Arguments en plus : %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n setting(s) of your own on top of Borne's</source>
+        <translation><numerusform>%n réglage à vous par-dessus ceux de Borne</numerusform><numerusform>%n réglages à vous par-dessus ceux de Borne</numerusform></translation>
+    </message>
+    <message>
+        <source>Copy of its settings from %1</source>
+        <translation>Copie de ses réglages du %1</translation>
+    </message>
+    <message>
+        <source>Arguments</source>
+        <translation>Arguments</translation>
+    </message>
+    <message>
+        <source>Undo my changes</source>
+        <translation>Annuler mes changements</translation>
+    </message>
+    <message>
+        <source>RetroArch opens on its menu. What you change there is kept apart and added on top of Borne's configuration before each game (Borne's folders stay Borne's).</source>
+        <translation>RetroArch s'ouvre sur son menu. Ce que vous y changez est gardé à part et ajouté par-dessus la configuration de Borne avant chaque jeu (les dossiers de Borne restent ceux de Borne).</translation>
+    </message>
+    <message>
+        <source>Your own emulators</source>
+        <translation>Vos émulateurs</translation>
+    </message>
+    <message>
+        <source>not found</source>
+        <translation>introuvable</translation>
+    </message>
+    <message>
+        <source>Arguments: %1</source>
+        <translation>Arguments : %1</translation>
+    </message>
+    <message>
+        <source>Plays: %1</source>
+        <translation>Joue : %1</translation>
+    </message>
+    <message>
+        <source>Plays no console yet: choose its consoles</source>
+        <translation>Ne joue encore aucune console : choisissez ses consoles</translation>
+    </message>
+    <message>
+        <source>Program</source>
+        <translation>Programme</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Renommer</translation>
+    </message>
+    <message>
+        <source>Add an emulator</source>
+        <translation>Ajouter un émulateur</translation>
+    </message>
+    <message>
+        <source>Any program: give its path, then its arguments ({rom} stands for the game's file) and the consoles it plays. It is offered beside Borne's for those consoles, and for each game.</source>
+        <translation>N'importe quel programme : donnez son chemin, puis ses arguments ({rom} représente le fichier du jeu) et les consoles qu'il joue. Il est proposé à côté de ceux de Borne pour ces consoles, et pour chaque jeu.</translation>
+    </message>
+    <message>
+        <source>Add</source>
+        <translation>Ajouter</translation>
+    </message>
+    <message>
+        <source>For the curious</source>
+        <translation>Pour les curieux</translation>
+    </message>
+    <message>
+        <source>Developer mode</source>
+        <translation>Mode développeur</translation>
+    </message>
+    <message>
+        <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
+        <translation>Ajoute une section Développeur : ouvrir les émulateurs sur leur propre interface, leur donner des arguments, ajouter vos propres émulateurs. Borne garde une copie de ce que vous changez ; désactivé, il joue comme avant.</translation>
     </message>
 </context>
 <context>

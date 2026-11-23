@@ -81,6 +81,9 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 - **Games made for an accessory** (a guitar, a Balance Board, PlayStation VR, Kinect, Joy-Con
   shaken…) are recognised by name and checked against what is plugged in: when it is missing, the
   game's page says so and Borne asks once before playing. Never a lock: Play anyway is remembered.
+- **Developer mode** (Settings → Help): open any emulator on its own interface with Borne's setup,
+  give it extra arguments, add emulators of your own for any console. Borne copies an emulator's
+  settings before opening it (Undo my changes), and turned off it plays as before.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network**: on Linux only the games you pick are mounted, read from RomM on demand;
   on macOS they are downloaded as temporary copies, the least recently played removed first past

@@ -68,6 +68,13 @@
 //!   GET    /api/v1/emulators                      emulators: where found, systems, cores
 //!   POST   /api/v1/emulators/<id>/path {path}     the user's own program for an emulator ("" to forget)
 //!   POST   /api/v1/emulators/<id>/install         installs or updates it (Borne's own copy)
+//!   POST   /api/v1/dev {on}                        developer mode on or off (devmode.rs)
+//!   POST   /api/v1/dev/pick                        the system's file chooser, for a program
+//!   POST   /api/v1/dev/open/<program>              opens an emulator on its own interface, no game
+//!   POST   /api/v1/dev/args/<program> {args}       its extra command-line arguments
+//!   POST   /api/v1/dev/undo/<program>              puts back its settings as before it was last opened
+//!   POST   /api/v1/dev/own {id?, name, exe, args, consoles}   adds or changes an emulator of one's own
+//!   DELETE /api/v1/dev/own/<id>                    removes it
 //!   POST   /api/v1/needs/forget               asks again before games made for an accessory and consoles' first games
 //!   POST   /api/v1/emulators/task/dismiss         puts away a failed installation's notice
 //!   POST   /api/v1/consoles/<slug>/emulator {engine}  the emulator chosen for a console
@@ -245,7 +252,8 @@ fn settings(app: &Shared) -> Value {
             "emulators": crate::emulators::list(app),
             "system_files": crate::systemfiles::status(app),
             "display": crate::gamesettings::view(app, crate::gamesettings::Scope::All, ""),
-            "save_sync": crate::savesync::enabled(app) })
+            "save_sync": crate::savesync::enabled(app),
+            "dev": crate::devmode::view(app) })
 }
 
 /// The interface's language, as the library is asked in it: the language games are played in
@@ -1182,6 +1190,48 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Ok(()) => ok(req, crate::emulators::list(app)),
                 Err(e) => err(req, 400, &e),
             }
+        }
+        // Developer mode (devmode.rs).
+        (Method::Post, ["api", "v1", "dev"]) => {
+            let on = body_json(&mut req)["on"] == true;
+            crate::devmode::set_on(app, on);
+            app.db.log("developer", if on { "developer mode on" } else { "developer mode off" });
+            app.emit(json!({ "type": "emulators" }));
+            ok(req, settings(app))
+        }
+        (Method::Post, ["api", "v1", "dev", "pick"]) => match crate::systemfiles::pick_file("Choose the emulator program") {
+            Ok(path) => ok(req, json!({ "path": path })),
+            Err(e) => err(req, 400, &e),
+        },
+        (Method::Post, ["api", "v1", "dev", "open", id]) => match crate::emulators::open_ui(app, id) {
+            Ok(s) => ok(req, s),
+            Err(e) => err(req, 400, &e),
+        },
+        (Method::Post, ["api", "v1", "dev", "args", id]) => {
+            let b = body_json(&mut req);
+            match crate::devmode::set_args(app, id, b["args"].as_str().unwrap_or("")) {
+                Ok(()) => ok(req, settings(app)),
+                Err(e) => err(req, 400, &e),
+            }
+        }
+        (Method::Post, ["api", "v1", "dev", "undo", id]) => match crate::devmode::undo(app, id) {
+            Ok(n) => ok(req, json!({ "restored": n, "settings": settings(app) })),
+            Err(e) => err(req, 400, &e),
+        },
+        (Method::Post, ["api", "v1", "dev", "own"]) => {
+            let b = body_json(&mut req);
+            match crate::devmode::put_own(app, &b) {
+                Ok(o) => {
+                    app.emit(json!({ "type": "emulators" }));
+                    ok(req, json!({ "own": o, "settings": settings(app) }))
+                }
+                Err(e) => err(req, 400, &e),
+            }
+        }
+        (Method::Delete, ["api", "v1", "dev", "own", id]) => {
+            crate::devmode::remove_own(app, id);
+            app.emit(json!({ "type": "emulators" }));
+            ok(req, settings(app))
         }
         (Method::Post, ["api", "v1", "needs", "forget"]) => {
             crate::equipment::forget(app);

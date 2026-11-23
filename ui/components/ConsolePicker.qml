@@ -12,18 +12,21 @@ Item {
     property var shown: ({})         // slug → shown, as being chosen
     property int row: 0
     property bool firstTime: false
+    // Another use (an emulator of one's own: the consoles it plays): its title and words.
+    property string title: qsTr("Your consoles")
+    property string intro: qsTr("Choose the consoles Borne shows. The others stay on RomM and can be added later, in Settings → Consoles. What a console's games need that this computer lacks is said beside it.")
     signal done(var shownSlugs)
     signal cancelled()
 
     readonly property var consoles: info ? info.consoles : []
     readonly property var current: consoles[row] || null
 
-    function open(d, first) {
+    function open(d, first, chosen) {
         info = d
         firstTime = first
         const s = {}
-        // First time: every console Borne plays; then: as they are.
-        for (const c of consoles) s[c.slug] = first ? c.supported : c.shown
+        // First time: every console Borne plays; then: as they are (or as given).
+        for (const c of consoles) s[c.slug] = chosen ? chosen.indexOf(c.slug) >= 0 : first ? c.supported : c.shown
         shown = s
         row = 0
         visible = true
@@ -56,14 +59,14 @@ Item {
         width: parent.width - 168
         spacing: 10
         Text {
-            text: qsTr("Your consoles")
+            text: picker.title
             color: theme.fg
             font { family: theme.displayFont; pixelSize: 40; weight: Font.Bold }
         }
         Text {
             width: parent.width
             wrapMode: Text.WordWrap
-            text: qsTr("Choose the consoles Borne shows. The others stay on RomM and can be added later, in Settings → Consoles. What a console's games need that this computer lacks is said beside it.")
+            text: picker.intro
             color: theme.fgMuted
             font { family: theme.fontFamily; pixelSize: 19 }
         }

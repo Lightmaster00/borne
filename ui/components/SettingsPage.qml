@@ -437,7 +437,47 @@ Item {
           intro: qsTr("New versions of Borne. They never install during a game.") },
         { id: "help", name: qsTr("Help"), hint: steam && steam.available ? qsTr("Steam, diagnostics, quit") : qsTr("Diagnostics, quit"),
           intro: qsTr("When something goes wrong: a report to share and measurements of this device.") }
-    ]
+    ].concat(dev && dev.on ? [
+        { id: "dev", name: qsTr("Developer"), hint: qsTr("Emulators opened, your own"),
+          intro: qsTr("Open an emulator on its own interface with Borne's setup and change what you like, give it extra arguments, or add emulators of your own. Borne copies an emulator's settings before opening it: Undo my changes puts them back. Turned off (Help), Borne plays as before and keeps what you did here for next time.") }
+    ] : [])
+    readonly property var dev: settings && settings.dev ? settings.dev : null
+    function when(t) { return new Date(t * 1000).toLocaleString(Qt.locale(), Locale.ShortFormat) }
+    function devRows() {
+        const rows = [group(qsTr("Borne's emulators"))]
+        const progs = dev ? dev.programs : []
+        if (!progs.length) rows.push(note("dev-none", qsTr("No emulator is installed yet: they appear here once Borne has installed them (or you gave their program).")))
+        progs.forEach(p => {
+            const parts = []
+            if (p.folder) parts.push(qsTr("Settings in %1").arg(p.folder))
+            if (p.args) parts.push(qsTr("Extra arguments: %1").arg(p.args))
+            if (p.own_settings) parts.push(qsTr("%n setting(s) of your own on top of Borne's", "", p.own_settings))
+            if (p.copies.length) parts.push(qsTr("Copy of its settings from %1").arg(when(p.copies[p.copies.length - 1])))
+            const items = [{ id: "dev-open:" + p.id, label: qsTr("Open"), primary: true }, { id: "dev-args:" + p.id, label: qsTr("Arguments") }]
+            if (p.copies.length) items.push({ id: "dev-undo:" + p.id, label: qsTr("Undo my changes") })
+            rows.push({ id: "dev-prog:" + p.id, kind: "buttons", title: p.name, desc: parts.join("\n"), items: items })
+        })
+        if (progs.some(p => p.id === "retroarch"))
+            rows.push(note("dev-ra", qsTr("RetroArch opens on its menu. What you change there is kept apart and added on top of Borne's configuration before each game (Borne's folders stay Borne's).")))
+        rows.push(group(qsTr("Your own emulators")))
+        const own = dev ? dev.own : []
+        own.forEach(o => {
+            const names = o.consoles.map(c => { const k = consoleOf(c); return k ? k.name : c })
+            const desc = [o.exe + (o.found ? "" : "  ⚠ " + qsTr("not found")), qsTr("Arguments: %1").arg(o.args || "{rom}"),
+                          names.length ? qsTr("Plays: %1").arg(names.join(", ")) : qsTr("Plays no console yet: choose its consoles")].join("\n")
+            rows.push({ id: "dev-own:" + o.id, kind: "buttons", title: o.name, desc: desc,
+                        items: [{ id: "dev-own-consoles:" + o.id, label: qsTr("Consoles"), primary: !names.length },
+                                { id: "dev-own-args:" + o.id, label: qsTr("Arguments") },
+                                { id: "dev-own-exe:" + o.id, label: qsTr("Program") },
+                                { id: "dev-own-name:" + o.id, label: qsTr("Rename") },
+                                { id: "dev-open:" + o.id, label: qsTr("Open") },
+                                { id: "dev-own-remove:" + o.id, label: qsTr("Remove") }] })
+        })
+        rows.push({ id: "dev-own-add", kind: "buttons", title: qsTr("Add an emulator"),
+                    desc: qsTr("Any program: give its path, then its arguments ({rom} stands for the game's file) and the consoles it plays. It is offered beside Borne's for those consoles, and for each game."),
+                    items: [{ id: "dev-own-add", label: qsTr("Add"), primary: true }] })
+        return rows
+    }
     readonly property var cacheSizes: [5, 10, 20, 50, 100]
     readonly property string sectionId: sections[section].id
     readonly property var rows: {
@@ -467,6 +507,7 @@ Item {
         ]
         if (id === "interface") return screenRows()
         if (id === "shelf") return libraryRows()
+        if (id === "dev") return devRows()
         if (id === "language") return languageRows()
         if (id === "library") return [
             group(qsTr("RomM")),
@@ -496,7 +537,11 @@ Item {
               items: [{ id: "report", label: qsTr("Export the report") }] },
             { id: "diag", kind: "buttons", title: qsTr("Measurements"), desc: qsTr("Graphics, memory and disk speed of this device, to understand a slow game"),
               items: [{ id: "diag", label: qsTr("Open") }] },
-            { id: "quit", kind: "buttons", title: qsTr("Quit Borne"), desc: qsTr("Back to the system"), items: [{ id: "quit", label: qsTr("Quit") }] }
+            { id: "quit", kind: "buttons", title: qsTr("Quit Borne"), desc: qsTr("Back to the system"), items: [{ id: "quit", label: qsTr("Quit") }] },
+            group(qsTr("For the curious")),
+            { id: "dev-mode", kind: "chips", title: qsTr("Developer mode"),
+              desc: qsTr("Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before."),
+              selected: dev && dev.on ? "on" : "off", items: onOff() }
         ])
     }
     // Borne in Steam (Linux): added through Chimera on ChimeraOS, else into Steam's shortcuts.

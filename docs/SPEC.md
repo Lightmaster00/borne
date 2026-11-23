@@ -38,6 +38,7 @@ Version 1.8 — November 2026
 | 1.14 | Lights in the console's colour behind the home (the game's art as an option); selected covers cast their console's light and a band of light crosses them; the rail's items spring and a light bar follows the page shown; new icons. The game's case turned with the right stick or W A S D (30° at most, back when let go); its screenshots from RomM and ScreenScraper; the video at its original size, X for full screen and, there, for its sound. Front scans as covers (no PlayStation hinge, Switch cases whole). Folders' lines fill their width. The consoles' order by maker then release, or maker then name. |
 | 1.15 | B on the home goes back to the rail (no more profile screen); search only from the rail or Select (typing no longer starts it). The rail without its light bar, a new gear icon, items lit by their own glow. The border without its island: the console's colour stays, Borne's lettering in the top-left corner. Collections as coloured folders with three fanned covers; the Store's consoles under a spotlight, with their year and a reflection, arriving from the side they come from. Downloads and Settings as glass pages beside the rail, their buttons in the foot bar (Settings › section); Downloads in progress and finished, with covers, percent, speed and time left. A launch screen: the logo, a running light, what is going on. |
 | 1.16 | Games made for an accessory (guitar, turntable, Balance Board, Wii MotionPlus, Joy-Con motion, PlayStation Move / VR / camera, Kinect, Ring-Con, Labo, microphone, buzzers, bongos) found by name (`equipment.json`) and checked against what is plugged in (guitars and turntables by USB id or name, a microphone, motion pads, Wii Remotes): asked once per game before playing, never locked. Pokémon Let's Go runs as a handheld Switch, undocked. Update now says what came of it (updated, already the latest). More consoles: PC Engine CD, SuperGrafx, PC-FX, SG-1000, Atari 5200 / 8-bit / ST, Amiga, C64 / C128 / VIC-20, Amstrad CPC, ZX Spectrum / ZX81, Intellivision, Odyssey² / Videopac, DOS, Game & Watch, Supervision, Satellaview, Sufami Turbo, Super Game Boy, CPS 1-3, Channel F, TIC-80, Arduboy, Mega Duck; RomM's own slugs for Neo Geo Pocket and Mega Drive; system files for FDS, 3DO, Lynx, ColecoVision and the new consoles. Settings' focus ring no longer cut. |
+| 1.17 | Developer mode (Settings → Help, off by default): a Developer section opens each emulator on its own interface with Borne's setup for the profile (no game), gives an emulator extra arguments, and adds emulators of one's own (any program, its arguments with {rom}, the consoles it plays). An emulator's settings are copied before it is opened (five copies) and Undo my changes puts them back; RetroArch's menu changes are kept apart (retroarch-user.cfg, never Borne's folders) and appended before each game. Turned off, Borne plays as without it, keeping what was done for next time. |
 | 1.10 | New interface: *My library* (games ready here) and the *Store* (the server's others, by console); games in groups set by the order (Resume, This week, A – F, the 1990s…), covers at their own proportions; Filter (consoles as a fan of cards, quick filters, genres) and Sort apart; a border in the colour of the selected game's console with its logo; the game page as a sheet with the players' rating, play time and a table of facts. 3D cases removed. |
 | 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
 
@@ -800,6 +801,21 @@ blocks a launch just because a game was not tested or a community database rates
   Wii Remote, motion sensors, Joy-Con; not power), `POST /games/<id>/play` answers
   `{running: false, needs, console}` and the interface asks "Play anyway" / "Not now"; Play anyway
   sends `{anyway: true}`, remembered per console (`consoles.needs_seen`).
+- Developer mode (`devmode.rs`, since 1.17; `dev.on`, off by default, Settings → Help): adds a
+  Developer section. Open starts an emulator with no game on its own interface, in Borne's setup for
+  the active profile (its XDG folders, Dolphin's `-u`, Xenia's content root, BIOS and keys of the
+  library's consoles), as a session Borne steps aside for (`tool`: no save sync, play time or
+  stand-in). Before that its configuration files (ini, cfg, json, yml, toml, xml… under 1 MB, not
+  in save, cache, NAND or firmware folders) are copied to `dev-backups/<profile>/<program>/<time>`
+  (five kept); Undo my changes (`POST /dev/undo/<program>`) copies the last one back. Borne patches
+  only its own keys before each game, so other changes stay. RetroArch opens on its menu with a
+  copy of a game's configuration (`retroarch-dev.cfg`); on closing, the keys changed there (not
+  Borne's folders, logs or how it is opened) join `retroarch-user.cfg`, given with
+  `--appendconfig` before each game. Arguments per emulator (`dev.args.<program>`, split as a shell
+  does) go before the game. Emulators of one's own (`dev.custom`: name, program, arguments with
+  `{rom}`, else the game last, consoles) are offered after Borne's for their consoles and games
+  (`!own-N`); removed, the consoles and games on them go back to Borne's choice. All of it applies
+  only while the mode is on.
 - Games made for an accessory (`equipment.rs`, `equipment.json`, since 1.16): rules per console
   match the game's name squeezed to letters and digits (`has`, `start`, `end`, `is`, `except`; the
   first rule wins). Each need is `made_for` (playable on a pad: guitar, turntable, buzzers, bongos),

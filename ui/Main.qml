@@ -652,6 +652,13 @@ Window {
                 else if (w.preparing) toasts.show(qsTr("Preparing %1: its compressed package (.nsz) is unpacked once for the emulator. The game starts as soon as it is ready.").arg(w.preparing), "info")
                 return
             }
+            // An emulator opened from the Developer settings: back to them.
+            if (s && s.tool) {
+                launchPhase = ""
+                if (s.kept) toasts.show(qsTr("RetroArch: %n setting(s) of your own kept, added on top of Borne's before each game.", "", s.kept), "info")
+                loadSettings()
+                return
+            }
             if (s && s.error) { launchPhase = ""; toasts.show(CoreText.tr(s.error), "error") }
             else {
                 launchNote = s && s.saving ? qsTr("Sending the save to RomM…") : ""
@@ -910,6 +917,43 @@ Window {
         else if (id === "emu-auto") api("POST", "/api/v1/emulators/auto-update", { on: payload }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-install:")) api("POST", "/api/v1/emulators/" + id.substring(12) + "/install", {}, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
         else if (id.startsWith("emu-forget:")) api("POST", "/api/v1/emulators/" + id.substring(11) + "/path", { path: "" }, function (r, err) { if (err) toasts.show(err, "error"); loadSettings() })
+        // Developer mode (Settings → Help, then Developer).
+        else if (id === "dev-mode") api("POST", "/api/v1/dev", { on: payload === "on" }, function (r, err) {
+            if (err) toasts.show(err, "error"); else { settings = freshUpd(r); if (payload === "on") toasts.show(qsTr("Developer mode is on: see Settings → Developer."), "info") }
+        })
+        else if (id.startsWith("dev-open:")) api("POST", "/api/v1/dev/open/" + id.substring(9), {}, function (r, err) { if (err) toasts.show(CoreText.tr(err), "error") })
+        else if (id.startsWith("dev-args:")) {
+            const prog = id.substring(9)
+            const cur = settings && settings.dev ? (settings.dev.programs.find(p => p.id === prog) || {}).args || "" : ""
+            nameEntry.open(qsTr("Extra arguments, given before the game"), cur, function (t) {
+                api("POST", "/api/v1/dev/args/" + prog, { args: t }, function (r, err) { if (err) toasts.show(err, "error"); else settings = freshUpd(r) })
+            }, "--option value", false, 400)
+        }
+        else if (id.startsWith("dev-undo:")) api("POST", "/api/v1/dev/undo/" + id.substring(9), {}, function (r, err) {
+            if (err) toasts.show(err, "error"); else { settings = freshUpd(r.settings); toasts.show(qsTr("Settings put back as they were before it was opened (%n file(s)).", "", r.restored), "info") }
+        })
+        else if (id === "dev-own-add") devOwnProgram("")
+        else if (id.startsWith("dev-own-exe:")) devOwnProgram(id.substring(12))
+        else if (id.startsWith("dev-own-name:")) {
+            const o = devOwn(id.substring(13))
+            nameEntry.open(qsTr("Name of the emulator"), o ? o.name : "", function (t) { devOwnPut({ id: o.id, name: t }) }, qsTr("Name"))
+        }
+        else if (id.startsWith("dev-own-args:")) {
+            const o = devOwn(id.substring(13))
+            nameEntry.open(qsTr("Arguments ({rom}: the game's file)"), o ? o.args : "{rom}", function (t) { devOwnPut({ id: o.id, args: t }) }, "-f {rom}", false, 400)
+        }
+        else if (id.startsWith("dev-own-consoles:")) {
+            const o = devOwn(id.substring(17))
+            api("GET", "/api/v1/consoles", null, function (d) {
+                if (!d) return
+                devConsolePicker.ownId = o.id
+                devConsolePicker.title = qsTr("Consoles %1 plays").arg(o.name)
+                devConsolePicker.open(d, false, o.consoles)
+            })
+        }
+        else if (id.startsWith("dev-own-remove:")) api("DELETE", "/api/v1/dev/own/" + id.substring(15), null, function (r, err) {
+            if (err) toasts.show(err, "error"); else settings = freshUpd(r)
+        })
         else if (id.startsWith("emu-path:")) {
             const emu = id.substring(9)
             nameEntry.open(qsTr("Full path of the emulator's program"), "", function (p) {
@@ -1282,6 +1326,7 @@ Window {
         if (session && session.running) return session.paused ? quitAsk.handle(a) : undefined
         if (bench.running && a !== "start") return
         if (consolePicker.visible) { if (a !== "a" && a !== "start") sfx.play("move"); else sfx.play("accept"); return consolePicker.handle(a) }
+        if (devConsolePicker.visible) { if (a !== "a" && a !== "start") sfx.play("move"); else sfx.play("accept"); return devConsolePicker.handle(a) }
         if (importing && screen === "library" && overlay === "") { if (a === "a") { importing = false; maybeAskConsoles() } return }
         if (menu.visible) { if (a === "a") sfx.play("accept"); else if (a === "b") sfx.play("back"); else sfx.play("move"); return menu.handle(a) }
         if (nameEntry.visible) return nameEntry.handle(a)
@@ -1518,6 +1563,28 @@ Window {
         consolesAsked = true
         api("GET", "/api/v1/consoles", null, function (d) {
             if (d && !d.chosen && d.consoles.length > 0) consolePicker.open(d, true)
+        })
+    }
+    // Developer mode: the player's own emulators.
+    function devOwn(oid) { return settings && settings.dev ? settings.dev.own.find(o => o.id === oid) || null : null }
+    function devOwnPut(body, then) {
+        api("POST", "/api/v1/dev/own", body, function (r, err) {
+            if (err) { toasts.show(err, "error"); return }
+            settings = freshUpd(r.settings); loadPlatforms()
+            if (then) then(r.own)
+        })
+    }
+    // Its program: the system's file chooser when there is one, else typed.
+    function devOwnProgram(oid) {
+        const o = oid ? devOwn(oid) : null
+        const typed = function () {
+            nameEntry.open(qsTr("Full path of the emulator's program"), o ? o.exe : "", function (p) { devOwnPut(o ? { id: o.id, exe: p } : { exe: p }) }, qsTr("Path"), false, 600)
+        }
+        api("POST", "/api/v1/dev/pick", {}, function (r, err) {
+            if (err || !r || !r.path) { typed(); return }
+            devOwnPut(o ? { id: o.id, exe: r.path } : { exe: r.path }, function (own) {
+                if (!o) settingsAction("dev-own-consoles:" + own.id)
+            })
         })
     }
     function pickConsoles() {
@@ -2116,6 +2183,16 @@ Window {
                 if (win.overlay === "settings") win.loadSettings()
             })
         }
+    }
+    // The consoles an emulator of one's own plays (developer mode).
+    ConsolePicker {
+        id: devConsolePicker
+        property string ownId: ""
+        anchors.fill: parent
+        z: 65
+        theme: win.theme
+        intro: qsTr("The consoles of your library this emulator plays: it is offered beside Borne's for them, and for each of their games. A to choose, Start to confirm.")
+        onDone: (slugs) => win.devOwnPut({ id: ownId, consoles: slugs })
     }
     // Waiting for the pad button that is to do one of the console's buttons.
     Rectangle {
