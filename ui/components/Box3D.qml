@@ -88,16 +88,6 @@ Item {
         Rectangle { anchors.fill: parent; color: "#000000"; opacity: (1 - face.lit) * 0.55; antialiasing: true }
     }
 
-    // A soft shadow on the floor.
-    Rectangle {
-        anchors { horizontalCenter: parent.horizontalCenter; verticalCenter: parent.verticalCenter; verticalCenterOffset: box.bh / 2 + 18 }
-        width: box.bw * 1.25; height: 40; radius: 20
-        color: "#000000"
-        opacity: 0.5
-        layer.enabled: true
-        layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 32 }
-    }
-
     Face {
         side: "back"
         Rectangle { anchors.fill: parent; color: box.capColor; antialiasing: true }

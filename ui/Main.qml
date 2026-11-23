@@ -426,7 +426,7 @@ Window {
             api("POST", "/api/v1/games/" + g.rom_id + "/gameplay", {}, function (r, err) {
                 if (pageTrailerFor !== g.rom_id) return
                 if (r && r.path) { pageTrailer = fileUrl(r.path, 0); pageTrailerState = "ready" }
-                else pageTrailerState = g.trailer ? "error: " + (err || "") : ""
+                else pageTrailerState = "error: " + (err || "")
             })
         }
         if (!g.trailer) { gameplay(); return }
@@ -754,7 +754,11 @@ Window {
         if (id === "back") { sfx.play("back"); closeGame(); return }
         if (!g) return
         if (id === "settings") gameSettings(g)
-        else if (id === "watch") { if (ambience.videoShown) { videoRested = false; attract = true } else toasts.show(qsTr("The video is still loading."), "info") }
+        else if (id === "watch") {
+            if (ambience.videoShown) { videoRested = false; attract = true }
+            else if (pageTrailerState.indexOf("error") === 0) toasts.show(qsTr("No video for this game: %1").arg(pageTrailerState.slice(7) || qsTr("none found")), "info")
+            else toasts.show(qsTr("The video is still loading."), "info")
+        }
         else if (id === "download") download(g)
         else if (id === "link") link(g)
         else if (id === "unlink") unlink(g)
@@ -2063,6 +2067,7 @@ Window {
         theme: win.theme
         motion: graphite.motion
         shown: win.screen === "boot" || (win.screen === "library" && !win.ready)
+        toTop: win.screen === "profiles"
         failed: !!win.fatal || !win.apiBase
         message: win.fatal || (win.apiBase ? (win.screen === "library" ? qsTr("Opening your library…") : qsTr("Starting…"))
                                            : qsTr("Start through borne (BORNE_API / BORNE_WS variables missing)."))

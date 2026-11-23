@@ -434,8 +434,15 @@ pub fn video(app: &Shared, group_key: &str, dir: &std::path::Path) -> Result<std
     let bytes = resp.body_mut().with_config().limit(150 << 20).read_to_vec().map_err(|_| "video download interrupted".to_string())?;
     // ScreenScraper answers a text message (not an error code) when the media is missing.
     if bytes.len() < 4096 || ctype.starts_with("text") || ctype.contains("json") {
-        app.db.set_media(group_key, "video", "", 0, 0, "none");
-        return Err("no gameplay video on ScreenScraper for this game".into());
+        // Only "NOMEDIA" means there is none: any other message (quota, maintenance, too many
+        // threads) is passing, and the video is asked again next time.
+        let said: String = String::from_utf8_lossy(&bytes[..bytes.len().min(200)]).trim().to_string();
+        if said.to_ascii_uppercase().contains("NOMEDIA") {
+            app.db.set_media(group_key, "video", "", 0, 0, "none");
+            return Err("no gameplay video on ScreenScraper for this game".into());
+        }
+        app.db.log("media", &format!("gameplay video of {group_key} not received: {said}"));
+        return Err(format!("ScreenScraper did not send the video: {said}"));
     }
     std::fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
     std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;

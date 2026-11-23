@@ -3528,6 +3528,14 @@
         <source>Full path of the picture</source>
         <translation>Chemin complet de l'image</translation>
     </message>
+    <message>
+        <source>No video for this game: %1</source>
+        <translation>Pas de vidéo pour ce jeu : %1</translation>
+    </message>
+    <message>
+        <source>none found</source>
+        <translation>aucune trouvée</translation>
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>

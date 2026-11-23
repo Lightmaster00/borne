@@ -3528,6 +3528,14 @@
         <source>Full path of the picture</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>No video for this game: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>none found</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OnScreenKeyboard</name>

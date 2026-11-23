@@ -819,9 +819,9 @@ Item {
                     visible: root.look.card === "lacquer"
                     gradient: Gradient {
                         orientation: Gradient.Vertical
-                        GradientStop { position: 0; color: Qt.hsla(face.kH, Math.min(1, face.kS * 0.9), 0.36, 1) }
-                        GradientStop { position: 0.55; color: Qt.hsla(face.kH, Math.min(1, face.kS * 0.85), 0.17, 1) }
-                        GradientStop { position: 1; color: Qt.hsla(face.kH, face.kS * 0.6, 0.06, 1) }
+                        GradientStop { position: 0; color: Qt.hsla(face.kH, Math.min(1, face.kS * 1.12), 0.41, 1) }
+                        GradientStop { position: 0.55; color: Qt.hsla(face.kH, Math.min(1, face.kS * 1.08), 0.21, 1) }
+                        GradientStop { position: 1; color: Qt.hsla(face.kH, Math.min(1, face.kS * 0.8), 0.08, 1) }
                     }
                     Shape {
                         anchors.fill: parent
@@ -1001,9 +1001,9 @@ Item {
             id: logoOut
             NumberAnimation { target: wideLogo; property: "opacity"; to: 0; duration: 120 * root.tK; easing.type: Easing.InQuad }
             ScriptAction { script: { wideLogo.rise = 22; narrowLogo.opacity = 0 } }
-            // The card's closing (420 ms) is over.
-            PauseAnimation { duration: 330 * root.tK }
-            NumberAnimation { target: narrowLogo; property: "opacity"; to: 1; duration: 300 * root.tK; easing.type: Easing.OutQuad }
+            // Comes back while the card is still narrowing, so the name is never long missing.
+            PauseAnimation { duration: 80 * root.tK }
+            NumberAnimation { target: narrowLogo; property: "opacity"; to: 1; duration: 200 * root.tK; easing.type: Easing.OutQuad }
         }
     }
     component Logo: Item {
