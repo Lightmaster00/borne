@@ -322,18 +322,28 @@ Window {
     Timer { id: importCap; interval: 120000; onTriggered: { win.importing = false; win.maybeAskConsoles() } }
     property int libSeq: 0
     property double libShownAt: 0
+    property int libShownSeq: 0
     // Loads every game (the shelf sorts and filters them); keeps the selection.
+    // One request at a time: those asked meanwhile (a sync announces many changes) make one more
+    // when it answers, so a large library is not asked for again and again in parallel.
+    property bool libInFlight: false
+    property bool libPending: false
     function loadLibrary(resetFocus) {
+        if (libInFlight && !resetFocus) { libPending = true; return }
         const t0 = Date.now()
-        // Only the latest request's answer is shown (answers can cross).
         const seq = ++libSeq
+        libInFlight = true
         api("GET", "/api/v1/library?lang=" + uiLang + "&sort=name", null, function (list, err) {
-            // A newer request's answer comes later; but while nothing is shown yet, an older one
-            // is shown at once (a library being synced asks again and again).
-            if (seq !== libSeq && ready) return
+            if (seq === libSeq) {
+                libInFlight = false
+                if (libPending) { libPending = false; libReload.restart() }
+            }
+            // Answers can cross: one is shown unless a newer one already is. (Waiting for the
+            // latest request only would show nothing while a sync asks again and again.)
+            if (seq <= libShownSeq) return
             // A refresh landing while the player moves would stall the shelf: it waits until they
             // pause (asked again a moment later).
-            if (ready && !resetFocus && Date.now() - lastActivity < 900) { libReload.restart(); return }
+            if (ready && libModel.count > 0 && !resetFocus && Date.now() - lastActivity < 900) { libReload.restart(); return }
             // Unavailable: said, and the (empty) library shown rather than a loading screen forever.
             if (!list) { if (err) toasts.show(qsTr("Library unavailable: %1").arg(err), "error"); ready = true; return }
             const r = list.map(toRow)
@@ -353,6 +363,7 @@ Window {
             // The first shown keeps the place; a later answer doesn't send the player back.
             if (resetFocus && !(libShownAt > t0)) focusRom = -1
             libShownAt = Date.now()
+            libShownSeq = seq
             rows = r
             loadMs = Date.now() - t0
             ready = true
