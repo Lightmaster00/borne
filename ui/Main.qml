@@ -1853,6 +1853,8 @@ Window {
             downloading: win.rows.some(g => ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0)
             downloadsText: {
                 const s = win.status ? win.status.sync : null
+                // Games listed: what is left is covers (or nothing to show).
+                if (s && s.running && s.total > 0 && s.done >= s.total) return s.covers_pending > 0 ? qsTr("Covers: %1 left").arg(s.covers_pending) : ""
                 if (s && s.running) return qsTr("Syncing %1/%2").arg(s.done).arg(s.total)
                 const busy = win.rows.filter(g => ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0)
                 return busy.length ? qsTr("%n download(s)", "", busy.length) : ""
