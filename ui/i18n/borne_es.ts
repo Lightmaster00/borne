@@ -2442,16 +2442,8 @@
         <translation>Jugados recientemente</translation>
     </message>
     <message>
-        <source>In progress</source>
-        <translation>En curso</translation>
-    </message>
-    <message>
         <source>All your games</source>
         <translation>Todos tus juegos</translation>
-    </message>
-    <message>
-        <source>In progress · %1</source>
-        <translation>En curso · %1</translation>
     </message>
     <message>
         <source>%1 · played %2</source>

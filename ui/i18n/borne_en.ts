@@ -2454,15 +2454,7 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>In progress</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>All your games</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>In progress · %1</source>
         <translation type="unfinished" />
     </message>
     <message>

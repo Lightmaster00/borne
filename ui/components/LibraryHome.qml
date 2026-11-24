@@ -153,7 +153,6 @@ Item {
                             x: r.x; y: r.y; width: r.w; height: r.h
                             radius: 14
                             ring: rowView.lit && index === root.rowIndex
-                            badge: index === 0 && !!g && g.last_played > 0 ? qsTr("In progress") : ""
                             Behavior on x { NumberAnimation { duration: 520 * root.motion; easing.type: Easing.OutCubic } }
                             Behavior on y { NumberAnimation { duration: 520 * root.motion; easing.type: Easing.OutCubic } }
                             Behavior on width { NumberAnimation { duration: 520 * root.motion; easing.type: Easing.OutCubic } }
@@ -189,7 +188,6 @@ Item {
                         const g = root.curGame
                         if (!g) return qsTr("All your games")
                         const c = root.shortName(g.platform_slug)
-                        if (root.rowIndex === 0 && g.last_played > 0) return qsTr("In progress · %1").arg(c)
                         return g.last_played > 0 ? qsTr("%1 · played %2").arg(c).arg(root.agoText(g.last_played).toLowerCase()) : qsTr("%1 · never played").arg(c)
                     }
                     color: Qt.lighter(root.curGame ? Cases.tint(root.curGame.platform_slug) : theme.fg, 1.35)

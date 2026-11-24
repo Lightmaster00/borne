@@ -2442,16 +2442,8 @@
         <translation>最近游玩</translation>
     </message>
     <message>
-        <source>In progress</source>
-        <translation>进行中</translation>
-    </message>
-    <message>
         <source>All your games</source>
         <translation>你的全部游戏</translation>
-    </message>
-    <message>
-        <source>In progress · %1</source>
-        <translation>进行中 · %1</translation>
     </message>
     <message>
         <source>%1 · played %2</source>
