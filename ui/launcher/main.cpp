@@ -123,7 +123,7 @@ private:
     bool m_active = false;
 };
 
-// The interface's language, chosen in Settings → Interface ("auto": the system's), switched at
+// The interface's language, chosen in Settings → Language ("auto": the system's), switched at
 // once: the translation reloaded and every text of the page translated again.
 class UiLanguage : public QObject
 {

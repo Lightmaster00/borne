@@ -463,10 +463,6 @@
         <translation>die Spieldatei konnte nicht vorbereitet werden: %1</translation>
     </message>
     <message>
-        <source>%1 is not available for this computer: choose its program in Settings → Emulators</source>
-        <translation>%1 ist für diesen Computer nicht verfügbar: wähle sein Programm unter Einstellungen → Emulatoren</translation>
-    </message>
-    <message>
         <source>%1 cannot be installed by Borne: choose its program</source>
         <translation>Borne kann %1 nicht installieren: wähle sein Programm</translation>
     </message>
@@ -627,10 +623,6 @@
         <translation>der Core %1 fehlt</translation>
     </message>
     <message>
-        <source>%1 is missing: add it in Settings → System files</source>
-        <translation>%1 fehlt: füge es unter Einstellungen → Systemdateien hinzu</translation>
-    </message>
-    <message>
         <source>game already installed</source>
         <translation>Spiel bereits installiert</translation>
     </message>
@@ -763,10 +755,6 @@
         <translation>RPCS3 konnte die Firmware nicht installieren: %1</translation>
     </message>
     <message>
-        <source>install Dolphin first (Settings → Emulators): its own code list is used</source>
-        <translation>installiere zuerst Dolphin (Einstellungen → Emulatoren): seine eigene Codeliste wird verwendet</translation>
-    </message>
-    <message>
         <source>the game ID could not be read from this file</source>
         <translation>die Spiel-ID konnte aus dieser Datei nicht gelesen werden</translation>
     </message>
@@ -889,10 +877,6 @@
     <message>
         <source>%1 crashed (signal %2): a known problem of this emulator on Mac. Choose Ryubing for this game or for the Switch (Game settings → Emulator)</source>
         <translation>%1 ist abgestürzt (Signal %2): ein bekanntes Problem dieses Emulators auf dem Mac. Wähle Ryubing für dieses Spiel oder für die Switch (Spieleinstellungen → Emulator)</translation>
-    </message>
-    <message>
-        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Diagnostics)</source>
-        <translation>%1 ist abgestürzt (Signal %2): sein Protokoll steht im Diagnosebericht (Einstellungen → Diagnose)</translation>
     </message>
     <message>
         <source>%1 crashed (signal %2)</source>
@@ -1153,6 +1137,22 @@
     <message>
         <source>%1 answered %2</source>
         <translation>%1 antwortete %2</translation>
+    </message>
+    <message>
+        <source>%1 is not available for this computer: choose its program in Settings → Updates</source>
+        <translation>%1 ist für diesen Computer nicht verfügbar: wähle sein Programm unter Einstellungen → Updates</translation>
+    </message>
+    <message>
+        <source>%1 is missing: add it in Settings → Consoles</source>
+        <translation>%1 fehlt: füge es unter Einstellungen → Konsolen hinzu</translation>
+    </message>
+    <message>
+        <source>install Dolphin first (Settings → Updates): its own code list is used</source>
+        <translation>installiere zuerst Dolphin (Einstellungen → Updates): seine eigene Codeliste wird verwendet</translation>
+    </message>
+    <message>
+        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Help)</source>
+        <translation>%1 ist abgestürzt (Signal %2): sein Protokoll steht im Diagnosebericht (Einstellungen → Hilfe)</translation>
     </message>
 </context>
 <context>
@@ -2116,10 +2116,6 @@
         <translation>Netzwerkeinbindung</translation>
     </message>
     <message>
-        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.</source>
-        <translation>Nur für dieses Spiel. Ohne Wahl nimmt Borne die Version und Sprache aus Einstellungen → Sprache und Version.</translation>
-    </message>
-    <message>
         <source>PlayStation controller</source>
         <translation>PlayStation-Controller</translation>
     </message>
@@ -2406,6 +2402,10 @@
     <message>
         <source>Back to the game</source>
         <translation>Zurück zum Spiel</translation>
+    </message>
+    <message>
+        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
+        <translation>Nur für dieses Spiel. Ohne Wahl nimmt Borne die Version und Sprache aus Einstellungen → Sprache.</translation>
     </message>
 </context>
 <context>

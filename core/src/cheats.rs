@@ -439,7 +439,7 @@ fn game_cheats(app: &Shared, rom_id: i64) -> Result<(Vec<Cheat>, &'static str), 
             .filter(|m| Path::new(m).is_file())
             .ok_or("download the game first: its exact version is read from the file")?;
         let id = disc_id(Path::new(&rom)).ok_or("the game ID could not be read from this file")?;
-        let dir = dolphin_codes_dir(app).ok_or("install Dolphin first (Settings → Emulators): its own code list is used")?;
+        let dir = dolphin_codes_dir(app).ok_or("install Dolphin first (Settings → Updates): its own code list is used")?;
         return Ok((dolphin_cheats(&dir, &id), "dolphin"));
     }
     let Some(f) = libretro_file(app, &g.platform_slug, &g.fs_name) else { return Ok((vec![], "libretro")) };

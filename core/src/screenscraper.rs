@@ -1,4 +1,4 @@
-//! Borne's own ScreenScraper access (Settings → Game images), independent of RomM: with the
+//! Borne's own ScreenScraper access (Settings → RomM & images), independent of RomM: with the
 //! user's ScreenScraper account, the core asks ScreenScraper for every game and keeps its case
 //! scans (front, spine, back), cartridge or disc, logo and fanart.
 //!
@@ -1221,7 +1221,7 @@ mod tests {
 // ---------- the user's corrections ----------
 
 /// Per console: games found on ScreenScraper, not found, not looked up yet, and the names of
-/// those not found (for Settings → Game images).
+/// those not found (for Settings → RomM & images).
 /// A console's name and its games (name, ROM id, ScreenScraper state).
 type ConsoleGames = (String, Vec<(String, i64, String)>);
 

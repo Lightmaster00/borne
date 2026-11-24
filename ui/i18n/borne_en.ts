@@ -407,10 +407,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>%1 is missing: add it in Settings → System files</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>game already installed</source>
         <translation type="unfinished" />
     </message>
@@ -540,10 +536,6 @@
     </message>
     <message>
         <source>RPCS3 could not install the firmware: %1</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>install Dolphin first (Settings → Emulators): its own code list is used</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -903,10 +895,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>%1 is not available for this computer: choose its program in Settings → Emulators</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>%1 cannot be installed by Borne: choose its program</source>
         <translation type="unfinished" />
     </message>
@@ -1111,10 +1099,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Diagnostics)</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>%1 crashed (signal %2)</source>
         <translation type="unfinished" />
     </message>
@@ -1152,6 +1136,22 @@
     </message>
     <message>
         <source>this dump has no license (sce_sys/package/work.bin): Vita3K cannot open it. Put on RomM a NoNpDrm dump with its work.bin, or the .pkg with its zRIF key</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is not available for this computer: choose its program in Settings → Updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 is missing: add it in Settings → Consoles</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>install Dolphin first (Settings → Updates): its own code list is used</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Help)</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2320,10 +2320,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>PlayStation controller</source>
         <translation type="unfinished" />
     </message>
@@ -2405,6 +2401,10 @@
     </message>
     <message>
         <source>This game exists in one version, in one language: nothing to choose.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
         <translation type="unfinished" />
     </message>
 </context>

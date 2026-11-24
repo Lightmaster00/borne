@@ -62,7 +62,7 @@ QtObject {
 
     // ---------- Shape and motion ----------
     readonly property int radius: 14
-    // Animations: 1 normal, less for reduced motion (Settings → Interface).
+    // Animations: 1 normal, less for reduced motion (Settings → Screen and sound).
     property real motion: 1
     readonly property int focusMs: Math.round(160 * motion)
     readonly property int fadeMs: Math.round(600 * motion)

@@ -407,10 +407,6 @@
         <translation>le cœur %1 manque</translation>
     </message>
     <message>
-        <source>%1 is missing: add it in Settings → System files</source>
-        <translation>%1 manque : ajoutez-le dans Paramètres → Fichiers système</translation>
-    </message>
-    <message>
         <source>game already installed</source>
         <translation>jeu déjà installé</translation>
     </message>
@@ -541,10 +537,6 @@
     <message>
         <source>RPCS3 could not install the firmware: %1</source>
         <translation>RPCS3 n’a pas pu installer le firmware : %1</translation>
-    </message>
-    <message>
-        <source>install Dolphin first (Settings → Emulators): its own code list is used</source>
-        <translation>installez d’abord Dolphin (Paramètres → Émulateurs) : sa propre liste de codes est utilisée</translation>
     </message>
     <message>
         <source>the game ID could not be read from this file</source>
@@ -903,10 +895,6 @@
         <translation>le fichier du jeu n’a pas pu être préparé : %1</translation>
     </message>
     <message>
-        <source>%1 is not available for this computer: choose its program in Settings → Emulators</source>
-        <translation>%1 n’existe pas pour cet ordinateur : choisissez son programme dans Réglages → Émulateurs</translation>
-    </message>
-    <message>
         <source>%1 cannot be installed by Borne: choose its program</source>
         <translation>%1 ne peut pas être installé par Borne : choisissez son programme</translation>
     </message>
@@ -1111,10 +1099,6 @@
         <translation>%1 a planté (signal %2) : un problème connu de cet émulateur sur Mac. Choisissez Ryubing pour ce jeu ou pour la Switch (Réglages du jeu → Émulateur)</translation>
     </message>
     <message>
-        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Diagnostics)</source>
-        <translation>%1 a planté (signal %2) : son journal est dans le rapport de diagnostic (Réglages → Diagnostic)</translation>
-    </message>
-    <message>
         <source>%1 crashed (signal %2)</source>
         <translation>%1 a planté (signal %2)</translation>
     </message>
@@ -1153,6 +1137,22 @@
     <message>
         <source>this dump has no license (sce_sys/package/work.bin): Vita3K cannot open it. Put on RomM a NoNpDrm dump with its work.bin, or the .pkg with its zRIF key</source>
         <translation>cette copie n’a pas de licence (sce_sys/package/work.bin) : Vita3K ne peut pas l’ouvrir. Mets sur RomM une copie NoNpDrm avec son work.bin, ou le .pkg avec sa clé zRIF</translation>
+    </message>
+    <message>
+        <source>%1 is not available for this computer: choose its program in Settings → Updates</source>
+        <translation>%1 n’existe pas pour cet ordinateur : choisissez son programme dans Paramètres → Mises à jour</translation>
+    </message>
+    <message>
+        <source>%1 is missing: add it in Settings → Consoles</source>
+        <translation>%1 manque : ajoutez-le dans Paramètres → Consoles</translation>
+    </message>
+    <message>
+        <source>install Dolphin first (Settings → Updates): its own code list is used</source>
+        <translation>installez d’abord Dolphin (Paramètres → Mises à jour) : sa propre liste de codes est utilisée</translation>
+    </message>
+    <message>
+        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Help)</source>
+        <translation>%1 a planté (signal %2) : son journal est dans le rapport de diagnostic (Paramètres → Aide)</translation>
     </message>
 </context>
 <context>
@@ -2320,10 +2320,6 @@
         <translation>Boutons, joueur 1</translation>
     </message>
     <message>
-        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.</source>
-        <translation>Pour ce jeu seulement. Sans choix, Borne prend la version et la langue de Réglages → Langue.</translation>
-    </message>
-    <message>
         <source>PlayStation controller</source>
         <translation>manette PlayStation</translation>
     </message>
@@ -2357,7 +2353,7 @@
     </message>
     <message>
         <source>Without a choice of its own, the game takes the picture set for its console in Settings → Consoles.</source>
-        <translation>Sans choix propre, le jeu prend l’image réglée pour sa console dans Réglages → Consoles.</translation>
+        <translation>Sans choix propre, le jeu prend l’image réglée pour sa console dans Paramètres → Consoles.</translation>
     </message>
     <message>
         <source>The codes depend on the version chosen in Version and language. They apply the next time the game starts.</source>
@@ -2385,7 +2381,7 @@
     </message>
     <message>
         <source>As for %1 (Settings → Consoles)</source>
-        <translation>Comme pour %1 (Réglages → Consoles)</translation>
+        <translation>Comme pour %1 (Paramètres → Consoles)</translation>
     </message>
     <message>
         <source>This game's emulator reads your controller by itself, buttons where the console has them.</source>
@@ -2406,6 +2402,10 @@
     <message>
         <source>This game exists in one version, in one language: nothing to choose.</source>
         <translation>Ce jeu existe en une version, dans une langue : rien à choisir.</translation>
+    </message>
+    <message>
+        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
+        <translation>Pour ce jeu seulement. Sans choix, Borne prend la version et la langue de Paramètres → Langue.</translation>
     </message>
 </context>
 <context>
@@ -4987,7 +4987,7 @@
     </message>
     <message>
         <source>Each console can have its own (Settings → Consoles → the console), and each game its own (its page, Y). Applied the next time a game starts.</source>
-        <translation>Chaque console peut avoir les siens (Réglages → Consoles → la console), et chaque jeu aussi (sa fiche, Y). Appliqué au prochain lancement d’un jeu.</translation>
+        <translation>Chaque console peut avoir les siens (Paramètres → Consoles → la console), et chaque jeu aussi (sa fiche, Y). Appliqué au prochain lancement d’un jeu.</translation>
     </message>
     <message>
         <source>Buttons, the consoles' controllers</source>

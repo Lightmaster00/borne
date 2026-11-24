@@ -280,6 +280,13 @@ fn sync(app: &Shared) -> Result<(), RommError> {
             break;
         }
     }
+    // RomM's count can be ahead of its listing (a stale cache after a console is removed): the
+    // listing is what was synced, so the progress ends complete rather than stuck at 84 / 1633.
+    {
+        let mut s = app.sync.lock().unwrap_or_else(|e| e.into_inner());
+        s.done = offset;
+        s.total = offset;
+    }
     let removed = app.db.prune_games(sync_id);
     if let Some(f) = &fingerprint {
         app.db.set_setting(&key, f);

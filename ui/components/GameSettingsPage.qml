@@ -66,7 +66,7 @@ Item {
     // What the section on screen changes, on the right.
     readonly property var aside: {
         const id = sectionId
-        if (id === "language") return { title: qsTr("Version and language"), text: qsTr("For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.") }
+        if (id === "language") return { title: qsTr("Version and language"), text: qsTr("For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.") }
         if (id === "controls") {
             const dev = deviceOption
             const fam = controls ? controls.family : "xbox"

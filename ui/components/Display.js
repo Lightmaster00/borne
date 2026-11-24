@@ -1,4 +1,4 @@
-// Display settings shown in Borne (Settings → Display and a game's own, on its page). The values
+// Display settings shown in Borne (Settings → Games and saves, a console's page in developer mode, and a game's own, on its page). The values
 // are those of the core (gamesettings.rs).
 .pragma library
 

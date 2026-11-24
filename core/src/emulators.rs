@@ -1,7 +1,7 @@
 //! Emulators: the choice per console, finding the program, starting a game, following the session.
 //!
 //! `emulators.json` lists the programs (where they come from, how they start) and, per console, the
-//! choices offered in Settings → Emulators: a RetroArch core by name, or `!program` for a
+//! choices offered in Settings → Consoles: a RetroArch core by name, or `!program` for a
 //! standalone emulator. The user picks one per console; Borne installs it (emuinstall.rs),
 //! configures it and starts it. A program is used, in this order: as installed by Borne, at the
 //! path the user chose, on the PATH, as a Flatpak (Linux) or in /Applications (macOS).
@@ -163,7 +163,7 @@ fn crash_message(emulator: &str, program: &str, signal: i32) -> String {
         "eden" | "citron" if cfg!(target_os = "macos") => {
             ": a known problem of this emulator on Mac. Choose Ryubing for this game or for the Switch (Game settings → Emulator)"
         }
-        "cemu" => ": its log is in the diagnostic report (Settings → Diagnostics)",
+        "cemu" => ": its log is in the diagnostic report (Settings → Help)",
         _ => "",
     };
     format!("{emulator} crashed (signal {signal}){hint}")
@@ -1950,7 +1950,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     let core_missing = e.core.as_ref().map(|c| !crate::emuinstall::core_path(app, c).is_file()).unwrap_or(false);
     if found.is_none() || core_missing {
         if found.is_none() && p.install_spec().is_none() {
-            return Err(format!("{} is not available for this computer: choose its program in Settings → Emulators", p.name));
+            return Err(format!("{} is not available for this computer: choose its program in Settings → Updates", p.name));
         }
         // Installed first; the game starts by itself once it is ready.
         rom?;

@@ -1,5 +1,5 @@
 //! System files: BIOS, keys and firmware the emulators need, provided by the user in Borne
-//! (Settings → System files) from a file on the computer or from a link, then placed by Borne
+//! (Settings → Consoles → the console) from a file on the computer or from a link, then placed by Borne
 //! where each emulator looks for them. Borne never ships or downloads such files by itself.
 //!
 //! What each console needs is in `systemfiles.json`. Files are checked when they are added
@@ -146,7 +146,7 @@ fn md5_of(p: &Path) -> Option<String> {
 pub fn check(app: &Shared, console: &str) -> Result<(), String> {
     for i in items(console) {
         if i.required && files(app, console, &i.id).is_empty() {
-            return Err(format!("{} is missing: add it in Settings → System files", i.name));
+            return Err(format!("{} is missing: add it in Settings → Consoles", i.name));
         }
     }
     Ok(())

@@ -463,10 +463,6 @@
         <translation>无法准备游戏文件：%1</translation>
     </message>
     <message>
-        <source>%1 is not available for this computer: choose its program in Settings → Emulators</source>
-        <translation>%1 不适用于此电脑：请在 设置 → 模拟器 中选择其程序</translation>
-    </message>
-    <message>
         <source>%1 cannot be installed by Borne: choose its program</source>
         <translation>Borne 无法安装 %1：请选择其程序</translation>
     </message>
@@ -627,10 +623,6 @@
         <translation>缺少 %1 核心</translation>
     </message>
     <message>
-        <source>%1 is missing: add it in Settings → System files</source>
-        <translation>缺少 %1：请在 设置 → 系统文件 中添加</translation>
-    </message>
-    <message>
         <source>game already installed</source>
         <translation>游戏已安装</translation>
     </message>
@@ -763,10 +755,6 @@
         <translation>RPCS3 无法安装固件：%1</translation>
     </message>
     <message>
-        <source>install Dolphin first (Settings → Emulators): its own code list is used</source>
-        <translation>请先安装 Dolphin（设置 → 模拟器）：将使用其自带的代码列表</translation>
-    </message>
-    <message>
         <source>the game ID could not be read from this file</source>
         <translation>无法从此文件读取游戏 ID</translation>
     </message>
@@ -889,10 +877,6 @@
     <message>
         <source>%1 crashed (signal %2): a known problem of this emulator on Mac. Choose Ryubing for this game or for the Switch (Game settings → Emulator)</source>
         <translation>%1 崩溃（信号 %2）：这是该模拟器在 Mac 上的已知问题。请为此游戏或 Switch 选择 Ryubing（游戏设置 → 模拟器）</translation>
-    </message>
-    <message>
-        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Diagnostics)</source>
-        <translation>%1 崩溃（信号 %2）：日志在诊断报告中（设置 → 诊断）</translation>
     </message>
     <message>
         <source>%1 crashed (signal %2)</source>
@@ -1153,6 +1137,22 @@
     <message>
         <source>%1 answered %2</source>
         <translation>%1 返回 %2</translation>
+    </message>
+    <message>
+        <source>%1 is not available for this computer: choose its program in Settings → Updates</source>
+        <translation>%1 不适用于此电脑：请在 设置 → 更新 中选择其程序</translation>
+    </message>
+    <message>
+        <source>%1 is missing: add it in Settings → Consoles</source>
+        <translation>缺少 %1：请在 设置 → 主机 中添加</translation>
+    </message>
+    <message>
+        <source>install Dolphin first (Settings → Updates): its own code list is used</source>
+        <translation>请先安装 Dolphin（设置 → 更新）：将使用其自带的代码列表</translation>
+    </message>
+    <message>
+        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Help)</source>
+        <translation>%1 崩溃（信号 %2）：日志在诊断报告中（设置 → 帮助）</translation>
     </message>
 </context>
 <context>
@@ -2116,10 +2116,6 @@
         <translation>网络挂载</translation>
     </message>
     <message>
-        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.</source>
-        <translation>仅此游戏。未选择时，Borne 使用 设置 → 语言和版本 中设定的版本和语言。</translation>
-    </message>
-    <message>
         <source>PlayStation controller</source>
         <translation>PlayStation 手柄</translation>
     </message>
@@ -2406,6 +2402,10 @@
     <message>
         <source>Back to the game</source>
         <translation>返回游戏</translation>
+    </message>
+    <message>
+        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
+        <translation>仅此游戏。未选择时，Borne 使用 设置 → 语言 中设定的版本和语言。</translation>
     </message>
 </context>
 <context>

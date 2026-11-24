@@ -463,10 +463,6 @@
         <translation>ゲームファイルを準備できませんでした：%1</translation>
     </message>
     <message>
-        <source>%1 is not available for this computer: choose its program in Settings → Emulators</source>
-        <translation>%1 はこのコンピューターでは利用できません：設定 → エミュレーターでプログラムを選んでください</translation>
-    </message>
-    <message>
         <source>%1 cannot be installed by Borne: choose its program</source>
         <translation>Borne は %1 をインストールできません：プログラムを選んでください</translation>
     </message>
@@ -627,10 +623,6 @@
         <translation>コア %1 がありません</translation>
     </message>
     <message>
-        <source>%1 is missing: add it in Settings → System files</source>
-        <translation>%1 がありません：設定 → システムファイルで追加してください</translation>
-    </message>
-    <message>
         <source>game already installed</source>
         <translation>ゲームは既にインストール済みです</translation>
     </message>
@@ -763,10 +755,6 @@
         <translation>RPCS3 はファームウェアをインストールできませんでした：%1</translation>
     </message>
     <message>
-        <source>install Dolphin first (Settings → Emulators): its own code list is used</source>
-        <translation>先に Dolphin をインストールしてください（設定 → エミュレーター）：Dolphin 独自のコード一覧を使います</translation>
-    </message>
-    <message>
         <source>the game ID could not be read from this file</source>
         <translation>このファイルからゲーム ID を読み取れませんでした</translation>
     </message>
@@ -889,10 +877,6 @@
     <message>
         <source>%1 crashed (signal %2): a known problem of this emulator on Mac. Choose Ryubing for this game or for the Switch (Game settings → Emulator)</source>
         <translation>%1 がクラッシュしました（シグナル %2）：Mac でのこのエミュレーターの既知の問題です。このゲームまたは Switch に Ryubing を選んでください（ゲーム設定 → エミュレーター）</translation>
-    </message>
-    <message>
-        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Diagnostics)</source>
-        <translation>%1 がクラッシュしました（シグナル %2）：ログは診断レポートにあります（設定 → 診断）</translation>
     </message>
     <message>
         <source>%1 crashed (signal %2)</source>
@@ -1153,6 +1137,22 @@
     <message>
         <source>%1 answered %2</source>
         <translation>%1 の応答: %2</translation>
+    </message>
+    <message>
+        <source>%1 is not available for this computer: choose its program in Settings → Updates</source>
+        <translation>%1 はこのコンピューターでは利用できません：設定 → アップデートでプログラムを選んでください</translation>
+    </message>
+    <message>
+        <source>%1 is missing: add it in Settings → Consoles</source>
+        <translation>%1 がありません：設定 → ゲーム機で追加してください</translation>
+    </message>
+    <message>
+        <source>install Dolphin first (Settings → Updates): its own code list is used</source>
+        <translation>先に Dolphin をインストールしてください（設定 → アップデート）：Dolphin 独自のコード一覧を使います</translation>
+    </message>
+    <message>
+        <source>%1 crashed (signal %2): its log is in the diagnostic report (Settings → Help)</source>
+        <translation>%1 がクラッシュしました（シグナル %2）：ログは診断レポートにあります（設定 → ヘルプ）</translation>
     </message>
 </context>
 <context>
@@ -2116,10 +2116,6 @@
         <translation>ネットワークマウント</translation>
     </message>
     <message>
-        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language and version.</source>
-        <translation>このゲームのみ。選ばない場合は 設定 → 言語とバージョン の設定を使います。</translation>
-    </message>
-    <message>
         <source>PlayStation controller</source>
         <translation>PlayStation のコントローラー</translation>
     </message>
@@ -2406,6 +2402,10 @@
     <message>
         <source>Back to the game</source>
         <translation>ゲームに戻る</translation>
+    </message>
+    <message>
+        <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
+        <translation>このゲームのみ。選ばない場合は 設定 → 言語 の設定を使います。</translation>
     </message>
 </context>
 <context>
