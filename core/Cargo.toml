@@ -1,6 +1,6 @@
 [package]
 name = "borne"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Borne core: RomM, local library, downloads, profiles, local API"
 license = "GPL-3.0-or-later"
