@@ -2116,28 +2116,12 @@
         <translation>网络挂载</translation>
     </message>
     <message>
-        <source>PlayStation controller</source>
-        <translation>PlayStation 手柄</translation>
-    </message>
-    <message>
-        <source>Nintendo controller</source>
-        <translation>任天堂手柄</translation>
-    </message>
-    <message>
-        <source>Xbox controller</source>
-        <translation>Xbox 手柄</translation>
-    </message>
-    <message>
         <source>Left stick</source>
         <translation>左摇杆</translation>
     </message>
     <message>
         <source>Right stick</source>
         <translation>右摇杆</translation>
-    </message>
-    <message>
-        <source>Your %1 → %2</source>
-        <translation>你的 %1 → %2</translation>
     </message>
     <message>
         <source>What each of your buttons does in the game.</source>
@@ -2308,14 +2292,6 @@
         <translation>游戏语言</translation>
     </message>
     <message>
-        <source>Set in the emulator; may start the version in this language</source>
-        <translation>在模拟器中设置；可能会启动该语言的版本</translation>
-    </message>
-    <message>
-        <source>This game exists in one version, in one language: nothing to choose.</source>
-        <translation>此游戏只有一个版本、一种语言：无可选择。</translation>
-    </message>
-    <message>
         <source>Cover</source>
         <translation>封面</translation>
     </message>
@@ -2406,6 +2382,26 @@
     <message>
         <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
         <translation>仅此游戏。未选择时，Borne 使用 设置 → 语言 中设定的版本和语言。</translation>
+    </message>
+    <message>
+        <source>Your controller</source>
+        <translation>你的手柄</translation>
+    </message>
+    <message>
+        <source>%1 → %2</source>
+        <translation>%1 → %2</translation>
+    </message>
+    <message>
+        <source>Set in the emulator; may start the version in this language. Known in this game: %1</source>
+        <translation>在模拟器中设置；可能会启动该语言的版本。此游戏已知的语言：%1</translation>
+    </message>
+    <message>
+        <source>Set in the emulator, if the game has it</source>
+        <translation>如果游戏支持，将在模拟器中设置</translation>
+    </message>
+    <message>
+        <source>Default (%1)</source>
+        <translation>默认（%1）</translation>
     </message>
 </context>
 <context>
@@ -4034,10 +4030,6 @@
         <translation>语言</translation>
     </message>
     <message>
-        <source>Borne's menus; also the version and the language a game starts in, when it has several</source>
-        <translation>Borne 的菜单；游戏有多个版本时，也决定其启动版本和语言</translation>
-    </message>
-    <message>
         <source>As the system</source>
         <translation>跟随系统</translation>
     </message>
@@ -4782,10 +4774,6 @@
         <translation>已连接的手柄、其按键在所有游戏中的作用，以及各主机游戏识别的手柄。</translation>
     </message>
     <message>
-        <source>Borne's language, which also picks the version and the language of the games.</source>
-        <translation>Borne 的语言，也决定游戏的版本和语言。</translation>
-    </message>
-    <message>
         <source>Games and saves</source>
         <translation>游戏和存档</translation>
     </message>
@@ -5276,6 +5264,30 @@
     <message>
         <source>Borne itself: its size, animations and sounds.</source>
         <translation>Borne 本身：大小、动画和声音。</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>界面</translation>
+    </message>
+    <message>
+        <source>Borne's menus, and the games' titles and summaries</source>
+        <translation>Borne 的菜单，以及游戏的标题和简介</translation>
+    </message>
+    <message>
+        <source>The version launched and the language set in the emulator, when the game has it</source>
+        <translation>启动的版本，以及游戏支持时在模拟器中设置的语言</translation>
+    </message>
+    <message>
+        <source>As the interface</source>
+        <translation>与界面相同</translation>
+    </message>
+    <message>
+        <source>games: %1</source>
+        <translation>游戏：%1</translation>
+    </message>
+    <message>
+        <source>Borne's language, and the language games start in: the same, or each its own.</source>
+        <translation>Borne 的语言，以及游戏启动时使用的语言：相同，或各自不同。</translation>
     </message>
 </context>
 <context>

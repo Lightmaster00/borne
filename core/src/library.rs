@@ -371,10 +371,10 @@ pub fn fill_media(v: &mut Value, versions: &[GameRow]) {
 pub fn play_language(g: &GameRow, chosen: Option<&str>, ui: &str) -> String {
     let codes: Vec<&str> =
         languages_of(g).iter().filter_map(|l| LANGUAGE_CODES.iter().find(|(name, _)| name == l).map(|(_, c)| *c)).collect();
+    // A language chosen for the game is set in the emulator whatever its file name says: many
+    // games hold more languages than their name lists.
     if let Some(c) = chosen.filter(|c| *c != "auto") {
-        if codes.is_empty() || codes.contains(&c) {
-            return c.to_string();
-        }
+        return c.to_string();
     }
     if codes.is_empty() || codes.contains(&ui) {
         return ui.to_string();
@@ -437,6 +437,7 @@ mod tests {
         g.languages = Some("English, German".into());
         assert_eq!(play_language(&g, None, "fr"), "en", "not in French: its first");
         assert_eq!(play_language(&g, Some("de"), "fr"), "de", "the one chosen");
+        assert_eq!(play_language(&g, Some("ja"), "fr"), "ja", "chosen though its name does not list it");
         g.languages = Some("English, French".into());
         assert_eq!(play_language(&g, Some("auto"), "fr"), "fr");
         g.fs_name = "X [0100ABCD12340800][v131072].nsp".into();

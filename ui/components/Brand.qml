@@ -10,7 +10,8 @@ Image {
     height: size
     width: Math.round(size * ratio)
     source: lettering ? "../brand/wordmark.svg" : "../brand/logo.svg"
-    sourceSize: Qt.size(width * 2, height * 2)
+    // Drawn at four times its size: sharp on a Retina screen with the scene enlarged.
+    sourceSize: Qt.size(width * 4, height * 4)
     smooth: true
     fillMode: Image.PreserveAspectFit
 }

@@ -607,6 +607,15 @@ fn fetch_systems(app: &Shared, c: &Credentials, again: bool) {
             .map(|m| json!({ "type": m["type"], "region": m["region"], "url": m["url"] }))
             .collect();
         app.db.set_setting(&format!("ss_system_pics.{slug}"), &Value::Array(pics).to_string());
+        // Their small copies (system_pic_preview) follow the list's order: made again.
+        if let Ok(rd) = std::fs::read_dir(app.paths.art().join("previews")) {
+            let prefix = format!("system-{slug}-");
+            for e in rd.flatten() {
+                if e.file_name().to_string_lossy().starts_with(&prefix) {
+                    let _ = std::fs::remove_file(e.path());
+                }
+            }
+        }
         let own_pic = app.db.setting(&format!("system_pic.{slug}")).is_some_and(|v| !v.is_empty());
         for (kind, types) in [
             ("logo", &["wheel", "wheel-hd"][..]),
@@ -663,6 +672,40 @@ pub fn system_pics(app: &Shared) -> Value {
         out.insert(p.slug.clone(), json!({ "choices": choices, "chosen": chosen }));
     }
     Value::Object(out)
+}
+
+/// A small copy of one of a console's pictures (system_pics' {n}; "auto": Borne's choice), so the
+/// settings show them side by side: downloaded once and kept with the art.
+pub fn system_pic_preview(app: &Shared, slug: &str, n: &str) -> Result<std::path::PathBuf, String> {
+    let slug: String = slug.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_').take(40).collect();
+    let list: Vec<Value> = app
+        .db
+        .setting(&format!("ss_system_pics.{slug}"))
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .and_then(|v| v.as_array().cloned())
+        .unwrap_or_default();
+    let index = if n == "auto" {
+        list.iter().position(|m| m["type"].as_str() == Some("photo")).unwrap_or(0)
+    } else {
+        n.parse::<usize>().map_err(|_| "invalid picture".to_string())?
+    };
+    let url = list.get(index).and_then(|m| m["url"].as_str()).ok_or("no such picture")?;
+    let dir = app.paths.art().join("previews");
+    let base = dir.join(format!("system-{slug}-{index}"));
+    for ext in ["png", "jpg"] {
+        let p = base.with_extension(ext);
+        if p.is_file() {
+            return Ok(p);
+        }
+    }
+    let c = credentials(app).ok_or("no ScreenScraper account")?;
+    let sep = if url.contains('?') { '&' } else { '?' };
+    let bytes = download(&c, &format!("{url}{sep}maxheight=360"))?;
+    let ext = if bytes.starts_with(&[0x89, b'P', b'N', b'G']) { "png" } else { "jpg" };
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = base.with_extension(ext);
+    std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
+    Ok(path)
 }
 
 /// Sets a console's picture: {n} one of ScreenScraper's (system_pics), {path} a picture file of
@@ -1329,6 +1372,42 @@ pub fn correct(app: &Shared, group_key: &str, ss_id: Option<i64>, region: Option
         app.emit(json!({ "type": "media", "group_key": key }));
     });
     Ok(())
+}
+
+/// A small picture of the game's box for one region, so the cover settings show them side by side:
+/// downloaded once (ScreenScraper scales it down) and kept with the game's art.
+pub fn box_preview(app: &Shared, group_key: &str, region: &str) -> Result<std::path::PathBuf, String> {
+    use std::hash::{Hash, Hasher};
+    let region: String = region.chars().filter(|c| c.is_ascii_alphanumeric()).take(8).collect();
+    if region.is_empty() {
+        return Err("invalid region".into());
+    }
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    group_key.hash(&mut h);
+    let dir = app.paths.art().join("previews");
+    let base = dir.join(format!("{:016x}-{region}", h.finish()));
+    for ext in ["png", "jpg"] {
+        let p = base.with_extension(ext);
+        if p.is_file() {
+            return Ok(p);
+        }
+    }
+    let c = credentials(app).ok_or("no ScreenScraper account")?;
+    let rec: Value = app.db.ss_record(group_key).and_then(|r| serde_json::from_str(&r).ok()).ok_or("no ScreenScraper record")?;
+    let url = rec["jeu"]["medias"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|m| m["type"].as_str() == Some("box-2D") && m["region"].as_str() == Some(region.as_str()))
+        .and_then(|m| m["url"].as_str())
+        .ok_or("no box for this region")?;
+    let sep = if url.contains('?') { '&' } else { '?' };
+    let bytes = download(&c, &format!("{url}{sep}maxheight=420"))?;
+    let ext = if bytes.starts_with(&[0x89, b'P', b'N', b'G']) { "png" } else { "jpg" };
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = base.with_extension(ext);
+    std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
+    Ok(path)
 }
 
 /// Box regions ScreenScraper has for this game (from the kept record), and the one chosen.

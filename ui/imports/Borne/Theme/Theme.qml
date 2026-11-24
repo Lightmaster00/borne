@@ -23,6 +23,15 @@ QtObject {
     readonly property color bad: "#FF7B7B"
     readonly property color badTint: Qt.rgba(1, 0.48, 0.48, 0.16)
 
+    // Pixels per design unit on screen: the scene's scale times the screen's density (Retina 2).
+    // What is drawn into a texture before being scaled (an effect layer, a large picture) is drawn
+    // at this density, or it shows blurred once the scene is enlarged. Set by Main.
+    property real density: 1
+    // A layer's texture size for an item of w × h design units (layer.textureSize).
+    function tex(w, h) { return Qt.size(Math.max(1, Math.ceil(w * density)), Math.max(1, Math.ceil(h * density))) }
+    // A picture's decoded size for d design units, at most cap pixels (Image.sourceSize).
+    function px(d, cap) { return Math.min(cap || 4096, Math.max(1, Math.ceil(d * density))) }
+
     // Accent: the colour of the selected console (Cases.js), set by Main.
     property color accent: "#8CCBFF"
     // The input in use ("pad" or "keyboard"): button hints show that device's keys.

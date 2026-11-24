@@ -8,7 +8,7 @@ Image {
     width: size
     height: size
     source: "../brand/picto.svg"
-    sourceSize: Qt.size(size * 2, size * 2)
+    sourceSize: Qt.size(size * 4, size * 4)
     smooth: true
     fillMode: Image.PreserveAspectFit
 }

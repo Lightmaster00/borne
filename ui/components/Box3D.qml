@@ -15,6 +15,8 @@ Item {
     property real yaw: -24
     property real pitch: 6
     property real boxH: 440               // the case's height on screen
+    // Its pictures decoded for the case's size on screen (the scene's scale, Retina), at least 1000 px.
+    readonly property int texH: theme ? Math.max(1000, theme.px(boxH * 1.25, 2400)) : 1000
     property real distance: 1600          // the eye's distance (perspective)
 
     function has(k) { return !!(game && game.art_kinds && game.art_kinds.indexOf("," + k + ",") >= 0) }
@@ -91,7 +93,7 @@ Item {
     Face {
         side: "back"
         Rectangle { anchors.fill: parent; color: box.capColor; antialiasing: true }
-        Image { anchors.fill: parent; source: box.backUrl; fillMode: Image.Stretch; asynchronous: true; sourceSize.height: 900; smooth: true }
+        Image { anchors.fill: parent; source: box.backUrl; fillMode: Image.Stretch; asynchronous: true; sourceSize.height: box.texH; smooth: true }
     }
     Face {
         side: "top"
@@ -113,7 +115,7 @@ Item {
             source: box.sideUrl
             fillMode: Image.Stretch
             asynchronous: true
-            sourceSize.height: 900
+            sourceSize.height: box.texH
             smooth: true
         }
         Image {
@@ -158,7 +160,7 @@ Item {
                 font { family: box.theme ? box.theme.displayFont : "sans"; pixelSize: 30; weight: Font.ExtraBold }
             }
         }
-        Image { id: frontImg; anchors.fill: parent; source: box.frontUrl; fillMode: Image.Stretch; asynchronous: true; sourceSize.height: 1000; smooth: true }
+        Image { id: frontImg; anchors.fill: parent; source: box.frontUrl; fillMode: Image.Stretch; asynchronous: true; sourceSize.height: box.texH; smooth: true }
         // A gloss across the plastic.
         Rectangle {
             anchors.fill: parent

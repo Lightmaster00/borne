@@ -259,8 +259,8 @@ fn settings(app: &Shared) -> Value {
             "system_pics": crate::screenscraper::system_pics(app) })
 }
 
-/// The interface's language, as the library is asked in it: the language games are played in
-/// when they have it (emulators.rs).
+/// The games' language (Settings → Language, the interface's by default), as the library is
+/// asked with it: the language games are played in when they have it (emulators.rs).
 fn remember_ui_lang(app: &Shared, lang: &str) {
     if crate::library::EMU_LANGUAGES.contains(&lang) && app.db.setting("ui.lang").as_deref() != Some(lang) {
         app.db.set_setting("ui.lang", lang);
@@ -769,7 +769,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             let search = query(&q, "q");
             let local = query(&q, "local").as_deref() == Some("1");
             let lang = query(&q, "lang").unwrap_or_else(|| "en".into());
-            remember_ui_lang(app, &lang);
+            // The games' language: the version shown and launched, the language set in the
+            // emulator. Titles and summaries stay in the interface's (lang).
+            let glang = query(&q, "glang").filter(|l| !l.is_empty() && l != "auto").unwrap_or_else(|| lang.clone());
+            remember_ui_lang(app, &glang);
             let rows = match platform.as_deref().and_then(library::joined_parts) {
                 Some(parts) => parts.iter().flat_map(|p| app.db.games(Some(p), search.as_deref(), local)).collect(),
                 None => app.db.games(platform.as_deref(), search.as_deref(), local),
@@ -784,7 +787,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 .collect();
             let prefs = app.active_profile().map(|p| app.db.game_prefs(&p.id)).unwrap_or_default();
             crate::screenscraper::set_ui_lang(app, &lang);
-            let mut list = library::groups(rows, &prefs, &lang);
+            let mut list = library::groups(rows, &prefs, &glang);
             // Titles in the interface language (ScreenScraper), the list ordered on them: by their
             // first three letters, then by release date (library::shelf_order).
             for v in list.iter_mut() {
@@ -1288,6 +1291,19 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Get, ["api", "v1", "games", id, "screenscraper"]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
             Some(g) => ok(req, crate::screenscraper::regions(app, &g.group_key)),
+            None => err(req, 404, "unknown game"),
+        },
+        // One of a console's pictures, small (its settings show the choices as pictures).
+        (Method::Get, ["api", "v1", "consoles", slug, "pic-preview", n]) => match crate::screenscraper::system_pic_preview(app, slug, n) {
+            Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+            Err(e) => err(req, 404, &e),
+        },
+        // The game's box for one region, small (the cover settings show the choices as pictures).
+        (Method::Get, ["api", "v1", "games", id, "box-preview", region]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
+            Some(g) => match crate::screenscraper::box_preview(app, &g.group_key, region) {
+                Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+                Err(e) => err(req, 404, &e),
+            },
             None => err(req, 404, "unknown game"),
         },
         // Corrects the game's ScreenScraper match {ss_id} or box region {region} ("" = automatic).

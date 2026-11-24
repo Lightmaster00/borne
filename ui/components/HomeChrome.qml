@@ -111,7 +111,7 @@ Item {
         Image {
             width: 26; height: 26
             source: "../brand/picto.svg"
-            sourceSize: Qt.size(52, 52)
+            sourceSize: chrome.theme ? Qt.size(chrome.theme.px(26), chrome.theme.px(26)) : Qt.size(104, 104)
             smooth: true
         }
         Brand {

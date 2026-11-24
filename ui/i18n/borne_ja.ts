@@ -2116,28 +2116,12 @@
         <translation>ネットワークマウント</translation>
     </message>
     <message>
-        <source>PlayStation controller</source>
-        <translation>PlayStation のコントローラー</translation>
-    </message>
-    <message>
-        <source>Nintendo controller</source>
-        <translation>任天堂のコントローラー</translation>
-    </message>
-    <message>
-        <source>Xbox controller</source>
-        <translation>Xbox のコントローラー</translation>
-    </message>
-    <message>
         <source>Left stick</source>
         <translation>左スティック</translation>
     </message>
     <message>
         <source>Right stick</source>
         <translation>右スティック</translation>
-    </message>
-    <message>
-        <source>Your %1 → %2</source>
-        <translation>あなたの %1 → %2</translation>
     </message>
     <message>
         <source>What each of your buttons does in the game.</source>
@@ -2308,14 +2292,6 @@
         <translation>ゲームの言語</translation>
     </message>
     <message>
-        <source>Set in the emulator; may start the version in this language</source>
-        <translation>エミュレーターで設定。この言語のバージョンで起動する場合があります</translation>
-    </message>
-    <message>
-        <source>This game exists in one version, in one language: nothing to choose.</source>
-        <translation>このゲームは 1 バージョン・1 言語のみです：選択肢はありません。</translation>
-    </message>
-    <message>
         <source>Cover</source>
         <translation>カバー</translation>
     </message>
@@ -2406,6 +2382,26 @@
     <message>
         <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
         <translation>このゲームのみ。選ばない場合は 設定 → 言語 の設定を使います。</translation>
+    </message>
+    <message>
+        <source>Your controller</source>
+        <translation>あなたのコントローラー</translation>
+    </message>
+    <message>
+        <source>%1 → %2</source>
+        <translation>%1 → %2</translation>
+    </message>
+    <message>
+        <source>Set in the emulator; may start the version in this language. Known in this game: %1</source>
+        <translation>エミュレーターで設定され、この言語のバージョンで起動することがあります。このゲームの既知の言語：%1</translation>
+    </message>
+    <message>
+        <source>Set in the emulator, if the game has it</source>
+        <translation>ゲームが対応していればエミュレーターで設定されます</translation>
+    </message>
+    <message>
+        <source>Default (%1)</source>
+        <translation>デフォルト（%1）</translation>
     </message>
 </context>
 <context>
@@ -4034,10 +4030,6 @@
         <translation>言語</translation>
     </message>
     <message>
-        <source>Borne's menus; also the version and the language a game starts in, when it has several</source>
-        <translation>Borne のメニュー。複数ある場合はゲームの起動バージョンと言語にも使われます</translation>
-    </message>
-    <message>
         <source>As the system</source>
         <translation>システムと同じ</translation>
     </message>
@@ -4782,10 +4774,6 @@
         <translation>接続中のコントローラー、全ゲームでのボタンの割り当て、各ゲーム機のゲームが認識するコントローラー。</translation>
     </message>
     <message>
-        <source>Borne's language, which also picks the version and the language of the games.</source>
-        <translation>Borne の言語。ゲームのバージョンと言語の選択にも使われます。</translation>
-    </message>
-    <message>
         <source>Games and saves</source>
         <translation>ゲームとセーブ</translation>
     </message>
@@ -5276,6 +5264,30 @@
     <message>
         <source>Borne itself: its size, animations and sounds.</source>
         <translation>Borne 本体：サイズ、アニメーション、サウンド。</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>インターフェース</translation>
+    </message>
+    <message>
+        <source>Borne's menus, and the games' titles and summaries</source>
+        <translation>Borne のメニュー、およびゲームのタイトルと概要</translation>
+    </message>
+    <message>
+        <source>The version launched and the language set in the emulator, when the game has it</source>
+        <translation>起動するバージョンと、ゲームが対応している場合にエミュレーターで設定される言語</translation>
+    </message>
+    <message>
+        <source>As the interface</source>
+        <translation>インターフェースと同じ</translation>
+    </message>
+    <message>
+        <source>games: %1</source>
+        <translation>ゲーム：%1</translation>
+    </message>
+    <message>
+        <source>Borne's language, and the language games start in: the same, or each its own.</source>
+        <translation>Borne の言語と、ゲームを起動する言語：同じにするか、それぞれ別にするか。</translation>
     </message>
 </context>
 <context>

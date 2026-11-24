@@ -238,7 +238,7 @@ Item {
                                 Image {
                                     anchors.fill: parent
                                     source: rowItem.game && rowItem.game.cover ? rowItem.game.cover : ""
-                                    sourceSize.height: 176
+                                    sourceSize.height: 352
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                 }
@@ -307,16 +307,17 @@ Item {
                                         width: Math.max(height, parent.width * panel.fraction(rowItem.modelData))
                                         Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
                                         color: rowItem.modelData.state === "paused" ? Qt.rgba(1, 1, 1, 0.4) : "white"
-                                        // Verifying / extracting / queued: a light running along the bar.
+                                        // While it works: a soft sheen running along the filled part, never past it.
+                                        clip: true
                                         Rectangle {
                                             readonly property bool running: ["downloading", "verifying", "extracting", "queued"].indexOf(rowItem.modelData.state) >= 0
-                                            visible: running && panel.shown
-                                            width: 80; height: parent.height; radius: 3
+                                            visible: running && panel.shown && fill.width > 40
+                                            width: 60; height: parent.height
                                             gradient: Gradient { orientation: Gradient.Horizontal
-                                                GradientStop { position: 0; color: "transparent" }
-                                                GradientStop { position: 0.5; color: Qt.rgba(0.6, 0.8, 1, 0.9) }
-                                                GradientStop { position: 1; color: "transparent" } }
-                                            NumberAnimation on x { running: parent.visible; from: -80; to: Math.max(0, fill.width); duration: 1400; loops: Animation.Infinite }
+                                                GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0) }
+                                                GradientStop { position: 0.5; color: Qt.rgba(0, 0, 0, 0.16) }
+                                                GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0) } }
+                                            NumberAnimation on x { running: parent.visible; from: -60; to: Math.max(0, fill.width); duration: 1600; loops: Animation.Infinite }
                                         }
                                     }
                                 }

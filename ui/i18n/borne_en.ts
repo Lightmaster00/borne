@@ -2320,27 +2320,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>PlayStation controller</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Nintendo controller</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Xbox controller</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Left stick</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Right stick</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Your %1 → %2</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -2396,15 +2380,27 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Set in the emulator; may start the version in this language</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>This game exists in one version, in one language: nothing to choose.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Your controller</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 → %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Set in the emulator; may start the version in this language. Known in this game: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Set in the emulator, if the game has it</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Default (%1)</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -4942,10 +4938,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Borne's menus; also the version and the language a game starts in, when it has several</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>One game in another version or language: open its page, then Y (Game settings) → Version and language.</source>
         <translation type="unfinished" />
     </message>
@@ -4987,10 +4979,6 @@
     </message>
     <message>
         <source>The controllers connected, how their buttons play in every game, and which controller each console's games see.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne's language, which also picks the version and the language of the games.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -5275,6 +5263,30 @@
     </message>
     <message>
         <source>Borne itself: its size, animations and sounds.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne's menus, and the games' titles and summaries</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The version launched and the language set in the emulator, when the game has it</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>As the interface</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>games: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne's language, and the language games start in: the same, or each its own.</source>
         <translation type="unfinished" />
     </message>
 </context>

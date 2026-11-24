@@ -62,6 +62,8 @@ Window {
         id: graphite
         input: prefs.prompts === "auto" ? win.inputSeen : prefs.prompts
         motion: prefs.motion === "reduced" ? 0.4 : 1
+        // In half steps, so resizing the window does not reload every picture at each pixel.
+        density: Math.ceil(scene.k * Screen.devicePixelRatio * 2) / 2
         soundVolume: prefs.soundVolume === "low" ? 0.22 : prefs.soundVolume === "high" ? 0.7 : 0.45
     }
     readonly property QtObject theme: graphite
@@ -198,6 +200,9 @@ Window {
     readonly property bool textEntry: screen === "server" || nameEntry.visible
     // The interface's language: chosen in Settings → Language, else the system's.
     readonly property string uiLang: prefs.language !== "auto" ? prefs.language : Qt.locale().name.substring(0, 2)
+    // The games' language (Settings → Language): the version launched and the language set in the
+    // emulator, the interface's unless chosen apart.
+    readonly property string gameLang: prefs.gameLanguage !== "auto" ? prefs.gameLanguage : uiLang
     property var settings: ({ install_mode: "download", stream: { available: false, error: "" } })
     // Game page
     property var page: null              // API answer for the open game
@@ -338,7 +343,7 @@ Window {
         const t0 = Date.now()
         const seq = ++libSeq
         libInFlight = true
-        api("GET", "/api/v1/library?lang=" + uiLang + "&sort=name", null, function (list, err) {
+        api("GET", "/api/v1/library?lang=" + uiLang + "&glang=" + gameLang + "&sort=name", null, function (list, err) {
             if (seq === libSeq) {
                 libInFlight = false
                 if (libPending) { libPending = false; libReload.restart() }
@@ -1396,7 +1401,8 @@ Window {
         if (source === "pad") win.inputSeen = "pad"
         inputCountsChanged()
         lastInput = a + " via " + source
-        if (attract && overlay === "game" && a === "x") { prefs.videoMuted = !prefs.videoMuted; lastActivity = Date.now(); return }
+        // X never leaves the full-screen video: on a game's page it turns its sound on or off.
+        if (attract && a === "x") { if (overlay === "game") prefs.videoMuted = !prefs.videoMuted; lastActivity = Date.now(); return }
         if (touch() && screen === "library" && (overlay === "" || overlay === "game")) return
         // While a game runs the core handles the quit chord (Select and Start, core/src/pad.rs);
         // the question it raises is answered here.
@@ -1518,7 +1524,11 @@ Window {
             try { m = JSON.parse(msg) } catch (e) { return }
             if (m.type === "hello") win.coreOnline = true
             else if (m.type === "pad") win.dispatch(m.action, "pad")
-            else if (m.type === "stick") { if (win.overlay === "game") { win.touch(); gamePage.stick(m.x, m.y) } }
+            else if (m.type === "stick") {
+                // Only a deliberate push counts as activity: a stick drifting a little neither
+                // ends the full-screen video nor keeps it from starting.
+                if (win.overlay === "game") { if (Math.hypot(m.x, m.y) > 0.35) win.touch(); gamePage.stick(m.x, m.y) }
+            }
             else if (m.type === "download") win.onDownloadEvent(m)
             else if (m.type === "library") libReload.restart()
             else if (m.type === "media") {
@@ -1862,8 +1872,10 @@ Window {
             id: chrome
             anchors.fill: parent
             z: 21
-            // A console's folder open: the rail and the status step back with the rest.
-            opacity: win.attract ? 0 : (win.folder && win.overlay === "" && !downloadsPanel.shown) ? 0.28 : 1
+            // A console's folder, the settings or the downloads open: the rail and the status step
+            // back with the rest of the page behind.
+            opacity: win.attract ? 0 : ((win.folder && win.overlay === "") || win.overlay === "settings" || win.overlay === "diag"
+                                       || downloadsPanel.shown || gameSettingsPage.visible) ? 0.28 : 1
             Behavior on opacity { NumberAnimation { duration: (win.attract ? 1200 : 400) * graphite.motion; easing.type: Easing.InOutQuad } }
             visible: win.screen === "library" && win.ready && !win.gameMode
             theme: win.theme
@@ -1967,7 +1979,7 @@ Window {
             fileNote: win.page && win.page.file_notes && win.pageGame ? (win.page.file_notes[String(win.pageGame.rom_id)] || null) : null
             emuLanguage: win.page ? win.page.emu_language : "auto"
             gameLanguages: win.page && win.page.languages ? win.page.languages : []
-            uiLang: win.uiLang
+            uiLang: win.gameLang
             emulator: win.page && win.page.emulator ? win.page.emulator : ""
             device: win.page && win.page.device ? win.page.device : ""
             deviceWanted: win.page && win.page.device_wanted ? win.page.device_wanted : ""
@@ -2082,6 +2094,9 @@ Window {
             versionLabel: function (v) { return gamePage.versionLabel(v) }
             versionDetail: function (v) { return gamePage.versionDetail(v) }
             currentLang: gamePage.currentLang
+            apiBase: win.apiBase
+            emuLanguage: gamePage.emuLanguage
+            defaultLang: win.gameLang
             languageName: function (c) { return gamePage.languageName(c) }
             regionName: function (c) { return win.regionName(c) }
             onAction: (id, payload) => win.gameSettingsAction(id, payload)
@@ -2089,6 +2104,7 @@ Window {
         SettingsPage {
             id: settingsPage
             x: glassPanel.x; y: glassPanel.y; width: glassPanel.width; height: glassPanel.height
+            apiBase: win.apiBase
             clip: true
             z: 25
             visible: win.overlay === "settings"
@@ -2598,6 +2614,9 @@ Window {
             if (typeof uiLanguage !== "undefined" && uiLanguage) uiLanguage.set(language)
             libReload.restart()
         }
+        // The games' language: "auto" (the interface's) or a language code.
+        property string gameLanguage: "auto"
+        onGameLanguageChanged: libReload.restart()
         property string motion: "normal"      // "normal" | "reduced"
         property string soundVolume: "medium" // "low" | "medium" | "high"
         property string prompts: "auto"       // buttons shown in the hints: "auto" | "pad" | "keyboard"

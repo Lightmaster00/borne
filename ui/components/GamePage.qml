@@ -23,7 +23,7 @@ Item {
     property var fileNote: null        // { ok, text }: what the downloaded file says of itself
     property string emuLanguage: "auto"
     property var gameLanguages: []     // [{ code, version }]: the game's real languages
-    property string uiLang: "en"
+    property string uiLang: "en"         // the games' language (Settings → Language)
     property string installMode: "download"
     property bool streamAvailable: false
     property string streamError: ""
@@ -109,7 +109,8 @@ Item {
     // language, else the version's first language.
     readonly property string currentLang: {
         const fits = c => gameLanguages.some(l => l.code === c && game && l.version === game.rom_id)
-        if (fits(emuLanguage)) return emuLanguage
+        // Chosen for this game: set in the emulator, whether its file name lists it or not.
+        if (emuLanguage && emuLanguage !== "auto") return emuLanguage
         if (fits(uiLang)) return uiLang
         const m = gameLanguages.find(l => game && l.version === game.rom_id)
         return m ? m.code : ""
@@ -264,6 +265,8 @@ Item {
     // resting angle when let go.
     property real tiltX: 0
     property real tiltY: 0
+    property real shownYaw: -20      // the case's angle on screen (caseSpring)
+    property real shownPitch: 5
     property var keyTilt: ({})
     function stick(x, y) { tiltX = Math.max(-1, Math.min(1, x)); tiltY = Math.max(-1, Math.min(1, y)) }
     function tiltKey(k, down) {
@@ -331,11 +334,12 @@ Item {
                     height: 30; width: 160
                     visible: status === Image.Ready
                     source: page.consoleLogo
-                    sourceSize.height: 96
+                    sourceSize.height: page.theme ? page.theme.px(30) : 96
                     fillMode: Image.PreserveAspectFit
                     horizontalAlignment: Image.AlignLeft
                     asynchronous: true
                     layer.enabled: visible
+                    layer.textureSize: page.theme ? page.theme.tex(width, height) : Qt.size(0, 0)
                     layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
                 }
                 Text {
@@ -591,11 +595,23 @@ Item {
                 theme: page.theme
                 game: page.game
                 boxH: Math.min(480, parent.height - 110)
-                // At rest a little turned; the stick or W A S D turn it up to 30° more.
-                yaw: -20 + page.tiltX * 30
-                pitch: 5 + page.tiltY * 30
-                Behavior on yaw { SmoothedAnimation { velocity: 160 } }
-                Behavior on pitch { SmoothedAnimation { velocity: 160 } }
+                // At rest a little turned; the stick or W A S D turn it up to 30° more, followed
+                // frame by frame (caseSpring) rather than by an animation restarted at each move.
+                yaw: page.shownYaw
+                pitch: page.shownPitch
+            }
+            // A spring towards the stick's angle, every frame: smooth however often the stick
+            // reports, and still once it is reached.
+            FrameAnimation {
+                id: caseSpring
+                readonly property real toYaw: -20 + page.tiltX * 30
+                readonly property real toPitch: 5 + page.tiltY * 30
+                running: page.visible && (Math.abs(toYaw - page.shownYaw) > 0.02 || Math.abs(toPitch - page.shownPitch) > 0.02)
+                onTriggered: {
+                    const k = 1 - Math.exp(-Math.min(frameTime, 0.05) * 9 / Math.max(0.4, page.theme ? page.theme.motion : 1))
+                    page.shownYaw += (toYaw - page.shownYaw) * k
+                    page.shownPitch += (toPitch - page.shownPitch) * k
+                }
             }
         }
 
@@ -635,18 +651,19 @@ Item {
                             Item {
                                 anchors.fill: parent
                                 layer.enabled: true
+                                layer.textureSize: page.theme ? page.theme.tex(width, height) : Qt.size(0, 0)
                                 layer.effect: MultiEffect { maskEnabled: true; maskSource: gaMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                                 Rectangle { anchors.fill: parent; color: Qt.rgba(1, 1, 1, 0.08) }
                                 Image {
                                     anchors.fill: parent
                                     source: page.game ? page.shotBase + ga.index : ""
-                                    sourceSize: Qt.size(512, 288)
+                                    sourceSize: page.theme ? Qt.size(page.theme.px(256, 1280), page.theme.px(144, 720)) : Qt.size(512, 288)
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                 }
                                 Shine { active: ga.on; motion: theme.motion; strength: 0.2 }
                             }
-                            Rectangle { id: gaMask; anchors.fill: parent; radius: 10; visible: false; layer.enabled: true }
+                            Rectangle { id: gaMask; anchors.fill: parent; radius: 10; visible: false; layer.textureSize: page.theme ? page.theme.tex(width, height) : Qt.size(0, 0); layer.enabled: true }
                         }
                     }
                 }

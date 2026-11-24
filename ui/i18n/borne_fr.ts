@@ -2320,28 +2320,12 @@
         <translation>Boutons, joueur 1</translation>
     </message>
     <message>
-        <source>PlayStation controller</source>
-        <translation>manette PlayStation</translation>
-    </message>
-    <message>
-        <source>Nintendo controller</source>
-        <translation>manette Nintendo</translation>
-    </message>
-    <message>
-        <source>Xbox controller</source>
-        <translation>manette Xbox</translation>
-    </message>
-    <message>
         <source>Left stick</source>
         <translation>Stick gauche</translation>
     </message>
     <message>
         <source>Right stick</source>
         <translation>Stick droit</translation>
-    </message>
-    <message>
-        <source>Your %1 → %2</source>
-        <translation>Ta %1 → %2</translation>
     </message>
     <message>
         <source>What each of your buttons does in the game.</source>
@@ -2396,16 +2380,28 @@
         <translation>Celle qui est lancée ; les autres restent sur le serveur</translation>
     </message>
     <message>
-        <source>Set in the emulator; may start the version in this language</source>
-        <translation>Réglée dans l’émulateur ; peut lancer la version dans cette langue</translation>
-    </message>
-    <message>
-        <source>This game exists in one version, in one language: nothing to choose.</source>
-        <translation>Ce jeu existe en une version, dans une langue : rien à choisir.</translation>
-    </message>
-    <message>
         <source>For this game only. Without a choice, Borne takes the version and the language set in Settings → Language.</source>
         <translation>Pour ce jeu seulement. Sans choix, Borne prend la version et la langue de Paramètres → Langue.</translation>
+    </message>
+    <message>
+        <source>Your controller</source>
+        <translation>Ta manette</translation>
+    </message>
+    <message>
+        <source>%1 → %2</source>
+        <translation>%1 → %2</translation>
+    </message>
+    <message>
+        <source>Set in the emulator; may start the version in this language. Known in this game: %1</source>
+        <translation>Réglée dans l'émulateur ; peut lancer la version dans cette langue. Connues dans ce jeu : %1</translation>
+    </message>
+    <message>
+        <source>Set in the emulator, if the game has it</source>
+        <translation>Réglée dans l'émulateur, si le jeu l'a</translation>
+    </message>
+    <message>
+        <source>Default (%1)</source>
+        <translation>Par défaut (%1)</translation>
     </message>
 </context>
 <context>
@@ -4942,10 +4938,6 @@
         <translation>La vidéo du jeu choisi passe toute seule, sans le son, derrière les jaquettes</translation>
     </message>
     <message>
-        <source>Borne's menus; also the version and the language a game starts in, when it has several</source>
-        <translation>Les menus de Borne ; aussi la version et la langue dans lesquelles un jeu démarre, quand il en a plusieurs</translation>
-    </message>
-    <message>
         <source>One game in another version or language: open its page, then Y (Game settings) → Version and language.</source>
         <translation>Un jeu dans une autre version ou langue : ouvre sa fiche, puis Y (Réglages du jeu) → Version et langue.</translation>
     </message>
@@ -4988,10 +4980,6 @@
     <message>
         <source>The controllers connected, how their buttons play in every game, and which controller each console's games see.</source>
         <translation>Les manettes branchées, ce que font leurs boutons dans tous les jeux, et la manette que voient les jeux de chaque console.</translation>
-    </message>
-    <message>
-        <source>Borne's language, which also picks the version and the language of the games.</source>
-        <translation>La langue de Borne, qui choisit aussi la version et la langue des jeux.</translation>
     </message>
     <message>
         <source>Games and saves</source>
@@ -5276,6 +5264,30 @@
     <message>
         <source>Borne itself: its size, animations and sounds.</source>
         <translation>Borne lui-même : sa taille, ses animations et ses sons.</translation>
+    </message>
+    <message>
+        <source>Interface</source>
+        <translation>Interface</translation>
+    </message>
+    <message>
+        <source>Borne's menus, and the games' titles and summaries</source>
+        <translation>Les menus de Borne, et les titres et résumés des jeux</translation>
+    </message>
+    <message>
+        <source>The version launched and the language set in the emulator, when the game has it</source>
+        <translation>La version lancée et la langue réglée dans l'émulateur, quand le jeu l'a</translation>
+    </message>
+    <message>
+        <source>As the interface</source>
+        <translation>Comme l'interface</translation>
+    </message>
+    <message>
+        <source>games: %1</source>
+        <translation>jeux : %1</translation>
+    </message>
+    <message>
+        <source>Borne's language, and the language games start in: the same, or each its own.</source>
+        <translation>La langue de Borne, et celle dans laquelle les jeux démarrent : la même, ou chacune la sienne.</translation>
     </message>
 </context>
 <context>

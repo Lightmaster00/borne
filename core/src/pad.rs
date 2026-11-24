@@ -264,10 +264,10 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                             }
                         }
                         EventType::AxisChanged(axis @ (Axis::RightStickX | Axis::RightStickY), v, _) => {
-                            // Dead zone, then the rest of the travel rescaled from 0 (no jump at its
+                            // Dead zone (wide enough for a worn stick that drifts), then the rest of the travel rescaled from 0 (no jump at its
                             // edge), in steps of 0.02 so small jitter sends nothing; the interface
                             // smooths the angle (Main.qml).
-                            const DEAD: f32 = 0.15;
+                            const DEAD: f32 = 0.22;
                             let q = if v.abs() < DEAD { 0.0 } else { (v.signum() * (v.abs() - DEAD) / (1.0 - DEAD) * 50.0).round() / 50.0 };
                             let (nx, ny) = if axis == Axis::RightStickX { (q, ry) } else { (rx, -q) };
                             if (nx, ny) != (rx, ry) {

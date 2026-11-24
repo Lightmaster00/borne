@@ -98,6 +98,7 @@ Item {
 
         // Faded out above the footer, so the collections peeking from below never run under it.
         layer.enabled: visible
+        layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
         layer.effect: MultiEffect { maskEnabled: true; maskSource: homeFade; maskThresholdMin: 0.0; maskSpreadAtMin: 1.0 }
         Item {
             id: homeContent
@@ -486,6 +487,7 @@ Item {
         width: root.width; height: root.height
         visible: false
         layer.enabled: true
+        layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
@@ -528,6 +530,7 @@ Item {
         Item {
             anchors.fill: parent
             layer.enabled: cov.visible
+            layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
             layer.effect: MultiEffect { maskEnabled: true; maskSource: covMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
             Rectangle { anchors.fill: parent; color: cov.all ? Qt.rgba(1, 1, 1, 0.1) : cov.g ? theme.tone(cov.g.hue) : theme.surface }
             Text {
@@ -544,7 +547,7 @@ Item {
                 anchors.fill: parent
                 visible: !cov.all
                 source: cov.g ? cov.g.cover : ""
-                sourceSize.height: 640
+                sourceSize.height: root.theme ? root.theme.px(460, 2400) : 640
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 opacity: status === Image.Ready ? 1 : 0
@@ -576,7 +579,7 @@ Item {
                 }
             }
         }
-        Rectangle { id: covMask; anchors.fill: parent; radius: cov.radius; visible: false; layer.enabled: true }
+        Rectangle { id: covMask; anchors.fill: parent; radius: cov.radius; visible: false; layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0); layer.enabled: true }
         Rectangle {
             visible: cov.badge !== ""
             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 16 }
@@ -645,16 +648,18 @@ Item {
                         Behavior on rotation { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
                         Behavior on y { NumberAnimation { duration: 380 * root.motion; easing.type: Easing.OutCubic } }
                         layer.enabled: fo.visible && fo.near
+                        layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
                         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.55; shadowBlur: 0.6; shadowVerticalOffset: 6 }
                         Item {
                             anchors.fill: parent
                             layer.enabled: fo.visible && fo.near
+                            layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
                             layer.effect: MultiEffect { maskEnabled: true; maskSource: fanMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                             Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.3) }
                             Image {
                                 anchors.fill: parent
                                 source: fo.c.covers[fan.index] || ""
-                                sourceSize.height: 240
+                                sourceSize.height: root.theme ? root.theme.px(120) : 240
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                             }
@@ -662,7 +667,7 @@ Item {
                     }
                 }
                 // One mask for its three covers (they are the same size).
-                Rectangle { id: fanMask; width: 88; height: 120; radius: 8; visible: false; layer.enabled: fo.near }
+                Rectangle { id: fanMask; width: 88; height: 120; radius: 8; visible: false; layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0); layer.enabled: fo.near }
                 // Empty: its sign, large.
                 Icon {
                     visible: fo.c.covers.length === 0
@@ -694,10 +699,11 @@ Item {
                 height: 26
                 width: Math.min(150, implicitWidth * 26 / Math.max(1, implicitHeight))
                 source: fo.c.kind === "console" ? fo.c.logo || "" : ""
-                sourceSize.height: 80
+                sourceSize.height: root.theme ? root.theme.px(26) : 80
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 layer.enabled: visible
+                layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
                 layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
             }
             Text {
@@ -783,6 +789,7 @@ Item {
                 readonly property real kH: card.tint.hslHue
                 readonly property real kS: card.tint.hslSaturation
                 layer.enabled: card.near
+                layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
                 layer.effect: MultiEffect { maskEnabled: true; maskSource: faceMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                 // Studio: a seamless backdrop in the console's colour, muted, bending from the
                 // wall to the floor under one large soft light from the upper left.
@@ -872,6 +879,7 @@ Item {
                 radius: 16
                 visible: false
                 layer.enabled: card.near
+                layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
             }
             // Its edge: a hairline, lighter on top where the light comes from.
             Rectangle {
@@ -911,7 +919,7 @@ Item {
             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 34 }
             width: 520; height: 300
             source: card.c.photo || ""
-            sourceSize.height: 600
+            sourceSize.height: root.theme ? root.theme.px(300) : 600
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             property real enter: 0
@@ -920,6 +928,7 @@ Item {
             visible: opacity > 0.01
             scale: 0.9 + 0.1 * enter
             layer.enabled: visible
+            layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
             layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "#000000"; shadowOpacity: 0.4; shadowBlur: 1.0; shadowVerticalOffset: 10 }
             // Floating, slowly.
             property real bob
@@ -945,16 +954,17 @@ Item {
                     required property string modelData
                     width: 170; height: 240
                     layer.enabled: true
+                    layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
                     layer.effect: MultiEffect { maskEnabled: true; maskSource: cardMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                     Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.25) }
                     Image {
                         anchors.fill: parent
                         source: modelData
-                        sourceSize.height: 480
+                        sourceSize.height: root.theme ? root.theme.px(240) : 480
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
-                    Rectangle { id: cardMask; anchors.fill: parent; radius: 10; visible: false; layer.enabled: true }
+                    Rectangle { id: cardMask; anchors.fill: parent; radius: 10; visible: false; layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0); layer.enabled: true }
                 }
             }
         }
@@ -1022,10 +1032,11 @@ Item {
             anchors.fill: parent
             visible: status === Image.Ready
             source: lg.c.logo || ""
-            sourceSize.height: 240
+            sourceSize.height: root.theme ? root.theme.px(120, 1200) : 240
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             layer.enabled: visible
+            layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
             layer.effect: MultiEffect { brightness: 1.0; saturation: -1.0 }
         }
         Text {
@@ -1071,6 +1082,7 @@ Item {
         Item {
             width: tile.width; height: tile.t.h
             layer.enabled: tile.visible
+            layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0)
             layer.effect: MultiEffect { maskEnabled: true; maskSource: tileMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
             Rectangle { anchors.fill: parent; color: tile.g ? theme.tone(tile.g.hue) : theme.surface }
             Text {
@@ -1087,7 +1099,7 @@ Item {
                 id: tileImg
                 anchors.fill: parent
                 source: tile.seen && tile.g ? tile.g.cover : ""
-                sourceSize.height: Math.min(900, Math.round(tile.t.h * 1.6))
+                sourceSize.height: root.theme ? root.theme.px(tile.t.h, 1600) : Math.min(900, Math.round(tile.t.h * 1.6))
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 opacity: status === Image.Ready ? 1 : 0
@@ -1105,7 +1117,7 @@ Item {
                 }
             }
         }
-        Rectangle { id: tileMask; width: tile.width; height: tile.t.h; radius: 12; visible: false; layer.enabled: tile.visible }
+        Rectangle { id: tileMask; width: tile.width; height: tile.t.h; radius: 12; visible: false; layer.textureSize: root.theme ? root.theme.tex(width, height) : Qt.size(0, 0); layer.enabled: tile.visible }
         Column {
             visible: tile.t.caption
             y: tile.t.h + 12

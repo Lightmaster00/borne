@@ -205,7 +205,7 @@ Item {
                                     anchors.fill: parent
                                     source: modelData.cover || ""
                                     fillMode: Image.PreserveAspectCrop
-                                    sourceSize { width: 80; height: 112 }
+                                    sourceSize { width: 160; height: 224 }
                                     asynchronous: true
                                 }
                             }

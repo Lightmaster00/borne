@@ -21,6 +21,7 @@ Item {
     property var display: null       // GET /games/<id>/display
     property var cheats: null        // GET /games/<id>/cheats
     property var images: null        // GET /games/<id>/screenscraper
+    property string apiBase: ""      // the core's address, for the boxes' pictures
     property var controls: null      // GET /games/<id>/controls
     property bool advanced: false    // developer mode: each button, the emulator's options and the picture, for this game
     property var languages: []       // [{ code, version }] when the game exists in several
@@ -28,6 +29,10 @@ Item {
     property var versionLabel: function (v) { return String(v.rom_id) }
     property var versionDetail: function (v) { return "" }
     property string currentLang: ""
+    property string emuLanguage: "auto"   // this game's own choice ("auto": the games' language)
+    property string defaultLang: "en"     // the games' language (Settings → Language)
+    // The languages offered for any game, after those its versions are known to have.
+    readonly property var commonLangs: ["en", "fr", "de", "es", "it", "pt", "nl", "ja", "ko", "zh", "ru", "pl", "sv", "da", "no", "fi"]
     property var languageName: function (c) { return c }
 
     signal action(string id, var payload)
@@ -70,7 +75,9 @@ Item {
         if (id === "controls") {
             const dev = deviceOption
             const fam = controls ? controls.family : "xbox"
-            const famName = fam === "playstation" ? qsTr("PlayStation controller") : fam === "nintendo" ? qsTr("Nintendo controller") : qsTr("Xbox controller")
+            // The controller in hand by its name; none connected, no brand is guessed.
+            const pads = controls && controls.pads ? controls.pads : []
+            const famName = pads.length ? String(pads[0]) : qsTr("Your controller")
             const name = dev ? Devices.label(dev.value, controls.console) : (game ? game.platform_short || game.platform_name : "")
             // What gives each of the console's buttons now (the layout and the buttons chosen
             // included), as printed on your pad.
@@ -81,7 +88,7 @@ Item {
             const label = place => sticks[place] || (at[logical[place] || place] ? Controls.padLabel(fam, at[logical[place] || place]) : "—")
             const map = dev ? Devices.mapping(dev.value, label)
                             : Controls.consoleButtons(controls ? controls.console : "").map(x => ({ from: x[1], to: at[x[0]] ? Controls.padLabel(fam, at[x[0]]) : "—" }))
-            return { title: qsTr("Your %1 → %2").arg(famName).arg(name),
+            return { title: qsTr("%1 → %2").arg(famName).arg(name),
                      text: dev ? Devices.hint(dev.value) : qsTr("What each of your buttons does in the game."),
                      note: dev && dev.wanted && dev.value === dev.wanted ? Devices.wantedNote(dev.wanted, controls.console) : "",
                      left: name, right: famName, map: map }
@@ -89,7 +96,15 @@ Item {
         if (id === "emulator") return { title: qsTr("Emulator"), text: qsTr("Borne sets the emulator up just before the game starts, then puts back the settings of the console's other games.") }
         if (id === "picture") return { title: qsTr("Picture"), text: qsTr("Without a choice of its own, the game takes the picture set for its console in Settings → Consoles.") }
         if (id === "cheats") return { title: qsTr("Cheats"), text: qsTr("The codes depend on the version chosen in Version and language. They apply the next time the game starts.") }
-        if (id === "cover") return { title: qsTr("Cover and video"), text: qsTr("Images and video come from ScreenScraper; choose another edition's box or search for the right game.") }
+        if (id === "cover") {
+            // Every edition's box as a picture, the one shown ringed: moving through the regions
+            // shows the choice at once.
+            const regions = images && images.regions ? images.regions : []
+            const covers = game ? [{ id: "", label: qsTr("Automatic"), url: game.cover || "" }]
+                                  .concat(regions.map(r => ({ id: r, label: regionName(r), url: apiBase + "/api/v1/games/" + game.rom_id + "/box-preview/" + r }))) : []
+            return { title: qsTr("Cover and video"), text: qsTr("Images and video come from ScreenScraper; choose another edition's box or search for the right game."),
+                     covers: covers, chosen: images && images.chosen ? images.chosen : "" }
+        }
         return { title: qsTr("Storage"), text: qsTr("Saves stay on RomM whatever you remove here.") }
     }
 
@@ -174,10 +189,16 @@ Item {
             if (versions.length > 1)
                 r.push({ id: "version", kind: "chips", title: qsTr("Version"), desc: qsTr("The one launched; the others stay on the server"),
                          selected: game ? game.rom_id : -1, items: versions.map(v => ({ id: v.rom_id, label: versionLabel(v) + (versionDetail(v) ? " · " + versionDetail(v) : "") })) })
-            if (languages.length > 1)
-                r.push({ id: "lang", kind: "chips", title: qsTr("Game language"), desc: qsTr("Set in the emulator; may start the version in this language"),
-                         selected: currentLang, items: languages.map(l => ({ id: l.code, label: languageName(l.code) })) })
-            if (!r.length) r.push(note("one", qsTr("This game exists in one version, in one language: nothing to choose.")))
+            // Always offered, one version or several: many games hold more languages than their
+            // name lists, and the language is set in the emulator. Those the versions are known to
+            // have come first.
+            const known = languages.map(l => l.code)
+            const codes = known.concat(commonLangs.filter(c => known.indexOf(c) < 0))
+            r.push({ id: "lang", kind: "chips", title: qsTr("Game language"),
+                     desc: known.length ? qsTr("Set in the emulator; may start the version in this language. Known in this game: %1").arg(known.map(c => languageName(c)).join(", "))
+                                        : qsTr("Set in the emulator, if the game has it"),
+                     selected: emuLanguage && emuLanguage !== "auto" ? emuLanguage : "auto",
+                     items: [{ id: "auto", label: qsTr("Default (%1)").arg(languageName(defaultLang)) }].concat(codes.map(c => ({ id: c, label: languageName(c) }))) })
             r.push(note("applied", qsTr("Applied the next time the game starts.")))
             return r
         }
@@ -242,7 +263,7 @@ Item {
         else if (r.id === "ctl-reset-buttons") page.action("controls", { key: "map.*", value: "default" })
         else if (r.id === "ctl-reset") page.action("controls", { key: "*", value: "default" })
         else if (r.id.startsWith("cheat:")) page.action("cheat", { index: Number(r.id.substring(6)), on: item.id === "on" })
-        else if (r.id === "lang") page.action("lang", languages.find(l => l.code === item.id))
+        else if (r.id === "lang") page.action("lang", languages.find(l => l.code === item.id) || { code: item.id, version: game ? game.rom_id : -1 })
         else if (r.id === "version") page.action("version", item.id)
         else if (r.id === "region") page.action("region", item.id)
         else if (r.id === "sound") page.action("sound", item.id === "on")
@@ -422,6 +443,41 @@ Item {
             width: parent.width; height: noteBox.height + 28; radius: 18
             color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)
             Text { id: noteBox; x: 18; y: 14; width: parent.width - 36; wrapMode: Text.WordWrap; text: page.aside.note || ""; color: theme.fg; font { family: theme.fontFamily; pixelSize: 16; weight: Font.Bold } }
+        }
+        // The boxes of every edition (Cover section).
+        Flow {
+            id: coverFlow
+            visible: !!page.aside.covers && page.aside.covers.length > 0
+            width: parent.width
+            spacing: 14
+            readonly property real cw: Math.floor((width - 2 * spacing) / 3)
+            Repeater {
+                model: page.aside.covers || []
+                Column {
+                    required property var modelData
+                    readonly property bool on: modelData.id === page.aside.chosen
+                    width: coverFlow.cw
+                    spacing: 8
+                    Rectangle {
+                        width: parent.width; height: Math.round(parent.width * 1.38); radius: 10
+                        color: Qt.rgba(1, 1, 1, 0.06)
+                        border { width: parent.on ? 3 : 0; color: theme.fg }
+                        Image {
+                            id: boxPic
+                            anchors { fill: parent; margins: parent.parent.on ? 6 : 0 }
+                            source: modelData.url
+                            sourceSize.height: theme ? theme.px(200, 600) : 400
+                            fillMode: Image.PreserveAspectFit
+                            asynchronous: true
+                            opacity: status === Image.Ready ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: 250 } }
+                        }
+                        Spinner { anchors.centerIn: parent; size: 28; visible: boxPic.status === Image.Loading }
+                    }
+                    Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight; text: modelData.label
+                           color: parent.on ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 14; weight: parent.on ? Font.ExtraBold : Font.DemiBold } }
+                }
+            }
         }
         Rectangle {
             visible: !!page.aside.map && page.aside.map.length > 0

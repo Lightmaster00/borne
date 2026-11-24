@@ -122,6 +122,8 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   give for a PS2 game.
 - **System files** (BIOS, keys, firmware) taken from RomM or given by you, checked and placed for
   each emulator; Borne never downloads them by itself.
+- **Two languages**: the interface in one (English, French, Spanish, Italian, German, Portuguese,
+  Japanese, Chinese), the games in another if you like; any game can be set to its own.
 - **Settings in plain words, only the useful ones**: installation and saves, the interface (videos,
   size, animations, clock, sounds), the picture in games, each console's emulator and system files,
   game images, RomM, updates of Borne and its emulators, help (diagnostics report without any

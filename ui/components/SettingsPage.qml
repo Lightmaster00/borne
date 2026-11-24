@@ -19,8 +19,13 @@ Item {
     // The interface's languages, each in its own name (ui/i18n/<code>.json).
     readonly property var uiLanguages: [["en", "English"], ["fr", "Français"], ["es", "Español"], ["it", "Italiano"], ["de", "Deutsch"],
                                         ["pt", "Português"], ["ja", "日本語"], ["zh", "中文（简体）"]]
+    // The languages games can be set to (library.rs EMU_LANGUAGES), by their own name.
+    readonly property var gameLanguages: [["en", "English"], ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"], ["it", "Italiano"],
+                                          ["pt", "Português"], ["nl", "Nederlands"], ["ja", "日本語"], ["ko", "한국어"], ["zh", "中文"],
+                                          ["ru", "Русский"], ["pl", "Polski"], ["sv", "Svenska"], ["da", "Dansk"], ["no", "Norsk"], ["fi", "Suomi"]]
     property QtObject prefs: null        // the interface's own preferences (Main.qml, prefs)
     property string version: ""
+    property string apiBase: ""          // the core's address, for the pictures shown as choices
     property var reportPaths: []
 
     signal action(string id, var payload)
@@ -89,8 +94,10 @@ Item {
     }
     function languageRows() {
         return [
-            pref("language", qsTr("Language"), qsTr("Borne's menus; also the version and the language a game starts in, when it has several"),
+            pref("language", qsTr("Interface"), qsTr("Borne's menus, and the games' titles and summaries"),
                  [["auto", qsTr("As the system")]].concat(page.uiLanguages)),
+            pref("gameLanguage", qsTr("Games"), qsTr("The version launched and the language set in the emulator, when the game has it"),
+                 [["auto", qsTr("As the interface")]].concat(page.gameLanguages)),
             note("lang-game", qsTr("One game in another version or language: open its page, then Y (Game settings) → Version and language."))
         ]
     }
@@ -269,9 +276,14 @@ Item {
             pics.choices.forEach(p => items.push({ id: String(p.n), label: (kinds[p.type] || p.type) + (p.region ? " (" + String(p.region).toUpperCase() + ")" : "") }))
             if (pics.chosen === "own") items.push({ id: "own", label: qsTr("Yours") })
             rows.push(group(qsTr("Picture in the Store")))
-            if (items.length > 1)
+            if (items.length > 1) {
                 rows.push({ id: "spic:" + c.slug, kind: "chips", title: qsTr("Picture"), desc: qsTr("Another of ScreenScraper's pictures of this console (a model, a region)"),
                             selected: pics.chosen, items: items })
+                // The same choices as pictures, the one shown ringed (moves with the choice above).
+                rows.push({ id: "spic-thumbs:" + c.slug, kind: "thumbs", title: "", desc: "", selected: pics.chosen,
+                            items: items.filter(x => x.id !== "own").map(x => ({ id: x.id, label: x.label,
+                                   url: page.apiBase + "/api/v1/consoles/" + c.slug + "/pic-preview/" + x.id })) })
+            }
             rows.push({ id: "spic-own:" + c.slug, kind: "buttons", title: qsTr("Your own picture"), desc: qsTr("A picture file on this computer (PNG with a transparent background looks best)"),
                         items: [{ id: "spic-own:" + c.slug, label: qsTr("Choose a file") }] })
         }
@@ -433,8 +445,11 @@ Item {
           intro: qsTr("How your games are shown: the order of the consoles, the clock and the videos.") },
         { id: "controls", name: qsTr("Controllers"), hint: qsTr("Buttons, the consoles' controllers"),
           intro: qsTr("The controllers connected, how their buttons play in every game, and which controller each console's games see.") },
-        { id: "language", name: qsTr("Language"), hint: prefs && prefs.language !== "auto" ? ((page.uiLanguages.find(l => l[0] === prefs.language) || [0, prefs.language])[1]) : qsTr("As the system"),
-          intro: qsTr("Borne's language, which also picks the version and the language of the games.") },
+        { id: "language", name: qsTr("Language"),
+          hint: [prefs && prefs.language !== "auto" ? ((page.uiLanguages.find(l => l[0] === prefs.language) || [0, prefs.language])[1]) : qsTr("As the system"),
+                 prefs && prefs.gameLanguage && prefs.gameLanguage !== "auto" ? qsTr("games: %1").arg((page.gameLanguages.find(l => l[0] === prefs.gameLanguage) || [0, prefs.gameLanguage])[1]) : ""]
+                .filter(x => x).join(" · "),
+          intro: qsTr("Borne's language, and the language games start in: the same, or each its own.") },
         { id: "games", name: qsTr("Games and saves"), hint: qsTr("Installation, saves, picture"),
           intro: qsTr("How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.") },
         { id: "interface", name: qsTr("Screen and sound"), hint: qsTr("Size, animations, sounds"),
@@ -588,14 +603,14 @@ Item {
     function setCol(id, c) { const n = Object.assign({}, cols); n[id] = c; cols = n }
     // The next row that can be focused from i in direction d (group titles are skipped).
     function step(i, d) {
-        for (let j = i + d; j >= 0 && j < rows.length; j += d) if (rows[j].kind !== "header" && rows[j].kind !== "note") return j
+        for (let j = i + d; j >= 0 && j < rows.length; j += d) if (rows[j].kind !== "header" && rows[j].kind !== "note" && rows[j].kind !== "thumbs") return j
         return i
     }
     function firstRow() { return step(-1, 1) }
     // Rows come and go (a choice can show or hide others): keep the focus on a real row, and give
     // new rows their current choice.
     onRowsChanged: {
-        if (row >= rows.length || (rows[row] && (rows[row].kind === "header" || rows[row].kind === "note")))
+        if (row >= rows.length || (rows[row] && (rows[row].kind === "header" || rows[row].kind === "note" || rows[row].kind === "thumbs")))
             row = row >= rows.length ? step(rows.length, -1) : step(row, 1) !== row ? step(row, 1) : step(row, -1)
         const c = Object.assign({}, cols)
         let changed = false
@@ -621,7 +636,7 @@ Item {
         selectSection(i)
         if (parts[0] === "consoles" && parts[1]) openConsole(parts[1])
         inRows = true
-        if (row < 0 || rows[row] === undefined || rows[row].kind === "header" || rows[row].kind === "note") row = firstRow()
+        if (row < 0 || rows[row] === undefined || rows[row].kind === "header" || rows[row].kind === "note" || rows[row].kind === "thumbs") row = firstRow()
     }
     function openConsole(slug) {
         consoleRow = row
@@ -831,7 +846,7 @@ Item {
                 Component.onCompleted: if (current) Qt.callLater(function () { if (rowItem && rowItem.current && rowItem.parent && rowsView) rowsView.ensure(rowItem) })
                 width: parent.width
                 height: modelData.kind === "cards" ? cards.height : modelData.kind === "header" ? 58
-                        : modelData.kind === "note" ? noteText.height + 8 : line.implicitHeight
+                        : modelData.kind === "note" ? noteText.height + 8 : modelData.kind === "thumbs" ? thumbs.height + 12 : line.implicitHeight
 
                 // A group title: small capitals, a thin line after it; never focused.
                 Item {
@@ -860,6 +875,45 @@ Item {
                     lineHeight: 1.25
                     color: text.indexOf("⚠") === 0 ? theme.bad : theme.fgMuted
                     font { family: theme.fontFamily; pixelSize: 17 }
+                }
+
+                // Choices shown as pictures (a console's pictures), the selected one ringed; never focused.
+                ListView {
+                    id: thumbs
+                    visible: rowItem.modelData.kind === "thumbs"
+                    x: 8; width: parent.width - 16; height: visible ? 196 : 0
+                    orientation: ListView.Horizontal
+                    spacing: 14
+                    interactive: false
+                    clip: true
+                    model: visible ? rowItem.modelData.items : []
+                    readonly property int on: visible ? Math.max(0, rowItem.modelData.items.findIndex(x => x.id === rowItem.modelData.selected)) : 0
+                    onOnChanged: positionViewAtIndex(on, ListView.Contain)
+                    highlightMoveDuration: 250
+                    delegate: Column {
+                        required property var modelData
+                        required property int index
+                        readonly property bool sel: index === thumbs.on
+                        width: 200; spacing: 8
+                        Rectangle {
+                            width: parent.width; height: 150; radius: 12
+                            color: Qt.rgba(1, 1, 1, 0.05)
+                            border { width: parent.sel ? 3 : 0; color: theme.fg }
+                            Image {
+                                id: thumbPic
+                                anchors { fill: parent; margins: 10 }
+                                source: modelData.url
+                                sourceSize.height: theme ? theme.px(130, 520) : 260
+                                fillMode: Image.PreserveAspectFit
+                                asynchronous: true
+                                opacity: status === Image.Ready ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 250 } }
+                            }
+                            Spinner { anchors.centerIn: parent; size: 26; visible: thumbPic.status === Image.Loading }
+                        }
+                        Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight; text: modelData.label
+                               color: parent.sel ? theme.fg : theme.fgMuted; font { family: theme.fontFamily; pixelSize: 15; weight: parent.sel ? Font.ExtraBold : Font.DemiBold } }
+                    }
                 }
 
                 // Install method: two explained cards.
@@ -899,7 +953,7 @@ Item {
                 // A setting: its name and sentence, its value, buttons or state on the right.
                 SettingRow {
                     id: line
-                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header" && rowItem.modelData.kind !== "note"
+                    visible: rowItem.modelData.kind !== "cards" && rowItem.modelData.kind !== "header" && rowItem.modelData.kind !== "note" && rowItem.modelData.kind !== "thumbs"
                     width: parent.width
                     height: rowItem.height
                     theme: page.theme
