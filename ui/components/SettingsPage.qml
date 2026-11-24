@@ -392,7 +392,9 @@ Item {
         if (st === "available") {
             const a = updState.available.assets[upd.current.platform]
             if (upd.unsupported) return [{ id: "update-github", label: qsTr("Download from GitHub"), primary: true }]
-            return [{ id: "update-download", label: qsTr("Install · %1").arg(fmtSize(a ? a.size : 0)), primary: true }, github]
+            // The size actually downloaded (only what changed, when known).
+            const size = updState.size || (a ? a.size : 0)
+            return [{ id: "update-download", label: qsTr("Install · %1").arg(fmtSize(size)), primary: true }, github]
         }
         // No stable release yet: the way out is one press away.
         if (st === "error" && upd.channel === "stable" && /no stable version/.test(updState.error || ""))

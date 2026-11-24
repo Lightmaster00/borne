@@ -189,8 +189,10 @@ Window {
                                          "ps2": "PS2", "ps3": "PS3", "psp": "PSP", "psvita": "PS Vita", "dc": "Dreamcast", "saturn": "Saturn",
                                          "arcade": "Arcade", "3ds": "3DS", "n3ds": "New 3DS" })
     // Videos: the selected game's behind the library (it plays by itself) and those on a game page.
-    readonly property bool bgVideos: prefs.bgVideo
-    readonly property bool trailers: prefs.pageVideo
+    // Safe mode (the interface crashed several times in a row) holds videos back for this run
+    // only: the player's own settings stay as they are.
+    readonly property bool bgVideos: prefs.bgVideo && !safeMode
+    readonly property bool trailers: prefs.pageVideo && !safeMode
     readonly property bool anyVideo: bgVideos || trailers
     readonly property var activeProfile: status ? status.active_profile : null
     readonly property bool textEntry: screen === "server" || nameEntry.visible
@@ -2430,7 +2432,7 @@ Window {
     QtObject {
         id: sfx
         readonly property string base: win.uiRoot + "/sounds/" + theme.soundSet + "/"
-        readonly property bool on: prefs.sounds && theme.soundSet !== "" && !bench.running && !win.gameMode
+        readonly property bool on: prefs.sounds && !win.safeMode && theme.soundSet !== "" && !bench.running && !win.gameMode
                                    && !(win.session && win.session.running && !win.session.paused)
         function play(kind) {
             if (!on) return
@@ -2461,16 +2463,19 @@ Window {
     // ---------- Diagnostics ----------
     Rectangle {
         id: diag
+        z: 68
         visible: win.overlay === "diag"
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.6)
+        color: Qt.rgba(0.02, 0.02, 0.03, 0.9)
         property int index: 0
         property var diagData: null
         property var report: null
         property string reportPath: ""
         property var vramTest: null
         function refresh() { win.api("GET", "/api/v1/diagnostics", null, function (d) { if (d) diag.diagData = d }) }
-        function open() { index = 0; refresh(); win.overlay = "diag" }
+        // Closed, it goes back to where it was opened from (the settings, mostly).
+        property string from: ""
+        function open() { index = 0; refresh(); from = win.overlay === "diag" ? "" : win.overlay; win.overlay = "diag" }
         readonly property var items: [
             { id: "bench", label: bench.running ? qsTr("Benchmark running…") : qsTr("Run the automatic benchmark (≈ 40 s)") },
             { id: "vram", label: vramTest && vramTest.running ? qsTr("Game mode test running…") : qsTr("Test game mode (VRAM freed)") },
@@ -2490,16 +2495,17 @@ Window {
                 else if (id === "export" && report) win.api("POST", "/api/v1/report", JSON.stringify(report, null, 2), function (r) { if (r) diag.reportPath = r.path })
                 else if (id === "fullscreen") win.visibility = win.visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen
                 else if (id === "quit") Qt.quit()
-                else if (id === "close") win.overlay = ""
-            } else if (a === "b" || a === "start") win.overlay = ""
+                else if (id === "close") win.overlay = diag.from
+            } else if (a === "b" || a === "start") win.overlay = diag.from
         }
         Timer { interval: 3000; repeat: true; running: diag.visible; onTriggered: diag.refresh() }
 
         Rectangle {
             anchors.centerIn: parent
-            scale: 1.4
+            // As large as the window allows (up to 1.4×), never past its edges.
+            scale: Math.min(1.4, (diag.width - 80) / width, (diag.height - 80) / height)
             width: 1180; height: 680
-            radius: 24; color: theme.panel; border.color: theme.panelBorder
+            radius: 24; color: Qt.rgba(0.07, 0.075, 0.095, 1); border.color: theme.panelBorder
             clip: true
             Text { x: 32; y: 24; text: qsTr("Diagnostics"); color: theme.fg; font { family: theme.displayFont; pixelSize: 24; weight: Font.ExtraBold } }
             Column {
@@ -2581,6 +2587,7 @@ Window {
         property bool pageVideo: true         // videos on the game page
         property int attractDelay: 5          // s without input before the video fills the screen; 0: never
         property int attractRest: 60          // s of full-screen video before the games come back; 0: never
+        property int safeVideoFix: 0
         property int uiScale: 130             // interface size, %: read from a sofa by default
         property bool controlsAdvanced: false // controls: each button shown and set by pressing it
         property int scaleVersion: 0          // 1: the larger default given once to older settings
@@ -2629,7 +2636,9 @@ Window {
             if (prefs.scaleVersion < 1) { if (prefs.uiScale <= 100) prefs.uiScale = 130; prefs.scaleVersion = 1 }
             if (!prefs.videosSplit) { prefs.bgVideo = prefs.trailers; prefs.pageVideo = prefs.trailers; prefs.videosSplit = true }
             if (prefs.calmVersion < 1) { prefs.bgVideo = false; prefs.calmVersion = 1 }
-            if (safeMode) { prefs.bgVideo = false; prefs.pageVideo = false; prefs.sounds = false }
+            // Earlier safe modes turned the game page's videos off for good: back on, once.
+            if (prefs.safeVideoFix < 1) { prefs.pageVideo = true; prefs.safeVideoFix = 1 }
+            // (Safe mode no longer turns the player's video and sound settings off for good.)
             refreshStatus(function (s) {
                 if (!s) { fatal = qsTr("Borne core unreachable"); return }
                 if (!s.server_url) showServer()
