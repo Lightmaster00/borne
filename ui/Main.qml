@@ -1876,6 +1876,7 @@ Window {
                 const s = win.status ? win.status.sync : null
                 // Games listed: what is left is covers (or nothing to show).
                 if (s && s.running && s.total > 0 && s.done >= s.total) return s.covers_pending > 0 ? qsTr("Covers: %1 left").arg(s.covers_pending) : ""
+                if (s && s.running && s.total === 0) return qsTr("Syncing the library…")
                 if (s && s.running) return qsTr("Syncing %1/%2").arg(s.done).arg(s.total)
                 const busy = win.rows.filter(g => ["queued", "downloading", "verifying", "extracting"].indexOf(g.dl_state) >= 0)
                 return busy.length ? qsTr("%n download(s)", "", busy.length) : ""
@@ -1914,6 +1915,7 @@ Window {
                 if (win.overlay === "settings") return settingsPage.hints
                 if (downloadsPanel.shown) return downloadsPanel.hints
                 if (gameSettingsPage.visible) return gameSettingsPage.hints
+                if (win.overlay === "game" && win.pageRail) return [["A", qsTr("Choose"), "a"], ["B", qsTr("Back"), "b"]]
                 if (win.overlay === "game") return gamePage.hints
                 if (sortMenu.visible) return [["▲ ▼", qsTr("Choose"), "down"], ["A", qsTr("Apply"), "a"], ["B", qsTr("Close"), "b"]]
                 if (win.folder) {
