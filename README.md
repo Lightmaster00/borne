@@ -81,8 +81,10 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
 - **Games made for an accessory** (a guitar, a Balance Board, PlayStation VR, Kinect, Joy-Con
   shaken…) are recognised by name and checked against what is plugged in: when it is missing, the
   game's page says so and Borne asks once before playing. Never a lock: Play anyway is remembered.
-- **Developer mode** (Settings → Help): open any emulator on its own interface with Borne's setup,
-  give it extra arguments, add emulators of your own for any console. Borne copies an emulator's
+- **Developer mode** (Settings → Help): shows the technical settings (every emulator option, a
+  console's own picture and controls, each controller button, the update channel, measurements),
+  opens any emulator on its own interface with Borne's setup,
+  gives it extra arguments, adds emulators of your own for any console. Borne copies an emulator's
   settings before opening it (Undo my changes), and turned off it plays as before.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network**: on Linux only the games you pick are mounted, read from RomM on demand;
@@ -97,7 +99,7 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   page and on each game's page what its games need that this machine lacks: the 3DS and DS touch
   screen, the Wii Remote and its sensor bar, Joy-Con-only Switch games, the Wii U GamePad's screen,
   or a computer too weak for the heaviest consoles.
-- **Emulators managed for you**: one per console, chosen in Settings → Emulators — RetroArch cores
+- **Emulators managed for you**: one per console, chosen on each console's page (Settings → Consoles), kept up to date from Settings → Updates — RetroArch cores
   (Mesen, Snes9x, Genesis Plus GX, melonDS DS, SwanStation, Flycast, PPSSPP…), Dolphin, PCSX2, DuckStation,
   Azahar (3DS), Cemu (Wii U), Eden, Citron Neo and Ryubing (Switch), RPCS3 (PS3), shadPS4 (PS4), Xenia Canary
   (Xbox 360, Linux), Vita3K (PS Vita).
@@ -120,9 +122,10 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   give for a PS2 game.
 - **System files** (BIOS, keys, firmware) taken from RomM or given by you, checked and placed for
   each emulator; Borne never downloads them by itself.
-- **Settings in plain words**: installation and saves, the interface (videos, size, animations,
-  clock, sounds, buttons shown), the picture in games, emulators, system files, game images, RomM,
-  updates, help (diagnostics report without any password or token).
+- **Settings in plain words, only the useful ones**: installation and saves, the interface (videos,
+  size, animations, clock, sounds), the picture in games, each console's emulator and system files,
+  game images, RomM, updates of Borne and its emulators, help (diagnostics report without any
+  password or token). The technical ones wait in developer mode.
 - **English, French, Spanish, Italian, German, Portuguese, Japanese and Simplified Chinese**, following
   the system or chosen in Settings → Language (`BORNE_LANG=es` and so on forces one). Japanese and Chinese
   use the system's CJK fonts (on Linux, `noto-fonts-cjk`).

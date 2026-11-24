@@ -2244,10 +2244,6 @@
         <translation>このゲームを動かせるエミュレーターはまだありません。</translation>
     </message>
     <message>
-        <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
-        <translation>次にゲームを起動したときに適用されます。シンプル／詳細表示：設定 → コントローラー。</translation>
-    </message>
-    <message>
         <source>Choose a file</source>
         <translation>ファイルを選ぶ</translation>
     </message>
@@ -4034,18 +4030,6 @@
         <translation>しない</translation>
     </message>
     <message>
-        <source>Full-screen video length</source>
-        <translation>全画面動画の長さ</translation>
-    </message>
-    <message>
-        <source>Then the games come back, the video going on dimmed behind them</source>
-        <translation>その後ゲームが戻り、動画は背後で暗く再生され続けます</translation>
-    </message>
-    <message>
-        <source>No limit</source>
-        <translation>制限なし</translation>
-    </message>
-    <message>
         <source>Videos on the game page</source>
         <translation>ゲームページの動画</translation>
     </message>
@@ -4096,26 +4080,6 @@
     <message>
         <source>Reduced</source>
         <translation>控えめ</translation>
-    </message>
-    <message>
-        <source>Buttons shown</source>
-        <translation>表示するボタン</translation>
-    </message>
-    <message>
-        <source>The hints at the bottom show the gamepad's buttons or the keyboard's keys</source>
-        <translation>下部のヒントにゲームパッドのボタンまたはキーボードのキーを表示</translation>
-    </message>
-    <message>
-        <source>Last used</source>
-        <translation>最後に使用</translation>
-    </message>
-    <message>
-        <source>Gamepad</source>
-        <translation>ゲームパッド</translation>
-    </message>
-    <message>
-        <source>Keyboard</source>
-        <translation>キーボード</translation>
     </message>
     <message>
         <source>Sound</source>
@@ -4626,10 +4590,6 @@
         <translation>Borne はゲーム機に必要なエミュレーターとその新バージョンをインストールします（プレイ中は行いません）</translation>
     </message>
     <message>
-        <source>Used by your consoles</source>
-        <translation>ゲーム機で使用中</translation>
-    </message>
-    <message>
         <source>For: %1</source>
         <translation>対象：%1</translation>
     </message>
@@ -4652,22 +4612,6 @@
     <message>
         <source>No controller connected: the keyboard plays.</source>
         <translation>コントローラーが接続されていません：キーボードで操作します。</translation>
-    </message>
-    <message>
-        <source>Display</source>
-        <translation>表示</translation>
-    </message>
-    <message>
-        <source>Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller</source>
-        <translation>シンプル：配置とスティック。詳細：コントローラーで押して各ボタンも設定</translation>
-    </message>
-    <message>
-        <source>Simple</source>
-        <translation>シンプル</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation>詳細</translation>
     </message>
     <message>
         <source>For every game</source>
@@ -4866,24 +4810,12 @@
         <translation>エミュレーター</translation>
     </message>
     <message>
-        <source>Install, update</source>
-        <translation>インストール、更新</translation>
-    </message>
-    <message>
-        <source>The emulator programs on this computer. Borne installs and updates them; you can also give your own.</source>
-        <translation>このコンピューター上のエミュレーター。Borne がインストール・更新します。独自のものも指定できます。</translation>
-    </message>
-    <message>
         <source>Screen and sound</source>
         <translation>画面とサウンド</translation>
     </message>
     <message>
         <source>Size, animations, sounds</source>
         <translation>サイズ、アニメーション、サウンド</translation>
-    </message>
-    <message>
-        <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
-        <translation>Borne 本体：サイズ、アニメーション、サウンド、表示するボタン。</translation>
     </message>
     <message>
         <source>RomM &amp; images</source>
@@ -4898,10 +4830,6 @@
         <translation>ゲームの取得元サーバー、プレイする人、パッケージ画像の取得元。</translation>
     </message>
     <message>
-        <source>New versions of Borne. They never install during a game.</source>
-        <translation>Borne の新バージョン。プレイ中にインストールされることはありません。</translation>
-    </message>
-    <message>
         <source>Help</source>
         <translation>ヘルプ</translation>
     </message>
@@ -4912,10 +4840,6 @@
     <message>
         <source>Diagnostics, quit</source>
         <translation>診断、終了</translation>
-    </message>
-    <message>
-        <source>When something goes wrong: a report to share and measurements of this device.</source>
-        <translation>問題が起きたとき：共有用レポートとこのデバイスの計測値。</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -5058,24 +4982,12 @@
         <translation>インストール済みバージョン：%1</translation>
     </message>
     <message>
-        <source>Options</source>
-        <translation>オプション</translation>
-    </message>
-    <message>
         <source>Update channel</source>
         <translation>アップデートチャンネル</translation>
     </message>
     <message>
         <source>Stable gets tested releases; Development gets every build</source>
         <translation>安定版はテスト済みリリース、開発版はすべてのビルドを受け取ります</translation>
-    </message>
-    <message>
-        <source>Check automatically</source>
-        <translation>自動で確認</translation>
-    </message>
-    <message>
-        <source>Every 6 hours, never while you play</source>
-        <translation>6 時間ごと（プレイ中は除く）</translation>
     </message>
     <message>
         <source>RomM server</source>
@@ -5200,10 +5112,6 @@
     <message>
         <source>Developer mode</source>
         <translation>開発者モード</translation>
-    </message>
-    <message>
-        <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
-        <translation>開発者セクションを追加：エミュレーターを独自の画面で開く、引数を渡す、独自のエミュレーターを追加。変更内容は Borne が控えを保存し、オフにすれば元通りに動きます。</translation>
     </message>
     <message>
         <source>Added through ChimeraOS: Borne is in your Steam library after the next Steam session start, with its artwork.</source>
@@ -5344,6 +5252,38 @@
     <message>
         <source>Close</source>
         <translation>閉じる</translation>
+    </message>
+    <message>
+        <source>Each game can have its own (its page, Y). Applied the next time a game starts.</source>
+        <translation>ゲームごとに個別設定できます（ゲームのページで Y）。次にゲームを起動したときに適用されます。</translation>
+    </message>
+    <message>
+        <source>Borne and its emulators</source>
+        <translation>Borne とエミュレーター</translation>
+    </message>
+    <message>
+        <source>New versions of Borne and of the emulators. They never install during a game.</source>
+        <translation>Borne とエミュレーターの新しいバージョン。プレイ中にインストールされることはありません。</translation>
+    </message>
+    <message>
+        <source>When something goes wrong: a report to share. Developer mode shows the technical settings.</source>
+        <translation>問題が起きたとき：共有用のレポート。開発者モードで技術的な設定が表示されます。</translation>
+    </message>
+    <message>
+        <source>This device</source>
+        <translation>このデバイス</translation>
+    </message>
+    <message>
+        <source>Borne</source>
+        <translation>Borne</translation>
+    </message>
+    <message>
+        <source>Shows the technical settings (every option of the emulators, a console's own picture and controls, each button of the controller, the update channel) and a Developer section: measurements, the emulators opened on their own interface, emulators of your own. Off, what you set stays applied.</source>
+        <translation>技術的な設定（エミュレーターのすべてのオプション、機種ごとの画面とコントロール、コントローラーの各ボタン、アップデートチャンネル）と開発者セクション（測定、エミュレーターを単体で開く、独自のエミュレーター）を表示します。オフにしても設定した内容は適用されたままです。</translation>
+    </message>
+    <message>
+        <source>Borne itself: its size, animations and sounds.</source>
+        <translation>Borne 本体：サイズ、アニメーション、サウンド。</translation>
     </message>
 </context>
 <context>

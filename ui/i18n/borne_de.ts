@@ -2244,10 +2244,6 @@
         <translation>Noch kein Emulator spielt dieses Spiel.</translation>
     </message>
     <message>
-        <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
-        <translation>Wird beim nächsten Start des Spiels übernommen. Einfache oder erweiterte Anzeige: Einstellungen → Controller.</translation>
-    </message>
-    <message>
         <source>Choose a file</source>
         <translation>Eine Datei wählen</translation>
     </message>
@@ -4034,18 +4030,6 @@
         <translation>Nie</translation>
     </message>
     <message>
-        <source>Full-screen video length</source>
-        <translation>Dauer des Vollbildvideos</translation>
-    </message>
-    <message>
-        <source>Then the games come back, the video going on dimmed behind them</source>
-        <translation>Dann kommen die Spiele zurück, das Video läuft gedimmt dahinter weiter</translation>
-    </message>
-    <message>
-        <source>No limit</source>
-        <translation>Unbegrenzt</translation>
-    </message>
-    <message>
         <source>Videos on the game page</source>
         <translation>Videos auf der Spielseite</translation>
     </message>
@@ -4096,26 +4080,6 @@
     <message>
         <source>Reduced</source>
         <translation>Reduziert</translation>
-    </message>
-    <message>
-        <source>Buttons shown</source>
-        <translation>Angezeigte Tasten</translation>
-    </message>
-    <message>
-        <source>The hints at the bottom show the gamepad's buttons or the keyboard's keys</source>
-        <translation>Die Hinweise unten zeigen die Tasten des Gamepads oder der Tastatur</translation>
-    </message>
-    <message>
-        <source>Last used</source>
-        <translation>Zuletzt verwendet</translation>
-    </message>
-    <message>
-        <source>Gamepad</source>
-        <translation>Gamepad</translation>
-    </message>
-    <message>
-        <source>Keyboard</source>
-        <translation>Tastatur</translation>
     </message>
     <message>
         <source>Sound</source>
@@ -4626,10 +4590,6 @@
         <translation>Borne installiert die Emulatoren, die deine Konsolen brauchen, und ihre neuen Versionen, nie während eines Spiels</translation>
     </message>
     <message>
-        <source>Used by your consoles</source>
-        <translation>Von deinen Konsolen verwendet</translation>
-    </message>
-    <message>
         <source>For: %1</source>
         <translation>Für: %1</translation>
     </message>
@@ -4652,22 +4612,6 @@
     <message>
         <source>No controller connected: the keyboard plays.</source>
         <translation>Kein Controller verbunden: die Tastatur spielt.</translation>
-    </message>
-    <message>
-        <source>Display</source>
-        <translation>Anzeige</translation>
-    </message>
-    <message>
-        <source>Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller</source>
-        <translation>Einfach: Belegung und Stick. Erweitert: auch jede Taste, festgelegt durch Drücken auf deinem Controller</translation>
-    </message>
-    <message>
-        <source>Simple</source>
-        <translation>Einfach</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation>Erweitert</translation>
     </message>
     <message>
         <source>For every game</source>
@@ -4866,24 +4810,12 @@
         <translation>Emulatoren</translation>
     </message>
     <message>
-        <source>Install, update</source>
-        <translation>Installieren, aktualisieren</translation>
-    </message>
-    <message>
-        <source>The emulator programs on this computer. Borne installs and updates them; you can also give your own.</source>
-        <translation>Die Emulatorprogramme auf diesem Computer. Borne installiert und aktualisiert sie; du kannst auch eigene angeben.</translation>
-    </message>
-    <message>
         <source>Screen and sound</source>
         <translation>Bild und Ton</translation>
     </message>
     <message>
         <source>Size, animations, sounds</source>
         <translation>Größe, Animationen, Töne</translation>
-    </message>
-    <message>
-        <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
-        <translation>Borne selbst: seine Größe, Animationen, Töne und die angezeigten Tasten.</translation>
     </message>
     <message>
         <source>RomM &amp; images</source>
@@ -4898,10 +4830,6 @@
         <translation>Der Server, von dem deine Spiele kommen, wer spielt und woher die Hüllen-Scans stammen.</translation>
     </message>
     <message>
-        <source>New versions of Borne. They never install during a game.</source>
-        <translation>Neue Versionen von Borne. Sie werden nie während eines Spiels installiert.</translation>
-    </message>
-    <message>
         <source>Help</source>
         <translation>Hilfe</translation>
     </message>
@@ -4912,10 +4840,6 @@
     <message>
         <source>Diagnostics, quit</source>
         <translation>Diagnose, beenden</translation>
-    </message>
-    <message>
-        <source>When something goes wrong: a report to share and measurements of this device.</source>
-        <translation>Wenn etwas schiefgeht: ein Bericht zum Teilen und Messungen dieses Geräts.</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -5058,24 +4982,12 @@
         <translation>Installierte Version: %1</translation>
     </message>
     <message>
-        <source>Options</source>
-        <translation>Optionen</translation>
-    </message>
-    <message>
         <source>Update channel</source>
         <translation>Update-Kanal</translation>
     </message>
     <message>
         <source>Stable gets tested releases; Development gets every build</source>
         <translation>Stabil erhält getestete Versionen; Entwicklung erhält jeden Build</translation>
-    </message>
-    <message>
-        <source>Check automatically</source>
-        <translation>Automatisch prüfen</translation>
-    </message>
-    <message>
-        <source>Every 6 hours, never while you play</source>
-        <translation>Alle 6 Stunden, nie während du spielst</translation>
     </message>
     <message>
         <source>RomM server</source>
@@ -5200,10 +5112,6 @@
     <message>
         <source>Developer mode</source>
         <translation>Entwicklermodus</translation>
-    </message>
-    <message>
-        <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
-        <translation>Fügt einen Entwicklerbereich hinzu: Emulatoren in ihrer eigenen Oberfläche öffnen, ihnen Argumente geben, eigene Emulatoren hinzufügen. Borne behält eine Kopie deiner Änderungen; ausgeschaltet läuft alles wie vorher.</translation>
     </message>
     <message>
         <source>Added through ChimeraOS: Borne is in your Steam library after the next Steam session start, with its artwork.</source>
@@ -5344,6 +5252,38 @@
     <message>
         <source>Close</source>
         <translation>Schließen</translation>
+    </message>
+    <message>
+        <source>Each game can have its own (its page, Y). Applied the next time a game starts.</source>
+        <translation>Jedes Spiel kann eigene haben (seine Seite, Y). Gilt ab dem nächsten Spielstart.</translation>
+    </message>
+    <message>
+        <source>Borne and its emulators</source>
+        <translation>Borne und seine Emulatoren</translation>
+    </message>
+    <message>
+        <source>New versions of Borne and of the emulators. They never install during a game.</source>
+        <translation>Neue Versionen von Borne und der Emulatoren. Sie werden nie während eines Spiels installiert.</translation>
+    </message>
+    <message>
+        <source>When something goes wrong: a report to share. Developer mode shows the technical settings.</source>
+        <translation>Wenn etwas nicht klappt: ein Bericht zum Teilen. Der Entwicklermodus zeigt die technischen Einstellungen.</translation>
+    </message>
+    <message>
+        <source>This device</source>
+        <translation>Dieses Gerät</translation>
+    </message>
+    <message>
+        <source>Borne</source>
+        <translation>Borne</translation>
+    </message>
+    <message>
+        <source>Shows the technical settings (every option of the emulators, a console's own picture and controls, each button of the controller, the update channel) and a Developer section: measurements, the emulators opened on their own interface, emulators of your own. Off, what you set stays applied.</source>
+        <translation>Zeigt die technischen Einstellungen (alle Optionen der Emulatoren, eigenes Bild und eigene Steuerung einer Konsole, jede Taste des Controllers, den Update-Kanal) und einen Bereich Entwickler: Messungen, Emulatoren in ihrer eigenen Oberfläche, eigene Emulatoren. Aus: Deine Einstellungen bleiben angewendet.</translation>
+    </message>
+    <message>
+        <source>Borne itself: its size, animations and sounds.</source>
+        <translation>Borne selbst: Größe, Animationen und Töne.</translation>
     </message>
 </context>
 <context>

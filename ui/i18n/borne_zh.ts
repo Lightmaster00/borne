@@ -2244,10 +2244,6 @@
         <translation>尚无模拟器能运行此游戏。</translation>
     </message>
     <message>
-        <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
-        <translation>下次启动游戏时生效。简单或高级显示：设置 → 手柄。</translation>
-    </message>
-    <message>
         <source>Choose a file</source>
         <translation>选择文件</translation>
     </message>
@@ -4034,18 +4030,6 @@
         <translation>从不</translation>
     </message>
     <message>
-        <source>Full-screen video length</source>
-        <translation>全屏视频时长</translation>
-    </message>
-    <message>
-        <source>Then the games come back, the video going on dimmed behind them</source>
-        <translation>然后游戏重新出现，视频在后方变暗继续播放</translation>
-    </message>
-    <message>
-        <source>No limit</source>
-        <translation>无限制</translation>
-    </message>
-    <message>
         <source>Videos on the game page</source>
         <translation>游戏页面上的视频</translation>
     </message>
@@ -4096,26 +4080,6 @@
     <message>
         <source>Reduced</source>
         <translation>减少</translation>
-    </message>
-    <message>
-        <source>Buttons shown</source>
-        <translation>显示的按键</translation>
-    </message>
-    <message>
-        <source>The hints at the bottom show the gamepad's buttons or the keyboard's keys</source>
-        <translation>底部提示显示手柄按键或键盘按键</translation>
-    </message>
-    <message>
-        <source>Last used</source>
-        <translation>最近使用</translation>
-    </message>
-    <message>
-        <source>Gamepad</source>
-        <translation>手柄</translation>
-    </message>
-    <message>
-        <source>Keyboard</source>
-        <translation>键盘</translation>
     </message>
     <message>
         <source>Sound</source>
@@ -4626,10 +4590,6 @@
         <translation>Borne 会安装你的主机所需的模拟器及其新版本，绝不在游戏过程中进行</translation>
     </message>
     <message>
-        <source>Used by your consoles</source>
-        <translation>你的主机在使用</translation>
-    </message>
-    <message>
         <source>For: %1</source>
         <translation>用于：%1</translation>
     </message>
@@ -4652,22 +4612,6 @@
     <message>
         <source>No controller connected: the keyboard plays.</source>
         <translation>未连接手柄：使用键盘游玩。</translation>
-    </message>
-    <message>
-        <source>Display</source>
-        <translation>显示</translation>
-    </message>
-    <message>
-        <source>Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller</source>
-        <translation>简单：布局和摇杆。高级：还可在手柄上按下以设置每个按键</translation>
-    </message>
-    <message>
-        <source>Simple</source>
-        <translation>简单</translation>
-    </message>
-    <message>
-        <source>Advanced</source>
-        <translation>高级</translation>
     </message>
     <message>
         <source>For every game</source>
@@ -4866,24 +4810,12 @@
         <translation>模拟器</translation>
     </message>
     <message>
-        <source>Install, update</source>
-        <translation>安装、更新</translation>
-    </message>
-    <message>
-        <source>The emulator programs on this computer. Borne installs and updates them; you can also give your own.</source>
-        <translation>此电脑上的模拟器程序。Borne 负责安装和更新；你也可以指定自己的。</translation>
-    </message>
-    <message>
         <source>Screen and sound</source>
         <translation>屏幕和声音</translation>
     </message>
     <message>
         <source>Size, animations, sounds</source>
         <translation>大小、动画、声音</translation>
-    </message>
-    <message>
-        <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
-        <translation>Borne 本身：大小、动画、声音及显示的按键。</translation>
     </message>
     <message>
         <source>RomM &amp; images</source>
@@ -4898,10 +4830,6 @@
         <translation>你的游戏来自的服务器、谁在玩，以及包装扫描来自哪里。</translation>
     </message>
     <message>
-        <source>New versions of Borne. They never install during a game.</source>
-        <translation>Borne 的新版本。绝不会在游戏中安装。</translation>
-    </message>
-    <message>
         <source>Help</source>
         <translation>帮助</translation>
     </message>
@@ -4912,10 +4840,6 @@
     <message>
         <source>Diagnostics, quit</source>
         <translation>诊断、退出</translation>
-    </message>
-    <message>
-        <source>When something goes wrong: a report to share and measurements of this device.</source>
-        <translation>出现问题时：可分享的报告和此设备的测量数据。</translation>
     </message>
     <message>
         <source>Developer</source>
@@ -5058,24 +4982,12 @@
         <translation>已安装版本：%1</translation>
     </message>
     <message>
-        <source>Options</source>
-        <translation>选项</translation>
-    </message>
-    <message>
         <source>Update channel</source>
         <translation>更新通道</translation>
     </message>
     <message>
         <source>Stable gets tested releases; Development gets every build</source>
         <translation>稳定版获取经测试的版本；开发版获取每个构建</translation>
-    </message>
-    <message>
-        <source>Check automatically</source>
-        <translation>自动检查</translation>
-    </message>
-    <message>
-        <source>Every 6 hours, never while you play</source>
-        <translation>每 6 小时一次，游玩时不进行</translation>
     </message>
     <message>
         <source>RomM server</source>
@@ -5200,10 +5112,6 @@
     <message>
         <source>Developer mode</source>
         <translation>开发者模式</translation>
-    </message>
-    <message>
-        <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
-        <translation>添加“开发者”部分：在模拟器自身界面中打开它们、传入参数、添加你自己的模拟器。Borne 会保存你所做更改的副本；关闭后与以前一样运行。</translation>
     </message>
     <message>
         <source>Added through ChimeraOS: Borne is in your Steam library after the next Steam session start, with its artwork.</source>
@@ -5344,6 +5252,38 @@
     <message>
         <source>Close</source>
         <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Each game can have its own (its page, Y). Applied the next time a game starts.</source>
+        <translation>每个游戏都可以有自己的设置（游戏页面，按 Y）。下次启动游戏时生效。</translation>
+    </message>
+    <message>
+        <source>Borne and its emulators</source>
+        <translation>Borne 及其模拟器</translation>
+    </message>
+    <message>
+        <source>New versions of Borne and of the emulators. They never install during a game.</source>
+        <translation>Borne 和模拟器的新版本。游戏进行中不会安装。</translation>
+    </message>
+    <message>
+        <source>When something goes wrong: a report to share. Developer mode shows the technical settings.</source>
+        <translation>出现问题时：可分享的报告。开发者模式会显示技术设置。</translation>
+    </message>
+    <message>
+        <source>This device</source>
+        <translation>此设备</translation>
+    </message>
+    <message>
+        <source>Borne</source>
+        <translation>Borne</translation>
+    </message>
+    <message>
+        <source>Shows the technical settings (every option of the emulators, a console's own picture and controls, each button of the controller, the update channel) and a Developer section: measurements, the emulators opened on their own interface, emulators of your own. Off, what you set stays applied.</source>
+        <translation>显示技术设置（模拟器的所有选项、主机专属的画面和控制、手柄的每个按键、更新通道）以及开发者部分：性能测量、在模拟器自身界面中打开、你自己的模拟器。关闭后，已做的设置仍然生效。</translation>
+    </message>
+    <message>
+        <source>Borne itself: its size, animations and sounds.</source>
+        <translation>Borne 本身：大小、动画和声音。</translation>
     </message>
 </context>
 <context>

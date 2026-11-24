@@ -3,6 +3,8 @@
 .pragma library
 
 var KEYS = ["aspect", "upscale", "smooth", "integer", "fps"]
+// Shown without developer mode.
+var BASIC = ["aspect", "upscale", "smooth"]
 var VALUES = { aspect: ["auto", "4:3", "16:9", "stretch"], upscale: ["1", "2", "3", "4"], smooth: ["sharp", "smooth", "crt"], integer: ["off", "on"], fps: ["off", "on"] }
 
 function values(k) { return VALUES[k] || [] }

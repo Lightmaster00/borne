@@ -22,7 +22,7 @@ Item {
     property var cheats: null        // GET /games/<id>/cheats
     property var images: null        // GET /games/<id>/screenscraper
     property var controls: null      // GET /games/<id>/controls
-    property bool advanced: false    // controls: each button shown (Settings → Controllers → Display)
+    property bool advanced: false    // developer mode: each button, the emulator's options and the picture, for this game
     property var languages: []       // [{ code, version }] when the game exists in several
     property var versions: []        // the versions to choose from (raw API rows)
     property var versionLabel: function (v) { return String(v.rom_id) }
@@ -52,9 +52,9 @@ Item {
             { id: "language", name: qsTr("Version and language"), hint: [game && versions.length > 1 ? versionLabel(versions.find(v => v.rom_id === game.rom_id) || versions[0]) : "", currentLang ? languageName(currentLang) : ""].filter(x => x).join(" · ") || qsTr("One version") },
             { id: "controls", name: qsTr("Controller"), hint: dev ? Devices.label(dev.value, controls.console) : qsTr("Buttons, player 1") },
             { id: "emulator", name: qsTr("Emulator"), hint: emulator && emulator.own ? qsTr("Its own") : qsTr("As for its console") },
-            { id: "picture", name: qsTr("Picture"), hint: qsTr("Shape, sharpness, filters") },
             { id: "cheats", name: qsTr("Cheats"), hint: cheats && cheats.cheats ? qsTr("%n on", "", cheats.cheats.filter(x => x.on).length) : "" }
         ]
+        if (advanced) s.splice(3, 0, { id: "picture", name: qsTr("Picture"), hint: qsTr("Shape, sharpness, filters") })
         s.push({ id: "cover", name: qsTr("Cover and video"), hint: qsTr("ScreenScraper") })
         if (game && (game.local_state === "local" || game.linked || game.local_state === "missing"))
             s.push({ id: "storage", name: qsTr("Storage"), hint: game.local_state === "local" ? qsTr("On this device") : game.linked ? qsTr("Network mount") : "" })
@@ -103,6 +103,10 @@ Item {
                   selected: emulator.own || "",
                   items: [{ id: "", label: qsTr("As for its console (%1)").arg(consoleName) }].concat(emulator.choices.map(c => ({ id: c.id, label: c.name }))) }]
             const opts = emuOptions ? emuOptions.options : []
+            if (!advanced) {
+                r.push(note("applied", qsTr("Applied the next time the game starts.")))
+                return r
+            }
             r.push(group(emuOptions && emuOptions.engine ? qsTr("%1 options for this game").arg(emuOptions.engine) : qsTr("Options for this game")))
             if (!opts.length) r.push(note("no-opts", qsTr("This emulator has no option of its own here: the picture settings apply.")))
             for (const o of opts)
@@ -142,7 +146,7 @@ Item {
                 return r
             }
             for (const x of Controls.rows(controls, advanced, game ? game.platform_name : "")) r.push(x)
-            r.push(note("applied", qsTr("Applied the next time the game starts. Simple or advanced display: Settings → Controllers.")))
+            r.push(note("applied", qsTr("Applied the next time the game starts.")))
             return r
         }
         if (id === "cheats") {

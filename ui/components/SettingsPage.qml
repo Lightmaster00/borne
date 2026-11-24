@@ -83,12 +83,9 @@ Item {
             pref("bgVideo", qsTr("Video behind the library"), qsTr("The selected game's video plays by itself, muted, behind the covers"), on),
             pref("attractDelay", qsTr("Video in full screen"), qsTr("Without a press for this long, the page fades out and leaves the game's video, with its sound on a game's page"),
                  [[5, secs(5)], [15, secs(15)], [30, secs(30)], [60, secs(60)], [0, qsTr("Never")]]),
-            pref("attractRest", qsTr("Full-screen video length"), qsTr("Then the games come back, the video going on dimmed behind them"),
-                 [[60, secs(60)], [180, secs(180)], [600, secs(600)], [0, qsTr("No limit")]]),
             pref("pageVideo", qsTr("Videos on the game page"), qsTr("A game's trailer starts on its page after a moment"), on)
         ]
-        // The full-screen video's length only when it goes full screen.
-        return rows.filter(r => !(prefs && prefs.attractDelay === 0 && r.id === "pref:attractRest"))
+        return rows
     }
     function languageRows() {
         return [
@@ -104,8 +101,6 @@ Item {
             pref("uiScale", qsTr("Interface size"), qsTr("Larger text and covers, for a screen seen from afar"),
                  [[100, "100 %"], [115, "115 %"], [130, "130 %"], [145, "145 %"]]),
             pref("motion", qsTr("Animations"), qsTr("Reduced: shorter movements and fades"), [["normal", qsTr("Normal")], ["reduced", qsTr("Reduced")]]),
-            pref("prompts", qsTr("Buttons shown"), qsTr("The hints at the bottom show the gamepad's buttons or the keyboard's keys"),
-                 [["auto", qsTr("Last used")], ["pad", qsTr("Gamepad")], ["keyboard", qsTr("Keyboard")]]),
             group(qsTr("Sound")),
             pref("sounds", qsTr("Interface sounds"), qsTr("Short, quiet sounds when moving and choosing"), on),
             pref("soundVolume", qsTr("Volume"), qsTr("Of the interface sounds only, not of the games"),
@@ -251,7 +246,7 @@ Item {
         const ask = { id: "needs-ask", kind: "buttons", title: qsTr("Questions before playing"),
                       desc: qsTr("Before a game made for an accessory Borne does not find (a guitar, a Balance Board, PlayStation VR…), or a console's first game when this computer lacks what it needs, Borne asks once. Never a lock: Play anyway is remembered."),
                       items: [{ id: "needs-forget", label: qsTr("Ask again") }] }
-        const rows = [pick, ask, group(qsTr("In your library"))]
+        const rows = devOn ? [pick, ask, group(qsTr("In your library"))] : [pick, group(qsTr("In your library"))]
         consoles.forEach(c => {
             const issues = consoleIssues(c)
             const bad = issues.find(i => i.tone === "bad")
@@ -291,7 +286,7 @@ Item {
         if (p) rows.push({ id: "prog:" + p.id, kind: "buttons", title: c.choices.length > 1 ? p.name : qsTr("%1 plays these games").arg(ch.name),
                            desc: programText(p), items: programButtons(p) })
         // The emulator's own options: for every game it runs (other consoles included).
-        const opts = consoleOpts && p && consoleOpts.program === p.id ? consoleOpts.options : []
+        const opts = (consoleOpts && p && consoleOpts.program === p.id ? consoleOpts.options : []).filter(o => devOn || basicOpts.includes(o.key))
         if (opts.length) {
             const shared = consoles.filter(x => x.slug !== c.slug && chosenOf(x) && chosenOf(x).program === p.id).map(x => x.name)
             rows.push(group(qsTr("%1 options").arg(p.name)))
@@ -303,7 +298,7 @@ Item {
                                                    items: [{ id: "opt-reset:" + p.id, label: qsTr("Reset") }] })
         }
         // Picture: this console's own values over those for all games.
-        if (consoleDisplay) {
+        if (consoleDisplay && devOn) {
             rows.push(group(qsTr("Picture")))
             Display.KEYS.forEach(k => {
                 const own = consoleDisplay.own ? consoleDisplay.own[k] : undefined
@@ -314,9 +309,9 @@ Item {
             })
         }
         // Controls: this console's own over those for every game.
-        if (consoleControls && consoleControls.console === c.slug) {
+        if (consoleControls && consoleControls.console === c.slug && (devOn || consoleControls.options.some(o => o.key === "device"))) {
             rows.push(group(qsTr("Controls")))
-            Controls.rows(consoleControls, prefs && prefs.controlsAdvanced, qsTr("every game")).forEach(r => rows.push(r))
+            Controls.rows(consoleControls, devOn, qsTr("every game")).filter(r => devOn || r.id === "ctl:device").forEach(r => rows.push(r))
         }
         const sf = sysOf(c.slug)
         if (sf && sf.items.length) {
@@ -327,14 +322,13 @@ Item {
     }
     function programsRows() {
         if (!emus) return []
-        const rows = [{ id: "emu-auto", kind: "chips", title: qsTr("Install and update by themselves"),
+        const rows = [group(qsTr("Emulators")), { id: "emu-auto", kind: "chips", title: qsTr("Install and update by themselves"),
                         desc: qsTr("Borne installs the emulators your consoles need and their new versions, never during a game"),
                         selected: emus.auto_update ? "on" : "off", items: onOff() }]
         const used = {}
         consoles.forEach(c => { const ch = chosenOf(c); if (ch) used[ch.program] = (used[ch.program] || []).concat([c.name]) })
         const inUse = emus.programs.filter(p => used[p.id])
-        const others = emus.programs.filter(p => !used[p.id] && (p.managed || p.user_path || p.found))
-        if (inUse.length) rows.push(group(qsTr("Used by your consoles")))
+        const others = devOn ? emus.programs.filter(p => !used[p.id] && (p.managed || p.user_path || p.found)) : []
         inUse.forEach(p => rows.push({ id: "prog:" + p.id, kind: "buttons", title: p.name,
             desc: programText(p) + "\n" + qsTr("For: %1").arg(used[p.id].join(", ")), items: programButtons(p) }))
         if (others.length) rows.push(group(qsTr("Also on this computer")))
@@ -347,10 +341,8 @@ Item {
         const rows = [group(qsTr("Connected")),
                       note("pads", pads.length ? pads.map((n, i) => qsTr("Player %1: %2").arg(i + 1).arg(n)).join("\n")
                                                : qsTr("No controller connected: the keyboard plays.")),
-                      pref("controlsAdvanced", qsTr("Display"), qsTr("Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller"),
-                           [[false, qsTr("Simple")], [true, qsTr("Advanced")]]),
                       group(qsTr("For every game"))]
-        Controls.rows(controlsAll, prefs && prefs.controlsAdvanced, qsTr("every game")).forEach(r => rows.push(r))
+        Controls.rows(controlsAll, devOn, qsTr("every game")).forEach(r => rows.push(r))
         // The consoles whose games can be shown another controller (Joy-Con, Wii Remote…).
         const kinds = { switch: qsTr("Pro Controller, Joy-Con pair or handheld"), wii: qsTr("Wii Remote with Nunchuk, alone, sideways, or Classic Controller"), wiiu: qsTr("Wii U GamePad or Pro Controller") }
         const own = consoles.filter(c => kinds[c.slug])
@@ -358,7 +350,8 @@ Item {
             rows.push(group(qsTr("Controller each console's games see")))
             own.forEach(c => rows.push(link("go:console:" + c.slug, c.name, kinds[c.slug])))
         }
-        rows.push(note("ctl-note", qsTr("Each console can have its own (Settings → Consoles → the console), and each game its own (its page, Y). Applied the next time a game starts.")))
+        rows.push(note("ctl-note", devOn ? qsTr("Each console can have its own (Settings → Consoles → the console), and each game its own (its page, Y). Applied the next time a game starts.")
+                                         : qsTr("Each game can have its own (its page, Y). Applied the next time a game starts.")))
         return rows
     }
 
@@ -394,13 +387,12 @@ Item {
             if (upd.unsupported) return [{ id: "update-github", label: qsTr("Download from GitHub"), primary: true }]
             // The size actually downloaded (only what changed, when known).
             const size = updState.size || (a ? a.size : 0)
-            return [{ id: "update-download", label: qsTr("Install · %1").arg(fmtSize(size)), primary: true }, github]
+            return [{ id: "update-download", label: qsTr("Install · %1").arg(fmtSize(size)), primary: true }].concat(devOn ? [github] : [])
         }
         // No stable release yet: the way out is one press away.
         if (st === "error" && upd.channel === "stable" && /no stable version/.test(updState.error || ""))
-            return [{ id: "update-to-dev", label: qsTr("Switch to the dev channel"), primary: true }, github]
-        return [{ id: "update-check", label: qsTr("Check now"), primary: true },
-                { id: "update-force", label: qsTr("Reinstall the latest build") }, github]
+            return [{ id: "update-to-dev", label: qsTr("Switch to the dev channel"), primary: true }].concat(devOn ? [github] : [])
+        return [{ id: "update-check", label: qsTr("Check now"), primary: true }].concat(devOn ? [{ id: "update-force", label: qsTr("Reinstall the latest build") }, github] : [])
     }
 
     readonly property var sysFiles: settings && settings.system_files ? settings.system_files : null
@@ -427,7 +419,7 @@ Item {
     readonly property var displayData: settings && settings.display ? settings.display : null
     function displayRows() {
         if (!displayData) return []
-        return Display.KEYS.map(k => ({ id: "disp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k),
+        return Display.KEYS.filter(k => devOn || Display.BASIC.includes(k)).map(k => ({ id: "disp:" + k, kind: "chips", title: Display.title(k), desc: Display.desc(k),
                                         selected: displayData.effective[k], items: Display.values(k).map(v => ({ id: v, label: Display.label(k, v) })) }))
     }
     // Each section: its name, a hint under it in the list (warn: something to fix), and a sentence under its title.
@@ -445,24 +437,30 @@ Item {
           intro: qsTr("Borne's language, which also picks the version and the language of the games.") },
         { id: "games", name: qsTr("Games and saves"), hint: qsTr("Installation, saves, picture"),
           intro: qsTr("How games come to this device, where their saves go, and how every game looks unless its console or the game has its own.") },
-        { id: "programs", name: qsTr("Emulators"), hint: qsTr("Install, update"),
-          intro: qsTr("The emulator programs on this computer. Borne installs and updates them; you can also give your own.") },
         { id: "interface", name: qsTr("Screen and sound"), hint: qsTr("Size, animations, sounds"),
-          intro: qsTr("Borne itself: its size, animations, sounds and the buttons it shows.") },
+          intro: qsTr("Borne itself: its size, animations and sounds.") },
         { id: "library", name: qsTr("RomM & images"), hint: qsTr("Server, profile, ScreenScraper"), warn: !!(status && status.server_url && !status.online),
           intro: qsTr("The server your games come from, who is playing, and where the case scans come from.") },
-        { id: "updates", name: qsTr("Updates"), hint: upd && upd.channel === "dev" ? qsTr("Development") : qsTr("Stable"),
-          intro: qsTr("New versions of Borne. They never install during a game.") },
+        { id: "updates", name: qsTr("Updates"), hint: qsTr("Borne and its emulators"),
+          intro: qsTr("New versions of Borne and of the emulators. They never install during a game.") },
         { id: "help", name: qsTr("Help"), hint: steam && steam.available ? qsTr("Steam, diagnostics, quit") : qsTr("Diagnostics, quit"),
-          intro: qsTr("When something goes wrong: a report to share and measurements of this device.") }
+          intro: qsTr("When something goes wrong: a report to share. Developer mode shows the technical settings.") }
     ].concat(dev && dev.on ? [
         { id: "dev", name: qsTr("Developer"), hint: qsTr("Emulators opened, your own"),
           intro: qsTr("Open an emulator on its own interface with Borne's setup and change what you like, give it extra arguments, or add emulators of your own. Borne copies an emulator's settings before opening it: Undo my changes puts them back. Turned off (Help), Borne plays as before and keeps what you did here for next time.") }
     ] : [])
     readonly property var dev: settings && settings.dev ? settings.dev : null
+    // Developer mode on: the technical settings show too (an emulator's every option, a console's own
+    // picture and controls, each button of the controller, the update channel…).
+    readonly property bool devOn: !!(dev && dev.on)
+    // An emulator's options shown without it; the others are the developer's.
+    readonly property var basicOpts: ["rewind", "widescreen", "docked", "console", "trophies"]
     function when(t) { return new Date(t * 1000).toLocaleString(Qt.locale(), Locale.ShortFormat) }
     function devRows() {
-        const rows = [group(qsTr("Light and cards")),
+        const rows = [group(qsTr("This device")),
+                      { id: "diag", kind: "buttons", title: qsTr("Measurements"), desc: qsTr("Graphics, memory and disk speed of this device, to understand a slow game"),
+                        items: [{ id: "diag", label: qsTr("Open") }] },
+                      group(qsTr("Light and cards")),
                       { id: "dev-tune", kind: "buttons", title: qsTr("Tune live"),
                         desc: qsTr("The background's light and the Store's cards, changed over the Store itself: each value as you like it, and back to Borne's with X. Your values stay as you leave them."),
                         items: [{ id: "dev-tune", label: qsTr("Tune"), primary: true }] },
@@ -506,7 +504,6 @@ Item {
         const id = sectionId
         if (id === "overview") return overviewRows()
         if (id === "consoles") return consoleSlug ? consoleRows(consoleSlug) : consolesRows()
-        if (id === "programs") return programsRows()
         if (id === "controls") return controlsRows()
         if (id === "games") return [
             group(qsTr("Installation")),
@@ -520,13 +517,12 @@ Item {
             group(qsTr("Picture in every game"))
         ].filter(r => r.id !== "cache" || installMode === "stream").concat(displayRows())
         if (id === "updates") return [
-            { id: "update", kind: "buttons", title: qsTr("Installed version: %1").arg(page.version), desc: updateText, items: updateButtons },
-            group(qsTr("Options")),
+            group(qsTr("Borne")),
+            { id: "update", kind: "buttons", title: qsTr("Installed version: %1").arg(page.version), desc: updateText, items: updateButtons }
+        ].concat(devOn || (upd && upd.channel === "dev") ? [
             { id: "channel", kind: "chips", title: qsTr("Update channel"), desc: qsTr("Stable gets tested releases; Development gets every build"),
-              selected: upd ? upd.channel : "stable", items: [{ id: "stable", label: qsTr("Stable") }, { id: "dev", label: qsTr("Development") }] },
-            { id: "auto", kind: "chips", title: qsTr("Check automatically"), desc: qsTr("Every 6 hours, never while you play"),
-              selected: upd && upd.auto_check ? "on" : "off", items: onOff() }
-        ]
+              selected: upd ? upd.channel : "stable", items: [{ id: "stable", label: qsTr("Stable") }, { id: "dev", label: qsTr("Development") }] }
+        ] : []).concat(programsRows())
         if (id === "interface") return screenRows()
         if (id === "shelf") return libraryRows()
         if (id === "dev") return devRows()
@@ -547,8 +543,8 @@ Item {
               items: ssRunning
                      ? [{ id: ss.state.paused ? "ss-resume" : "ss-pause", label: ss.state.paused ? qsTr("Resume") : qsTr("Pause"), primary: true },
                         { id: "ss-stop", label: qsTr("Stop") }]
-                     : [{ id: "ss-fetch", label: qsTr("Fetch missing"), primary: true, disabled: !(ss && ss.configured) },
-                        { id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) }] },
+                     : [{ id: "ss-fetch", label: qsTr("Fetch missing"), primary: true, disabled: !(ss && ss.configured) }]
+                       .concat(devOn ? [{ id: "ss-again", label: qsTr("Fetch everything again"), disabled: !(ss && ss.configured) }] : []) },
             { id: "ss-report", kind: "buttons", title: qsTr("Games found, per console"), desc: qsTr("Which games ScreenScraper recognised, and those it did not: open one to correct its match"),
               items: [{ id: "ss-report", label: qsTr("See the report"), disabled: !(ss && ss.configured) }] }
         ]
@@ -557,12 +553,10 @@ Item {
             { id: "report", kind: "buttons", title: qsTr("Diagnostic report"),
               desc: reportPaths.length ? qsTr("Saved: %1").arg(reportPaths[reportPaths.length - 1]) : qsTr("Saves the log and settings, without passwords or tokens, to share when something goes wrong"),
               items: [{ id: "report", label: qsTr("Export the report") }] },
-            { id: "diag", kind: "buttons", title: qsTr("Measurements"), desc: qsTr("Graphics, memory and disk speed of this device, to understand a slow game"),
-              items: [{ id: "diag", label: qsTr("Open") }] },
             { id: "quit", kind: "buttons", title: qsTr("Quit Borne"), desc: qsTr("Back to the system"), items: [{ id: "quit", label: qsTr("Quit") }] },
             group(qsTr("For the curious")),
             { id: "dev-mode", kind: "chips", title: qsTr("Developer mode"),
-              desc: qsTr("Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before."),
+              desc: qsTr("Shows the technical settings (every option of the emulators, a console's own picture and controls, each button of the controller, the update channel) and a Developer section: measurements, the emulators opened on their own interface, emulators of your own. Off, what you set stays applied."),
               selected: dev && dev.on ? "on" : "off", items: onOff() }
         ])
     }

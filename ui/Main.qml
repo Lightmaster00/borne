@@ -2075,7 +2075,7 @@ Window {
             clip: true
             z: 24
             theme: win.theme
-            advanced: prefs.controlsAdvanced
+            advanced: !!(win.settings && win.settings.dev && win.settings.dev.on)
             game: win.pageGame
             languages: gamePage.gameLanguages
             versions: gamePage.playable
@@ -2586,8 +2586,9 @@ Window {
         property bool bgVideo: false          // the selected game's video behind the library
         property bool pageVideo: true         // videos on the game page
         property int attractDelay: 5          // s without input before the video fills the screen; 0: never
-        property int attractRest: 60          // s of full-screen video before the games come back; 0: never
+        property int attractRest: 180         // s of full-screen video before the games come back; 0: never
         property int safeVideoFix: 0
+        property int trimVersion: 0
         property int uiScale: 130             // interface size, %: read from a sofa by default
         property bool controlsAdvanced: false // controls: each button shown and set by pressing it
         property int scaleVersion: 0          // 1: the larger default given once to older settings
@@ -2638,6 +2639,13 @@ Window {
             if (prefs.calmVersion < 1) { prefs.bgVideo = false; prefs.calmVersion = 1 }
             // Earlier safe modes turned the game page's videos off for good: back on, once.
             if (prefs.safeVideoFix < 1) { prefs.pageVideo = true; prefs.safeVideoFix = 1 }
+            // Settings no longer shown take Borne's choice: the last device's buttons, 3 min of
+            // full-screen video, updates looked for by themselves.
+            if (prefs.trimVersion < 1) {
+                prefs.prompts = "auto"; prefs.attractRest = 180
+                api("POST", "/api/v1/settings", { update_auto: true }, function () {})
+                prefs.trimVersion = 1
+            }
             // (Safe mode no longer turns the player's video and sound settings off for good.)
             refreshStatus(function (s) {
                 if (!s) { fatal = qsTr("Borne core unreachable"); return }

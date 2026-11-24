@@ -2304,10 +2304,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Applied the next time the game starts. Simple or advanced display: Settings → Controllers.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Version and language</source>
         <translation type="unfinished" />
     </message>
@@ -4122,14 +4118,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Check automatically</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Every 6 hours, never while you play</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Interface sounds</source>
         <translation type="unfinished" />
     </message>
@@ -4458,14 +4446,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Full-screen video length</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>No limit</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Videos on the game page</source>
         <translation type="unfinished" />
     </message>
@@ -4534,26 +4514,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Buttons shown</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The hints at the bottom show the gamepad's buttons or the keyboard's keys</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Last used</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Gamepad</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Keyboard</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Picture</source>
         <translation type="unfinished" />
     </message>
@@ -4562,23 +4522,11 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>New versions of Borne. They never install during a game.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>When something goes wrong: a report to share and measurements of this device.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Installation</source>
         <translation type="unfinished" />
     </message>
     <message>
         <source>Saves</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Options</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -4790,10 +4738,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Used by your consoles</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>For: %1</source>
         <translation type="unfinished" />
     </message>
@@ -4847,14 +4791,6 @@
     </message>
     <message>
         <source>Everything about each console of your library: the emulator that plays it, that emulator's options, the picture and the system files. A game can still have its own settings, from its page.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Install, update</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>The emulator programs on this computer. Borne installs and updates them; you can also give your own.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -4942,10 +4878,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Then the games come back, the video going on dimmed behind them</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Language</source>
         <translation type="unfinished" />
     </message>
@@ -4975,22 +4907,6 @@
     </message>
     <message>
         <source>every game</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Display</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Simple: the layout and the stick. Advanced: also each button, set by pressing it on your controller</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Simple</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Advanced</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -5095,10 +5011,6 @@
     </message>
     <message>
         <source>Size, animations, sounds</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Borne itself: its size, animations, sounds and the buttons it shows.</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -5286,10 +5198,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Adds a Developer section: open the emulators on their own interface, give them arguments, add emulators of your own. Borne keeps a copy of what you change; off, it plays as before.</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Light and cards</source>
         <translation type="unfinished" />
     </message>
@@ -5343,6 +5251,38 @@
     </message>
     <message>
         <source>Updating…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Each game can have its own (its page, Y). Applied the next time a game starts.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne and its emulators</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>New versions of Borne and of the emulators. They never install during a game.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>When something goes wrong: a report to share. Developer mode shows the technical settings.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This device</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Shows the technical settings (every option of the emulators, a console's own picture and controls, each button of the controller, the update channel) and a Developer section: measurements, the emulators opened on their own interface, emulators of your own. Off, what you set stays applied.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Borne itself: its size, animations and sounds.</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -57,6 +57,7 @@ Version 1.8 — November 2026
 | 1.33 | Status top right: once every game is listed, a sync still fetching covers says how many are left instead of staying on "Syncing N/N". |
 | 1.34 | Game page: left from its first button reaches the rail (up/down along it, A goes there, right or B back to the page). Its header shows the console's logo (or name) once: where it was opened from only when that is not the console, its state only while something happens. Summaries' HTML entities (&quot;…) shown as characters. The server's status top right appears only when RomM cannot be reached; the footer's hairline is gone. |
 | 1.35 | A sync that has not counted the games yet says "Syncing the library…" (not 0/0). On a game's page with the rail focused, the footer shows the rail's buttons. |
+| 1.37 | Fewer settings. Removed (Borne's choice): buttons shown (always the last device used), the controls' simple/advanced display, the full-screen video's length (3 min), checking for updates automatically (always on); older choices are reset once (`prefs.trimVersion`). In developer mode only (`dev.on`): an emulator's technical options (run-ahead, overclock, renderer, PGXP, filtering, colour buffers, JIT, v-sync, Arcade licence, PS4 Pro), a console's own picture and controls (its Controller the games see stays), each button of the controller, whole-number scaling and the frame rate, the update channel (shown anyway on the dev channel), Reinstall the latest build and GitHub, Fetch everything again, Ask again, Measurements (Developer → This device); a game's own picture and emulator options. The Emulators section is merged into Updates (Borne, then its emulators). What was set stays applied. |
 | 1.36 | Settings check: the Measurements panel (Help) opens above everything, fits the window and closes back to where it was opened. Safe mode only applies while it is on: it no longer turns off the page videos, ambient videos or sounds for good (they are restored once). The emulator update button shows the size of the update. |
 | 1.10 | New interface: *My library* (games ready here) and the *Store* (the server's others, by console); games in groups set by the order (Resume, This week, A – F, the 1990s…), covers at their own proportions; Filter (consoles as a fan of cards, quick filters, genres) and Sort apart; a border in the colour of the selected game's console with its logo; the game page as a sheet with the players' rating, play time and a table of facts. 3D cases removed. |
 | 1.9 | Consoles chosen by the player (asked after the first sync, changed in Settings); detection of the machine's hardware (touch screen, pointer, motion-sensor pads, Wii Remote, Bluetooth, threads, memory, Steam Deck) and per-console warnings; Wii U through Cemu; Saturn BIOS under the Beetle core's names; clearer 3DS and Switch failure reasons. |
@@ -565,7 +566,7 @@ The RomM account provides identity and remote scope; the local profile provides 
 > source; RetroArch from the newest stable version whose folder holds this system's build), unpacks .zip/.7z/.tar.xz/.dmg (never taking a shared library, such as Azahar's
 > libretro build, for the program: one installed that way is installed again), extracts AppImages once (no FUSE), replaces the old
 > version only when the new one is complete, and checks for updates every 6 hours (installed when
-> no game runs; Settings → Emulators → Install and update by themselves). *Play* installs what is missing then
+> no game runs; Settings → Updates → Install and update by themselves). *Play* installs what is missing then
 > starts the game; a game waiting for its emulator while another one is installed for the library
 > is told so, and its own emulator is installed next, even when that other installation fails. RetroArch runs with Borne's own `--config` (fullscreen, no menu, no on-screen
 > messages, no hotkeys, profile saves and states, Borne's cores and BIOS folders); Dolphin with
@@ -914,8 +915,7 @@ blocks a launch just because a game was not tested or a community database rates
   `controls.game.<group>.<key>` with the groups `@all`, `@console:<slug>` and the game's.
   Settings: player 1's controller (games only), the layout (as on the controller, or A↔B and X↔Y
   swapped), the left stick as the D-pad, and which pad button does each of the console's buttons.
-  Display simple (layout, stick) or advanced (also each button, `prefs.controlsAdvanced`). In the
-  advanced display each of the console's own buttons (GameCube A, B, X, Y, Z…, PlayStation ✕ ○ □
+  Each button is set in developer mode only (`dev.on`; the layout and the stick always). There each of the console's own buttons (GameCube A, B, X, Y, Z…, PlayStation ✕ ○ □
   △…, named in `ui/components/Controls.js`) shows the pad button doing it, named as printed on
   the player's pad (Xbox, PlayStation, Nintendo); "Press to change" waits for the next pad
   button pressed (`POST /api/v1/controls/capture`, a "capture" event by the button's place, ten
@@ -1262,13 +1262,14 @@ Versions change: revalidate at the start of each stage and pin the versions actu
     emulator's options for every game it runs (`GET`/`POST /api/v1/emulators/<program>/options`,
     stored as `emuopt.@all.<program>.<key>`; the other consoles using it are named); the console's
     picture over the one for all games; its system files.
-  - Emulators: install and update by themselves, the programs used by the consoles (and for
-    which), then the others on this computer.
+  - Updates: Borne's version (and, in developer mode or on the dev channel, its channel), then
+    the emulators: install and update by themselves, the programs used by the consoles (and for
+    which), and in developer mode the others on this computer.
   - Games and saves: installation, network cache, saves, and the picture for every game.
   - Controllers: those connected, and for every game the face buttons, the left stick and each
     button (`GET`/`POST /api/v1/controls`, stored as `controls.game.@all.<key>`; the pad stays a
     per-game choice).
-  - Screen and sound (size, animations, buttons shown, interface sounds), RomM & images (server,
+  - Screen and sound (size, animations, interface sounds), RomM & images (server,
     sync, profile, ScreenScraper), Updates, Help.
   A setting with many choices shows them under its title and explanation, on several lines if need
   be. Lines of the overview pointing at a console (`go:console:<slug>`) open its page.
@@ -1283,8 +1284,8 @@ Versions change: revalidate at the start of each stage and pin the versions actu
   shelf, its cases and the settings' section list shrink to keep clear of the hints, and a console
   tab only partly in view is dimmed), animations
   normal or reduced (`motion`: Theme durations and the attract fades × 0.4), clock shown or hidden; Sounds — interface
-  sounds, volume low / medium / high; Controls — buttons shown: last used, gamepad or keyboard
-  (`prompts`). Rows that cannot apply are hidden (no full-screen video without the background video).
+  sounds, volume low / medium / high. The buttons shown follow the last device used (`prompts`,
+  no longer a setting) and the full-screen video lasts 3 min (`attractRest`, no longer a setting).
   The former single `trailers` switch is copied once to both video switches.
 - Game page: Play (or Download / Play from the network), the favourite, and Game settings: a page
   over the game page (`GameSettingsPage.qml`), laid out like Settings. Nothing closes by itself: a
