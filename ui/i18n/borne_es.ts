@@ -3205,10 +3205,6 @@
         <translation><numerusform>%n descarga</numerusform><numerusform>%n descargas</numerusform></translation>
     </message>
     <message>
-        <source>Offline</source>
-        <translation>Sin conexión</translation>
-    </message>
-    <message>
         <source>Game settings</source>
         <translation>Ajustes del juego</translation>
     </message>
@@ -3587,6 +3583,10 @@
     <message>
         <source>Borne core unreachable</source>
         <translation>El núcleo de Borne no responde</translation>
+    </message>
+    <message>
+        <source>RomM unreachable</source>
+        <translation>RomM inaccesible</translation>
     </message>
 </context>
 <context>

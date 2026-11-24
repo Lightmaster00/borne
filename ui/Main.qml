@@ -320,6 +320,9 @@ Window {
     onStatusChanged: checkImport()
     onScreenChanged: checkImport()
     Timer { id: importCap; interval: 120000; onTriggered: { win.importing = false; win.maybeAskConsoles() } }
+    // On a game's page, the rail has the focus (reached with left from the first button).
+    property bool pageRail: false
+    onOverlayChanged: if (overlay !== "game") pageRail = false
     property int libSeq: 0
     property double libShownAt: 0
     property int libShownSeq: 0
@@ -772,6 +775,7 @@ Window {
     function pageAction(id, payload) {
         const g = pageGame
         if (id === "back") { sfx.play("back"); closeGame(); return }
+        if (id === "rail") { sfx.play("move"); railIndex = Math.max(0, railItems.findIndex(r => r.id === libTab)); pageRail = true; return }
         if (!g) return
         if (id === "settings") gameSettings(g)
         else if (id === "watch") {
@@ -1421,6 +1425,23 @@ Window {
         if (overlay === "launch") { if (a === "b") { overlay = ""; gameMode = false } return }
         if (overlay === "settings") { if (a !== "a" && a !== "b") sfx.play("move"); return settingsPage.handle(a) }
         if (gameSettingsPage.visible) { if (a !== "a" && a !== "b") sfx.play("move"); return gameSettingsPage.handle(a) }
+        // On a game's page, the rail reached from its first button: up and down along it, A goes
+        // there (the page closes), right or B back to the page.
+        if (overlay === "game" && pageRail) {
+            if (a === "up" && railIndex > 0) { railIndex--; sfx.play("move") }
+            else if (a === "down" && railIndex < railItems.length - 1) { railIndex++; sfx.play("move") }
+            else if (a === "right" || a === "b") { pageRail = false; sfx.play("move") }
+            else if (a === "a") {
+                const r = railItems[railIndex]
+                pageRail = false
+                if (!r) return
+                sfx.play("accept")
+                // Home and Store: the page closes onto that tab; the others open over it.
+                if (r.id === "home" || r.id === "store") { closeGame(); folder = null; railAction(r.id); homeZone = "rail" }
+                else railAction(r.id)
+            }
+            return
+        }
         if (overlay === "game") { if (a !== "a" && a !== "b") sfx.play("move"); return gamePage.handle(a) }
         if (screen === "server") return setup.handle(a)
         if (screen === "profiles") return picker.handle(a)
@@ -1846,7 +1867,7 @@ Window {
             theme: win.theme
             items: win.railItems
             index: win.railIndex
-            focused: win.homeZone === "rail" && !win.folder && win.overlay === "" && !downloadsPanel.shown
+            focused: (win.homeZone === "rail" && !win.folder && win.overlay === "" && !downloadsPanel.shown) || (win.overlay === "game" && win.pageRail)
             here: win.overlay === "settings" ? "settings" : downloadsPanel.shown ? "downloads" : win.libTab
             profileName: win.activeProfile ? win.activeProfile.name : ""
             profileColor: win.activeProfile && win.activeProfile.name ? Qt.hsla(((win.activeProfile.name.charCodeAt(0) * 37) % 360) / 360, 0.35, 0.36, 1) : "#5A5C66"
@@ -1865,7 +1886,7 @@ Window {
                 return busy.reduce((a, g) => a + g.dl_received, 0) / busy.reduce((a, g) => a + g.dl_total, 0)
             }
             online: !!(win.status && win.status.online)
-            serverText: win.status && win.status.online ? "RomM" : qsTr("Offline")
+            serverText: win.status && win.status.online ? "RomM" : qsTr("RomM unreachable")
             clockText: prefs.showClock ? win.playTimeText() : ""
         }
 
@@ -1927,6 +1948,7 @@ Window {
         GamePage {
             id: gamePage
             anchors.fill: parent
+            railFocused: win.pageRail
             z: 20
             // Hidden under the game's settings (their glass would show it through).
             visible: win.overlay === "game" && win.pageGame !== null && !gameSettingsPage.visible

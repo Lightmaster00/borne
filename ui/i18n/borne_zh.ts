@@ -3205,10 +3205,6 @@
         <translation><numerusform>%n 个下载</numerusform></translation>
     </message>
     <message>
-        <source>Offline</source>
-        <translation>离线</translation>
-    </message>
-    <message>
         <source>Game settings</source>
         <translation>游戏设置</translation>
     </message>
@@ -3587,6 +3583,10 @@
     <message>
         <source>Borne core unreachable</source>
         <translation>无法连接 Borne 核心</translation>
+    </message>
+    <message>
+        <source>RomM unreachable</source>
+        <translation>无法访问 RomM</translation>
     </message>
 </context>
 <context>

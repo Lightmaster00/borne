@@ -3205,10 +3205,6 @@
         <translation><numerusform>%n transferência</numerusform><numerusform>%n transferências</numerusform></translation>
     </message>
     <message>
-        <source>Offline</source>
-        <translation>Offline</translation>
-    </message>
-    <message>
         <source>Game settings</source>
         <translation>Definições do jogo</translation>
     </message>
@@ -3587,6 +3583,10 @@
     <message>
         <source>Borne core unreachable</source>
         <translation>O núcleo do Borne não responde</translation>
+    </message>
+    <message>
+        <source>RomM unreachable</source>
+        <translation>RomM inacessível</translation>
     </message>
 </context>
 <context>

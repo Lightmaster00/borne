@@ -3205,10 +3205,6 @@
         <translation><numerusform>%n 件のダウンロード</numerusform></translation>
     </message>
     <message>
-        <source>Offline</source>
-        <translation>オフライン</translation>
-    </message>
-    <message>
         <source>Game settings</source>
         <translation>ゲーム設定</translation>
     </message>
@@ -3587,6 +3583,10 @@
     <message>
         <source>Borne core unreachable</source>
         <translation>Borne コアに接続できません</translation>
+    </message>
+    <message>
+        <source>RomM unreachable</source>
+        <translation>RomM に接続できません</translation>
     </message>
 </context>
 <context>

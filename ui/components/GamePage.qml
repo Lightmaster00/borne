@@ -47,6 +47,7 @@ Item {
     property string zone: "buttons"
     property int buttonIndex: 0
     property int galleryIndex: 0
+    property bool railFocused: false     // the rail has the focus (Main)
     property bool infoShown: false       // the fact sheet instead of the summary
     property bool shotOpen: false        // a screenshot in large
 
@@ -94,7 +95,16 @@ Item {
     // Kept for Main (the actions as before).
     readonly property var allActions: actions
 
-    readonly property string longSummary: game && game.summary ? game.summary : ""
+    // Summaries can come with HTML entities (&quot;, &amp;, &#39;…): shown as the characters.
+    function decodeHtml(t) {
+        return t.replace(/&(quot|amp|apos|lt|gt|nbsp|#\d+|#x[0-9a-fA-F]+);/g, (m, e) => {
+            const named = { quot: "\"", amp: "&", apos: "'", lt: "<", gt: ">", nbsp: " " }
+            if (named[e] !== undefined) return named[e]
+            const n = e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)
+            return isNaN(n) ? m : String.fromCodePoint(n)
+        })
+    }
+    readonly property string longSummary: game && game.summary ? decodeHtml(game.summary) : ""
     // The language played: the stored choice if it matches the shown version, else the UI
     // language, else the version's first language.
     readonly property string currentLang: {
@@ -274,7 +284,9 @@ Item {
         if (a === "y" && actions.some(x => x.id === "settings")) { page.action("settings", null); return }
         if (a === "x") { page.action("watch", null); return }
         if (zone === "buttons") {
-            if (a === "left") buttonIndex = Math.max(0, buttonIndex - 1)
+            // Left of the first button: the rail.
+            if (a === "left" && buttonIndex === 0) page.action("rail", null)
+            else if (a === "left") buttonIndex = Math.max(0, buttonIndex - 1)
             else if (a === "right") buttonIndex = Math.min(buttons.length - 1, buttonIndex + 1)
             else if (a === "down" && galleryCount > 0) zone = "gallery"
             else if (a === "a") {
@@ -335,15 +347,22 @@ Item {
                     font { family: theme.displayFont; pixelSize: 22; weight: Font.ExtraBold }
                 }
             }
-            Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 1.5; height: 22; color: Qt.rgba(1, 1, 1, 0.35) }
+            // Where it was opened from, unless that is its console (already shown).
+            readonly property bool crumbShown: page.crumb !== "" && page.crumb !== page.consoleName
+                                               && page.crumb !== (page.game ? page.game.platform_short : "")
+            // Its state, only while something happens (otherwise said under the buttons).
+            readonly property bool stateShown: page.busy || (page.game && page.game.dl_state === "failed")
+            Rectangle { visible: head.crumbShown; anchors.verticalCenter: parent.verticalCenter; width: 1.5; height: 22; color: Qt.rgba(1, 1, 1, 0.35) }
             Text {
+                visible: head.crumbShown
                 anchors.verticalCenter: parent.verticalCenter
                 text: page.crumb
                 color: Qt.rgba(1, 1, 1, 0.8)
                 font { family: theme.fontFamily; pixelSize: 17; weight: Font.ExtraBold }
             }
-            Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 1.5; height: 22; color: Qt.rgba(1, 1, 1, 0.35) }
+            Rectangle { visible: head.stateShown; anchors.verticalCenter: parent.verticalCenter; width: 1.5; height: 22; color: Qt.rgba(1, 1, 1, 0.35) }
             Text {
+                visible: head.stateShown
                 anchors.verticalCenter: parent.verticalCenter
                 text: page.stateText()
                 color: page.game && page.game.dl_state === "failed" ? theme.badSoft : Qt.rgba(1, 1, 1, 0.8)
@@ -492,7 +511,7 @@ Item {
                         id: bt
                         required property var modelData
                         required property int index
-                        readonly property bool on: page.zone === "buttons" && page.buttonIndex === index && !page.shotOpen
+                        readonly property bool on: page.zone === "buttons" && page.buttonIndex === index && !page.shotOpen && !page.railFocused
                         readonly property bool labelled: !!modelData.text
                         readonly property bool primary: !!modelData.primary
                         width: labelled ? btnLabel.implicitWidth + (modelData.icon ? 30 : 0) + 64 : 64

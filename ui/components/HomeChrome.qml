@@ -146,7 +146,9 @@ Item {
                 font { family: theme.fontFamily; pixelSize: 16; weight: Font.Bold }
             }
         }
+        // The server: shown only when it cannot be reached.
         Row {
+            visible: !chrome.online
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
             Rectangle {

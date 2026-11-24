@@ -2916,10 +2916,6 @@
         <source>The library could not be synced: %1</source>
         <translation>La bibliothèque n'a pas pu être synchronisée : %1</translation>
     </message>
-    <message>
-        <source>Offline</source>
-        <translation>Hors ligne</translation>
-    </message>
     <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
         <translation><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform><numerusform>Mode sans échec : bandes-annonces et sons coupés (l'interface a planté %n fois)</numerusform></translation>
@@ -3587,6 +3583,10 @@
     <message>
         <source>Picture</source>
         <translation>Image</translation>
+    </message>
+    <message>
+        <source>RomM unreachable</source>
+        <translation>RomM injoignable</translation>
     </message>
 </context>
 <context>

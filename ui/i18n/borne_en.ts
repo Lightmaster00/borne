@@ -2916,10 +2916,6 @@
         <source>The library could not be synced: %1</source>
         <translation type="unfinished" />
     </message>
-    <message>
-        <source>Offline</source>
-        <translation type="unfinished" />
-    </message>
     <message numerus="yes">
         <source>Safe mode: trailers and sounds off (the UI crashed %n time(s))</source>
         <translation><numerusform>Safe mode: trailers and sounds off (the UI crashed once)</numerusform><numerusform>Safe mode: trailers and sounds off (the UI crashed %n times)</numerusform></translation>
@@ -3586,6 +3582,10 @@
     </message>
     <message>
         <source>Picture</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>RomM unreachable</source>
         <translation type="unfinished" />
     </message>
 </context>

@@ -27,11 +27,6 @@ Rectangle {
         color: Qt.rgba(1, 1, 1, 0.8)
         font { family: theme.fontFamily; pixelSize: 17; weight: Font.ExtraBold }
     }
-    Rectangle {
-        anchors { left: whereText.right; leftMargin: 30; right: bar.left; rightMargin: 30; verticalCenter: parent.verticalCenter }
-        height: 1.5
-        color: Qt.rgba(1, 1, 1, 0.25)
-    }
     HintBar {
         id: bar
         anchors { right: parent.right; rightMargin: 56; verticalCenter: parent.verticalCenter }
