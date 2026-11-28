@@ -3,20 +3,20 @@
 Version 1.8 — November 2026
 
 > This document describes the intended product. It is not proof of emulator compatibility, a legal
-> review of licenses, or a promise that Borne works on every Linux machine.
+> review of licenses, or a promise that Borne works on every machine.
 
 ## Scope at a glance
 
 | Item | Decision |
 |---|---|
-| Platforms | Linux — any distribution meeting the documented dependencies; ChimeraOS is the reference platform. macOS builds exist for development and testing. |
+| Platforms | Linux — any distribution meeting the documented dependencies; ChimeraOS is the reference platform; macOS (Apple Silicon) and Windows (x86_64) builds. |
 | Local core | Rust |
 | UI | Dedicated Qt 6 / QML application, separate process, client of the core's local API; one built-in look with a living background and trailers |
 | Library backend | RomM, latest stable release — accounts, games, metadata, Device Sync |
 | Profiles | Several people, several devices: RomM accounts bound to local profiles usable offline |
 | V1 scope | NES, Mega Drive, GameCube, PS2 and Nintendo Switch (reference game: Zelda Tears of the Kingdom) |
 | Next | Game Boy, GBA, Dreamcast, Wii (V1.x); PS3 experimental |
-| Use | Personal use first; living-room Linux PC, gamepad-first navigation |
+| Use | Personal use first; living-room PC, gamepad-first navigation |
 | UI languages | English (source), French |
 
 ## 0. Version history
@@ -67,7 +67,7 @@ Version 1.8 — November 2026
 
 ## 1. Executive summary
 
-Borne is a Linux application that radically simplifies playing a game library managed by RomM. Turn on
+Borne is an application that radically simplifies playing a game library managed by RomM. Turn on
 the PC, browse the collection from the couch, download a game, launch it with the best available
 emulator, and find the saves on another device after sync.
 
@@ -95,7 +95,7 @@ the final decision to the user. Compatibility checks inform and recommend; they 
 - Providing ROMs, BIOS, keys, firmware or protected content (Switch emulators are downloaded from their projects' own release pages, as the user decided in Nov 2026).
 - Replacing RomM as the source of truth for the library and user accounts.
 - Building a proprietary cloud service or requiring Syncthing.
-- Imposing a single hardware platform or Linux distribution.
+- Imposing a single hardware platform.
 - Adding unvalidated extras such as parental controls, social statistics or a store.
 
 ## 2. Product vision and user journey
@@ -1011,6 +1011,8 @@ never deletes the game on the server.
   (changes since the previous tag, install steps, the weight of each part). Builds are ordered by their CI
   build number. The Linux archive installs with `./Borne/install.sh` (to `~/.local/opt/Borne`, with a menu
   entry and `~/.local/bin/borne`; `--uninstall` removes the program, the data stays).
+- The Windows archive is portable: unzip `Borne-windows-x86_64.zip` and run its `bin/borne.exe` — the data
+  live in `%LOCALAPPDATA%\borne`.
 - Parts: `core` (the programs and everything else at the package's root), `ui` (`ui/`, `resources/`;
   macOS `Contents/Resources/ui` and `…/resources`) and `runtime` (Qt: `lib/`, `plugins/`, `qml/`; macOS
   `Contents/Frameworks`, `PlugIns`, `Resources/qml`). A part's `tree` is the SHA-256 over its files sorted
@@ -1172,7 +1174,7 @@ return a task identifier and publish progress events. The same API is used by th
 | Topic | Decision | Status |
 |---|---|---|
 | Name | Borne (working name "GameHub" until v1.3) | Decided |
-| Platform | Multi-distribution Linux; ChimeraOS as reference; macOS builds for testing | Decided |
+| Platform | Multi-distribution Linux; ChimeraOS as reference; macOS builds for testing; Windows (x86_64) as the second supported platform | Decided |
 | Purpose | Personal use first | Decided |
 | Local core | Rust | Decided |
 | UI | Dedicated Qt 6 / QML application, separate process; ES-DE dropped | Decided |
