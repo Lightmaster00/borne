@@ -289,7 +289,8 @@ impl Found {
 }
 
 fn home() -> PathBuf {
-    std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/"))
+    // dirs, not $HOME: on Windows the variable is often unset (USERPROFILE is the home).
+    dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"))
 }
 
 pub fn which(name: &str) -> Option<PathBuf> {
