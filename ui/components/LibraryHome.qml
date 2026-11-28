@@ -1063,9 +1063,7 @@ Item {
         width: t.w; height: t.h + (t.caption ? 52 : 0)
         z: cur ? 10 : 1
         readonly property bool inView: y + height + track.y > -300 && y + track.y < viewport.height + 300
-        property bool seen: false
-        onInViewChanged: if (inView) seen = true
-        Component.onCompleted: if (inView) seen = true
+        readonly property bool near: y + height + track.y > -900 && y + track.y < viewport.height + 900
         visible: inView
         transform: Scale {
             origin.x: tile.width / 2; origin.y: tile.t.h / 2
@@ -1075,9 +1073,10 @@ Item {
         }
         Accessible.role: Accessible.Button
         Accessible.name: g ? g.name : ""
-        Item {
+        Loader {
             width: tile.width; height: tile.t.h
-            FocusGlow { on: tile.cur; tint: tile.g ? Cases.tint(tile.g.platform_slug) : theme.fg; ringColor: theme.fg; radius: 12; gap: 9; line: 4; motion: root.motion; source: tile.g ? tile.g.cover : "" }
+            active: tile.cur
+            sourceComponent: FocusGlow { on: true; tint: tile.g ? Cases.tint(tile.g.platform_slug) : theme.fg; ringColor: theme.fg; radius: 12; gap: 9; line: 4; motion: root.motion; source: tile.g ? tile.g.cover : "" }
         }
         Item {
             width: tile.width; height: tile.t.h
@@ -1098,7 +1097,7 @@ Item {
             Image {
                 id: tileImg
                 anchors.fill: parent
-                source: tile.seen && tile.g ? tile.g.cover : ""
+                source: tile.near && tile.g ? tile.g.cover : ""
                 sourceSize.height: root.theme ? root.theme.px(tile.t.h, 1600) : Math.min(900, Math.round(tile.t.h * 1.6))
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true

@@ -23,6 +23,7 @@ RULES = {
     "linux": {"runtime": ("lib/", "plugins/", "qml/"), "ui": ("ui/", "resources/")},
     "macos": {"runtime": ("Contents/Frameworks/", "Contents/PlugIns/", "Contents/Resources/qml/"),
               "ui": ("Contents/Resources/ui/", "Contents/Resources/resources/")},
+    "windows": {"runtime": ("plugins/", "qml/"), "ui": ("ui/", "resources/")},
 }
 PARTS = ("core", "ui", "runtime")
 EPOCH = 1700000000  # fixed time in the archives: same files, same archive
@@ -30,6 +31,8 @@ EPOCH = 1700000000  # fixed time in the archives: same files, same archive
 
 def part_of(rel, platform):
     rules = RULES[platform]
+    if platform == "windows" and rel.startswith("bin/") and rel.lower().endswith(".dll"):
+        return "runtime"
     if rel.startswith(rules["runtime"]):
         return "runtime"
     if rel.startswith(rules["ui"]):
@@ -48,7 +51,7 @@ def entries(root):
     return sorted(out, key=lambda e: e[0].encode())
 
 
-def line(rel, full):
+def line(rel, full, platform="linux"):
     st = os.lstat(full)
     if os.path.islink(full):
         return f"{rel}\0l\0{os.readlink(full)}\n"
@@ -56,7 +59,8 @@ def line(rel, full):
     with open(full, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
-    return f"{rel}\0f\0{h.hexdigest()}{'x' if st.st_mode & 0o111 else '-'}\n"
+    exec_bit = "x" if (platform != "windows" and st.st_mode & 0o111) else "-"
+    return f"{rel}\0f\0{h.hexdigest()}{exec_bit}\n"
 
 
 def main():
@@ -73,7 +77,7 @@ def main():
         with open(path, "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, compresslevel=9) as gz, \
                 tarfile.open(fileobj=gz, mode="w", format=tarfile.PAX_FORMAT) as tar:
             for rel, full in files:
-                tree.update(line(rel, full).encode())
+                tree.update(line(rel, full, platform).encode())
                 info = tar.gettarinfo(full, arcname=rel)
                 info.mtime = EPOCH
                 info.uid = info.gid = 0

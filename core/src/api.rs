@@ -207,7 +207,7 @@ fn parse_range(v: &str, size: u64) -> Option<(u64, u64)> {
     (start <= end && start < size).then_some((start, end))
 }
 
-fn serve_file(req: Request, raw: &str, roots: &[PathBuf]) {
+fn serve_file(req: Request, raw: &str, roots: &[PathBuf], immutable: bool) {
     let Ok(path) = PathBuf::from(raw).canonicalize() else {
         let _ = req.respond(Response::empty(StatusCode(404)));
         return;
@@ -223,6 +223,9 @@ fn serve_file(req: Request, raw: &str, roots: &[PathBuf]) {
     let size = file.metadata().map(|m| m.len()).unwrap_or(0);
     let range = req.headers().iter().find(|h| h.field.equiv("Range")).and_then(|h| parse_range(h.value.as_str(), size));
     let mut headers = vec![header("Content-Type", mime(&path)), header("Accept-Ranges", "bytes")];
+    if immutable {
+        headers.push(header("Cache-Control", "public, max-age=31536000, immutable"));
+    }
     match range {
         Some((start, end)) => {
             let len = end - start + 1;
@@ -332,11 +335,11 @@ fn cover_ratio(path: &str) -> Option<f64> {
     Some(r)
 }
 
-/// The art kinds RomM has for these versions of a game.
-fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
+/// The art kinds RomM has for these versions of a game, from preloaded `extra` strings.
+fn art_kinds_from(extras: &std::collections::HashMap<i64, String>, ids: &[i64]) -> Vec<String> {
     let mut out: Vec<String> = vec![];
-    for e in ids.iter().filter_map(|id| app.db.game_extra(*id)) {
-        let extra: Value = serde_json::from_str(&e).unwrap_or(Value::Null);
+    for e in ids.iter().filter_map(|id| extras.get(id)) {
+        let extra: Value = serde_json::from_str(e).unwrap_or(Value::Null);
         if let Some(o) = extra["art"].as_object() {
             // Case faces, cartridge and logo are listed once on disk (media::summary).
             out.extend(o.keys().filter(|k| !crate::media::KINDS.contains(&k.as_str())).cloned());
@@ -348,6 +351,13 @@ fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
     out.sort();
     out.dedup();
     out
+}
+
+/// The art kinds RomM has for these versions of a game.
+fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
+    let extras: std::collections::HashMap<i64, String> =
+        ids.iter().filter_map(|&id| app.db.game_extra(id).map(|e| (id, e))).collect();
+    art_kinds_from(&extras, ids)
 }
 
 pub const ART_KINDS: [&str; 10] = ["front", "side", "back", "fanart", "logo", "physical", "title", "backdrop", "steamgrid", "marquee"];
@@ -694,14 +704,15 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             // Games ready to play here (downloaded, or played from RomM through the mount), per
             // console tab: the library's "Installed" mode shows only the consoles that have some.
             let mut ready: std::collections::HashMap<String, std::collections::HashSet<String>> = Default::default();
-            for g in app.db.games(None, None, false).into_iter().filter(|g| g.local_state == "local" || g.linked) {
+            for (platform_slug, group_key) in app.db.ready_groups_by_platform() {
                 let tab = library::JOINED
                     .iter()
-                    .find(|(_, parts)| parts.contains(&g.platform_slug.as_str()))
+                    .find(|(_, parts)| parts.contains(&platform_slug.as_str()))
                     .map(|(main, _)| main.to_string())
-                    .unwrap_or_else(|| g.platform_slug.clone());
-                ready.entry(tab).or_default().insert(g.group_key.clone());
+                    .unwrap_or(platform_slug);
+                ready.entry(tab).or_default().insert(group_key);
             }
+            let all_media = app.db.all_media();
             let list: Vec<Value> = platforms
                 .into_iter()
                 .map(|p| {
@@ -710,10 +721,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                     let joined = library::JOINED.iter().find(|(main, parts)| *main == p.slug || parts.contains(&p.slug.as_str()));
                     let tab = joined.map(|(main, _)| main.to_string()).unwrap_or_else(|| p.slug.clone());
                     v["ready_count"] = json!(ready.get(&tab).map(|s| s.len()).unwrap_or(0));
-                    let media: Vec<_> = app
-                        .db
-                        .media_of(&format!("system:{}", p.slug))
+                    let media: Vec<_> = all_media
+                        .get(&format!("system:{}", p.slug))
                         .into_iter()
+                        .flatten()
                         .filter(|m| std::path::Path::new(&m.path).is_file())
                         .collect();
                     // Which picture of the console it is, so a new choice is not taken from a cache.
@@ -749,16 +760,14 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         }
         (Method::Get, ["api", "v1", "systems", slug, "art", kind]) => {
             match app.db.media(&format!("system:{slug}"), kind).filter(|m| std::path::Path::new(&m.path).is_file()) {
-                Some(m) => serve_file(req, &m.path, roots),
+                Some(m) => serve_file(req, &m.path, roots, query(&q, "r").is_some_and(|r| !r.is_empty())),
                 None => err(req, 404, "no such image for this console"),
             }
         }
         // How many games each personal tab holds (Installed, Favourites, Recent), so the UI
         // shows only the tabs that have something.
         (Method::Get, ["api", "v1", "library", "tabs"]) => {
-            use std::collections::HashSet;
-            let all: HashSet<String> = app.db.games(None, None, false).into_iter().map(|g| g.group_key).collect();
-            let local: HashSet<String> = app.db.games(None, None, true).into_iter().map(|g| g.group_key).collect();
+            let (all, local) = app.db.library_group_sets();
             let stats = app.active_profile().map(|p| app.db.play_stats(&p.id)).unwrap_or_default();
             let fav = stats.iter().filter(|(k, v)| v.2 && all.contains(*k)).count();
             let recent = stats.iter().filter(|(k, v)| v.0.is_some() && all.contains(*k)).count();
@@ -773,25 +782,47 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             // emulator. Titles and summaries stay in the interface's (lang).
             let glang = query(&q, "glang").filter(|l| !l.is_empty() && l != "auto").unwrap_or_else(|| lang.clone());
             remember_ui_lang(app, &glang);
-            let rows = match platform.as_deref().and_then(library::joined_parts) {
+            let unfiltered = platform.as_deref().map(|p| p.is_empty() || p == "all").unwrap_or(true)
+                && search.as_deref().map(|s| s.trim().is_empty()).unwrap_or(true)
+                && !local;
+            let raw_rows = match platform.as_deref().and_then(library::joined_parts) {
                 Some(parts) => parts.iter().flat_map(|p| app.db.games(Some(p), search.as_deref(), local)).collect(),
                 None => app.db.games(platform.as_deref(), search.as_deref(), local),
             };
+            // Keep a map of all versions by group_key without an N+1 SQL query per game.
+            let mut groups_by_key: std::collections::HashMap<String, Vec<crate::db::GameRow>> = std::collections::HashMap::new();
+            if unfiltered {
+                for g in &raw_rows {
+                    if !g.group_key.is_empty() {
+                        groups_by_key.entry(g.group_key.clone()).or_default().push(g.clone());
+                    }
+                }
+            }
             let hidden = crate::consoles::hidden(app);
             // "Installed" mode: only the versions ready to play here (downloaded, or played from
             // RomM through the mount).
             let ready = query(&q, "ready").as_deref() == Some("1");
-            let rows: Vec<_> = rows
+            let rows: Vec<_> = raw_rows
                 .into_iter()
                 .filter(|g| !hidden.contains(&g.platform_slug) && (!ready || g.local_state == "local" || g.linked))
                 .collect();
             let prefs = app.active_profile().map(|p| app.db.game_prefs(&p.id)).unwrap_or_default();
             crate::screenscraper::set_ui_lang(app, &lang);
             let mut list = library::groups(rows, &prefs, &glang);
+            // Parse each ScreenScraper record at most once for title, summary, and alt_names.
+            let ss_raw = app.db.all_ss_records();
+            let mut ss_parsed: std::collections::HashMap<&str, Value> = std::collections::HashMap::with_capacity(ss_raw.len());
+            for (k, raw) in &ss_raw {
+                if let Ok(rec) = serde_json::from_str::<Value>(raw) {
+                    ss_parsed.insert(k.as_str(), rec);
+                }
+            }
             // Titles in the interface language (ScreenScraper), the list ordered on them: by their
             // first three letters, then by release date (library::shelf_order).
             for v in list.iter_mut() {
-                crate::screenscraper::localize(app, v, &lang);
+                if let Some(rec) = v["group_key"].as_str().and_then(|k| ss_parsed.get(k)) {
+                    crate::screenscraper::localize_with_rec(v, rec, &lang);
+                }
             }
             library::shelf_order(&mut list);
             // The profile's record: favourites, recently played; then the tab, filter and order asked.
@@ -817,24 +848,39 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                 Some("time") => list.sort_by_key(|v| std::cmp::Reverse(v["play_seconds"].as_i64().unwrap_or(0))),
                 _ => {}
             }
+            if !list.is_empty() && !unfiltered {
+                for g in app.db.games(None, None, false) {
+                    if !g.group_key.is_empty() {
+                        groups_by_key.entry(g.group_key.clone()).or_default().push(g);
+                    }
+                }
+            }
+            let all_media = if list.is_empty() { Default::default() } else { app.db.all_media() };
+            let all_extras = if list.is_empty() { Default::default() } else { app.db.all_game_extras() };
             // Which scans exist (spine, backdrop…), so the UI asks only for those.
             for v in list.iter_mut() {
-                if let Some(k) = v["group_key"].as_str() {
-                    v["alt_names"] = json!(crate::screenscraper::all_titles(app, k).join(" | "));
+                let key = v["group_key"].as_str().map(str::to_string);
+                if let Some(k) = key.as_deref() {
+                    if let Some(rec) = ss_parsed.get(k) {
+                        v["alt_names"] = json!(crate::screenscraper::all_titles_from_rec(rec).join(" | "));
+                    } else {
+                        v["alt_names"] = json!("");
+                    }
                 }
                 // Every version of the game counts, even those filtered out (Installed, search).
                 let mut ids = vec![v["rom_id"].as_i64().unwrap_or(0)];
                 let mut kinds = vec![];
-                if let Some(k) = v["group_key"].as_str().map(String::from) {
-                    let group = app.db.group(&k);
-                    ids.extend(group.iter().map(|g| g.rom_id));
-                    library::fill_media(v, &group);
-                    let m = crate::media::summary(app, &k);
+                if let Some(k) = key.as_deref() {
+                    if let Some(group) = groups_by_key.get(k) {
+                        ids.extend(group.iter().map(|g| g.rom_id));
+                        library::fill_media(v, group);
+                    }
+                    let m = all_media.get(k).map(|rows| crate::media::summary_from_rows(rows)).unwrap_or_else(|| json!({ "kinds": [], "sizes": {}, "spine_color": null }));
                     kinds.extend(m["kinds"].as_array().cloned().unwrap_or_default());
                     v["media_sizes"] = m["sizes"].clone();
                     v["spine_color"] = m["spine_color"].clone();
                 }
-                kinds.extend(art_kinds(app, &ids).into_iter().map(Value::String));
+                kinds.extend(art_kinds_from(&all_extras, &ids).into_iter().map(Value::String));
                 v["art_kinds"] = json!(kinds);
                 if let Some(r) = v["cover_local"].as_str().and_then(cover_ratio) {
                     v["cover_ar"] = json!(r);
@@ -1570,7 +1616,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             }
         }
         (Method::Get, ["file"]) => match query(&q, "path") {
-            Some(p) => serve_file(req, &p, roots),
+            Some(p) => serve_file(req, &p, roots, query(&q, "v").is_some_and(|v| !v.is_empty())),
             None => {
                 let _ = req.respond(Response::empty(StatusCode(400)));
             }
@@ -1588,11 +1634,21 @@ pub fn start(app: Shared, token: String) -> std::io::Result<u16> {
         .into_iter()
         .filter_map(|r| r.canonicalize().ok())
         .collect();
+    let (tx, rx) = std::sync::mpsc::sync_channel::<Request>(256);
+    let rx = std::sync::Arc::new(std::sync::Mutex::new(rx));
+    for i in 0..12 {
+        let (app, token, roots, rx) = (app.clone(), token.clone(), roots.clone(), rx.clone());
+        std::thread::Builder::new().name(format!("borne-http-{i}")).spawn(move || loop {
+            let Ok(req) = rx.lock().unwrap_or_else(|e| e.into_inner()).recv() else { break };
+            handle(req, &app, &token, &roots);
+        })?;
+    }
     let server = std::sync::Arc::new(server);
     std::thread::Builder::new().name("borne-http".into()).spawn(move || {
         for req in server.incoming_requests() {
-            let (app, token, roots) = (app.clone(), token.clone(), roots.clone());
-            std::thread::spawn(move || handle(req, &app, &token, &roots));
+            if tx.send(req).is_err() {
+                break;
+            }
         }
     })?;
     Ok(port)

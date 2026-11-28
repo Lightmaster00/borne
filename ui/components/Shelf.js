@@ -52,6 +52,11 @@ function sortKey(name) {
         .replace(/^(the|a|an|le|la|les|l'|l’|der|die|das|el|los|las|il|lo|gli)\s+/i, "").toLowerCase()
 }
 
+function sortKeyOf(g) {
+    if (!g._sortKey) g._sortKey = sortKey(g.name)
+    return g._sortKey
+}
+
 function letterOf(name) {
     const c = sortKey(name).charAt(0).toUpperCase()
     return c >= "A" && c <= "Z" ? c : "#"
@@ -88,7 +93,7 @@ function sorts() {
 function sortsFor(tab) { return sorts().filter(s => tab === "store" ? s.store : s.home) }
 
 function compare(sort) {
-    const byName = (a, b) => sortKey(a.name).localeCompare(sortKey(b.name))
+    const byName = (a, b) => sortKeyOf(a).localeCompare(sortKeyOf(b))
     switch (sort) {
     case "played": return (a, b) => (b.last_played || 0) - (a.last_played || 0) || byName(a, b)
     case "added": return (a, b) => b.rom_id - a.rom_id

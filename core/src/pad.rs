@@ -117,14 +117,19 @@ const QUIT_CHORD: Duration = Duration::from_millis(700);
 /// "0x057e/0x2009,…"), which then play through Steam's virtual pad instead. Inherited by the
 /// emulators when Borne is started from Steam.
 pub fn steam_hidden() -> Vec<(u16, u16)> {
-    let list = std::env::var("SDL_GAMECONTROLLER_IGNORE_DEVICES").unwrap_or_default();
-    list.split(',')
-        .filter_map(|e| {
-            let (v, p) = e.trim().split_once('/')?;
-            let hex = |x: &str| u16::from_str_radix(x.trim().trim_start_matches("0x").trim_start_matches("0X"), 16).ok();
-            Some((hex(v)?, hex(p)?))
+    static HIDDEN: std::sync::OnceLock<Vec<(u16, u16)>> = std::sync::OnceLock::new();
+    HIDDEN
+        .get_or_init(|| {
+            let list = std::env::var("SDL_GAMECONTROLLER_IGNORE_DEVICES").unwrap_or_default();
+            list.split(',')
+                .filter_map(|e| {
+                    let (v, p) = e.trim().split_once('/')?;
+                    let hex = |x: &str| u16::from_str_radix(x.trim().trim_start_matches("0x").trim_start_matches("0X"), 16).ok();
+                    Some((hex(v)?, hex(p)?))
+                })
+                .collect()
         })
-        .collect()
+        .clone()
 }
 
 /// A Nintendo pad's face buttons by their letters: A is on the right (East), B at the bottom,
@@ -200,22 +205,27 @@ pub fn spawn(emit_json: impl Fn(String) + Send + 'static, state: SharedPadState,
                 }
             };
 
+            let refresh_pads = |gilrs: &Gilrs| -> bool {
+                let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
+                s.pads = gilrs.gamepads().map(|(_, g)| g.name().to_string()).collect();
+                s.guids = gilrs.gamepads().map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect()).collect();
+                s.ids = gilrs.gamepads().map(|(_, g)| (g.vendor_id().unwrap_or(0), g.product_id().unwrap_or(0))).collect();
+                s.os_names = gilrs.gamepads().map(|(_, g)| g.os_name().to_string()).collect();
+                *KNOWN.lock().unwrap_or_else(|e| e.into_inner()) =
+                    s.pads.iter().zip(&s.os_names).zip(&s.ids).map(|((n, o), i)| (n.clone(), o.clone(), *i)).collect();
+                s.ids.iter().any(|(v, _)| *v == 0x28de)
+            };
+            let hidden = steam_hidden();
+            let mut steam_pad = refresh_pads(&gilrs);
+
             loop {
-                {
-                    let mut s = state.lock().unwrap_or_else(|e| e.into_inner());
-                    s.pads = gilrs.gamepads().map(|(_, g)| g.name().to_string()).collect();
-                    s.guids = gilrs.gamepads().map(|(_, g)| g.uuid().iter().map(|b| format!("{b:02x}")).collect()).collect();
-                    s.ids = gilrs.gamepads().map(|(_, g)| (g.vendor_id().unwrap_or(0), g.product_id().unwrap_or(0))).collect();
-                    s.os_names = gilrs.gamepads().map(|(_, g)| g.os_name().to_string()).collect();
-                    *KNOWN.lock().unwrap_or_else(|e| e.into_inner()) =
-                        s.pads.iter().zip(&s.os_names).zip(&s.ids).map(|((n, o), i)| (n.clone(), o.clone(), *i)).collect();
-                }
                 // Started from Steam with Steam Input: the pads Steam hides from games also send
                 // their presses here, besides Steam's virtual pad; only the virtual pad is heard,
                 // or every press would count twice.
-                let hidden = steam_hidden();
-                let steam_pad = gilrs.gamepads().any(|(_, g)| g.vendor_id() == Some(0x28de));
                 while let Some(ev) = gilrs.next_event() {
+                    if matches!(ev.event, EventType::Connected | EventType::Disconnected) {
+                        steam_pad = refresh_pads(&gilrs);
+                    }
                     let gp = gilrs.gamepad(ev.id);
                     let ids = (gp.vendor_id().unwrap_or(0), gp.product_id().unwrap_or(0));
                     if steam_pad && hidden.contains(&ids) {

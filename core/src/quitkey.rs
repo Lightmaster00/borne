@@ -29,8 +29,62 @@ pub fn spawn(app: Shared) {
         .ok();
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub fn spawn(_app: Shared) {}
+
+#[cfg(target_os = "windows")]
+pub fn spawn(app: Shared) {
+    use std::sync::OnceLock;
+    use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::VK_ESCAPE;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        CallNextHookEx, DispatchMessageW, GetMessageW, KBDLLHOOKSTRUCT, MSG, SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx,
+        WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
+    };
+
+    static TX: OnceLock<std::sync::mpsc::SyncSender<()>> = OnceLock::new();
+    let (tx, rx) = std::sync::mpsc::sync_channel::<()>(4);
+    let _ = TX.set(tx);
+    let app_worker = app.clone();
+    std::thread::Builder::new()
+        .name("quitkey-worker".into())
+        .spawn(move || {
+            while rx.recv().is_ok() {
+                pressed(&app_worker);
+            }
+        })
+        .ok();
+
+    unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+        if code >= 0 && (wparam == WM_KEYDOWN as usize || wparam == WM_SYSKEYDOWN as usize) {
+            let kb = &*(lparam as *const KBDLLHOOKSTRUCT);
+            if kb.vkCode == VK_ESCAPE as u32 && crate::emulators::playing() {
+                if let Some(tx) = TX.get() {
+                    let _ = tx.try_send(());
+                }
+                return 1;
+            }
+        }
+        CallNextHookEx(std::ptr::null_mut(), code, wparam, lparam)
+    }
+
+    std::thread::Builder::new()
+        .name("quitkey".into())
+        .spawn(move || unsafe {
+            let hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), std::ptr::null_mut(), 0);
+            if hook.is_null() {
+                crate::logfile::write("quitkey", "Escape hook could not be installed");
+                return;
+            }
+            let mut msg: MSG = std::mem::zeroed();
+            while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
+            UnhookWindowsHookEx(hook);
+        })
+        .ok();
+}
 
 #[cfg(target_os = "linux")]
 fn run(app: &Shared) -> Result<(), Box<dyn std::error::Error>> {
@@ -174,10 +228,92 @@ pub fn show_game() {
     let _ = conn.get_input_focus().ok().and_then(|c| c.reply().ok());
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub fn hide_game(_pgid: i32) {}
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub fn show_game() {}
+
+#[cfg(target_os = "windows")]
+static HIDDEN_WIN: std::sync::Mutex<Vec<isize>> = std::sync::Mutex::new(Vec::new());
+
+#[cfg(target_os = "windows")]
+fn process_tree_pids(root_pid: u32) -> std::collections::HashSet<u32> {
+    use std::collections::{HashMap, HashSet};
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
+    };
+    let mut children: HashMap<u32, Vec<u32>> = HashMap::new();
+    unsafe {
+        let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snap != -1isize as _ {
+            let mut pe: PROCESSENTRY32W = std::mem::zeroed();
+            pe.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+            if Process32FirstW(snap, &mut pe) != 0 {
+                loop {
+                    children.entry(pe.th32ParentProcessID).or_default().push(pe.th32ProcessID);
+                    if Process32NextW(snap, &mut pe) == 0 {
+                        break;
+                    }
+                }
+            }
+            CloseHandle(snap);
+        }
+    }
+    let mut out = HashSet::from([root_pid]);
+    let mut stack = vec![root_pid];
+    while let Some(p) = stack.pop() {
+        if let Some(cs) = children.get(&p) {
+            for &c in cs {
+                if out.insert(c) {
+                    stack.push(c);
+                }
+            }
+        }
+    }
+    out
+}
+
+#[cfg(target_os = "windows")]
+pub fn hide_game(pgid: i32) {
+    use std::collections::HashSet;
+    use windows_sys::Win32::Foundation::{BOOL, HWND, LPARAM};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, IsWindowVisible, SW_HIDE, ShowWindow};
+
+    struct Ctx {
+        pids: HashSet<u32>,
+        hidden: Vec<isize>,
+    }
+    unsafe extern "system" fn enum_cb(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        let ctx = &mut *(lparam as *mut Ctx);
+        if IsWindowVisible(hwnd) != 0 {
+            let mut pid = 0u32;
+            GetWindowThreadProcessId(hwnd, &mut pid);
+            if ctx.pids.contains(&pid) {
+                ShowWindow(hwnd, SW_HIDE);
+                ctx.hidden.push(hwnd as isize);
+            }
+        }
+        1
+    }
+    let mut ctx = Ctx { pids: process_tree_pids(pgid as u32), hidden: vec![] };
+    unsafe { EnumWindows(Some(enum_cb), &mut ctx as *mut Ctx as LPARAM) };
+    *HIDDEN_WIN.lock().unwrap_or_else(|e| e.into_inner()) = ctx.hidden;
+}
+
+#[cfg(target_os = "windows")]
+pub fn show_game() {
+    use windows_sys::Win32::Foundation::HWND;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{SW_SHOW, SetForegroundWindow, ShowWindow};
+    let hidden = std::mem::take(&mut *HIDDEN_WIN.lock().unwrap_or_else(|e| e.into_inner()));
+    for h in hidden {
+        let hwnd = h as HWND;
+        unsafe {
+            ShowWindow(hwnd, SW_SHOW);
+            SetForegroundWindow(hwnd);
+        }
+    }
+}
 
 #[cfg(all(test, target_os = "linux"))]
 mod tests {

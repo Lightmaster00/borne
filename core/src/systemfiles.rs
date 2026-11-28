@@ -527,24 +527,46 @@ fn replace(d: &Path, tmp: &Path, target: &str) -> Result<(), String> {
     std::fs::rename(tmp, d.join(target)).map_err(|e| e.to_string())
 }
 
-/// Opens the system's file chooser (macOS: AppleScript; Linux: zenity or kdialog).
+/// Opens the system's file chooser (macOS: AppleScript; Windows: GetOpenFileNameW; Linux: zenity or kdialog).
 pub fn pick_file(title: &str) -> Result<String, String> {
     let title: String = title.chars().filter(|c| c.is_alphanumeric() || " .()-".contains(*c)).collect();
-    let out = if cfg!(target_os = "macos") {
-        std::process::Command::new("osascript").arg("-e").arg(format!("POSIX path of (choose file with prompt \"{title}\")")).output()
-    } else if crate::emulators::which("zenity").is_some() {
-        std::process::Command::new("zenity").args(["--file-selection", "--title", &title]).output()
-    } else if crate::emulators::which("kdialog").is_some() {
-        std::process::Command::new("kdialog").args(["--getopenfilename", ".", "--title", &title]).output()
-    } else {
-        return Err("no file chooser on this system: type the file's path".into());
-    };
-    let out = out.map_err(|e| e.to_string())?;
-    let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    if !out.status.success() || path.is_empty() {
-        return Err("no file chosen".into());
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::ffi::OsStringExt;
+        use windows_sys::Win32::UI::Controls::Dialogs::{GetOpenFileNameW, OFN_FILEMUSTEXIST, OFN_NOCHANGEDIR, OFN_PATHMUSTEXIST, OPENFILENAMEW};
+        let mut buf = vec![0u16; 4096];
+        let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+        let mut ofn: OPENFILENAMEW = unsafe { std::mem::zeroed() };
+        ofn.lStructSize = std::mem::size_of::<OPENFILENAMEW>() as u32;
+        ofn.lpstrFile = buf.as_mut_ptr();
+        ofn.nMaxFile = buf.len() as u32;
+        ofn.lpstrTitle = title_w.as_ptr();
+        ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        if unsafe { GetOpenFileNameW(&mut ofn) } == 0 {
+            return Err("no file chosen".into());
+        }
+        let end = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
+        let path = std::ffi::OsString::from_wide(&buf[..end]).to_string_lossy().into_owned();
+        return if path.is_empty() { Err("no file chosen".into()) } else { Ok(path) };
     }
-    Ok(path)
+    #[cfg(not(target_os = "windows"))]
+    {
+        let out = if cfg!(target_os = "macos") {
+            std::process::Command::new("osascript").arg("-e").arg(format!("POSIX path of (choose file with prompt \"{title}\")")).output()
+        } else if crate::emulators::which("zenity").is_some() {
+            std::process::Command::new("zenity").args(["--file-selection", "--title", &title]).output()
+        } else if crate::emulators::which("kdialog").is_some() {
+            std::process::Command::new("kdialog").args(["--getopenfilename", ".", "--title", &title]).output()
+        } else {
+            return Err("no file chooser on this system: type the file's path".into());
+        };
+        let out = out.map_err(|e| e.to_string())?;
+        let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !out.status.success() || path.is_empty() {
+            return Err("no file chosen".into());
+        }
+        Ok(path)
+    }
 }
 
 // ---------- placing for the emulators ----------

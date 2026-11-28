@@ -14,6 +14,7 @@ fn path(paths: &Paths, profile_id: &str) -> std::path::PathBuf {
     paths.secrets().join(format!("{}.token", if safe.is_empty() { "_" } else { &safe }))
 }
 
+#[cfg(unix)]
 pub fn store(paths: &Paths, profile_id: &str, token: &str) -> std::io::Result<()> {
     let final_path = path(paths, profile_id);
     let tmp = final_path.with_extension("tmp");
@@ -26,17 +27,80 @@ pub fn store(paths: &Paths, profile_id: &str, token: &str) -> std::io::Result<()
     std::fs::rename(tmp, final_path)
 }
 
+#[cfg(unix)]
 pub fn load(paths: &Paths, profile_id: &str) -> Option<String> {
     std::fs::read_to_string(path(paths, profile_id)).ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+}
+
+#[cfg(windows)]
+pub fn store(paths: &Paths, profile_id: &str, token: &str) -> std::io::Result<()> {
+    use windows_sys::Win32::Security::Cryptography::{CryptProtectData, CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB};
+    let final_path = path(paths, profile_id);
+    let tmp = final_path.with_extension("tmp");
+    let mut in_blob = CRYPT_INTEGER_BLOB { cbData: token.len() as u32, pbData: token.as_ptr() as *mut u8 };
+    let mut out_blob = CRYPT_INTEGER_BLOB { cbData: 0, pbData: std::ptr::null_mut() };
+    let ok = unsafe {
+        CryptProtectData(
+            &mut in_blob,
+            std::ptr::null(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            CRYPTPROTECT_UI_FORBIDDEN,
+            &mut out_blob,
+        )
+    };
+    if ok == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    let encrypted = unsafe { std::slice::from_raw_parts(out_blob.pbData, out_blob.cbData as usize) };
+    let write_res = (|| {
+        let mut f = std::fs::OpenOptions::new().write(true).create(true).truncate(true).open(&tmp)?;
+        f.write_all(encrypted)?;
+        f.sync_all()
+    })();
+    unsafe { windows_sys::Win32::System::Memory::LocalFree(out_blob.pbData as _) };
+    write_res?;
+    std::fs::rename(tmp, final_path)
+}
+
+#[cfg(windows)]
+pub fn load(paths: &Paths, profile_id: &str) -> Option<String> {
+    use windows_sys::Win32::Security::Cryptography::{CryptUnprotectData, CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB};
+    let data = std::fs::read(path(paths, profile_id)).ok()?;
+    if data.is_empty() {
+        return None;
+    }
+    let mut in_blob = CRYPT_INTEGER_BLOB { cbData: data.len() as u32, pbData: data.as_ptr() as *mut u8 };
+    let mut out_blob = CRYPT_INTEGER_BLOB { cbData: 0, pbData: std::ptr::null_mut() };
+    let ok = unsafe {
+        CryptUnprotectData(
+            &mut in_blob,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            CRYPTPROTECT_UI_FORBIDDEN,
+            &mut out_blob,
+        )
+    };
+    if ok == 0 {
+        return None;
+    }
+    let plain = unsafe { std::slice::from_raw_parts(out_blob.pbData, out_blob.cbData as usize) }.to_vec();
+    unsafe { windows_sys::Win32::System::Memory::LocalFree(out_blob.pbData as _) };
+    String::from_utf8(plain).ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
 }
 
 pub fn delete(paths: &Paths, profile_id: &str) {
     let _ = std::fs::remove_file(path(paths, profile_id));
 }
 
+#[cfg(unix)]
 trait Mode0600 {
     fn mode_0600(&mut self) -> &mut Self;
 }
+#[cfg(unix)]
 impl Mode0600 for std::fs::OpenOptions {
     fn mode_0600(&mut self) -> &mut Self {
         use std::os::unix::fs::OpenOptionsExt;
@@ -47,7 +111,6 @@ impl Mode0600 for std::fs::OpenOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::os::unix::fs::PermissionsExt;
 
     #[test]
     fn token_roundtrip_with_strict_permissions() {
@@ -56,10 +119,14 @@ mod tests {
         paths.ensure().unwrap();
         store(&paths, "p1", "rmm_secret").unwrap();
         assert_eq!(load(&paths, "p1").as_deref(), Some("rmm_secret"));
-        let mode = std::fs::metadata(path(&paths, "p1")).unwrap().permissions().mode() & 0o777;
-        assert_eq!(mode, 0o600);
-        let dmode = std::fs::metadata(paths.secrets()).unwrap().permissions().mode() & 0o777;
-        assert_eq!(dmode, 0o700);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(path(&paths, "p1")).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+            let dmode = std::fs::metadata(paths.secrets()).unwrap().permissions().mode() & 0o777;
+            assert_eq!(dmode, 0o700);
+        }
         delete(&paths, "p1");
         assert!(load(&paths, "p1").is_none());
     }

@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS games (
     seen_sync INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS games_platform ON games(platform_slug, sort_key);
+CREATE INDEX IF NOT EXISTS games_group ON games(group_key);
+CREATE INDEX IF NOT EXISTS downloads_active ON downloads(rom_id, state, id DESC);
 CREATE TABLE IF NOT EXISTS local_games (
     rom_id INTEGER PRIMARY KEY,
     dir TEXT NOT NULL,
@@ -135,7 +137,10 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
             conn.execute_batch(&format!("ALTER TABLE games ADD COLUMN {col} {def}"))?;
         }
     }
-    conn.execute_batch("CREATE INDEX IF NOT EXISTS games_group ON games(group_key)")?;
+    conn.execute_batch(
+        "CREATE INDEX IF NOT EXISTS games_group ON games(group_key);
+         CREATE INDEX IF NOT EXISTS downloads_active ON downloads(rom_id, state, id DESC);",
+    )?;
     // Sources removed in later versions: LaunchBox (index and images), Wikidata / Wikipedia facts.
     conn.execute_batch(
         "DROP TABLE IF EXISTS lb_games; DROP TABLE IF EXISTS lb_names; DROP TABLE IF EXISTS lb_images;
@@ -328,6 +333,7 @@ impl Db {
         let conn = Connection::open(path)?;
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
+        conn.pragma_update(None, "synchronous", "NORMAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.execute_batch(SCHEMA)?;
         migrate(&conn)?;
@@ -617,6 +623,71 @@ impl Db {
         let c = self.c();
         let mut st = c.prepare(&format!("{GAME_SELECT} WHERE g.group_key = ?1 ORDER BY g.rom_id")).unwrap();
         st.query_map([group_key], game_from_row).unwrap().filter_map(Result::ok).collect()
+    }
+
+    /// Ready (local or linked) distinct (platform_slug, group_key) pairs, without loading full rows.
+    pub fn ready_groups_by_platform(&self) -> Vec<(String, String)> {
+        let c = self.c();
+        let mut st = c
+            .prepare(
+                "SELECT DISTINCT g.platform_slug, g.group_key
+                 FROM games g
+                 LEFT JOIN local_games l ON l.rom_id = g.rom_id
+                 WHERE l.status = 'ok' OR g.rom_id IN (SELECT rom_id FROM linked_games)",
+            )
+            .unwrap();
+        st.query_map([], |r| Ok((r.get(0)?, r.get(1)?))).unwrap().filter_map(Result::ok).collect()
+    }
+
+    /// Distinct group keys across the catalog, and those that are ready locally or linked.
+    pub fn library_group_sets(&self) -> (std::collections::HashSet<String>, std::collections::HashSet<String>) {
+        let c = self.c();
+        let mut all_st = c.prepare("SELECT DISTINCT group_key FROM games").unwrap();
+        let all = all_st.query_map([], |r| r.get(0)).unwrap().filter_map(Result::ok).collect();
+        let mut local_st = c
+            .prepare(
+                "SELECT DISTINCT g.group_key
+                 FROM games g
+                 LEFT JOIN local_games l ON l.rom_id = g.rom_id
+                 WHERE l.status = 'ok' OR g.rom_id IN (SELECT rom_id FROM linked_games)",
+            )
+            .unwrap();
+        let local = local_st.query_map([], |r| r.get(0)).unwrap().filter_map(Result::ok).collect();
+        (all, local)
+    }
+
+    /// Batch load of every game's `extra` JSON keyed by `rom_id`.
+    pub fn all_game_extras(&self) -> std::collections::HashMap<i64, String> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT rom_id, extra FROM games WHERE extra IS NOT NULL").unwrap();
+        st.query_map([], |r| Ok((r.get(0)?, r.get(1)?))).unwrap().filter_map(Result::ok).collect()
+    }
+
+    /// Batch load of every cached `media` row grouped by `group_key`.
+    pub fn all_media(&self) -> std::collections::HashMap<String, Vec<MediaRow>> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT group_key, kind, path, w, h, stamp FROM media").unwrap();
+        let mut out: std::collections::HashMap<String, Vec<MediaRow>> = std::collections::HashMap::new();
+        for row in st
+            .query_map([], |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    MediaRow { kind: r.get(1)?, path: r.get(2)?, w: r.get(3)?, h: r.get(4)?, stamp: r.get(5)? },
+                ))
+            })
+            .unwrap()
+            .filter_map(Result::ok)
+        {
+            out.entry(row.0).or_default().push(row.1);
+        }
+        out
+    }
+
+    /// Batch load of every ScreenScraper JSON record keyed by `group_key`.
+    pub fn all_ss_records(&self) -> std::collections::HashMap<String, String> {
+        let c = self.c();
+        let mut st = c.prepare("SELECT group_key, json FROM ss_records").unwrap();
+        st.query_map([], |r| Ok((r.get(0)?, r.get(1)?))).unwrap().filter_map(Result::ok).collect()
     }
 
     // ---------- game media (case scans, cartridge, logo) ----------

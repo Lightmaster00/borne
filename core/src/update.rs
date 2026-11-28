@@ -70,9 +70,20 @@ pub fn part_of(rel: &str) -> &'static str {
             &["Contents/Frameworks/", "Contents/PlugIns/", "Contents/Resources/qml/"],
             &["Contents/Resources/ui/", "Contents/Resources/resources/"],
         )
+    } else if cfg!(target_os = "windows") {
+        (&["bin/", "plugins/", "qml/"], &["ui/", "resources/"])
     } else {
         (&["lib/", "plugins/", "qml/"], &["ui/", "resources/"])
     };
+    if cfg!(target_os = "windows") {
+        if rel.starts_with("plugins/") || rel.starts_with("qml/") || (rel.starts_with("bin/") && rel.to_ascii_lowercase().ends_with(".dll")) {
+            return "runtime";
+        }
+        if ui.iter().any(|p| rel.starts_with(p)) {
+            return "ui";
+        }
+        return "core";
+    }
     if runtime.iter().any(|p| rel.starts_with(p)) {
         "runtime"
     } else if ui.iter().any(|p| rel.starts_with(p)) {
@@ -106,6 +117,7 @@ fn package_entries(root: &Path) -> Result<Vec<(String, PathBuf)>, String> {
 /// `path \0 f \0 sha256(content) x|-` (executable or not) or `path \0 l \0 link target`.
 /// Same computation as `scripts/release/parts.py`.
 pub fn tree_hashes(root: &Path) -> Result<std::collections::BTreeMap<String, String>, String> {
+    #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
     let mut hashers: std::collections::BTreeMap<String, Sha256> =
         ["core", "ui", "runtime"].iter().map(|p| (p.to_string(), Sha256::new())).collect();
@@ -125,7 +137,10 @@ pub fn tree_hashes(root: &Path) -> Result<std::collections::BTreeMap<String, Str
                 }
                 h.update(&buf[..n]);
             }
+            #[cfg(unix)]
             let exec = if meta.permissions().mode() & 0o111 != 0 { "x" } else { "-" };
+            #[cfg(not(unix))]
+            let exec = "-";
             format!("{rel}\0f\0{}{exec}\n", hex(&h.finalize()))
         };
         hashers.get_mut(part_of(&rel)).unwrap().update(line.as_bytes());
@@ -479,8 +494,33 @@ fn fetch_file(app: &Shared, url: &str, size: u64, sha256: &str, dest: &Path, off
 /// links (Qt frameworks on macOS) intact.
 fn extract(archive: &Path, dir: &Path) -> Result<(), String> {
     let zip = archive.extension().map(|e| e == "zip").unwrap_or(false);
+    if zip && cfg!(target_os = "windows") {
+        let f = std::fs::File::open(archive).map_err(|e| e.to_string())?;
+        let mut a = zip::ZipArchive::new(f).map_err(|e| format!("cannot open update archive: {e}"))?;
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        for i in 0..a.len() {
+            let mut e = a.by_index(i).map_err(|e| e.to_string())?;
+            let rel = e
+                .enclosed_name()
+                .and_then(|p| crate::downloads::safe_relative(&p.to_string_lossy()))
+                .ok_or("invalid entry in update archive")?;
+            let dest = dir.join(rel);
+            if e.is_dir() {
+                std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
+                continue;
+            }
+            if let Some(p) = dest.parent() {
+                std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
+            }
+            let mut w = std::fs::File::create(&dest).map_err(|e| e.to_string())?;
+            std::io::copy(&mut e, &mut w).map_err(|e| e.to_string())?;
+        }
+        return Ok(());
+    }
     let status = if zip {
         std::process::Command::new("ditto").arg("-x").arg("-k").arg(archive).arg(dir).status()
+    } else if cfg!(target_os = "windows") {
+        std::process::Command::new("tar").arg("-m").arg("-xzf").arg(archive).arg("-C").arg(dir).status()
     } else {
         // -m: the files dated now, not the fixed date of the archives (every version has the same):
         // Qt's compiled-QML cache, checked by date, would otherwise keep running the old interface.
@@ -492,8 +532,27 @@ fn extract(archive: &Path, dir: &Path) -> Result<(), String> {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn copy_dir_all(from: &Path, to: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(to)?;
+    for entry in std::fs::read_dir(from)? {
+        let entry = entry?;
+        let dst = to.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir_all(&entry.path(), &dst)?;
+        } else {
+            std::fs::copy(entry.path(), dst)?;
+        }
+    }
+    Ok(())
+}
+
 /// Copies the installed package (symbolic links and permissions kept).
 fn copy_package(from: &Path, to: &Path) -> Result<(), String> {
+    if cfg!(target_os = "windows") {
+        #[cfg(target_os = "windows")]
+        return copy_dir_all(from, to).map_err(|_| "cannot copy the installed version".into());
+    }
     let status = if cfg!(target_os = "macos") {
         std::process::Command::new("ditto").arg(from).arg(to).status()
     } else {
@@ -617,6 +676,8 @@ fn find_package(staging: &Path) -> Option<PathBuf> {
     let core_of = |p: &Path| {
         if cfg!(target_os = "macos") {
             p.join("Contents/MacOS/borne")
+        } else if cfg!(target_os = "windows") {
+            p.join("bin/borne.exe")
         } else {
             p.join("bin/borne")
         }
@@ -659,24 +720,46 @@ pub fn apply(app: &Shared) -> Result<(), String> {
     let staging = staging_dir(&pkg, m.build);
     let new_pkg = find_package(&staging).ok_or("the update does not contain Borne")?;
     let previous = parent.join(".borne-previous");
-    let _ = std::fs::remove_dir_all(&previous);
-    std::fs::rename(&pkg, &previous).map_err(|e| format!("cannot move the current version aside ({e})"))?;
-    if let Err(e) = std::fs::rename(&new_pkg, &pkg) {
-        // Put the current version back: Borne must never be left without a package.
-        let _ = std::fs::rename(&previous, &pkg);
-        return Err(format!("cannot install the update ({e})"));
+    #[cfg(target_os = "windows")]
+    {
+        // Running executables and DLLs are locked on Windows: defer the folder swap until after
+        // this process exits, performed by a detached copy of the new core in %TEMP%.
+        *PENDING_SWAP.lock().unwrap_or_else(|e| e.into_inner()) = Some((pkg.clone(), new_pkg, previous, staging));
+        *INSTALLED_AT.lock().unwrap_or_else(|e| e.into_inner()) = Some(pkg);
+        app.db.log("update", &format!("updated to build {} ({}); restarting", m.build, m.version));
+        RESTART.store(true, Ordering::SeqCst);
+        return Ok(());
     }
-    let _ = std::fs::remove_dir_all(&staging);
-    *INSTALLED_AT.lock().unwrap_or_else(|e| e.into_inner()) = Some(pkg.clone());
-    app.db.log("update", &format!("updated to build {} ({}); restarting", m.build, m.version));
-    RESTART.store(true, Ordering::SeqCst);
-    Ok(())
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = std::fs::remove_dir_all(&previous);
+        std::fs::rename(&pkg, &previous).map_err(|e| format!("cannot move the current version aside ({e})"))?;
+        if let Err(e) = std::fs::rename(&new_pkg, &pkg) {
+            // Put the current version back: Borne must never be left without a package.
+            let _ = std::fs::rename(&previous, &pkg);
+            return Err(format!("cannot install the update ({e})"));
+        }
+        let _ = std::fs::remove_dir_all(&staging);
+        *INSTALLED_AT.lock().unwrap_or_else(|e| e.into_inner()) = Some(pkg.clone());
+        app.db.log("update", &format!("updated to build {} ({}); restarting", m.build, m.version));
+        RESTART.store(true, Ordering::SeqCst);
+        Ok(())
+    }
 }
+
+#[cfg(target_os = "windows")]
+static PENDING_SWAP: std::sync::Mutex<Option<(PathBuf, PathBuf, PathBuf, PathBuf)>> = std::sync::Mutex::new(None);
 
 /// Path of the new core after an update was applied.
 pub fn restart_exe() -> Option<PathBuf> {
     let pkg = package_dir_after_swap()?;
-    Some(if cfg!(target_os = "macos") { pkg.join("Contents/MacOS/borne") } else { pkg.join("bin/borne") })
+    Some(if cfg!(target_os = "macos") {
+        pkg.join("Contents/MacOS/borne")
+    } else if cfg!(target_os = "windows") {
+        pkg.join("bin/borne.exe")
+    } else {
+        pkg.join("bin/borne")
+    })
 }
 
 /// The installed package's path, remembered when an update is applied (it may have been renamed,
@@ -709,15 +792,76 @@ fn package_dir_after_swap() -> Option<PathBuf> {
     Some(parent.join(name))
 }
 
-/// Replaces this process with the new core (Unix exec), keeping the arguments.
+/// Replaces this process with the new core (Unix exec; detached updater swap on Windows), keeping the arguments.
 pub fn exec_new_core() -> ! {
-    use std::os::unix::process::CommandExt;
-    let exe = restart_exe().unwrap_or_else(|| PathBuf::from("borne"));
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    crate::logfile::write("update", &format!("restarting on {}", exe.display()));
-    let err = std::process::Command::new(&exe).args(args).exec();
-    crate::logfile::write("update", &format!("cannot restart: {err}"));
-    std::process::exit(1);
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        let exe = restart_exe().unwrap_or_else(|| PathBuf::from("borne"));
+        let args: Vec<String> = std::env::args().skip(1).collect();
+        crate::logfile::write("update", &format!("restarting on {}", exe.display()));
+        let err = std::process::Command::new(&exe).args(args).exec();
+        crate::logfile::write("update", &format!("cannot restart: {err}"));
+        std::process::exit(1);
+    }
+    #[cfg(target_os = "windows")]
+    {
+        if let Some((pkg, new_pkg, previous, staging)) = PENDING_SWAP.lock().unwrap_or_else(|e| e.into_inner()).take() {
+            let helper = std::env::temp_dir().join(format!("borne-updater-{}.exe", std::process::id()));
+            if std::fs::copy(new_pkg.join("bin/borne.exe"), &helper).is_ok() {
+                let mut cmd = std::process::Command::new(&helper);
+                cmd.arg("--apply-update")
+                    .arg(std::process::id().to_string())
+                    .arg(&pkg)
+                    .arg(&new_pkg)
+                    .arg(&previous)
+                    .arg(&staging)
+                    .args(std::env::args().skip(1));
+                match cmd.spawn() {
+                    Ok(_) => std::process::exit(0),
+                    Err(e) => crate::logfile::write("update", &format!("cannot start updater: {e}")),
+                }
+            }
+        }
+        std::process::exit(1);
+    }
+}
+
+/// Windows helper run from `%TEMP%`: waits for the old core PID to exit so its binaries are
+/// unlocked, swaps `pkg` and `new_pkg`, and launches the updated `borne.exe`.
+#[cfg(target_os = "windows")]
+pub fn finish_windows_swap(args: &[String]) {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{OpenProcess, SYNCHRONIZE, WaitForSingleObject};
+    let Some(i) = args.iter().position(|a| a == "--apply-update") else { return };
+    let (Some(pid_s), Some(pkg), Some(new_pkg), Some(previous), Some(staging)) =
+        (args.get(i + 1), args.get(i + 2), args.get(i + 3), args.get(i + 4), args.get(i + 5))
+    else {
+        return;
+    };
+    if let Ok(pid) = pid_s.parse::<u32>() {
+        unsafe {
+            let h = OpenProcess(SYNCHRONIZE, 0, pid);
+            if !h.is_null() {
+                WaitForSingleObject(h, 15_000);
+                CloseHandle(h);
+            }
+        }
+    }
+    let (pkg, new_pkg, previous, staging) = (Path::new(pkg), Path::new(new_pkg), Path::new(previous), Path::new(staging));
+    let _ = std::fs::remove_dir_all(previous);
+    for _ in 0..20 {
+        if std::fs::rename(pkg, previous).is_ok() {
+            if std::fs::rename(new_pkg, pkg).is_err() {
+                let _ = std::fs::rename(previous, pkg);
+            }
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(150));
+    }
+    let _ = std::fs::remove_dir_all(staging);
+    let rest: Vec<&str> = args.get(i + 6..).unwrap_or(&[]).iter().map(String::as_str).collect();
+    let _ = std::process::Command::new(pkg.join("bin/borne.exe")).args(rest).spawn();
 }
 
 /// Checks at startup, then every 6 hours, when automatic checks are on.

@@ -346,21 +346,26 @@ pub fn prefetch(app: &Shared, client: &crate::romm::Client) {
     app.emit(json!({ "type": "library" }));
 }
 
-/// What the interface needs for a game: the kinds on disk and the pixel size of the case faces.
-pub fn summary(app: &Shared, group_key: &str) -> Value {
+/// Summarizes media rows already loaded for a group.
+pub fn summary_from_rows(rows: &[crate::db::MediaRow]) -> Value {
     let mut kinds = vec![];
     let mut sizes = serde_json::Map::new();
     let mut spine = Value::Null;
-    for m in app.db.media_of(group_key) {
+    for m in rows {
         if std::path::Path::new(&m.path).is_file() {
             sizes.insert(m.kind.clone(), json!([m.w, m.h]));
             if m.kind == "side" {
                 spine = dominant_color_cached(&m.path).map(Value::String).unwrap_or(Value::Null);
             }
-            kinds.push(m.kind);
+            kinds.push(m.kind.clone());
         }
     }
     json!({ "kinds": kinds, "sizes": sizes, "spine_color": spine })
+}
+
+/// What the interface needs for a game: the kinds on disk and the pixel size of the case faces.
+pub fn summary(app: &Shared, group_key: &str) -> Value {
+    summary_from_rows(&app.db.media_of(group_key))
 }
 
 /// The spine scan's dominant colour, read once per file version (kept in memory).

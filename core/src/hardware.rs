@@ -158,7 +158,7 @@ pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
     }
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
     let (guitar_named, turntable_named) = by_name(pad_names);
     let sysctl = |k: &str| {
@@ -180,6 +180,66 @@ pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
         machine: if model.contains("book") { "laptop".into() } else { "desktop".into() },
         threads: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
         ram_gb: (mem + (1 << 29)) >> 30,
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
+    use windows_sys::Win32::Devices::Bluetooth::{BLUETOOTH_FIND_RADIO_PARAMS, BluetoothFindFirstRadio, BluetoothFindRadioClose};
+    use windows_sys::Win32::Media::Audio::waveInGetNumDevs;
+    use windows_sys::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
+    use windows_sys::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_DIGITIZER, SM_MOUSEPRESENT};
+
+    let (guitar_named, turntable_named) = by_name(pad_names);
+    let mut mem: MEMORYSTATUSEX = unsafe { std::mem::zeroed() };
+    mem.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
+    let total_phys = if unsafe { GlobalMemoryStatusEx(&mut mem) } != 0 { mem.ullTotalPhys } else { 0 };
+    let touchscreen = unsafe { GetSystemMetrics(SM_DIGITIZER) } & 0xC0 != 0;
+    let mouse = unsafe { GetSystemMetrics(SM_MOUSEPRESENT) } != 0;
+    let microphone = unsafe { waveInGetNumDevs() } > 0;
+    let bluetooth = unsafe {
+        let params = BLUETOOTH_FIND_RADIO_PARAMS { dwSize: std::mem::size_of::<BLUETOOTH_FIND_RADIO_PARAMS>() as u32 };
+        let mut radio = std::ptr::null_mut();
+        let h = BluetoothFindFirstRadio(&params, &mut radio);
+        if !h.is_null() {
+            if !radio.is_null() {
+                windows_sys::Win32::Foundation::CloseHandle(radio);
+            }
+            BluetoothFindRadioClose(h);
+            true
+        } else {
+            false
+        }
+    };
+    let mut pwr: SYSTEM_POWER_STATUS = unsafe { std::mem::zeroed() };
+    let has_battery = unsafe { GetSystemPowerStatus(&mut pwr) } != 0 && (pwr.BatteryFlag & 128) == 0;
+    let machine = if has_battery { "laptop" } else { "desktop" };
+    Hardware {
+        touchscreen,
+        mouse,
+        motion_pad: pads.iter().any(|i| MOTION_PADS.contains(i)),
+        wiimote: pads.iter().any(|i| WIIMOTES.contains(i)),
+        guitar: guitar_named || pads.iter().any(|i| GUITARS.contains(i)),
+        turntable: turntable_named || pads.iter().any(|i| TURNTABLES.contains(i)),
+        microphone,
+        bluetooth,
+        machine: machine.into(),
+        threads: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
+        ram_gb: (total_phys + (1 << 29)) >> 30,
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
+    let (guitar_named, turntable_named) = by_name(pad_names);
+    Hardware {
+        motion_pad: pads.iter().any(|i| MOTION_PADS.contains(i)),
+        wiimote: pads.iter().any(|i| WIIMOTES.contains(i)),
+        guitar: guitar_named || pads.iter().any(|i| GUITARS.contains(i)),
+        turntable: turntable_named || pads.iter().any(|i| TURNTABLES.contains(i)),
+        threads: std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
+        ..Default::default()
     }
 }
 

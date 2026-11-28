@@ -99,12 +99,21 @@ Window {
     // changes a row, not the grid): an unchanged grid keeps its covers as they are.
     property var layout: ({ tiles: [], groups: [], total: 0, count: 0 })
     readonly property double hourClock: Math.floor(clock / 3600000) * 3600000
+    function sameLayout(a, b) {
+        if (!a || !b || a.count !== b.count || a.totalH !== b.totalH || a.total !== b.total) return false
+        const ta = a.tiles || [], tb = b.tiles || []
+        if (ta.length !== tb.length) return false
+        for (let i = 0; i < ta.length; i++) {
+            if (ta[i].idx !== tb[i].idx || ta[i].x !== tb[i].x || ta[i].y !== tb[i].y || ta[i].sub !== tb[i].sub) return false
+        }
+        return true
+    }
     function relayout() {
         const l = folder ? Shelf.build(rows, { tab: libTab, console: consoleFilter, quick: quick, genre: "", sort: sortId,
                                                layout: "grid", consoles: orderedConsoles, now: hourClock, fmtSize: fmtSize,
                                                width: home.folderWidth, height: home.folderHeight, tileH: home.folderTileH, justify: true })
                          : { tiles: [], groups: [], total: 0, totalH: 0, vertical: true, count: 0 }
-        if (JSON.stringify(l) !== JSON.stringify(layout)) layout = l
+        if (!sameLayout(l, layout)) layout = l
         refreshHome()
     }
     // The consoles in the order chosen (Y on the home or the Store), and the player's own order.

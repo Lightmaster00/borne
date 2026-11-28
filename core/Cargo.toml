@@ -41,6 +41,25 @@ ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
 fuser = { version = "0.18", default-features = false }
 x11rb = { version = "0.13", features = ["res"] }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Devices_Bluetooth",
+    "Win32_Foundation",
+    "Win32_Media_Audio",
+    "Win32_Security_Cryptography",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Console",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Memory",
+    "Win32_System_Power",
+    "Win32_System_Registry",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+    "Win32_UI_Controls_Dialogs",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
 [dev-dependencies]
 tempfile = "3"
 

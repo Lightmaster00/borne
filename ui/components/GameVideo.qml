@@ -22,7 +22,8 @@ Item {
         ShaderEffectSource {
             sourceItem: out
             sourceRect: out.contentRect
-            live: true
+            live: parent.visible
+            textureSize: Qt.size(320, Math.max(180, Math.round(320 * out.contentRect.height / Math.max(1, out.contentRect.width))))
             anchors.centerIn: parent
             readonly property real k: Math.max(gv.width / Math.max(1, out.contentRect.width), gv.height / Math.max(1, out.contentRect.height))
             width: out.contentRect.width * k

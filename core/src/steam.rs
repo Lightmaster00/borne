@@ -21,8 +21,41 @@ fn data_home() -> PathBuf {
     std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).filter(|p| p.is_absolute()).unwrap_or_else(|| home().join(".local/share"))
 }
 
-/// Steam's own folder (native install, or the Flatpak's).
+/// Steam's own folder (native install, Flatpak on Linux, or Registry/Program Files on Windows).
 fn steam_root() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::ffi::OsStringExt;
+        use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, KEY_READ, REG_SZ, RegCloseKey, RegOpenKeyExW, RegQueryValueExW};
+        let sub: Vec<u16> = "Software\\Valve\\Steam\0".encode_utf16().collect();
+        let val: Vec<u16> = "SteamPath\0".encode_utf16().collect();
+        let mut key = std::ptr::null_mut();
+        if unsafe { RegOpenKeyExW(HKEY_CURRENT_USER, sub.as_ptr(), 0, KEY_READ, &mut key) } == 0 {
+            let mut ty = 0u32;
+            let mut bytes = 0u32;
+            if unsafe { RegQueryValueExW(key, val.as_ptr(), std::ptr::null(), &mut ty, std::ptr::null_mut(), &mut bytes) } == 0
+                && ty == REG_SZ
+                && bytes > 2
+            {
+                let mut buf = vec![0u16; (bytes as usize) / 2];
+                if unsafe { RegQueryValueExW(key, val.as_ptr(), std::ptr::null(), &mut ty, buf.as_mut_ptr() as *mut u8, &mut bytes) }
+                    == 0
+                {
+                    let len = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
+                    let p = PathBuf::from(std::ffi::OsString::from_wide(&buf[..len]));
+                    unsafe { RegCloseKey(key) };
+                    if p.join("userdata").is_dir() {
+                        return Some(p);
+                    }
+                }
+            }
+            unsafe { RegCloseKey(key) };
+        }
+        return [PathBuf::from(r"C:\Program Files (x86)\Steam"), PathBuf::from(r"C:\Program Files\Steam")]
+            .into_iter()
+            .find(|p| p.join("userdata").is_dir());
+    }
+    #[cfg(not(target_os = "windows"))]
     [data_home().join("Steam"), home().join(".steam/steam"), home().join(".var/app/com.valvesoftware.Steam/.local/share/Steam")]
         .into_iter()
         .find(|p| p.join("userdata").is_dir())
@@ -41,17 +74,54 @@ fn chimera_file() -> PathBuf {
     chimera_dir().join("shortcuts/borne.yaml")
 }
 
-/// What starts Borne: the package's `borne` script (next to bin/), else this program.
+/// What starts Borne: the package's `borne` script/executable (next to bin/), else this program.
 pub fn launcher() -> PathBuf {
     let exe = std::env::current_exe().ok().and_then(|p| p.canonicalize().ok()).unwrap_or_else(|| PathBuf::from("borne"));
+    if cfg!(target_os = "windows") {
+        return exe;
+    }
     let root = exe.parent().and_then(|b| b.parent()).map(Path::to_path_buf);
     root.map(|r| r.join("borne")).filter(|s| s.is_file()).unwrap_or(exe)
 }
 
 fn steam_running() -> bool {
-    let Ok(dir) = std::fs::read_dir("/proc") else { return false };
-    dir.flatten()
-        .any(|e| std::fs::read_to_string(e.path().join("comm")).map(|c| matches!(c.trim(), "steam" | "steamwebhelper")).unwrap_or(false))
+    #[cfg(target_os = "windows")]
+    {
+        use windows_sys::Win32::Foundation::CloseHandle;
+        use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+            CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
+        };
+        unsafe {
+            let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            if snap == -1isize as _ {
+                return false;
+            }
+            let mut pe: PROCESSENTRY32W = std::mem::zeroed();
+            pe.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+            let mut running = false;
+            if Process32FirstW(snap, &mut pe) != 0 {
+                loop {
+                    let end = pe.szExeFile.iter().position(|&c| c == 0).unwrap_or(pe.szExeFile.len());
+                    let name = String::from_utf16_lossy(&pe.szExeFile[..end]).to_ascii_lowercase();
+                    if name == "steam.exe" || name == "steamwebhelper.exe" {
+                        running = true;
+                        break;
+                    }
+                    if Process32NextW(snap, &mut pe) == 0 {
+                        break;
+                    }
+                }
+            }
+            CloseHandle(snap);
+            return running;
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let Ok(dir) = std::fs::read_dir("/proc") else { return false };
+        dir.flatten()
+            .any(|e| std::fs::read_to_string(e.path().join("comm")).map(|c| matches!(c.trim(), "steam" | "steamwebhelper")).unwrap_or(false))
+    }
 }
 
 /// The id Steam gives a non-Steam game (and its artwork files): CRC-32 of the program and name,
@@ -184,7 +254,10 @@ pub fn with_borne(top: Option<Vec<(String, Vdf)>>, exe: &str, icon: &str) -> Vec
         let ours = list.iter().position(|(_, e)| {
             let Vdf::Map(e) = e else { return false };
             let name = matches!(get(e, "AppName"), Some(Vdf::Str(n)) if n == "Borne");
-            let prog = matches!(get(e, "Exe"), Some(Vdf::Str(x)) if x.trim_matches('"').ends_with("/borne"));
+            let prog = matches!(get(e, "Exe"), Some(Vdf::Str(x)) if {
+                let p = x.trim_matches('"').to_ascii_lowercase();
+                p.ends_with("/borne") || p.ends_with("\\borne.exe") || p.ends_with("/borne.exe")
+            });
             name || prog
         });
         match ours {
@@ -301,7 +374,7 @@ pub fn status() -> Value {
             .unwrap_or(false)
     };
     json!({
-        "available": cfg!(target_os = "linux") && (chimera || steam_root().is_some()),
+        "available": (cfg!(target_os = "linux") || cfg!(target_os = "windows")) && (chimera || steam_root().is_some()),
         "chimera": chimera,
         "added": added,
         "steam_running": !chimera && steam_running(),

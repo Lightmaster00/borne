@@ -20,9 +20,14 @@ pub struct Paths {
 
 impl Paths {
     pub fn from_env() -> Self {
-        let root = std::env::var_os("BORNE_DATA_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("borne"));
+        let root = std::env::var_os("BORNE_DATA_DIR").map(PathBuf::from).unwrap_or_else(|| {
+            let base = if cfg!(target_os = "windows") {
+                dirs::data_local_dir().or_else(dirs::data_dir)
+            } else {
+                dirs::data_dir()
+            };
+            base.unwrap_or_else(|| PathBuf::from(".")).join("borne")
+        });
         Self { root }
     }
 
@@ -84,12 +89,19 @@ impl Paths {
     }
 }
 
+#[cfg(unix)]
 pub fn set_mode(path: &std::path::Path, mode: u32) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode))
 }
 
+#[cfg(not(unix))]
+pub fn set_mode(_path: &std::path::Path, _mode: u32) -> std::io::Result<()> {
+    Ok(())
+}
+
 /// Free space (bytes) on the filesystem containing `path`.
+#[cfg(unix)]
 pub fn free_space(path: &std::path::Path) -> Option<u64> {
     use std::os::unix::ffi::OsStrExt;
     let c = std::ffi::CString::new(path.as_os_str().as_bytes()).ok()?;
@@ -99,6 +111,15 @@ pub fn free_space(path: &std::path::Path) -> Option<u64> {
     #[allow(clippy::unnecessary_cast)] // types differ between Linux and macOS
     let free = st.f_bavail as u64 * st.f_frsize as u64;
     (rc == 0).then_some(free)
+}
+
+#[cfg(windows)]
+pub fn free_space(path: &std::path::Path) -> Option<u64> {
+    use std::os::windows::ffi::OsStrExt;
+    let wide: Vec<u16> = path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+    let mut free = 0u64;
+    let ok = unsafe { windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(wide.as_ptr(), &mut free, std::ptr::null_mut(), std::ptr::null_mut()) };
+    (ok != 0).then_some(free)
 }
 
 /// Stable machine identifier (for the RomM device identifier).
@@ -127,6 +148,7 @@ pub fn machine_id(paths: &Paths) -> String {
 }
 
 /// Machine name (shown in RomM's device list).
+#[cfg(unix)]
 pub fn hostname() -> String {
     let mut buf = [0u8; 256];
     // SAFETY: valid 256-byte buffer; gethostname writes a NUL-terminated string.
@@ -139,4 +161,21 @@ pub fn hostname() -> String {
         }
     }
     "computer".into()
+}
+
+#[cfg(windows)]
+pub fn hostname() -> String {
+    use windows_sys::Win32::System::SystemInformation::{ComputerNameDnsHostname, GetComputerNameExW};
+    let mut len = 0u32;
+    unsafe { GetComputerNameExW(ComputerNameDnsHostname, std::ptr::null_mut(), &mut len) };
+    if len > 0 {
+        let mut buf = vec![0u16; len as usize];
+        if unsafe { GetComputerNameExW(ComputerNameDnsHostname, buf.as_mut_ptr(), &mut len) } != 0 {
+            let name = String::from_utf16_lossy(&buf[..len as usize]).trim().to_string();
+            if !name.is_empty() {
+                return name;
+            }
+        }
+    }
+    std::env::var("COMPUTERNAME").ok().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| "computer".into())
 }

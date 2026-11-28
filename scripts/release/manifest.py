@@ -24,6 +24,7 @@ import sys
 PLATFORMS = {  # manifest key: (full archive, parts file, label)
     "linux-x86_64": ("Borne-linux-x86_64.tar.gz", "parts-linux-x86_64.json", "Linux (x86_64)"),
     "macos-aarch64": ("Borne-macos-arm64.zip", "parts-macos-arm64.json", "macOS (Apple Silicon)"),
+    "windows-x86_64": ("Borne-windows-x86_64.zip", "parts-windows-x86_64.json", "Windows (x86_64)"),
 }
 
 
@@ -101,7 +102,8 @@ def main():
               "  Borne is added to your applications menu and to Steam, with its artwork (on ChimeraOS it shows",
               "  after the next Steam session start; elsewhere Steam must be closed, or use Settings → Help → Add to Steam).",
               "- **macOS** (Apple Silicon): download `Borne-macos-arm64.zip`, move `Borne.app` to Applications, then the",
-              "  first time right-click it → **Open** (the app is not notarized).", "",
+              "  first time right-click it → **Open** (the app is not notarized).",
+              "- **Windows** (x86_64): download `Borne-windows-x86_64.zip`, extract it and run `Borne\\bin\\borne.exe`.", "",
               "## Updates", "",
               "Borne updates itself (Settings → Updates) and downloads only the parts that changed:", "",
               "| | Whole version | Programs | Interface | Qt runtime |", "|---|---|---|---|---|"]

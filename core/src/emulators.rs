@@ -294,7 +294,22 @@ fn home() -> PathBuf {
 
 pub fn which(name: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
-    std::env::split_paths(&path).map(|d| d.join(name)).find(|p| is_executable(p))
+    for d in std::env::split_paths(&path) {
+        let cand = d.join(name);
+        if is_executable(&cand) {
+            return Some(cand);
+        }
+        #[cfg(target_os = "windows")]
+        if Path::new(name).extension().is_none() {
+            for ext in ["exe", "cmd", "bat"] {
+                let c = d.join(format!("{name}.{ext}"));
+                if is_executable(&c) {
+                    return Some(c);
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Whether this file is a program that can be started.
@@ -303,8 +318,23 @@ pub fn is_program(p: &Path) -> bool {
 }
 
 fn is_executable(p: &Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-    p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false)
+    }
+    #[cfg(target_os = "windows")]
+    {
+        p.is_file()
+            && p.extension()
+                .and_then(|e| e.to_str())
+                .map(|e| ["exe", "cmd", "bat", "com"].iter().any(|x| e.eq_ignore_ascii_case(x)))
+                .unwrap_or(false)
+    }
+    #[cfg(not(any(unix, target_os = "windows")))]
+    {
+        p.is_file()
+    }
 }
 
 fn flatpak_installed(id: &str) -> bool {
@@ -413,6 +443,28 @@ pub fn find(app: &Shared, id: &str) -> Option<Found> {
             }
         }
     }
+    #[cfg(target_os = "windows")]
+    {
+        let mut dirs: Vec<PathBuf> = vec![];
+        for env in ["LOCALAPPDATA", "APPDATA", "ProgramFiles", "ProgramFiles(x86)"] {
+            if let Some(base) = std::env::var_os(env).map(PathBuf::from) {
+                dirs.push(base.join(&p.name));
+                dirs.push(base.join(&p.id));
+                if let Some(first) = p.name.split([' ', '(']).next() {
+                    dirs.push(base.join(first));
+                }
+            }
+        }
+        dirs.push(PathBuf::from(r"C:\RetroArch-Win64"));
+        for d in dirs {
+            for b in &p.binaries {
+                let exe = if b.to_ascii_lowercase().ends_with(".exe") { d.join(b) } else { d.join(format!("{b}.exe")) };
+                if is_executable(&exe) {
+                    return Some(Found::Program(exe));
+                }
+            }
+        }
+    }
     None
 }
 
@@ -433,10 +485,15 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
     let (xdg_data, xdg_config) = (base.join("data"), base.join("config"));
     let mac = home().join("Library/Application Support");
     let mac_os = cfg!(target_os = "macos");
+    let win_os = cfg!(target_os = "windows");
+    let win_roam = dirs::config_dir().unwrap_or_else(|| base.clone());
+    let win_docs = dirs::document_dir().unwrap_or_else(|| base.clone());
     match program {
         "eden" => {
             if mac_os {
                 mac.join("eden")
+            } else if win_os {
+                win_roam.join("eden")
             } else {
                 xdg_data.join("eden")
             }
@@ -444,6 +501,8 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "citron" => {
             if mac_os {
                 mac.join("citron")
+            } else if win_os {
+                win_roam.join("citron")
             } else {
                 xdg_data.join("citron")
             }
@@ -451,6 +510,8 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "ryubing" => {
             if mac_os {
                 mac.join("Ryujinx")
+            } else if win_os {
+                win_roam.join("Ryujinx")
             } else {
                 xdg_config.join("Ryujinx")
             }
@@ -458,6 +519,8 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "rpcs3" => {
             if mac_os {
                 mac.join("rpcs3")
+            } else if win_os {
+                win_roam.join("rpcs3")
             } else {
                 xdg_config.join("rpcs3")
             }
@@ -465,13 +528,24 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "pcsx2" => {
             if mac_os {
                 mac
+            } else if win_os {
+                win_docs
             } else {
                 xdg_config
+            }
+        }
+        "duckstation" => {
+            if win_os {
+                win_docs.join("DuckStation")
+            } else {
+                base
             }
         }
         "shadps4" => {
             if mac_os {
                 mac.join("shadPS4")
+            } else if win_os {
+                win_roam.join("shadPS4")
             } else {
                 xdg_data.join("shadPS4")
             }
@@ -481,6 +555,8 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "cemu" => {
             if mac_os {
                 mac.join("Cemu")
+            } else if win_os {
+                win_roam.join("Cemu")
             } else {
                 xdg_data.join("Cemu")
             }
@@ -489,6 +565,8 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "vita3k" => {
             if mac_os {
                 mac.join("Vita3K/Vita3K/fs")
+            } else if win_os {
+                win_roam.join("Vita3K/Vita3K")
             } else {
                 xdg_data.join("Vita3K/Vita3K")
             }
@@ -496,17 +574,20 @@ pub fn data_dir(app: &Shared, profile: &str, program: &str) -> PathBuf {
         "azahar" => {
             if mac_os {
                 mac.join("Azahar")
+            } else if win_os {
+                win_roam.join("Azahar")
             } else {
                 xdg_data.join("azahar-emu")
             }
         }
+        "melonds" if win_os => win_roam.join("melonDS"),
         _ => base,
     }
 }
 
 /// Linux: the emulator's data and configuration in Borne's per-profile folder.
 pub fn xdg_env(app: &Shared, profile: &str, program: &str) -> Vec<(String, String)> {
-    if cfg!(target_os = "macos") || program == "retroarch" || program == "dolphin" {
+    if cfg!(target_os = "macos") || cfg!(target_os = "windows") || program == "retroarch" || program == "dolphin" {
         return vec![];
     }
     let base = app.paths.profiles().join(profile).join(program);
@@ -655,9 +736,140 @@ struct Session {
     via_open: bool,
     /// The emulator opened on its own interface (developer mode), no game.
     tool: bool,
+    #[cfg(target_os = "windows")]
+    job: Option<WinJob>,
+}
+
+#[cfg(target_os = "windows")]
+struct WinJob(isize);
+
+#[cfg(target_os = "windows")]
+impl Drop for WinJob {
+    fn drop(&mut self) {
+        if self.0 != 0 {
+            unsafe { windows_sys::Win32::Foundation::CloseHandle(self.0 as _) };
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn create_job_for(child: &Child) -> Option<WinJob> {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::JobObjects::{
+        AssignProcessToJobObject, CreateJobObjectW, JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+        JobObjectExtendedLimitInformation, SetInformationJobObject,
+    };
+    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_SET_QUOTA, PROCESS_TERMINATE};
+    unsafe {
+        let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
+        if job.is_null() {
+            return None;
+        }
+        let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            &info as *const _ as *const std::ffi::c_void,
+            std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+        );
+        let proc = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, 0, child.id());
+        if !proc.is_null() {
+            let ok = AssignProcessToJobObject(job, proc);
+            CloseHandle(proc);
+            if ok != 0 {
+                return Some(WinJob(job as isize));
+            }
+        }
+        CloseHandle(job);
+        None
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn win_suspend_tree(root_pid: u32, suspend: bool) {
+    use std::collections::{HashMap, HashSet};
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD,
+        THREADENTRY32, Thread32First, Thread32Next,
+    };
+    use windows_sys::Win32::System::Threading::{OpenThread, ResumeThread, SuspendThread, THREAD_SUSPEND_RESUME};
+
+    let mut children: HashMap<u32, Vec<u32>> = HashMap::new();
+    unsafe {
+        let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snap != -1isize as _ {
+            let mut pe: PROCESSENTRY32W = std::mem::zeroed();
+            pe.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+            if Process32FirstW(snap, &mut pe) != 0 {
+                loop {
+                    children.entry(pe.th32ParentProcessID).or_default().push(pe.th32ProcessID);
+                    if Process32NextW(snap, &mut pe) == 0 {
+                        break;
+                    }
+                }
+            }
+            CloseHandle(snap);
+        }
+    }
+    let mut pids = HashSet::from([root_pid]);
+    let mut stack = vec![root_pid];
+    while let Some(p) = stack.pop() {
+        if let Some(cs) = children.get(&p) {
+            for &c in cs {
+                if pids.insert(c) {
+                    stack.push(c);
+                }
+            }
+        }
+    }
+    unsafe {
+        let tsnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        if tsnap != -1isize as _ {
+            let mut te: THREADENTRY32 = std::mem::zeroed();
+            te.dwSize = std::mem::size_of::<THREADENTRY32>() as u32;
+            if Thread32First(tsnap, &mut te) != 0 {
+                loop {
+                    if pids.contains(&te.th32OwnerProcessID) {
+                        let th = OpenThread(THREAD_SUSPEND_RESUME, 0, te.th32ThreadID);
+                        if !th.is_null() {
+                            if suspend {
+                                SuspendThread(th);
+                            } else {
+                                ResumeThread(th);
+                            }
+                            CloseHandle(th);
+                        }
+                    }
+                    if Thread32Next(tsnap, &mut te) == 0 {
+                        break;
+                    }
+                }
+            }
+            CloseHandle(tsnap);
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn win_close_windows(root_pid: u32) {
+    use windows_sys::Win32::Foundation::{BOOL, HWND, LPARAM};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, PostMessageW, WM_CLOSE};
+    unsafe extern "system" fn cb(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        let target = lparam as u32;
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, &mut pid);
+        if pid == target {
+            PostMessageW(hwnd, WM_CLOSE, 0, 0);
+        }
+        1
+    }
+    unsafe { EnumWindows(Some(cb), root_pid as LPARAM) };
 }
 
 /// Sends a signal to the game: its process group, and with `open`, the emulator's own processes.
+#[cfg(unix)]
 fn signal_session(s: &Session, sig: i32) {
     unsafe {
         libc::kill(-(s.child.id() as i32), sig);
@@ -757,7 +969,13 @@ fn renamed_rom(app: &Shared, p: &Program, rom: &Path) -> Result<Option<PathBuf>,
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let link = dir.join(rom.with_extension(to).file_name().unwrap_or_default());
     let _ = std::fs::remove_file(&link);
+    #[cfg(unix)]
     std::os::unix::fs::symlink(rom, &link).map_err(|e| format!("could not prepare the game file: {e}"))?;
+    #[cfg(windows)]
+    std::fs::hard_link(rom, &link)
+        .or_else(|_| std::os::windows::fs::symlink_file(rom, &link))
+        .or_else(|_| std::fs::copy(rom, &link).map(|_| ()))
+        .map_err(|e| format!("could not prepare the game file: {e}"))?;
     Ok(Some(link))
 }
 
@@ -2109,6 +2327,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
     cmd.stdin(Stdio::null()).stdout(out).stderr(err);
     // Its own process group, so that stopping the game also stops what the emulator started
     // (Flatpak's sandbox, helper processes).
+    #[cfg(unix)]
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
     let bundle = if via_open {
         cmd.get_args().nth(3).map(PathBuf::from)
@@ -2116,6 +2335,8 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)).map(Path::to_path_buf)
     };
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
+    #[cfg(target_os = "windows")]
+    let job = create_job_for(&child);
     app.db.log("play", &format!("{} with {} ({})", g.name, e.name, found.describe()));
     *SESSION.lock().unwrap_or_else(|e| e.into_inner()) = Some(Session {
         rom_id,
@@ -2137,6 +2358,8 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
             _ => None,
         },
         tool: false,
+        #[cfg(target_os = "windows")]
+        job,
     });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
@@ -2235,10 +2458,13 @@ pub fn open_ui(app: &Shared, id: &str) -> Result<Value, String> {
     let out = std::fs::File::create(&log).map_err(|e| e.to_string())?;
     let err = out.try_clone().map_err(|e| e.to_string())?;
     cmd.stdin(Stdio::null()).stdout(out).stderr(err);
+    #[cfg(unix)]
     std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
     let bundle =
         Path::new(cmd.get_program()).ancestors().find(|a| a.extension().map(|e| e == "app").unwrap_or(false)).map(Path::to_path_buf);
     let child = cmd.spawn().map_err(|err| format!("{} could not start: {err}", p.name))?;
+    #[cfg(target_os = "windows")]
+    let job = create_job_for(&child);
     app.db.log("developer", &format!("{} opened on its own interface ({})", p.name, found.describe()));
     *SESSION.lock().unwrap_or_else(|e| e.into_inner()) = Some(Session {
         rom_id: 0,
@@ -2260,6 +2486,8 @@ pub fn open_ui(app: &Shared, id: &str) -> Result<Value, String> {
             _ => None,
         },
         tool: true,
+        #[cfg(target_os = "windows")]
+        job,
     });
     let s = session();
     app.emit(json!({ "type": "session", "session": s }));
@@ -2411,12 +2639,15 @@ fn follow(app: Shared, log: PathBuf, own: Vec<PathBuf>, fails: Vec<String>) {
                 });
                 // Killed by a signal it raised itself (abort, segmentation fault): a crash of the
                 // emulator, at any time, said as such rather than by its last log line.
+                #[cfg(unix)]
                 let crashed = {
                     use std::os::unix::process::ExitStatusExt;
                     status.signal().filter(|n| {
                         !s.stopping && [libc::SIGABRT, libc::SIGSEGV, libc::SIGBUS, libc::SIGILL, libc::SIGFPE, libc::SIGTRAP].contains(n)
                     })
                 };
+                #[cfg(not(unix))]
+                let crashed: Option<i32> = None;
                 let program_id = s.program.clone();
                 let error = failure
                     .map(|l| format!("{} could not start the game: {}", s.emulator, explain(&l)))
@@ -2533,7 +2764,10 @@ pub fn ask_quit(app: &Shared) {
         return;
     }
     let pid = s.child.id() as i32;
+    #[cfg(unix)]
     signal_session(s, libc::SIGSTOP);
+    #[cfg(target_os = "windows")]
+    win_suspend_tree(s.child.id(), true);
     s.paused = true;
     drop(g);
     crate::quitkey::hide_game(pid);
@@ -2557,7 +2791,10 @@ pub fn resume(app: &Shared) {
     if !s.paused {
         return;
     }
+    #[cfg(unix)]
     signal_session(s, libc::SIGCONT);
+    #[cfg(target_os = "windows")]
+    win_suspend_tree(s.child.id(), false);
     s.paused = false;
     let bundle = s.bundle.clone();
     drop(g);
@@ -2577,17 +2814,36 @@ pub fn stop() -> bool {
     if let Some(id) = s.flatpak.clone() {
         std::thread::spawn(move || flatpak_kill(&id));
     }
-    signal_session(s, libc::SIGTERM);
-    // A game paused by the quit question runs again to receive it.
-    if s.paused {
-        signal_session(s, libc::SIGCONT);
+    #[cfg(unix)]
+    {
+        signal_session(s, libc::SIGTERM);
+        // A game paused by the quit question runs again to receive it.
+        if s.paused {
+            signal_session(s, libc::SIGCONT);
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        if s.paused {
+            win_suspend_tree(s.child.id(), false);
+            s.paused = false;
+        }
+        win_close_windows(s.child.id());
     }
     drop(g);
     std::thread::spawn(move || {
         std::thread::sleep(Duration::from_secs(5));
         if let Some(s) = SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_mut() {
             if s.child.id() as i32 == pid {
+                #[cfg(unix)]
                 signal_session(s, libc::SIGKILL);
+                #[cfg(target_os = "windows")]
+                {
+                    if let Some(job) = &s.job {
+                        unsafe { windows_sys::Win32::System::JobObjects::TerminateJobObject(job.0 as _, 1) };
+                    }
+                    let _ = s.child.kill();
+                }
             }
         }
     });

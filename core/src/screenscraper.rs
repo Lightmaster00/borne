@@ -302,9 +302,8 @@ fn ui_lang(app: &Shared) -> String {
     app.db.setting("ui_lang").unwrap_or_else(|| "en".into())
 }
 
-/// The game's title in the interface language, from its ScreenScraper record.
-pub fn title(app: &Shared, group_key: &str, lang: &str) -> Option<String> {
-    let rec: Value = serde_json::from_str(&app.db.ss_record(group_key)?).ok()?;
+/// The game's title in the interface language, from a parsed ScreenScraper record.
+pub fn title_from_rec(rec: &Value, lang: &str) -> Option<String> {
     let names = rec["jeu"]["noms"].as_array()?;
     for r in ui_regions(lang) {
         if let Some(t) = names.iter().find(|n| n["region"].as_str() == Some(r)).and_then(|n| n["text"].as_str()) {
@@ -315,6 +314,12 @@ pub fn title(app: &Shared, group_key: &str, lang: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// The game's title in the interface language, from its ScreenScraper record.
+pub fn title(app: &Shared, group_key: &str, lang: &str) -> Option<String> {
+    let rec: Value = serde_json::from_str(&app.db.ss_record(group_key)?).ok()?;
+    title_from_rec(&rec, lang)
 }
 
 /// The game's description in the interface language, from its ScreenScraper record.
@@ -332,22 +337,26 @@ pub fn synopsis_in(rec: &Value, lang: &str) -> Option<String> {
         .filter(|t| !t.is_empty())
 }
 
-/// A game of the library shown in the interface language: its title, and its description when
-/// ScreenScraper has one in that language (RomM's, usually English, stays otherwise).
-pub fn localize(app: &Shared, v: &mut Value, lang: &str) {
-    let Some(key) = v["group_key"].as_str().map(str::to_string) else { return };
-    if let Some(t) = title(app, &key, lang) {
+/// Localizes a game entry using an already-parsed ScreenScraper record.
+pub fn localize_with_rec(v: &mut Value, rec: &Value, lang: &str) {
+    if let Some(t) = title_from_rec(rec, lang) {
         v["name"] = json!(t);
     }
-    let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return };
-    if let Some(s) = synopsis_in(&rec, lang).or_else(|| v["summary"].is_null().then(|| synopsis_in(&rec, "en")).flatten()) {
+    if let Some(s) = synopsis_in(rec, lang).or_else(|| v["summary"].is_null().then(|| synopsis_in(rec, "en")).flatten()) {
         v["summary"] = json!(s);
     }
 }
 
-/// Every title ScreenScraper knows for the game (each region's), for the search.
-pub fn all_titles(app: &Shared, group_key: &str) -> Vec<String> {
-    let Some(rec) = app.db.ss_record(group_key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return vec![] };
+/// A game of the library shown in the interface language: its title, and its description when
+/// ScreenScraper has one in that language (RomM's, usually English, stays otherwise).
+pub fn localize(app: &Shared, v: &mut Value, lang: &str) {
+    let Some(key) = v["group_key"].as_str().map(str::to_string) else { return };
+    let Some(rec) = app.db.ss_record(&key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return };
+    localize_with_rec(v, &rec, lang);
+}
+
+/// Every title ScreenScraper knows for a parsed record (each region's), for the search.
+pub fn all_titles_from_rec(rec: &Value) -> Vec<String> {
     let mut out: Vec<String> = rec["jeu"]["noms"]
         .as_array()
         .into_iter()
@@ -358,6 +367,12 @@ pub fn all_titles(app: &Shared, group_key: &str) -> Vec<String> {
     out.sort();
     out.dedup();
     out
+}
+
+/// Every title ScreenScraper knows for the game (each region's), for the search.
+pub fn all_titles(app: &Shared, group_key: &str) -> Vec<String> {
+    let Some(rec) = app.db.ss_record(group_key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return vec![] };
+    all_titles_from_rec(&rec)
 }
 
 /// The interface language changed: titles follow at once, and the scans of that language are

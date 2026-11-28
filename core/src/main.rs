@@ -1,3 +1,5 @@
+#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
+
 //! Borne — core.
 //!
 //! Single entry point: the core opens its database, starts its local API (HTTP + WebSocket)
@@ -75,7 +77,8 @@ fn layout() -> Layout {
         return Layout { ui_bin: exe_dir.join("borne-ui"), resources: res.join("resources") };
     }
     let root = exe_dir.parent().map(PathBuf::from).unwrap_or_else(|| exe_dir.clone());
-    Layout { ui_bin: root.join("bin").join("borne-ui"), resources: root.join("resources") }
+    let ui_name = if cfg!(target_os = "windows") { "borne-ui.exe" } else { "borne-ui" };
+    Layout { ui_bin: root.join("bin").join(ui_name), resources: root.join("resources") }
 }
 
 fn random_token() -> String {
@@ -86,6 +89,15 @@ fn random_token() -> String {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    #[cfg(target_os = "windows")]
+    if args.iter().any(|a| a == "--apply-update") {
+        update::finish_windows_swap(&args);
+        return;
+    }
+    #[cfg(target_os = "windows")]
+    if args.iter().any(|a| matches!(a.as_str(), "--version" | "--part-hashes" | "--add-to-steam" | "--no-ui")) {
+        unsafe { windows_sys::Win32::System::Console::AttachConsole(windows_sys::Win32::System::Console::ATTACH_PARENT_PROCESS) };
+    }
     if args.iter().any(|a| a == "--version") {
         println!("Borne {} (build {}, {})", update::VERSION, update::build(), update::COMMIT);
         return;
@@ -291,11 +303,18 @@ fn main() {
     }
 }
 
-/// Set when the system asks Borne to quit (SIGTERM, SIGINT, SIGHUP).
+/// Set when the system asks Borne to quit (SIGTERM, SIGINT, SIGHUP; Ctrl+C/Close on Windows).
 static QUIT_ASKED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+#[cfg(unix)]
 extern "C" fn on_quit_signal(_: libc::c_int) {
     QUIT_ASKED.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
+#[cfg(windows)]
+unsafe extern "system" fn on_console_ctrl(_: u32) -> i32 {
+    QUIT_ASKED.store(true, std::sync::atomic::Ordering::SeqCst);
+    1
 }
 
 /// Waits for the interface; when the system asks Borne to quit meanwhile, the interface is closed
@@ -303,8 +322,13 @@ extern "C" fn on_quit_signal(_: libc::c_int) {
 fn wait_ui(ui: &mut std::process::Child) -> std::io::Result<std::process::ExitStatus> {
     static HANDLERS: std::sync::Once = std::sync::Once::new();
     HANDLERS.call_once(|| unsafe {
+        #[cfg(unix)]
         for sig in [libc::SIGTERM, libc::SIGINT, libc::SIGHUP] {
             libc::signal(sig, on_quit_signal as *const () as libc::sighandler_t);
+        }
+        #[cfg(windows)]
+        {
+            windows_sys::Win32::System::Console::SetConsoleCtrlHandler(Some(on_console_ctrl), 1);
         }
     });
     let mut asked_at: Option<Instant> = None;
@@ -316,7 +340,12 @@ fn wait_ui(ui: &mut std::process::Child) -> std::io::Result<std::process::ExitSt
             match asked_at {
                 None => {
                     asked_at = Some(Instant::now());
-                    unsafe { libc::kill(ui.id() as i32, libc::SIGTERM) };
+                    #[cfg(unix)]
+                    unsafe {
+                        libc::kill(ui.id() as i32, libc::SIGTERM)
+                    };
+                    #[cfg(windows)]
+                    let _ = ui.kill();
                 }
                 Some(t) if t.elapsed() > Duration::from_secs(2) => {
                     let _ = ui.kill();
@@ -330,9 +359,17 @@ fn wait_ui(ui: &mut std::process::Child) -> std::io::Result<std::process::ExitSt
 
 /// The interface ended by the system's request (a signal to quit), not by a crash.
 fn stopped_by_system(s: &std::process::ExitStatus) -> bool {
-    use std::os::unix::process::ExitStatusExt;
-    QUIT_ASKED.load(std::sync::atomic::Ordering::SeqCst)
-        || matches!(s.signal(), Some(libc::SIGTERM) | Some(libc::SIGINT) | Some(libc::SIGHUP) | Some(libc::SIGKILL))
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::ExitStatusExt;
+        return QUIT_ASKED.load(std::sync::atomic::Ordering::SeqCst)
+            || matches!(s.signal(), Some(libc::SIGTERM) | Some(libc::SIGINT) | Some(libc::SIGHUP) | Some(libc::SIGKILL));
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = s;
+        QUIT_ASKED.load(std::sync::atomic::Ordering::SeqCst)
+    }
 }
 
 /// The virtual mount stopped, without waiting more than two seconds for a read still under way

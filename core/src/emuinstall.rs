@@ -25,6 +25,8 @@ use std::time::Duration;
 pub fn os() -> &'static str {
     if cfg!(target_os = "macos") {
         "macos"
+    } else if cfg!(target_os = "windows") {
+        "windows"
     } else {
         "linux"
     }
@@ -316,7 +318,11 @@ pub fn cores_dir(app: &Shared) -> PathBuf {
 }
 
 pub fn core_path(app: &Shared, core: &str) -> PathBuf {
-    let ext = if os() == "macos" { "dylib" } else { "so" };
+    let ext = match os() {
+        "macos" => "dylib",
+        "windows" => "dll",
+        _ => "so",
+    };
     cores_dir(app).join(format!("{core}_libretro.{ext}"))
 }
 
@@ -608,8 +614,13 @@ fn walk(dir: &Path) -> Vec<PathBuf> {
 }
 
 fn set_exec(p: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(p, std::fs::Permissions::from_mode(0o755));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(p, std::fs::Permissions::from_mode(0o755));
+    }
+    #[cfg(not(unix))]
+    let _ = p;
 }
 
 /// A zip, with Unix modes and symbolic links kept (application bundles need both); entries that
@@ -619,7 +630,6 @@ fn unzip(zip_path: &Path, out: &Path) -> Result<(), String> {
         let st = std::process::Command::new("ditto").arg("-x").arg("-k").arg(zip_path).arg(out).status().map_err(|e| e.to_string())?;
         return if st.success() { Ok(()) } else { Err("the archive could not be extracted".into()) };
     }
-    use std::os::unix::fs::PermissionsExt;
     let f = std::fs::File::open(zip_path).map_err(|e| e.to_string())?;
     let mut a = zip::ZipArchive::new(f).map_err(|e| format!("unreadable archive: {e}"))?;
     std::fs::create_dir_all(out).map_err(|e| e.to_string())?;
@@ -637,19 +647,28 @@ fn unzip(zip_path: &Path, out: &Path) -> Result<(), String> {
         if let Some(p) = dest.parent() {
             std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
         }
-        let mode = e.unix_mode().unwrap_or(0o644);
-        if mode & 0o170000 == 0o120000 {
-            let mut target = String::new();
-            e.read_to_string(&mut target).map_err(|e| e.to_string())?;
-            if target.starts_with('/') || target.split('/').any(|c| c == "..") {
-                return Err(format!("archive link refused: {}", e.name().unwrap_or_default()));
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = e.unix_mode().unwrap_or(0o644);
+            if mode & 0o170000 == 0o120000 {
+                let mut target = String::new();
+                e.read_to_string(&mut target).map_err(|e| e.to_string())?;
+                if target.starts_with('/') || target.split('/').any(|c| c == "..") {
+                    return Err(format!("archive link refused: {}", e.name().unwrap_or_default()));
+                }
+                let _ = std::os::unix::fs::symlink(&target, &dest);
+                continue;
             }
-            let _ = std::os::unix::fs::symlink(&target, &dest);
-            continue;
+            let mut w = std::fs::File::create(&dest).map_err(|e| e.to_string())?;
+            std::io::copy(&mut e, &mut w).map_err(|e| e.to_string())?;
+            let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(mode & 0o777 | 0o600));
         }
-        let mut w = std::fs::File::create(&dest).map_err(|e| e.to_string())?;
-        std::io::copy(&mut e, &mut w).map_err(|e| e.to_string())?;
-        let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(mode & 0o777 | 0o600));
+        #[cfg(not(unix))]
+        {
+            let mut w = std::fs::File::create(&dest).map_err(|e| e.to_string())?;
+            std::io::copy(&mut e, &mut w).map_err(|e| e.to_string())?;
+        }
     }
     Ok(())
 }
@@ -752,13 +771,18 @@ fn find_program(out: &Path, hint: Option<&str>) -> Result<PathBuf, String> {
     let items: Vec<PathBuf> = walk(out).into_iter().filter(|p| !is_library(p)).collect();
     if os() == "macos" {
         let Some(app) = items.iter().find(|p| p.extension().map(|x| x == "app").unwrap_or(false)) else {
-            use std::os::unix::fs::PermissionsExt;
-            return items
-                .iter()
-                .filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false))
-                .max_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0))
-                .cloned()
-                .ok_or_else(|| "no application in the download".to_string());
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                return items
+                    .iter()
+                    .filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false))
+                    .max_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0))
+                    .cloned()
+                    .ok_or_else(|| "no application in the download".to_string());
+            }
+            #[cfg(not(unix))]
+            return Err("no application in the download".to_string());
         };
         let plist = std::fs::read_to_string(app.join("Contents/Info.plist")).unwrap_or_default();
         let exe_name = plist
@@ -780,17 +804,46 @@ fn find_program(out: &Path, hint: Option<&str>) -> Result<PathBuf, String> {
         set_exec(&exe);
         return Ok(exe);
     }
-    let Some(appimage) = items.iter().find(|p| p.to_string_lossy().to_lowercase().ends_with(".appimage")) else {
-        // A plain build (Xenia, Ryubing…): the program named in the manifest, else the largest
-        // executable file.
-        use std::os::unix::fs::PermissionsExt;
-        let exec: Vec<&PathBuf> =
-            items.iter().filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false)).collect();
+    if os() == "windows" {
+        let exec: Vec<&PathBuf> = items
+            .iter()
+            .filter(|p| {
+                p.is_file()
+                    && p.extension().map(|e| e.eq_ignore_ascii_case("exe")).unwrap_or(false)
+                    && !p.file_name().map(|n| n.to_string_lossy().to_ascii_lowercase().contains("unins")).unwrap_or(false)
+            })
+            .collect();
         let pick = hint
-            .and_then(|h| exec.iter().find(|p| p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case(h)).unwrap_or(false)))
+            .and_then(|h| {
+                exec.iter().find(|p| {
+                    p.file_name()
+                        .map(|n| {
+                            let s = n.to_string_lossy();
+                            s.eq_ignore_ascii_case(h) || s.eq_ignore_ascii_case(&format!("{h}.exe"))
+                        })
+                        .unwrap_or(false)
+                })
+            })
             .or_else(|| exec.iter().max_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0)))
             .ok_or("no program in the download")?;
         return Ok((*pick).clone());
+    }
+    let Some(appimage) = items.iter().find(|p| p.to_string_lossy().to_lowercase().ends_with(".appimage")) else {
+        // A plain build (Xenia, Ryubing…): the program named in the manifest, else the largest
+        // executable file.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let exec: Vec<&PathBuf> =
+                items.iter().filter(|p| p.is_file() && p.metadata().map(|m| m.permissions().mode() & 0o111 != 0).unwrap_or(false)).collect();
+            let pick = hint
+                .and_then(|h| exec.iter().find(|p| p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case(h)).unwrap_or(false)))
+                .or_else(|| exec.iter().max_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0)))
+                .ok_or("no program in the download")?;
+            return Ok((*pick).clone());
+        }
+        #[cfg(not(unix))]
+        return Err("no program in the download".to_string());
     };
     set_exec(appimage);
     let dir = appimage.parent().unwrap().to_path_buf();
