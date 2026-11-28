@@ -26,7 +26,7 @@ fn steam_root() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::ffi::OsStringExt;
-        use windows_sys::Win32::System::Registry::{HKEY_CURRENT_USER, KEY_READ, REG_SZ, RegCloseKey, RegOpenKeyExW, RegQueryValueExW};
+        use windows_sys::Win32::System::Registry::{RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY_CURRENT_USER, KEY_READ, REG_SZ};
         let sub: Vec<u16> = "Software\\Valve\\Steam\0".encode_utf16().collect();
         let val: Vec<u16> = "SteamPath\0".encode_utf16().collect();
         let mut key = std::ptr::null_mut();
@@ -38,9 +38,7 @@ fn steam_root() -> Option<PathBuf> {
                 && bytes > 2
             {
                 let mut buf = vec![0u16; (bytes as usize) / 2];
-                if unsafe { RegQueryValueExW(key, val.as_ptr(), std::ptr::null(), &mut ty, buf.as_mut_ptr() as *mut u8, &mut bytes) }
-                    == 0
-                {
+                if unsafe { RegQueryValueExW(key, val.as_ptr(), std::ptr::null(), &mut ty, buf.as_mut_ptr() as *mut u8, &mut bytes) } == 0 {
                     let len = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
                     let p = PathBuf::from(std::ffi::OsString::from_wide(&buf[..len]));
                     unsafe { RegCloseKey(key) };
@@ -51,9 +49,9 @@ fn steam_root() -> Option<PathBuf> {
             }
             unsafe { RegCloseKey(key) };
         }
-        return [PathBuf::from(r"C:\Program Files (x86)\Steam"), PathBuf::from(r"C:\Program Files\Steam")]
+        [PathBuf::from(r"C:\Program Files (x86)\Steam"), PathBuf::from(r"C:\Program Files\Steam")]
             .into_iter()
-            .find(|p| p.join("userdata").is_dir());
+            .find(|p| p.join("userdata").is_dir())
     }
     #[cfg(not(target_os = "windows"))]
     [data_home().join("Steam"), home().join(".steam/steam"), home().join(".var/app/com.valvesoftware.Steam/.local/share/Steam")]
@@ -89,7 +87,7 @@ fn steam_running() -> bool {
     {
         use windows_sys::Win32::Foundation::CloseHandle;
         use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-            CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
+            CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
         };
         unsafe {
             let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -113,14 +111,15 @@ fn steam_running() -> bool {
                 }
             }
             CloseHandle(snap);
-            return running;
+            running
         }
     }
     #[cfg(not(target_os = "windows"))]
     {
         let Ok(dir) = std::fs::read_dir("/proc") else { return false };
-        dir.flatten()
-            .any(|e| std::fs::read_to_string(e.path().join("comm")).map(|c| matches!(c.trim(), "steam" | "steamwebhelper")).unwrap_or(false))
+        dir.flatten().any(|e| {
+            std::fs::read_to_string(e.path().join("comm")).map(|c| matches!(c.trim(), "steam" | "steamwebhelper")).unwrap_or(false)
+        })
     }
 }
 

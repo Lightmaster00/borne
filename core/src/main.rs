@@ -362,8 +362,8 @@ fn stopped_by_system(s: &std::process::ExitStatus) -> bool {
     #[cfg(unix)]
     {
         use std::os::unix::process::ExitStatusExt;
-        return QUIT_ASKED.load(std::sync::atomic::Ordering::SeqCst)
-            || matches!(s.signal(), Some(libc::SIGTERM) | Some(libc::SIGINT) | Some(libc::SIGHUP) | Some(libc::SIGKILL));
+        QUIT_ASKED.load(std::sync::atomic::Ordering::SeqCst)
+            || matches!(s.signal(), Some(libc::SIGTERM) | Some(libc::SIGINT) | Some(libc::SIGHUP) | Some(libc::SIGKILL))
     }
     #[cfg(not(unix))]
     {

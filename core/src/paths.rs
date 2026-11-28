@@ -21,11 +21,7 @@ pub struct Paths {
 impl Paths {
     pub fn from_env() -> Self {
         let root = std::env::var_os("BORNE_DATA_DIR").map(PathBuf::from).unwrap_or_else(|| {
-            let base = if cfg!(target_os = "windows") {
-                dirs::data_local_dir().or_else(dirs::data_dir)
-            } else {
-                dirs::data_dir()
-            };
+            let base = if cfg!(target_os = "windows") { dirs::data_local_dir().or_else(dirs::data_dir) } else { dirs::data_dir() };
             base.unwrap_or_else(|| PathBuf::from(".")).join("borne")
         });
         Self { root }
@@ -118,7 +114,9 @@ pub fn free_space(path: &std::path::Path) -> Option<u64> {
     use std::os::windows::ffi::OsStrExt;
     let wide: Vec<u16> = path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
     let mut free = 0u64;
-    let ok = unsafe { windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(wide.as_ptr(), &mut free, std::ptr::null_mut(), std::ptr::null_mut()) };
+    let ok = unsafe {
+        windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(wide.as_ptr(), &mut free, std::ptr::null_mut(), std::ptr::null_mut())
+    };
     (ok != 0).then_some(free)
 }
 

@@ -185,7 +185,7 @@ pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
 
 #[cfg(target_os = "windows")]
 pub fn detect(pads: &[(u16, u16)], pad_names: &[String]) -> Hardware {
-    use windows_sys::Win32::Devices::Bluetooth::{BLUETOOTH_FIND_RADIO_PARAMS, BluetoothFindFirstRadio, BluetoothFindRadioClose};
+    use windows_sys::Win32::Devices::Bluetooth::{BluetoothFindFirstRadio, BluetoothFindRadioClose, BLUETOOTH_FIND_RADIO_PARAMS};
     use windows_sys::Win32::Media::Audio::waveInGetNumDevs;
     use windows_sys::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
     use windows_sys::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};

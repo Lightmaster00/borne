@@ -316,12 +316,6 @@ pub fn title_from_rec(rec: &Value, lang: &str) -> Option<String> {
     None
 }
 
-/// The game's title in the interface language, from its ScreenScraper record.
-pub fn title(app: &Shared, group_key: &str, lang: &str) -> Option<String> {
-    let rec: Value = serde_json::from_str(&app.db.ss_record(group_key)?).ok()?;
-    title_from_rec(&rec, lang)
-}
-
 /// The game's description in the interface language, from its ScreenScraper record.
 pub fn synopsis_in(rec: &Value, lang: &str) -> Option<String> {
     let code = match lang {
@@ -367,12 +361,6 @@ pub fn all_titles_from_rec(rec: &Value) -> Vec<String> {
     out.sort();
     out.dedup();
     out
-}
-
-/// Every title ScreenScraper knows for the game (each region's), for the search.
-pub fn all_titles(app: &Shared, group_key: &str) -> Vec<String> {
-    let Some(rec) = app.db.ss_record(group_key).and_then(|r| serde_json::from_str::<Value>(&r).ok()) else { return vec![] };
-    all_titles_from_rec(&rec)
 }
 
 /// The interface language changed: titles follow at once, and the scans of that language are

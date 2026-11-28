@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS games (
 );
 CREATE INDEX IF NOT EXISTS games_platform ON games(platform_slug, sort_key);
 CREATE INDEX IF NOT EXISTS games_group ON games(group_key);
-CREATE INDEX IF NOT EXISTS downloads_active ON downloads(rom_id, state, id DESC);
 CREATE TABLE IF NOT EXISTS local_games (
     rom_id INTEGER PRIMARY KEY,
     dir TEXT NOT NULL,
@@ -74,6 +73,7 @@ CREATE TABLE IF NOT EXISTS downloads (
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
+CREATE INDEX IF NOT EXISTS downloads_active ON downloads(rom_id, state, id DESC);
 -- Per-profile play record of a game group: last played, time played, favourite.
 CREATE TABLE IF NOT EXISTS play_stats (
     profile_id TEXT NOT NULL,
@@ -227,6 +227,8 @@ pub struct GameRow {
     pub download_error: Option<String>,
 }
 
+/// A file of a linked game (Borne virtual mount, Linux only).
+#[cfg(target_os = "linux")]
 #[derive(Clone, Debug)]
 pub struct LinkedFile {
     pub file_id: i64,
@@ -670,10 +672,7 @@ impl Db {
         let mut out: std::collections::HashMap<String, Vec<MediaRow>> = std::collections::HashMap::new();
         for row in st
             .query_map([], |r| {
-                Ok((
-                    r.get::<_, String>(0)?,
-                    MediaRow { kind: r.get(1)?, path: r.get(2)?, w: r.get(3)?, h: r.get(4)?, stamp: r.get(5)? },
-                ))
+                Ok((r.get::<_, String>(0)?, MediaRow { kind: r.get(1)?, path: r.get(2)?, w: r.get(3)?, h: r.get(4)?, stamp: r.get(5)? }))
             })
             .unwrap()
             .filter_map(Result::ok)
@@ -828,6 +827,8 @@ impl Db {
         c.execute("DELETE FROM linked_games WHERE rom_id = ?1", [rom_id]).unwrap_or(0) > 0
     }
     /// Files of linked games: (file_id, rom_id, platform_slug, rel_path, file_name, size).
+    /// The virtual mount's tree (Linux only).
+    #[cfg(target_os = "linux")]
     pub fn linked_files(&self) -> Vec<LinkedFile> {
         let c = self.c();
         let mut st = c

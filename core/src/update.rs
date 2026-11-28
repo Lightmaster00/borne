@@ -76,7 +76,8 @@ pub fn part_of(rel: &str) -> &'static str {
         (&["lib/", "plugins/", "qml/"], &["ui/", "resources/"])
     };
     if cfg!(target_os = "windows") {
-        if rel.starts_with("plugins/") || rel.starts_with("qml/") || (rel.starts_with("bin/") && rel.to_ascii_lowercase().ends_with(".dll")) {
+        if rel.starts_with("plugins/") || rel.starts_with("qml/") || (rel.starts_with("bin/") && rel.to_ascii_lowercase().ends_with(".dll"))
+        {
             return "runtime";
         }
         if ui.iter().any(|p| rel.starts_with(p)) {
@@ -728,7 +729,7 @@ pub fn apply(app: &Shared) -> Result<(), String> {
         *INSTALLED_AT.lock().unwrap_or_else(|e| e.into_inner()) = Some(pkg);
         app.db.log("update", &format!("updated to build {} ({}); restarting", m.build, m.version));
         RESTART.store(true, Ordering::SeqCst);
-        return Ok(());
+        Ok(())
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -750,22 +751,19 @@ pub fn apply(app: &Shared) -> Result<(), String> {
 #[cfg(target_os = "windows")]
 static PENDING_SWAP: std::sync::Mutex<Option<(PathBuf, PathBuf, PathBuf, PathBuf)>> = std::sync::Mutex::new(None);
 
-/// Path of the new core after an update was applied.
+/// Path of the new core after an update was applied (Unix exec; on Windows the detached
+/// updater takes the paths from its own arguments).
+#[cfg(unix)]
 pub fn restart_exe() -> Option<PathBuf> {
     let pkg = package_dir_after_swap()?;
-    Some(if cfg!(target_os = "macos") {
-        pkg.join("Contents/MacOS/borne")
-    } else if cfg!(target_os = "windows") {
-        pkg.join("bin/borne.exe")
-    } else {
-        pkg.join("bin/borne")
-    })
+    Some(if cfg!(target_os = "macos") { pkg.join("Contents/MacOS/borne") } else { pkg.join("bin/borne") })
 }
 
 /// The installed package's path, remembered when an update is applied (it may have been renamed,
 /// "Borne 2.app": the running core now lives in .borne-previous and cannot tell).
 static INSTALLED_AT: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::new(None);
 
+#[cfg(unix)]
 fn package_dir_after_swap() -> Option<PathBuf> {
     if let Some(p) = INSTALLED_AT.lock().unwrap_or_else(|e| e.into_inner()).clone() {
         return Some(p);
@@ -832,7 +830,7 @@ pub fn exec_new_core() -> ! {
 #[cfg(target_os = "windows")]
 pub fn finish_windows_swap(args: &[String]) {
     use windows_sys::Win32::Foundation::CloseHandle;
-    use windows_sys::Win32::System::Threading::{OpenProcess, SYNCHRONIZE, WaitForSingleObject};
+    use windows_sys::Win32::System::Threading::{OpenProcess, WaitForSingleObject};
     let Some(i) = args.iter().position(|a| a == "--apply-update") else { return };
     let (Some(pid_s), Some(pkg), Some(new_pkg), Some(previous), Some(staging)) =
         (args.get(i + 1), args.get(i + 2), args.get(i + 3), args.get(i + 4), args.get(i + 5))
@@ -841,7 +839,8 @@ pub fn finish_windows_swap(args: &[String]) {
     };
     if let Ok(pid) = pid_s.parse::<u32>() {
         unsafe {
-            let h = OpenProcess(SYNCHRONIZE, 0, pid);
+            // SYNCHRONIZE (0x0010) so the wait below can see the process end.
+            let h = OpenProcess(0x0010, 0, pid);
             if !h.is_null() {
                 WaitForSingleObject(h, 15_000);
                 CloseHandle(h);

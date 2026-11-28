@@ -733,6 +733,7 @@ struct Session {
     /// The Flatpak the emulator runs in: its sandbox lives apart from the process group.
     flatpak: Option<String>,
     /// Started by `open` (macOS): the emulator's processes are found by their bundle.
+    #[cfg(unix)]
     via_open: bool,
     /// The emulator opened on its own interface (developer mode), no game.
     tool: bool,
@@ -756,8 +757,8 @@ impl Drop for WinJob {
 fn create_job_for(child: &Child) -> Option<WinJob> {
     use windows_sys::Win32::Foundation::CloseHandle;
     use windows_sys::Win32::System::JobObjects::{
-        AssignProcessToJobObject, CreateJobObjectW, JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
-        JobObjectExtendedLimitInformation, SetInformationJobObject,
+        AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation, SetInformationJobObject,
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
     };
     use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_SET_QUOTA, PROCESS_TERMINATE};
     unsafe {
@@ -791,8 +792,8 @@ fn win_suspend_tree(root_pid: u32, suspend: bool) {
     use std::collections::{HashMap, HashSet};
     use windows_sys::Win32::Foundation::CloseHandle;
     use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD,
-        THREADENTRY32, Thread32First, Thread32Next,
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, Thread32First, Thread32Next, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
+        TH32CS_SNAPTHREAD, THREADENTRY32,
     };
     use windows_sys::Win32::System::Threading::{OpenThread, ResumeThread, SuspendThread, THREAD_SUSPEND_RESUME};
 
@@ -895,6 +896,7 @@ fn flatpak_kill(id: &str) {
 }
 
 /// Whether a sandbox of this Flatpak application runs.
+#[cfg(unix)]
 fn flatpak_running(id: &str) -> bool {
     Command::new("flatpak")
         .args(["ps", "--columns=application"])
@@ -909,7 +911,8 @@ pub fn playing() -> bool {
     SESSION.lock().unwrap_or_else(|e| e.into_inner()).is_some()
 }
 
-/// Whether the game is paused by the quit question.
+/// Whether the game is paused by the quit question (the core's Escape listener is absent on macOS).
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn paused() -> bool {
     SESSION.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|s| s.paused).unwrap_or(false)
 }
@@ -2352,6 +2355,7 @@ pub fn play(app: &Shared, rom_id: i64) -> Result<Value, String> {
         failure: None,
         paused: false,
         bundle,
+        #[cfg(unix)]
         via_open,
         flatpak: match &found {
             Found::Flatpak(id) => Some(id.clone()),
@@ -2480,6 +2484,7 @@ pub fn open_ui(app: &Shared, id: &str) -> Result<Value, String> {
         failure: None,
         paused: false,
         bundle,
+        #[cfg(unix)]
         via_open: false,
         flatpak: match &found {
             Found::Flatpak(id) => Some(id.clone()),

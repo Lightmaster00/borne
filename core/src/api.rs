@@ -355,8 +355,7 @@ fn art_kinds_from(extras: &std::collections::HashMap<i64, String>, ids: &[i64]) 
 
 /// The art kinds RomM has for these versions of a game.
 fn art_kinds(app: &Shared, ids: &[i64]) -> Vec<String> {
-    let extras: std::collections::HashMap<i64, String> =
-        ids.iter().filter_map(|&id| app.db.game_extra(id).map(|e| (id, e))).collect();
+    let extras: std::collections::HashMap<i64, String> = ids.iter().filter_map(|&id| app.db.game_extra(id).map(|e| (id, e))).collect();
     art_kinds_from(&extras, ids)
 }
 
@@ -733,7 +732,7 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         .find(|m| m.kind == "photo")
                         .map(|m| format!("{:08x}", crc32fast::hash(m.stamp.as_bytes())))
                         .unwrap_or_default());
-                    let kinds: Vec<String> = media.into_iter().map(|m| m.kind).collect();
+                    let kinds: Vec<String> = media.iter().map(|m| m.kind.clone()).collect();
                     v["art_kinds"] = json!(kinds);
                     v
                 })
@@ -875,7 +874,10 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
                         ids.extend(group.iter().map(|g| g.rom_id));
                         library::fill_media(v, group);
                     }
-                    let m = all_media.get(k).map(|rows| crate::media::summary_from_rows(rows)).unwrap_or_else(|| json!({ "kinds": [], "sizes": {}, "spine_color": null }));
+                    let m = all_media
+                        .get(k)
+                        .map(|rows| crate::media::summary_from_rows(rows))
+                        .unwrap_or_else(|| json!({ "kinds": [], "sizes": {}, "spine_color": null }));
                     kinds.extend(m["kinds"].as_array().cloned().unwrap_or_default());
                     v["media_sizes"] = m["sizes"].clone();
                     v["spine_color"] = m["spine_color"].clone();
@@ -1341,13 +1343,15 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
         },
         // One of a console's pictures, small (its settings show the choices as pictures).
         (Method::Get, ["api", "v1", "consoles", slug, "pic-preview", n]) => match crate::screenscraper::system_pic_preview(app, slug, n) {
-            Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+            // Re-downloaded previews can replace the file: never immutable.
+            Ok(path) => serve_file(req, &path.to_string_lossy(), roots, false),
             Err(e) => err(req, 404, &e),
         },
         // The game's box for one region, small (the cover settings show the choices as pictures).
         (Method::Get, ["api", "v1", "games", id, "box-preview", region]) => match id.parse::<i64>().ok().and_then(|i| app.db.game(i)) {
             Some(g) => match crate::screenscraper::box_preview(app, &g.group_key, region) {
-                Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+                // A re-downloaded preview can replace the file: never immutable.
+                Ok(path) => serve_file(req, &path.to_string_lossy(), roots, false),
                 Err(e) => err(req, 404, &e),
             },
             None => err(req, 404, "unknown game"),
@@ -1412,18 +1416,25 @@ fn handle(mut req: Request, app: &Shared, token: &str, roots: &[PathBuf]) {
             ok(req, json!({ "refreshing": true }))
         }
         // With a revision segment (ignored) so the interface can ask again after a correction.
-        (Method::Get, ["api", "v1", "games", id, "art", _, kind]) | (Method::Get, ["api", "v1", "games", id, "art", kind]) => {
-            match id.parse::<i64>() {
-                Ok(rom_id) if ART_KINDS.contains(kind) => match art(app, rom_id, kind) {
-                    Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
-                    Err(e) => err(req, 404, &e),
-                },
-                _ => err(req, 400, "invalid identifier"),
-            }
-        }
+        // A revised URL is immutable in the client's cache; without it, never.
+        (Method::Get, ["api", "v1", "games", id, "art", _, kind]) => match id.parse::<i64>() {
+            Ok(rom_id) if ART_KINDS.contains(kind) => match art(app, rom_id, kind) {
+                Ok(path) => serve_file(req, &path.to_string_lossy(), roots, true),
+                Err(e) => err(req, 404, &e),
+            },
+            _ => err(req, 400, "invalid identifier"),
+        },
+        (Method::Get, ["api", "v1", "games", id, "art", kind]) => match id.parse::<i64>() {
+            Ok(rom_id) if ART_KINDS.contains(kind) => match art(app, rom_id, kind) {
+                Ok(path) => serve_file(req, &path.to_string_lossy(), roots, false),
+                Err(e) => err(req, 404, &e),
+            },
+            _ => err(req, 400, "invalid identifier"),
+        },
         (Method::Get, ["api", "v1", "games", id, "screenshots", n]) => match (id.parse::<i64>(), n.parse::<usize>()) {
             (Ok(rom_id), Ok(n)) if n < 8 => match screenshot(app, rom_id, n) {
-                Ok(path) => serve_file(req, &path.to_string_lossy(), roots),
+                // A re-fetched screenshot can replace the file: never immutable.
+                Ok(path) => serve_file(req, &path.to_string_lossy(), roots, false),
                 Err(e) => err(req, 404, &e),
             },
             _ => err(req, 400, "invalid identifier"),

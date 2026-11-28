@@ -385,7 +385,12 @@ pub fn unpack_into(dir: &Path, cache: &Path, flag: &AtomicBool) -> Result<PathBu
         } else if p.is_file() {
             let link = cache.join(name);
             if std::fs::symlink_metadata(&link).is_err() {
+                #[cfg(unix)]
                 let _ = std::os::unix::fs::symlink(&p, &link);
+                // Mounts are Linux-only, so this is unreachable on Windows; the file simply
+                // stays where it is (a failed symlink would only lose a reference to it).
+                #[cfg(windows)]
+                let _ = std::os::windows::fs::symlink_file(&p, &link);
             }
         }
     }

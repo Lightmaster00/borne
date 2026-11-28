@@ -1730,7 +1730,8 @@ mod tests {
         let p = std::fs::read_to_string(d.join("PCSX2/inis/PCSX2.ini")).unwrap();
         assert!(p.contains("[Pad2]") && p.contains("Cross = SDL-0/FaceSouth") && p.contains("Cross = SDL-1/FaceEast"));
         controllers("eden", &d, &d, &two, &swapped).unwrap();
-        let e = std::fs::read_to_string(d.join("config/eden/qt-config.ini")).unwrap();
+        let ini = if cfg!(target_os = "macos") { d.join("config/qt-config.ini") } else { d.join("config/eden/qt-config.ini") };
+        let e = std::fs::read_to_string(&ini).unwrap();
         assert!(e.contains("player_1_connected = true") && e.contains("port:1"));
         let _ = std::fs::remove_dir_all(d);
     }

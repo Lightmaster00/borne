@@ -38,7 +38,7 @@ pub fn spawn(app: Shared) {
     use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
     use windows_sys::Win32::UI::Input::KeyboardAndMouse::VK_ESCAPE;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        CallNextHookEx, DispatchMessageW, GetMessageW, KBDLLHOOKSTRUCT, MSG, SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx,
+        CallNextHookEx, DispatchMessageW, GetMessageW, SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx, KBDLLHOOKSTRUCT, MSG,
         WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
     };
 
@@ -129,6 +129,8 @@ fn run(app: &Shared) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Escape pressed during a game: the question, or (when it is shown) back to the game.
+/// (macOS catches it in the UI process instead, so the core's listener is Linux/Windows.)
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 pub fn pressed(app: &Shared) {
     if !crate::emulators::playing() {
         return;
@@ -241,7 +243,7 @@ fn process_tree_pids(root_pid: u32) -> std::collections::HashSet<u32> {
     use std::collections::{HashMap, HashSet};
     use windows_sys::Win32::Foundation::CloseHandle;
     use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
     };
     let mut children: HashMap<u32, Vec<u32>> = HashMap::new();
     unsafe {
@@ -278,7 +280,7 @@ fn process_tree_pids(root_pid: u32) -> std::collections::HashSet<u32> {
 pub fn hide_game(pgid: i32) {
     use std::collections::HashSet;
     use windows_sys::Win32::Foundation::{BOOL, HWND, LPARAM};
-    use windows_sys::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, IsWindowVisible, SW_HIDE, ShowWindow};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, IsWindowVisible, ShowWindow, SW_HIDE};
 
     struct Ctx {
         pids: HashSet<u32>,
@@ -304,7 +306,7 @@ pub fn hide_game(pgid: i32) {
 #[cfg(target_os = "windows")]
 pub fn show_game() {
     use windows_sys::Win32::Foundation::HWND;
-    use windows_sys::Win32::UI::WindowsAndMessaging::{SW_SHOW, SetForegroundWindow, ShowWindow};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{SetForegroundWindow, ShowWindow, SW_SHOW};
     let hidden = std::mem::take(&mut *HIDDEN_WIN.lock().unwrap_or_else(|e| e.into_inner()));
     for h in hidden {
         let hwnd = h as HWND;

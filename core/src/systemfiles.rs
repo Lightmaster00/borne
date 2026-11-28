@@ -533,7 +533,9 @@ pub fn pick_file(title: &str) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::ffi::OsStringExt;
-        use windows_sys::Win32::UI::Controls::Dialogs::{GetOpenFileNameW, OFN_FILEMUSTEXIST, OFN_NOCHANGEDIR, OFN_PATHMUSTEXIST, OPENFILENAMEW};
+        use windows_sys::Win32::UI::Controls::Dialogs::{
+            GetOpenFileNameW, OFN_FILEMUSTEXIST, OFN_NOCHANGEDIR, OFN_PATHMUSTEXIST, OPENFILENAMEW,
+        };
         let mut buf = vec![0u16; 4096];
         let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
         let mut ofn: OPENFILENAMEW = unsafe { std::mem::zeroed() };
@@ -547,7 +549,11 @@ pub fn pick_file(title: &str) -> Result<String, String> {
         }
         let end = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
         let path = std::ffi::OsString::from_wide(&buf[..end]).to_string_lossy().into_owned();
-        return if path.is_empty() { Err("no file chosen".into()) } else { Ok(path) };
+        if path.is_empty() {
+            Err("no file chosen".into())
+        } else {
+            Ok(path)
+        }
     }
     #[cfg(not(target_os = "windows"))]
     {
