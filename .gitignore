@@ -2,13 +2,22 @@
 core/target/
 /build/
 /build-macos/
+/build-windows/
 /out/
 /out-macos/
+/out-windows/
 /dist/
 /notes.md
 *.tar.gz
+
+# macOS Finder metadata
+.DS_Store
+
 # Qt fetched for local builds (README / docs/DEVELOPMENT.md)
 /qt/
 /qt-*/
 /qt-wheels/
 __pycache__/
+
+# zip archives built locally (the release builds them in CI)
+Borne-*.zip

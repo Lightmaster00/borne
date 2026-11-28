@@ -6,7 +6,7 @@
 </h1>
 
 A couch-friendly, controller-driven launcher for your [RomM](https://github.com/rommapp/romm) game
-library, on Linux (ChimeraOS, SteamOS or any desktop) and macOS. Pick a game with the gamepad, and
+library, on Linux (ChimeraOS, SteamOS or any desktop), macOS and Windows. Pick a game with the gamepad, and
 Borne downloads it (or plays it straight from the network), installs and configures the right
 emulator, keeps each player's saves on RomM, and gets out of the way.
 
@@ -39,6 +39,14 @@ and SteamOS).
 Unzip `Borne-macos-arm64.zip` and move `Borne.app` to Applications. The app is not notarized: the
 first time, right-click it → **Open** (or run `xattr -dr com.apple.quarantine /Applications/Borne.app`).
 Data lives in `~/Library/Application Support/borne`.
+
+**Windows** (x86_64)
+
+Unzip `Borne-windows-x86_64.zip` somewhere of your choice (it runs from its folder, there is no
+installation) and start `Borne\borne.bat` — or make a shortcut to `Borne\bin\borne.exe` on the
+desktop or in the Start menu. Borne is not signed: the first time, SmartScreen asks, then
+**More info** → **Run anyway**. Emulators you already have are used if they are on the PATH,
+otherwise Borne installs its own. Your games, saves and settings live in `%LOCALAPPDATA%\borne`.
 
 **First start**: type your RomM server's address (e.g. `http://192.168.1.20:8080`) with the
 on-screen keyboard, create a profile, then approve the pairing from RomM (QR code or the code shown),
@@ -88,8 +96,8 @@ one. Two channels: **Stable** (tagged releases) and **Development** (the `dev` p
   settings before opening it (Undo my changes), and turned off it plays as before.
 - **Downloads** with resume after interruption, SHA-1 checks, pause, cancel and a tidy list; or
   **play from the network**: on Linux only the games you pick are mounted, read from RomM on demand;
-  on macOS they are downloaded as temporary copies, the least recently played removed first past
-  the cache size.
+  on macOS and Windows they are downloaded as temporary copies, the least recently played removed
+  first past the cache size.
   Games stored as zip or 7z on RomM are extracted (arcade sets stay zipped), and downloaded rather
   than played from the network.
 - **Your consoles, your choice**: after the first sync Borne asks which consoles of the RomM library it

@@ -63,6 +63,10 @@ LRELEASE=/usr/lib/qt6/bin/lrelease scripts/package.sh "$PWD/qt" "$PWD/out/Borne"
 macOS: `scripts/package-macos.sh out-macos`, with the official Qt ≥ 6.9 (`QT_PREFIX=<Qt>/6.9.3/macos`)
 or Homebrew's.
 
+Windows (MSVC): `scripts/package-windows.sh <Qt> out-windows` — the official Qt ≥ 6.9 for Windows
+(or the jurplel/install-qt-action folder in CI) — and Git Bash for the script itself. The result
+is a `Borne` folder plus `Borne-windows-x86_64.zip`, run from `Borne\borne.bat`.
+
 A local build reports itself as build 0 and never updates itself.
 
 ## Checks and tests
@@ -102,11 +106,12 @@ translated by `ui/components/CoreText.js`.
 ## Continuous integration and releases
 
 - **CI** (`.github/workflows/ci.yml`), on every pull request and branch: formatting, clippy, unit
-  tests, QML syntax, translations, script syntax.
+  tests, QML syntax, translations, script syntax — and a native `windows-latest` job for the Rust
+  code, which the Linux job cannot see (`cfg(windows)`, the windows-sys surface).
 - **Release** (`.github/workflows/release.yml`): on every push to `main`, after the same checks,
-  builds the Linux package and Borne.app, runs the startup tests (English, French) and the update
-  test, splits each package into parts, and replaces the **`dev`** pre-release. A tag `vX.Y.Z`
-  publishes a **stable** release instead.
+  builds the Linux package, Borne.app and the Windows package, runs the startup tests (English,
+  French) and the update test on each, splits each package into parts, and replaces the **`dev`**
+  pre-release. A tag `vX.Y.Z` publishes a **stable** release instead.
 - **Website** (`.github/workflows/pages.yml`): publishes `website/` to GitHub Pages
   (https://lightmaster00.github.io/borne/) when it changes on `main`. The screenshots in
   `website/assets/shots` are captures of the app on macOS, in English, cut to the screen inside
@@ -125,7 +130,7 @@ Each release holds:
 
 | File | Use |
 |---|---|
-| `Borne-linux-x86_64.tar.gz`, `Borne-macos-arm64.zip` | first install (`./Borne/install.sh` on Linux) |
+| `Borne-linux-x86_64.tar.gz`, `Borne-macos-arm64.zip`, `Borne-windows-x86_64.zip` | first install (`./Borne/install.sh` on Linux) |
 | `Borne-<platform>-<build>-core.tar.gz` | the programs and the package's root files |
 | `Borne-<platform>-<build>-ui.tar.gz` | views, fonts, sounds, translations, icon |
 | `Borne-<platform>-<build>-runtime.tar.gz` | Qt libraries, plugins and QML modules |
