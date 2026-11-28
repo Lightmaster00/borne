@@ -38,6 +38,17 @@
             "macos-arm64"
           ],
           "ends": ".dmg"
+        },
+        "windows": {
+          "type": "github",
+          "repo": "Vita3K/Vita3K",
+          "has": [
+            "windows"
+          ],
+          "not": [
+            "arm64"
+          ],
+          "ends": ".zip"
         }
       },
       "logs": [
@@ -63,11 +74,16 @@
         "macos": {
           "type": "buildbot",
           "file": "apple/osx/universal/RetroArch_Metal.dmg"
+        },
+        "windows": {
+          "type": "buildbot",
+          "file": "windows/x86_64/RetroArch.7z"
         }
       },
       "cores": {
         "linux": "https://buildbot.libretro.com/nightly/linux/x86_64/latest/{core}_libretro.so.zip",
-        "macos": "https://buildbot.libretro.com/nightly/apple/osx/arm64/latest/{core}_libretro.dylib.zip"
+        "macos": "https://buildbot.libretro.com/nightly/apple/osx/arm64/latest/{core}_libretro.dylib.zip",
+        "windows": "https://buildbot.libretro.com/nightly/windows/x86_64/latest/{core}_libretro.dll.zip"
       },
       "fails": [
         "Failed to load content",
@@ -102,6 +118,12 @@
           "url": "https://dolphin-emu.org/download/",
           "link": "https://dl.dolphin-emu.org/releases/",
           "ends": "-universal.dmg"
+        },
+        "windows": {
+          "type": "page",
+          "url": "https://dolphin-emu.org/download/",
+          "link": "https://dl.dolphin-emu.org/releases/",
+          "ends": "-x64.7z"
         }
       },
       "fails": [
@@ -141,6 +163,20 @@
             "macos"
           ],
           "ends": ".tar.xz"
+        },
+        "windows": {
+          "type": "github",
+          "repo": "PCSX2/pcsx2",
+          "prerelease": true,
+          "has": [
+            "windows",
+            "x64",
+            "qt"
+          ],
+          "not": [
+            "symbols"
+          ],
+          "ends": ".7z"
         }
       },
       "fails": [
@@ -181,6 +217,15 @@
           ],
           "ends": ".zip",
           "prerelease": true
+        },
+        "windows": {
+          "type": "github",
+          "repo": "stenzek/duckstation",
+          "has": [
+            "windows",
+            "x64"
+          ],
+          "ends": ".zip"
         }
       },
       "fails": [
@@ -215,6 +260,18 @@
           "repo": "melonDS-emu/melonDS",
           "has": [
             "macos"
+          ],
+          "ends": ".zip"
+        },
+        "windows": {
+          "type": "github",
+          "repo": "melonDS-emu/melonDS",
+          "has": [
+            "windows",
+            "x86_64"
+          ],
+          "not": [
+            "arm64"
           ],
           "ends": ".zip"
         }
@@ -265,6 +322,22 @@
           "ends": [
             ".dmg",
             ".tar.gz",
+            ".zip"
+          ]
+        },
+        "windows": {
+          "type": "gitea",
+          "base": "https://git.eden-emu.dev",
+          "repo": "eden-emu/eden",
+          "has": [
+            "windows",
+            "amd64",
+            "msvc"
+          ],
+          "not": [
+            "mingw"
+          ],
+          "ends": [
             ".zip"
           ]
         }
@@ -384,6 +457,42 @@
               ".zip"
             ]
           }
+        },
+        "windows": {
+          "type": "gitea",
+          "base": "https://git.ryujinx.app",
+          "repos": [
+            "Ryubing/Ryujinx",
+            "Ryubing/Stable",
+            "Ryubing/Stable-Releases",
+            "Ryubing/Canary"
+          ],
+          "prerelease": true,
+          "has": [
+            "win_x64"
+          ],
+          "not": [
+            "arm64"
+          ],
+          "ends": [
+            ".zip"
+          ],
+          "exe": "Ryujinx",
+          "fallback": {
+            "type": "gitlab",
+            "base": "https://git.ryujinx.app",
+            "project": "ryubing/ryujinx",
+            "has": [
+              "win_x64"
+            ],
+            "not": [
+              "arm64"
+            ],
+            "ends": [
+              ".zip"
+            ],
+            "exe": "Ryujinx"
+          }
         }
       },
       "fails": [
@@ -414,6 +523,15 @@
           ],
           "ends": ".tar.xz",
           "exe": "xenia_canary"
+        },
+        "windows": {
+          "type": "github",
+          "repo": "xenia-canary/xenia-canary-releases",
+          "has": [
+            "windows"
+          ],
+          "ends": ".zip",
+          "exe": "xenia"
         }
       }
     },
@@ -444,6 +562,15 @@
             "macos"
           ],
           "ends": ".7z"
+        },
+        "windows": {
+          "type": "github",
+          "repo": "RPCS3/rpcs3-binaries-win",
+          "has": [
+            "win64"
+          ],
+          "ends": ".7z",
+          "exe": "rpcs3"
         }
       },
       "fails": [
@@ -481,6 +608,16 @@
             "macos"
           ],
           "ends": ".zip"
+        },
+        "windows": {
+          "type": "github",
+          "repo": "shadps4-emu/shadPS4",
+          "has": [
+            "win64",
+            "sdl"
+          ],
+          "ends": ".zip",
+          "exe": "shadps4"
         }
       },
       "fails": [
@@ -519,6 +656,16 @@
             "macos"
           ],
           "ends": ".dmg"
+        },
+        "windows": {
+          "type": "github",
+          "repo": "cemu-project/Cemu",
+          "has": [
+            "windows",
+            "x64"
+          ],
+          "ends": ".zip",
+          "exe": "cemu"
         }
       },
       "fails": [
@@ -581,6 +728,21 @@
             ".zip",
             ".dmg"
           ]
+        },
+        "windows": {
+          "type": "github",
+          "repo": "azahar-emu/azahar",
+          "has": [
+            "windows",
+            "msvc"
+          ],
+          "not": [
+            "libretro",
+            "mxe",
+            "installer"
+          ],
+          "ends": ".zip",
+          "exe": "azahar"
         }
       }
     }
