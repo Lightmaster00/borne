@@ -10,8 +10,11 @@ CORE="$1"
 DATA="$(mktemp -d)"
 LOG="$DATA/borne.log"
 export BORNE_DATA_DIR="$DATA/data"
-# Headless Linux: offscreen rendering. macOS: native display (CI machines have a graphical session).
-[ "$(uname)" = "Linux" ] && export QT_QPA_PLATFORM=offscreen
+# Headless Linux and Windows CI (no display to render on): the offscreen platform. macOS CI has
+# a graphical session: the native display.
+case "$(uname)" in
+  Linux | MINGW* | MSYS* | CYGWIN*) export QT_QPA_PLATFORM=offscreen ;;
+esac
 
 "$CORE" > "$LOG" 2>&1 &
 PID=$!

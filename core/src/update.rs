@@ -908,6 +908,8 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
         let (core, ui, lib) = if cfg!(target_os = "macos") {
             ("Contents/MacOS/borne", "Contents/Resources/ui/Main.qml", "Contents/Frameworks/QtCore")
+        } else if cfg!(target_os = "windows") {
+            ("bin/borne.exe", "ui/Main.qml", "bin/QtCore.dll")
         } else {
             ("bin/borne", "ui/Main.qml", "lib/libQt6Core.so.6")
         };
@@ -931,7 +933,13 @@ mod tests {
     fn finds_the_package_whatever_its_name() {
         let root = std::env::temp_dir().join(format!("borne-upd-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
-        let core = if cfg!(target_os = "macos") { "Borne.app/Contents/MacOS/borne" } else { "Borne/bin/borne" };
+        let core = if cfg!(target_os = "macos") {
+            "Borne.app/Contents/MacOS/borne"
+        } else if cfg!(target_os = "windows") {
+            "Borne/bin/borne.exe"
+        } else {
+            "Borne/bin/borne"
+        };
         let p = root.join("nested").join(core);
         std::fs::create_dir_all(p.parent().unwrap()).unwrap();
         std::fs::write(&p, b"").unwrap();

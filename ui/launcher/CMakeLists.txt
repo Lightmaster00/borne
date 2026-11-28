@@ -14,6 +14,12 @@ if(APPLE)
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "0.2.0")
   add_executable(borne-ui MACOSX_BUNDLE main.cpp)
   set_target_properties(borne-ui PROPERTIES OUTPUT_NAME "Borne")
+elseif(WIN32)
+  # Windows: a windowed executable (the core has no console either); there is no rpath on
+  # Windows, windeployqt places the Qt libraries next to the executable
+  # (scripts/package-windows.sh) and the icon is embedded.
+  add_executable(borne-ui WIN32 main.cpp)
+  set_target_properties(borne-ui PROPERTIES WIN32_ICON "${CMAKE_SOURCE_DIR}/../resources/borne.ico")
 else()
   add_executable(borne-ui main.cpp)
   # Bundled Qt libraries live in <package>/lib
