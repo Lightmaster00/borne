@@ -52,3 +52,24 @@ jobs:
         run: |
           python3 -m py_compile scripts/release/*.py scripts/i18n/*.py tests/*.py
           bash -n scripts/*.sh scripts/ci/*.sh scripts/i18n/*.sh tests/*.sh
+
+  windows:
+    # The Linux job cannot see the Windows code (cfg, the windows-sys surface):
+    # checked natively, with lints and the unit tests.
+    name: Windows (x86_64)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - name: Rust formatting
+        run: cargo fmt --manifest-path core/Cargo.toml --check
+      - name: Rust lints
+        run: cargo clippy --release --manifest-path core/Cargo.toml -- -D warnings
+      - name: Unit tests
+        run: cargo test --release --manifest-path core/Cargo.toml
