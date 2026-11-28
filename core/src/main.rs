@@ -155,6 +155,19 @@ fn main() {
         crate::logfile::write("main", &format!("unreadable local database: {e}; starting a new one"));
         let aside = paths.db().with_extension(format!("broken-{}", db::now()));
         std::fs::rename(paths.db(), &aside)?;
+        // The broken copies are kept for a bug report, but the newest is enough: the earlier
+        // ones (a loop of corruption would fill the folder) go.
+        // aside is state.broken-<date> (with_extension replaces the .db part): match the stem.
+        let prefix = format!("{}.broken-", paths.db().file_stem().unwrap_or_default().to_string_lossy());
+        let aside_name = aside.file_name().unwrap_or_default().to_string_lossy().into_owned();
+        if let Ok(olds) = std::fs::read_dir(&paths.root) {
+            for f in olds.flatten() {
+                let n = f.file_name().to_string_lossy().into_owned();
+                if n.starts_with(&prefix) && n != aside_name {
+                    let _ = std::fs::remove_file(f.path());
+                }
+            }
+        }
         for ext in ["db-wal", "db-shm"] {
             let _ = std::fs::remove_file(paths.db().with_extension(ext));
         }
